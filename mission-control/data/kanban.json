@@ -36,20 +36,6 @@
         ]
       },
       {
-        "id": "task-1773254382858",
-        "title": "App success",
-        "description": "Build a workflow that will allow each app created pass through the process of being accepted into apple store, chrome store and windows store",
-        "priority": "high",
-        "owner": "Mario",
-        "roleLens": "Mario",
-        "notes": [
-          {
-            "text": "Mario: use a multi-store readiness system with hard stage gates: strategic fit, store viability, compliance complete, submission-ready assets, and launch approval. Design for the strictest store first and standardize metadata/assets in one source of truth.",
-            "ts": 1773259340000
-          }
-        ]
-      },
-      {
         "id": "task-4",
         "title": "Decide whether Control UI will ever sit behind a reverse proxy",
         "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
@@ -98,7 +84,7 @@
             "ts": 1773257500000
           },
           {
-            "text": "Mario: Don\u2019t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
             "ts": 1773257400000
           },
           {
@@ -165,6 +151,24 @@
         "priority": "high",
         "owner": "Barry Bot",
         "roleLens": "Barry Bot"
+      },
+      {
+        "id": "task-1773254382858",
+        "title": "App success",
+        "description": "Multi-store app acceptance workflow is now covered by Mission Control app workflow tracking, store-account readiness reminders, and the stage-gated process guidance returned by Mario.",
+        "priority": "high",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Barry Bot: marked complete because this now directly supplements the app workflow and store-readiness work already built into Mission Control.",
+            "ts": 1773261780000
+          },
+          {
+            "text": "Mario: use a multi-store readiness system with hard stage gates: strategic fit, store viability, compliance complete, submission-ready assets, and launch approval. Design for the strictest store first and standardize metadata/assets in one source of truth.",
+            "ts": 1773259340000
+          }
+        ]
       }
     ]
   }
