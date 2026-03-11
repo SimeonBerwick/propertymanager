@@ -18,27 +18,37 @@
             "ts": 1773259310000
           }
         ]
-      },
+      }
+    ],
+    "inProgress": [
       {
         "id": "task-1773255874567",
         "title": "Realtor Drone Aid",
         "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
-        "priority": "medium",
+        "priority": "high",
         "owner": "Elon",
         "roleLens": "Elon",
-        "notes": []
+        "notes": [
+          {
+            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
+            "ts": 1773264200000
+          }
+        ]
       },
       {
         "id": "task-1773254257803",
         "title": "Realtor Aid",
         "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
-        "priority": "medium",
+        "priority": "high",
         "owner": "Elon",
         "roleLens": "Elon",
-        "notes": []
-      }
-    ],
-    "inProgress": [
+        "notes": [
+          {
+            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
+            "ts": 1773264200000
+          }
+        ]
+      },
       {
         "id": "task-1773254485314",
         "title": "Youtube",
@@ -88,7 +98,7 @@
             "ts": 1773257500000
           },
           {
-            "text": "Mario: Don\u2019t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
             "ts": 1773257400000
           },
           {

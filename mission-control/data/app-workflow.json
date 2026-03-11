@@ -3,9 +3,33 @@
     {
       "id": "app-clipboard-workflow",
       "name": "Clipboard Workflow Utility",
-      "status": "execution-started",
+      "status": "paused-waiting-for-mac",
       "owner": "Elon",
-      "summary": "Role-specific clipboard workflow utility for prosumers; current leading app idea.",
+      "summary": "Role-specific clipboard workflow utility for prosumers; paused until Sim has a Mac/Xcode environment.",
+      "stages": {
+        "backlog": "complete",
+        "building": "not-started",
+        "appleApproval": "not-started",
+        "chromeApproval": "not-started",
+        "windowsApproval": "not-started",
+        "landed": "not-started"
+      },
+      "reviewGate": "Jeff final QA review required before sign-off / ship.",
+      "nextStep": "Resume once a Mac/Xcode environment is available.",
+      "notes": [
+        "Barry Bot: paused while Sim finds a Mac. Elon already produced scaffold/build-plan work, but actual compilation is blocked by platform.",
+        "Barry Bot: Elon has been told to proceed to completion from the current build plan and is now in active execution mode.",
+        "Elon: technical plan ready. Stack: macOS + SwiftUI + Swift + local persistence. Start with M1 core engine, then snippets, search, and global hotkey.",
+        "Elon: start with a macOS local-first prototype — clipboard history, saved snippets, global search launcher, and one target-role starter pack. Defer sync, AI, sharing, analytics, and browser extensions.",
+        "Derived from TOP5_APP_OPPORTUNITIES.md as current top recommendation."
+      ]
+    },
+    {
+      "id": "app-realtor-aid",
+      "name": "Realtor Aid",
+      "status": "active-review",
+      "owner": "Elon",
+      "summary": "Photorealistic virtual staging app for listing photos.",
       "stages": {
         "backlog": "complete",
         "building": "in-progress",
@@ -15,47 +39,30 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Await Elon's first concrete M1 progress update: app shell, clipboard watcher, local storage, and recent history loop.",
+      "nextStep": "Await Elon feasibility/MVP architecture/risk assessment and pick first prototype slice.",
       "notes": [
-        "Barry Bot: Elon has been told to proceed to completion from the current build plan and is now in active execution mode.",
-        "Elon: technical plan ready. Stack: macOS + SwiftUI + Swift + local persistence. Start with M1 core engine, then snippets, search, and global hotkey.",
-        "Elon: start with a macOS local-first prototype \u2014 clipboard history, saved snippets, global search launcher, and one target-role starter pack. Defer sync, AI, sharing, analytics, and browser extensions.",
-        "Derived from TOP5_APP_OPPORTUNITIES.md as current top recommendation."
+        "Barry Bot: activated while the clipboard app is paused for lack of a Mac/Xcode environment."
       ]
     },
     {
-      "id": "app-audio-switching",
-      "name": "Audio / Device Switching Utility",
-      "status": "shortlisted",
+      "id": "app-realtor-drone-aid",
+      "name": "Realtor Drone Aid",
+      "status": "active-review",
       "owner": "Elon",
-      "summary": "Apple-feasible adaptation of EarTrumpet-style audio workflow.",
+      "summary": "Simulated drone/elevated exterior view generator using listing photos plus map/satellite reference.",
       "stages": {
-        "backlog": "in-progress",
-        "building": "not-started",
+        "backlog": "complete",
+        "building": "in-progress",
         "appleApproval": "not-started",
         "chromeApproval": "not-started",
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "nextStep": "Validate actual platform constraints before choosing this over clipboard workflow.",
-      "notes": []
-    },
-    {
-      "id": "app-file-triage",
-      "name": "File Preview / Triage Utility",
-      "status": "shortlisted",
-      "owner": "Elon",
-      "summary": "QuickLook-inspired file preview and triage workflow.",
-      "stages": {
-        "backlog": "in-progress",
-        "building": "not-started",
-        "appleApproval": "not-started",
-        "chromeApproval": "not-started",
-        "windowsApproval": "not-started",
-        "landed": "not-started"
-      },
-      "nextStep": "Check whether native Apple behaviors shrink the wedge too much.",
-      "notes": []
+      "reviewGate": "Jeff final QA review required before sign-off / ship.",
+      "nextStep": "Await Elon feasibility/MVP architecture/risk assessment and decide whether this is viable enough to prototype now.",
+      "notes": [
+        "Barry Bot: activated while the clipboard app is paused for lack of a Mac/Xcode environment."
+      ]
     }
   ]
 }
