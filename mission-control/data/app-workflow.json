@@ -1,0 +1,58 @@
+{
+  "apps": [
+    {
+      "id": "app-clipboard-workflow",
+      "name": "Clipboard Workflow Utility",
+      "status": "idea-validation",
+      "owner": "Elon",
+      "summary": "Role-specific clipboard workflow utility for prosumers; current leading app idea.",
+      "stages": {
+        "backlog": "complete",
+        "building": "in-progress",
+        "appleApproval": "not-started",
+        "chromeApproval": "not-started",
+        "windowsApproval": "not-started",
+        "landed": "not-started"
+      },
+      "nextStep": "Prototype clipboard history + saved snippets + global search launcher as a local-first macOS MVP.",
+      "notes": [
+        "Elon: start with a macOS local-first prototype \u2014 clipboard history, saved snippets, global search launcher, and one target-role starter pack. Defer sync, AI, sharing, analytics, and browser extensions.",
+        "Derived from TOP5_APP_OPPORTUNITIES.md as current top recommendation."
+      ]
+    },
+    {
+      "id": "app-audio-switching",
+      "name": "Audio / Device Switching Utility",
+      "status": "shortlisted",
+      "owner": "Elon",
+      "summary": "Apple-feasible adaptation of EarTrumpet-style audio workflow.",
+      "stages": {
+        "backlog": "in-progress",
+        "building": "not-started",
+        "appleApproval": "not-started",
+        "chromeApproval": "not-started",
+        "windowsApproval": "not-started",
+        "landed": "not-started"
+      },
+      "nextStep": "Validate actual platform constraints before choosing this over clipboard workflow.",
+      "notes": []
+    },
+    {
+      "id": "app-file-triage",
+      "name": "File Preview / Triage Utility",
+      "status": "shortlisted",
+      "owner": "Elon",
+      "summary": "QuickLook-inspired file preview and triage workflow.",
+      "stages": {
+        "backlog": "in-progress",
+        "building": "not-started",
+        "appleApproval": "not-started",
+        "chromeApproval": "not-started",
+        "windowsApproval": "not-started",
+        "landed": "not-started"
+      },
+      "nextStep": "Check whether native Apple behaviors shrink the wedge too much.",
+      "notes": []
+    }
+  ]
+}

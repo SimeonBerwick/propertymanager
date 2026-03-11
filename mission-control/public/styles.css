@@ -48,12 +48,18 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .chip.lens { border-color: rgba(255,191,71,0.45); }
 .chip.mode { border-color: rgba(125,211,252,0.35); }
 .issues-list, .inbox-list { display: grid; gap: 0.9rem; }
-.issue, .inbox-item { background: var(--panel); border-radius: 14px; padding: 1rem; border: 1px solid var(--line); }
+.issue, .inbox-item, .app-card { background: var(--panel); border-radius: 14px; padding: 1rem; border: 1px solid var(--line); }
 .issue { border-left: 4px solid var(--warn); }
 .issue.critical { border-left-color: var(--critical); }
 .issue.warn { border-left-color: var(--warn); }
 .issue .title-row { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
 .issue p { margin: 0.4rem 0; color: var(--muted); }
+.app-workflow-board { display: grid; gap: 1rem; }
+.app-stage-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem; margin-top: 0.9rem; }
+.app-stage { border: 1px solid var(--line); border-radius: 12px; padding: 0.65rem; text-align: center; background: rgba(255,255,255,0.03); display: grid; gap: 0.2rem; }
+.app-stage.complete { border-color: rgba(34,197,94,0.5); color: #86efac; }
+.app-stage.in-progress { border-color: rgba(86,194,255,0.55); color: #93c5fd; }
+.app-stage.not-started { color: var(--muted); }
 .org-chart { display: grid; gap: 0.3rem; margin-bottom: 1rem; padding: 0.35rem; }
 .org-top { display: flex; justify-content: center; }
 .org-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; }
@@ -91,4 +97,4 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .task-form label { display: grid; gap: 0.4rem; }
 .task-form input, .task-form textarea, .task-form select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem; }
 menu { display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0; margin: 0.4rem 0 0; }
-@media (max-width: 960px) { .grid.top-grid, .grid.lower-grid, .kanban-board, .form-grid, .audit-controls, .org-row { grid-template-columns: 1fr; } .horizontal-line { width: 2px; height: 0; } .hero { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 960px) { .grid.top-grid, .grid.lower-grid, .kanban-board, .form-grid, .audit-controls, .org-row, .app-stage-row { grid-template-columns: 1fr; } .horizontal-line { width: 2px; height: 0; } .hero { flex-direction: column; align-items: flex-start; } }

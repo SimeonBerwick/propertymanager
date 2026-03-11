@@ -25,46 +25,31 @@
 
       <section class="grid top-grid">
         <article class="card status-card">
-          <div class="card-header split">
-            <h2>Status</h2>
-            <span id="lastUpdated" class="subtle">Loading…</span>
-          </div>
+          <div class="card-header split"><h2>Status</h2><span id="lastUpdated" class="subtle">Loading…</span></div>
           <div id="statusStats" class="stats"></div>
         </article>
-
         <article class="card security-card">
-          <div class="card-header split">
-            <h2>Security score</h2>
-            <div id="securityScore" class="score-pill">--</div>
-          </div>
-          <div class="audit-controls">
-            <button id="runAuditButton">Run audit</button>
-            <button id="fixAuditButton" class="danger-button">Run safe fix</button>
-          </div>
+          <div class="card-header split"><h2>Security score</h2><div id="securityScore" class="score-pill">--</div></div>
+          <div class="audit-controls"><button id="runAuditButton">Run audit</button><button id="fixAuditButton" class="danger-button">Run safe fix</button></div>
           <div id="securityCounts" class="chips"></div>
           <p id="securityLabel" class="subtle">Loading audit…</p>
           <pre id="auditOutput" class="audit-output subtle">No audit action run yet.</pre>
         </article>
       </section>
 
+      <section class="card app-workflow-card">
+        <div class="card-header split"><div><h2>App workflow</h2><p class="subtle">Track app ideas from backlog through build, store approvals, and launch.</p></div></div>
+        <div id="appWorkflowBoard" class="app-workflow-board"></div>
+      </section>
+
       <section class="grid top-grid lower-grid">
         <section class="card review-card">
-          <div class="card-header split">
-            <h2>Weekly exec review</h2>
-            <span class="subtle">Mario · Elon · Warren · Barry Bot · Sim</span>
-          </div>
+          <div class="card-header split"><h2>Weekly exec review</h2><span class="subtle">Mario · Elon · Warren · Barry Bot · Sim</span></div>
           <div id="weeklyReview"></div>
         </section>
-
         <section class="card consult-card">
-          <div class="card-header split">
-            <h2>Executive consult</h2>
-            <span class="subtle">Query the real Mario / Elon / Warren agents</span>
-          </div>
-          <form id="consultForm" class="task-form">
-            <label>Prompt<textarea id="consultPrompt" name="prompt" rows="5" placeholder="Ask all three executives to evaluate a move, plan, product, or risk."></textarea></label>
-            <button id="consultButton" type="submit">Run through Mario / Elon / Warren</button>
-          </form>
+          <div class="card-header split"><h2>Executive consult</h2><span class="subtle">Query the real Mario / Elon / Warren agents</span></div>
+          <form id="consultForm" class="task-form"><label>Prompt<textarea id="consultPrompt" name="prompt" rows="5" placeholder="Ask all three executives to evaluate a move, plan, product, or risk."></textarea></label><button id="consultButton" type="submit">Run through Mario / Elon / Warren</button></form>
           <div id="consultResults" class="consult-results subtle">No executive consult run yet.</div>
           <div id="advisoryRouting" class="subtle"></div>
         </section>
@@ -72,10 +57,7 @@
 
       <section class="grid top-grid lower-grid">
         <section class="card org-card full-width">
-          <div class="card-header split">
-            <h2>Interactive org chart</h2>
-            <span class="subtle">Click a role to inspect and route work</span>
-          </div>
+          <div class="card-header split"><h2>Interactive org chart</h2><span class="subtle">Click a role to inspect and route work</span></div>
           <div class="org-chart" id="orgChart"></div>
           <div class="org-detail" id="orgDetail"></div>
         </section>
@@ -83,38 +65,22 @@
 
       <section class="grid top-grid lower-grid">
         <section class="card inbox-card">
-          <div class="card-header split">
-            <h2>Executive inbox</h2>
-            <span class="subtle">Recent executive agent sessions</span>
-          </div>
+          <div class="card-header split"><h2>Executive inbox</h2><span class="subtle">Recent executive agent sessions</span></div>
           <div id="executiveInbox" class="inbox-list"></div>
         </section>
-
         <section class="card dispatch-card">
-          <div class="card-header split">
-            <h2>Last dispatch</h2>
-            <span class="subtle">Most recent routed task</span>
-          </div>
+          <div class="card-header split"><h2>Last dispatch</h2><span class="subtle">Most recent routed task</span></div>
           <div id="dispatchStatus" class="subtle">No executive dispatch yet.</div>
         </section>
       </section>
 
       <section class="card issues-card">
-        <div class="card-header split">
-          <h2>Outstanding security issues</h2>
-          <span class="subtle">From built-in audit</span>
-        </div>
+        <div class="card-header split"><h2>Outstanding security issues</h2><span class="subtle">From built-in audit</span></div>
         <div id="issuesList" class="issues-list"></div>
       </section>
 
       <section class="card kanban-card">
-        <div class="card-header split">
-          <div>
-            <h2>Kanban</h2>
-            <p class="subtle">Drag cards between columns.</p>
-          </div>
-          <button id="addTaskButton">Add task</button>
-        </div>
+        <div class="card-header split"><div><h2>Kanban</h2><p class="subtle">Drag cards between columns.</p></div><button id="addTaskButton">Add task</button></div>
         <div class="kanban-board" id="kanbanBoard"></div>
       </section>
     </main>
@@ -125,44 +91,12 @@
         <label>Title<input name="title" required /></label>
         <label>Description<textarea name="description" rows="4"></textarea></label>
         <div class="form-grid">
-          <label>Owner
-            <select name="owner">
-              <option>Barry Bot</option>
-              <option>Sim</option>
-              <option>Mario</option>
-              <option>Elon</option>
-              <option>Warren</option>
-            </select>
-          </label>
-          <label>Role lens
-            <select name="roleLens">
-              <option>Barry Bot</option>
-              <option>Mario</option>
-              <option>Elon</option>
-              <option>Warren</option>
-              <option>Sim</option>
-            </select>
-          </label>
+          <label>Owner<select name="owner"><option>Barry Bot</option><option>Sim</option><option>Mario</option><option>Elon</option><option>Warren</option></select></label>
+          <label>Role lens<select name="roleLens"><option>Barry Bot</option><option>Mario</option><option>Elon</option><option>Warren</option><option>Sim</option></select></label>
         </div>
-        <label>Priority
-          <select name="priority">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-        </label>
-        <label>Column
-          <select name="column">
-            <option value="backlog">Backlog</option>
-            <option value="inProgress">In Progress</option>
-            <option value="blocked">Blocked</option>
-            <option value="complete">Complete</option>
-          </select>
-        </label>
-        <menu>
-          <button value="cancel" type="reset">Cancel</button>
-          <button id="saveTaskButton" value="default">Save</button>
-        </menu>
+        <label>Priority<select name="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+        <label>Column<select name="column"><option value="backlog">Backlog</option><option value="inProgress">In Progress</option><option value="blocked">Blocked</option><option value="complete">Complete</option></select></label>
+        <menu><button value="cancel" type="reset">Cancel</button><button id="saveTaskButton" value="default">Save</button></menu>
       </form>
     </dialog>
 
