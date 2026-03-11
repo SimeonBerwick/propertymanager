@@ -47,6 +47,82 @@
         </article>
       </section>
 
+      <section class="grid top-grid lower-grid">
+        <section class="card review-card">
+          <div class="card-header split">
+            <h2>Weekly exec review</h2>
+            <span class="subtle">Mario · Elon · Warren · Barry Bot · Sim</span>
+          </div>
+          <div id="weeklyReview"></div>
+        </section>
+
+        <section class="card intake-card">
+          <div class="card-header split">
+            <h2>Decision intake</h2>
+            <span class="subtle">Create structured work from the framework</span>
+          </div>
+          <form id="decisionForm" class="task-form decision-form">
+            <label>Decision title<input name="title" required /></label>
+            <label>Why now<textarea name="whyNow" rows="2"></textarea></label>
+            <label>Success looks like<textarea name="successLooksLike" rows="2"></textarea></label>
+            <div class="form-grid">
+              <label>Owner
+                <select name="owner">
+                  <option>Barry Bot</option>
+                  <option>Sim</option>
+                  <option>Mario</option>
+                  <option>Elon</option>
+                  <option>Warren</option>
+                </select>
+              </label>
+              <label>Role lens
+                <select name="roleLens">
+                  <option>Barry Bot</option>
+                  <option>Mario</option>
+                  <option>Elon</option>
+                  <option>Warren</option>
+                  <option>Sim</option>
+                </select>
+              </label>
+              <label>Priority
+                <select name="priority">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label>Column
+                <select name="column">
+                  <option value="backlog">Backlog</option>
+                  <option value="inProgress">In Progress</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </label>
+            </div>
+            <label>Mario view<textarea name="marioView" rows="2"></textarea></label>
+            <label>Elon view<textarea name="elonView" rows="2"></textarea></label>
+            <label>Warren view<textarea name="warrenView" rows="2"></textarea></label>
+            <label>Barry Bot synthesis<textarea name="barrySynthesis" rows="2"></textarea></label>
+            <label>Next actions<textarea name="nextActions" rows="2"></textarea></label>
+            <div class="form-grid">
+              <label>Strategy score<input type="number" min="1" max="5" name="strategy" value="3" /></label>
+              <label>Technology score<input type="number" min="1" max="5" name="technology" value="3" /></label>
+              <label>Finance score<input type="number" min="1" max="5" name="finance" value="3" /></label>
+              <label>Execution score<input type="number" min="1" max="5" name="execution" value="3" /></label>
+            </div>
+            <label>Decision mode
+              <select name="decisionMode">
+                <option value="execute now">Execute now</option>
+                <option value="stage-gate" selected>Stage-gate</option>
+                <option value="defer">Defer</option>
+                <option value="reject">Reject</option>
+              </select>
+            </label>
+            <button id="createDecisionButton" type="submit">Create decision task</button>
+          </form>
+        </section>
+      </section>
+
       <section class="card issues-card">
         <div class="card-header split">
           <h2>Outstanding security issues</h2>
@@ -72,6 +148,26 @@
         <h3>Create task</h3>
         <label>Title<input name="title" required /></label>
         <label>Description<textarea name="description" rows="4"></textarea></label>
+        <div class="form-grid">
+          <label>Owner
+            <select name="owner">
+              <option>Barry Bot</option>
+              <option>Sim</option>
+              <option>Mario</option>
+              <option>Elon</option>
+              <option>Warren</option>
+            </select>
+          </label>
+          <label>Role lens
+            <select name="roleLens">
+              <option>Barry Bot</option>
+              <option>Mario</option>
+              <option>Elon</option>
+              <option>Warren</option>
+              <option>Sim</option>
+            </select>
+          </label>
+        </div>
         <label>Priority
           <select name="priority">
             <option value="low">Low</option>

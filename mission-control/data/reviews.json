@@ -1,0 +1,18 @@
+{
+  "weeklyExecReview": {
+    "cadence": "weekly",
+    "agenda": [
+      "Mario: review long-term strategic direction and leverage",
+      "Elon: review product, systems, and technical blockers",
+      "Warren: review cash flow stability, cost exposure, and downside risk",
+      "Barry Bot: summarize execution status, blockers, and next actions",
+      "Sim: make decisions, cut work, or double down"
+    ],
+    "checkpoints": [
+      "What moved us forward this week?",
+      "What is stalled or blocked?",
+      "What should be cut?",
+      "What deserves more resources?"
+    ]
+  }
+}

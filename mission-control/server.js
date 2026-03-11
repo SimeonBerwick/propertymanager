@@ -12,6 +12,8 @@ const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, 'public');
 const dataDir = path.join(__dirname, 'data');
 const kanbanPath = path.join(dataDir, 'kanban.json');
+const reviewsPath = path.join(dataDir, 'reviews.json');
+const decisionTemplatePath = path.join(dataDir, 'decision-template.json');
 const port = process.env.PORT || 3210;
 let lastAuditAction = null;
 
@@ -37,9 +39,12 @@ function readRequestBody(req) {
   });
 }
 
+async function readJson(filePath) {
+  return JSON.parse(await readFile(filePath, 'utf8'));
+}
+
 async function readKanban() {
-  const raw = await readFile(kanbanPath, 'utf8');
-  return JSON.parse(raw);
+  return readJson(kanbanPath);
 }
 
 async function writeKanban(board) {
@@ -65,11 +70,30 @@ async function runCommand(command) {
   return { stdout, stderr };
 }
 
+function taskFromDecision(decision) {
+  return {
+    id: `task-${Date.now()}`,
+    title: decision.title,
+    description: decision.nextActions || decision.successLooksLike || decision.whyNow || '',
+    priority: decision.priority || 'medium',
+    owner: decision.owner || 'Barry Bot',
+    roleLens: decision.roleLens || 'Barry Bot',
+    deadline: decision.deadline || '',
+    decisionMode: decision.decisionMode || 'stage-gate',
+    strategyScore: decision.scores?.strategy ?? 3,
+    technologyScore: decision.scores?.technology ?? 3,
+    financeScore: decision.scores?.finance ?? 3,
+    executionScore: decision.scores?.execution ?? 3
+  };
+}
+
 async function getMissionControlData() {
-  const [healthResult, auditResult, board] = await Promise.all([
+  const [healthResult, auditResult, board, reviews, decisionTemplate] = await Promise.all([
     runCommand('openclaw health --json'),
     runCommand('openclaw security audit --json'),
-    readKanban()
+    readKanban(),
+    readJson(reviewsPath),
+    readJson(decisionTemplatePath)
   ]);
 
   const health = JSON.parse(healthResult.stdout);
@@ -89,7 +113,7 @@ async function getMissionControlData() {
     generatedAt: new Date().toISOString(),
     status: {
       primaryModel: 'openai-codex/gpt-5.4',
-      fallbackModel: 'ollama/qwen3.5:4b',
+      fallbackModel: 'none',
       gatewayReachable: health.gateway?.reachable ?? false,
       gatewayMode: health.gateway?.mode ?? 'unknown',
       defaultAgentId: health.defaultAgentId,
@@ -105,7 +129,9 @@ async function getMissionControlData() {
       issues: findings.filter((item) => item.severity !== 'info'),
       lastAuditAction
     },
-    kanban: board
+    kanban: board,
+    reviews,
+    decisionTemplate
   };
 }
 
@@ -159,6 +185,21 @@ const server = http.createServer(async (req, res) => {
         const parsed = JSON.parse(await readRequestBody(req));
         await writeKanban(parsed);
         return sendJson(res, 200, { ok: true });
+      } catch (error) {
+        return sendJson(res, 400, { ok: false, error: error.message });
+      }
+    }
+
+    if (req.method === 'POST' && req.url === '/api/decision-intake') {
+      try {
+        const decision = JSON.parse(await readRequestBody(req));
+        const board = await readKanban();
+        const column = decision.column || 'backlog';
+        const task = taskFromDecision(decision);
+        board.columns[column] = board.columns[column] || [];
+        board.columns[column].unshift(task);
+        await writeKanban(board);
+        return sendJson(res, 200, { ok: true, task });
       } catch (error) {
         return sendJson(res, 400, { ok: false, error: error.message });
       }

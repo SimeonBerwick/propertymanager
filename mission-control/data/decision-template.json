@@ -1,0 +1,22 @@
+{
+  "title": "",
+  "whyNow": "",
+  "successLooksLike": "",
+  "owner": "Barry Bot",
+  "roleLens": "Barry Bot",
+  "priority": "medium",
+  "column": "backlog",
+  "deadline": "",
+  "marioView": "",
+  "elonView": "",
+  "warrenView": "",
+  "barrySynthesis": "",
+  "scores": {
+    "strategy": 3,
+    "technology": 3,
+    "finance": 3,
+    "execution": 3
+  },
+  "decisionMode": "stage-gate",
+  "nextActions": ""
+}

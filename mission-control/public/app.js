@@ -24,6 +24,8 @@ const runAuditButton = document.getElementById('runAuditButton');
 const fixAuditButton = document.getElementById('fixAuditButton');
 const auditOutput = document.getElementById('auditOutput');
 const lastUpdated = document.getElementById('lastUpdated');
+const weeklyReview = document.getElementById('weeklyReview');
+const decisionForm = document.getElementById('decisionForm');
 
 function ageText(ms) {
   if (!ms && ms !== 0) return 'n/a';
@@ -64,6 +66,26 @@ function renderStatus(status) {
   `).join('');
 }
 
+function renderReview(reviews) {
+  const review = reviews.weeklyExecReview;
+  weeklyReview.innerHTML = `
+    <div class="review-box">
+      <div class="review-chips">
+        <span class="chip">Cadence: ${review.cadence}</span>
+        <span class="chip">5-part review</span>
+      </div>
+      <div>
+        <strong>Agenda</strong>
+        <ul>${review.agenda.map((item) => `<li>${item}</li>`).join('')}</ul>
+      </div>
+      <div>
+        <strong>Checkpoints</strong>
+        <ul>${review.checkpoints.map((item) => `<li>${item}</li>`).join('')}</ul>
+      </div>
+    </div>
+  `;
+}
+
 function renderSecurity(security) {
   securityScore.textContent = security.score;
   securityLabel.textContent = `${security.label} · ${security.issues.length} open issue(s)`;
@@ -97,11 +119,23 @@ function renderSecurity(security) {
   `).join('');
 }
 
+function taskMeta(task) {
+  return `
+    <div class="task-meta">
+      <span class="chip owner">Owner: ${task.owner || 'n/a'}</span>
+      <span class="chip lens">Lens: ${task.roleLens || 'n/a'}</span>
+      <span class="chip mode">${task.decisionMode || 'task'}</span>
+      ${task.deadline ? `<span class="chip">Due: ${task.deadline}</span>` : ''}
+    </div>
+  `;
+}
+
 function taskCard(task, columnKey) {
   const moveTargets = Object.keys(columnLabels).filter((key) => key !== columnKey);
   return `
     <article class="task" draggable="true" data-task-id="${task.id}">
       <h4>${task.title}</h4>
+      ${taskMeta(task)}
       <p>${task.description || ''}</p>
       <div class="task-footer">
         <span class="priority">${task.priority || 'medium'}</span>
@@ -142,9 +176,7 @@ function bindTaskEvents() {
     columnEl.addEventListener('drop', async (event) => {
       event.preventDefault();
       columnEl.classList.remove('drag-over');
-      if (draggedTaskId) {
-        await moveTask(draggedTaskId, columnEl.dataset.columnKey);
-      }
+      if (draggedTaskId) await moveTask(draggedTaskId, columnEl.dataset.columnKey);
     });
   });
 }
@@ -158,7 +190,6 @@ function renderKanban(board) {
       </div>
     </section>
   `).join('');
-
   bindTaskEvents();
 }
 
@@ -170,6 +201,7 @@ async function fetchData({ silent = false } = {}) {
     lastUpdated.textContent = `Updated ${formatTime(missionData.generatedAt)}`;
     renderStatus(missionData.status);
     renderSecurity(missionData.security);
+    renderReview(missionData.reviews);
     renderKanban(missionData.kanban);
   } finally {
     refreshButton.disabled = false;
@@ -187,7 +219,6 @@ async function saveKanban() {
 async function moveTask(taskId, targetColumn) {
   const columns = missionData.kanban.columns;
   let taskToMove = null;
-
   for (const key of Object.keys(columns)) {
     const idx = columns[key].findIndex((task) => task.id === taskId);
     if (idx >= 0) {
@@ -196,7 +227,6 @@ async function moveTask(taskId, targetColumn) {
       break;
     }
   }
-
   if (!taskToMove) return;
   columns[targetColumn].unshift(taskToMove);
   await saveKanban();
@@ -214,20 +244,51 @@ async function runAuditAction(action) {
       body: JSON.stringify({ action })
     });
     const result = await response.json();
-    if (!result.ok) {
-      auditOutput.textContent = result.error || 'Action failed.';
-    }
+    if (!result.ok) auditOutput.textContent = result.error || 'Action failed.';
     await fetchData();
   } finally {
     button.disabled = false;
   }
 }
 
+async function createDecisionTask(event) {
+  event.preventDefault();
+  const formData = new FormData(decisionForm);
+  const payload = {
+    title: formData.get('title'),
+    whyNow: formData.get('whyNow'),
+    successLooksLike: formData.get('successLooksLike'),
+    owner: formData.get('owner'),
+    roleLens: formData.get('roleLens'),
+    priority: formData.get('priority'),
+    column: formData.get('column'),
+    marioView: formData.get('marioView'),
+    elonView: formData.get('elonView'),
+    warrenView: formData.get('warrenView'),
+    barrySynthesis: formData.get('barrySynthesis'),
+    nextActions: formData.get('nextActions'),
+    decisionMode: formData.get('decisionMode'),
+    scores: {
+      strategy: Number(formData.get('strategy')),
+      technology: Number(formData.get('technology')),
+      finance: Number(formData.get('finance')),
+      execution: Number(formData.get('execution'))
+    }
+  };
+
+  await fetch('/api/decision-intake', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  decisionForm.reset();
+  await fetchData();
+}
+
 function syncAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  if (autoRefreshToggle.checked) {
-    autoRefreshTimer = setInterval(() => fetchData({ silent: true }), 30000);
-  }
+  if (autoRefreshToggle.checked) autoRefreshTimer = setInterval(() => fetchData({ silent: true }), 30000);
 }
 
 refreshButton.addEventListener('click', () => fetchData());
@@ -238,6 +299,7 @@ addTaskButton.addEventListener('click', () => {
   taskForm.reset();
   taskDialog.showModal();
 });
+decisionForm.addEventListener('submit', createDecisionTask);
 
 taskForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -246,7 +308,9 @@ taskForm.addEventListener('submit', async (event) => {
     id: `task-${Date.now()}`,
     title: formData.get('title'),
     description: formData.get('description'),
-    priority: formData.get('priority')
+    priority: formData.get('priority'),
+    owner: formData.get('owner'),
+    roleLens: formData.get('roleLens')
   };
   const column = formData.get('column');
   missionData.kanban.columns[column].unshift(task);
