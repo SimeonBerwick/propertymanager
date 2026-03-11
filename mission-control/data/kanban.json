@@ -2,15 +2,62 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-1773254257803",
+        "title": "Realtor Aid",
+        "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
+        "priority": "medium",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": []
+      }
+    ],
+    "inProgress": [
+      {
+        "id": "task-1773254485314",
+        "title": "Youtube",
+        "description": "Create an action plan for building youtube videos. What websites do we need access to create screensavers that are 2 to 10 hours long with ambient music.",
+        "priority": "high",
+        "owner": "Warren",
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Barry Bot: kicked off Warren review for cheapest viable stack, recurring costs, licensing risks, and what to avoid.",
+            "ts": 1773259300000
+          }
+        ]
+      },
+      {
+        "id": "task-1773254382858",
+        "title": "App success",
+        "description": "Build a workflow that will allow each app created pass through the process of being accepted into apple store, chrome store and windows store",
+        "priority": "high",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Mario: use a multi-store readiness system with hard stage gates: strategic fit, store viability, compliance complete, submission-ready assets, and launch approval. Design for the strictest store first and standardize metadata/assets in one source of truth.",
+            "ts": 1773259340000
+          }
+        ]
+      },
+      {
         "id": "task-4",
         "title": "Decide whether Control UI will ever sit behind a reverse proxy",
         "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
         "priority": "low",
         "owner": "Sim",
-        "roleLens": "Warren"
-      }
-    ],
-    "inProgress": [
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Warren: defer implementation for now, but keep Control UI proxy-compatible. It matters once the UI is internet-exposed, multi-user, or needs centralized auth/TLS/rate limiting.",
+            "ts": 1773259320000
+          },
+          {
+            "text": "Mario: defer by default unless Control UI becomes a remotely accessed product surface or shared operator tool. Revisit when public exposure, shared domain routing, or enterprise requirements appear.",
+            "ts": 1773259310000
+          }
+        ]
+      },
       {
         "id": "task-1773251865400",
         "title": "Finding app ideas",
