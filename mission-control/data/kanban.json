@@ -48,6 +48,10 @@
         "roleLens": "Warren",
         "notes": [
           {
+            "text": "Barry Bot: finished practical action plan written to YOUTUBE_SCREENSAVER_SOP.md. Core stack: DaVinci Resolve, FFmpeg, Canva, Pexels, Pixabay, YouTube Audio Library, Google Drive, and YouTube Studio. Includes licensing checklist, workflow, recurring cost bands, and what to avoid.",
+            "ts": 1773263400000
+          },
+          {
             "text": "Barry Bot: kicked off Warren review for cheapest viable stack, recurring costs, licensing risks, and what to avoid.",
             "ts": 1773259300000
           }
@@ -84,7 +88,7 @@
             "ts": 1773257500000
           },
           {
-            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "text": "Mario: Don\u2019t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
             "ts": 1773257400000
           },
           {
