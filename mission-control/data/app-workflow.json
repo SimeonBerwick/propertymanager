@@ -14,6 +14,7 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
+      "reviewGate": "Jeff final QA review required before sign-off / ship.",
       "nextStep": "Await Elon's first concrete M1 progress update: app shell, clipboard watcher, local storage, and recent history loop.",
       "notes": [
         "Barry Bot: Elon has been told to proceed to completion from the current build plan and is now in active execution mode.",

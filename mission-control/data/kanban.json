@@ -2,6 +2,24 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-4",
+        "title": "Decide whether Control UI will ever sit behind a reverse proxy",
+        "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
+        "priority": "low",
+        "owner": "Sim",
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Warren: defer implementation for now, but keep Control UI proxy-compatible. It matters once the UI is internet-exposed, multi-user, or needs centralized auth/TLS/rate limiting.",
+            "ts": 1773259320000
+          },
+          {
+            "text": "Mario: defer by default unless Control UI becomes a remotely accessed product surface or shared operator tool. Revisit when public exposure, shared domain routing, or enterprise requirements appear.",
+            "ts": 1773259310000
+          }
+        ]
+      },
+      {
         "id": "task-1773255874567",
         "title": "Realtor Drone Aid",
         "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
@@ -32,24 +50,6 @@
           {
             "text": "Barry Bot: kicked off Warren review for cheapest viable stack, recurring costs, licensing risks, and what to avoid.",
             "ts": 1773259300000
-          }
-        ]
-      },
-      {
-        "id": "task-4",
-        "title": "Decide whether Control UI will ever sit behind a reverse proxy",
-        "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
-        "priority": "low",
-        "owner": "Sim",
-        "roleLens": "Warren",
-        "notes": [
-          {
-            "text": "Warren: defer implementation for now, but keep Control UI proxy-compatible. It matters once the UI is internet-exposed, multi-user, or needs centralized auth/TLS/rate limiting.",
-            "ts": 1773259320000
-          },
-          {
-            "text": "Mario: defer by default unless Control UI becomes a remotely accessed product surface or shared operator tool. Revisit when public exposure, shared domain routing, or enterprise requirements appear.",
-            "ts": 1773259310000
           }
         ]
       },
