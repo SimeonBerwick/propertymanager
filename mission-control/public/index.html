@@ -114,6 +114,12 @@
                 </select>
               </label>
             </div>
+            <div class="inline-actions">
+              <button type="submit" id="createDecisionButton">Create decision task</button>
+              <button type="button" class="secondary-button" data-decision-send="mario">Create + send to Mario</button>
+              <button type="button" class="secondary-button" data-decision-send="elon">Create + send to Elon</button>
+              <button type="button" class="secondary-button" data-decision-send="warren">Create + send to Warren</button>
+            </div>
             <label>Mario view<textarea name="marioView" rows="2"></textarea></label>
             <label>Elon view<textarea name="elonView" rows="2"></textarea></label>
             <label>Warren view<textarea name="warrenView" rows="2"></textarea></label>
@@ -133,8 +139,25 @@
                 <option value="reject">Reject</option>
               </select>
             </label>
-            <button id="createDecisionButton" type="submit">Create decision task</button>
           </form>
+        </section>
+      </section>
+
+      <section class="grid top-grid lower-grid">
+        <section class="card inbox-card">
+          <div class="card-header split">
+            <h2>Executive inbox</h2>
+            <span class="subtle">Recent executive agent sessions</span>
+          </div>
+          <div id="executiveInbox" class="inbox-list"></div>
+        </section>
+
+        <section class="card dispatch-card">
+          <div class="card-header split">
+            <h2>Last dispatch</h2>
+            <span class="subtle">Most recent routed task</span>
+          </div>
+          <div id="dispatchStatus" class="subtle">No executive dispatch yet.</div>
         </section>
       </section>
 

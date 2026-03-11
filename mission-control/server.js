@@ -18,6 +18,7 @@ const advisoryRoutingPath = path.join(dataDir, 'advisory-routing.json');
 const port = process.env.PORT || 3210;
 let lastAuditAction = null;
 let lastExecutiveConsult = null;
+let lastExecutiveDispatch = null;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -113,14 +114,26 @@ function taskFromDecision(decision) {
   };
 }
 
+async function getExecutiveInbox() {
+  try {
+    const result = await runCommand('openclaw sessions --all-agents --json');
+    const parsed = JSON.parse(result.stdout);
+    const relevant = (parsed.sessions || parsed || []).filter((session) => ['mario', 'elon', 'warren'].includes(session.agentId));
+    return relevant.slice(0, 12);
+  } catch {
+    return [];
+  }
+}
+
 async function getMissionControlData() {
-  const [healthResult, auditResult, board, reviews, decisionTemplate, advisoryRouting] = await Promise.all([
+  const [healthResult, auditResult, board, reviews, decisionTemplate, advisoryRouting, executiveInbox] = await Promise.all([
     runCommand('openclaw health --json'),
     runCommand('openclaw security audit --json'),
     readKanban(),
     readJson(reviewsPath),
     readJson(decisionTemplatePath),
-    readJson(advisoryRoutingPath)
+    readJson(advisoryRoutingPath),
+    getExecutiveInbox()
   ]);
 
   const health = JSON.parse(healthResult.stdout);
@@ -160,7 +173,9 @@ async function getMissionControlData() {
     reviews,
     decisionTemplate,
     advisoryRouting,
-    executiveConsult: lastExecutiveConsult
+    executiveConsult: lastExecutiveConsult,
+    executiveDispatch: lastExecutiveDispatch,
+    executiveInbox
   };
 }
 
@@ -205,6 +220,19 @@ async function runExecutiveConsult(prompt) {
   return lastExecutiveConsult;
 }
 
+async function dispatchTaskToExecutive(agentId, task) {
+  const prompt = `Sim is assigning you this task. Respond with a concise execution take: 1) interpretation 2) biggest risk 3) recommended next step.\n\nTask title: ${task.title}\nOwner: ${task.owner || 'n/a'}\nRole lens: ${task.roleLens || 'n/a'}\nPriority: ${task.priority || 'n/a'}\nDescription: ${task.description || ''}`;
+  const result = await consultExecutive(agentId, 'Dispatch', prompt);
+  lastExecutiveDispatch = {
+    ranAt: new Date().toISOString(),
+    agentId,
+    taskId: task.id,
+    taskTitle: task.title,
+    result
+  };
+  return lastExecutiveDispatch;
+}
+
 async function serveStatic(req, res) {
   const target = req.url === '/' ? '/index.html' : req.url;
   const filePath = path.join(publicDir, target);
@@ -245,6 +273,21 @@ const server = http.createServer(async (req, res) => {
         board.columns[column].unshift(task);
         await writeKanban(board);
         return sendJson(res, 200, { ok: true, task });
+      } catch (error) {
+        return sendJson(res, 400, { ok: false, error: error.message });
+      }
+    }
+
+    if (req.method === 'POST' && req.url === '/api/executive-dispatch') {
+      try {
+        const { agentId, taskId } = JSON.parse(await readRequestBody(req));
+        const board = await readKanban();
+        const allTasks = Object.values(board.columns).flat();
+        const task = allTasks.find((item) => item.id === taskId);
+        if (!task) return sendJson(res, 404, { ok: false, error: 'Task not found' });
+        if (!['mario', 'elon', 'warren'].includes(agentId)) return sendJson(res, 400, { ok: false, error: 'Invalid executive' });
+        const result = await dispatchTaskToExecutive(agentId, task);
+        return sendJson(res, 200, { ok: true, result });
       } catch (error) {
         return sendJson(res, 400, { ok: false, error: error.message });
       }

@@ -29,6 +29,7 @@ button {
   cursor: pointer;
 }
 button:disabled { opacity: 0.6; cursor: progress; }
+.secondary-button { background: #21324f; color: var(--text); border: 1px solid var(--line); }
 main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .hero, .split { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .hero-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
@@ -58,6 +59,7 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .audit-controls, .form-grid { display: grid; gap: 0.7rem; }
 .audit-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 0.8rem; }
 .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inline-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .danger-button { background: linear-gradient(135deg, #ffb86b, #ff6d87); }
 .audit-output, .review-box {
   background: #08101e; border: 1px solid var(--line); border-radius: 12px;
@@ -66,7 +68,7 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .audit-output { max-height: 220px; overflow: auto; }
 .review-box { display: grid; gap: 0.7rem; }
 .review-box ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
-.chips, .task-meta, .review-chips { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.chips, .task-meta, .review-chips, .exec-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .chips { margin: 1rem 0 0.2rem; }
 .chip {
   padding: 0.35rem 0.7rem; border-radius: 999px; background: var(--panel); border: 1px solid var(--line);
@@ -74,8 +76,9 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .chip.owner { border-color: rgba(86,194,255,0.45); }
 .chip.lens { border-color: rgba(255,191,71,0.45); }
 .chip.mode { border-color: rgba(125,211,252,0.35); }
-.issues-list { display: grid; gap: 0.9rem; }
-.issue { background: var(--panel); border-left: 4px solid var(--warn); border-radius: 14px; padding: 1rem; }
+.issues-list, .inbox-list { display: grid; gap: 0.9rem; }
+.issue, .inbox-item { background: var(--panel); border-radius: 14px; padding: 1rem; border: 1px solid var(--line); }
+.issue { border-left: 4px solid var(--warn); }
 .issue.critical { border-left-color: var(--critical); }
 .issue.warn { border-left-color: var(--warn); }
 .issue .title-row { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
@@ -92,7 +95,7 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .task-footer { display: flex; justify-content: space-between; align-items: end; gap: 0.5rem; }
 .priority { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.08em; }
 .task-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-.task-actions button { padding: 0.4rem 0.55rem; border-radius: 10px; font-size: 0.85rem; }
+.task-actions button, .exec-actions button { padding: 0.4rem 0.55rem; border-radius: 10px; font-size: 0.85rem; }
 .task-form { display: grid; gap: 0.8rem; }
 .task-form label { display: grid; gap: 0.4rem; }
 .task-form input, .task-form textarea, .task-form select {

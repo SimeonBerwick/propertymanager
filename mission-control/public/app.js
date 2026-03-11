@@ -15,6 +15,8 @@ const securityCounts = document.getElementById('securityCounts');
 const securityLabel = document.getElementById('securityLabel');
 const issuesList = document.getElementById('issuesList');
 const kanbanBoard = document.getElementById('kanbanBoard');
+const executiveInbox = document.getElementById('executiveInbox');
+const dispatchStatus = document.getElementById('dispatchStatus');
 const refreshButton = document.getElementById('refreshButton');
 const addTaskButton = document.getElementById('addTaskButton');
 const taskDialog = document.getElementById('taskDialog');
@@ -120,6 +122,39 @@ function renderConsult(data) {
   `;
 }
 
+function renderInbox(items) {
+  if (!items?.length) {
+    executiveInbox.innerHTML = '<p class="subtle">No executive sessions yet.</p>';
+    return;
+  }
+
+  executiveInbox.innerHTML = items.map((item) => `
+    <article class="inbox-item">
+      <strong>${item.agentId}</strong>
+      <div class="subtle">${item.key || 'session'} · ${item.model || 'unknown model'}</div>
+      <div class="subtle">Updated: ${item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'n/a'}</div>
+    </article>
+  `).join('');
+}
+
+function renderDispatch(dispatch) {
+  if (!dispatch) {
+    dispatchStatus.textContent = 'No executive dispatch yet.';
+    return;
+  }
+
+  dispatchStatus.innerHTML = `
+    <div class="review-box">
+      <div class="review-chips">
+        <span class="chip">${dispatch.agentId}</span>
+        <span class="chip">${dispatch.taskTitle}</span>
+        <span class="chip">${formatTime(dispatch.ranAt)}</span>
+      </div>
+      <pre class="audit-output">${dispatch.result?.output || 'No output.'}</pre>
+    </div>
+  `;
+}
+
 function renderSecurity(security) {
   securityScore.textContent = security.score;
   securityLabel.textContent = `${security.label} · ${security.issues.length} open issue(s)`;
@@ -164,6 +199,16 @@ function taskMeta(task) {
   `;
 }
 
+function executiveButtons(taskId) {
+  return `
+    <div class="exec-actions">
+      <button class="secondary-button" data-send-task="${taskId}" data-agent="mario">Send to Mario</button>
+      <button class="secondary-button" data-send-task="${taskId}" data-agent="elon">Send to Elon</button>
+      <button class="secondary-button" data-send-task="${taskId}" data-agent="warren">Send to Warren</button>
+    </div>
+  `;
+}
+
 function taskCard(task, columnKey) {
   const moveTargets = Object.keys(columnLabels).filter((key) => key !== columnKey);
   return `
@@ -171,6 +216,7 @@ function taskCard(task, columnKey) {
       <h4>${task.title}</h4>
       ${taskMeta(task)}
       <p>${task.description || ''}</p>
+      ${executiveButtons(task.id)}
       <div class="task-footer">
         <span class="priority">${task.priority || 'medium'}</span>
         <div class="task-actions">
@@ -185,6 +231,12 @@ function bindTaskEvents() {
   document.querySelectorAll('[data-move-task]').forEach((button) => {
     button.addEventListener('click', async () => {
       await moveTask(button.dataset.moveTask, button.dataset.targetColumn);
+    });
+  });
+
+  document.querySelectorAll('[data-send-task]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await sendTaskToExecutive(button.dataset.taskId, button.dataset.agent);
     });
   });
 
@@ -237,6 +289,8 @@ async function fetchData({ silent = false } = {}) {
     renderSecurity(missionData.security);
     renderReview(missionData.reviews);
     renderConsult(missionData);
+    renderInbox(missionData.executiveInbox);
+    renderDispatch(missionData.executiveDispatch);
     renderKanban(missionData.kanban);
   } finally {
     refreshButton.disabled = false;
@@ -303,8 +357,8 @@ async function runExecutiveConsult(event) {
   }
 }
 
-async function createDecisionTask(event) {
-  event.preventDefault();
+async function createDecisionTask(event, sendToAgent = null) {
+  if (event) event.preventDefault();
   const formData = new FormData(decisionForm);
   const payload = {
     title: formData.get('title'),
@@ -328,13 +382,32 @@ async function createDecisionTask(event) {
     }
   };
 
-  await fetch('/api/decision-intake', {
+  const response = await fetch('/api/decision-intake', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
+  const created = await response.json();
+
+  if (sendToAgent && created.task?.id) {
+    await fetch('/api/executive-dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: sendToAgent, taskId: created.task.id })
+    });
+  }
 
   decisionForm.reset();
+  await fetchData();
+}
+
+async function sendTaskToExecutive(taskId, agentId) {
+  dispatchStatus.textContent = `Sending task to ${agentId}...`;
+  await fetch('/api/executive-dispatch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taskId, agentId })
+  });
   await fetchData();
 }
 
@@ -351,7 +424,10 @@ addTaskButton.addEventListener('click', () => {
   taskForm.reset();
   taskDialog.showModal();
 });
-decisionForm.addEventListener('submit', createDecisionTask);
+decisionForm.addEventListener('submit', (event) => createDecisionTask(event));
+document.querySelectorAll('[data-decision-send]').forEach((button) => {
+  button.addEventListener('click', () => createDecisionTask(null, button.dataset.decisionSend));
+});
 consultForm.addEventListener('submit', runExecutiveConsult);
 
 taskForm.addEventListener('submit', async (event) => {
