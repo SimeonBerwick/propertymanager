@@ -3,8 +3,8 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "top-priority",
-      "owner": "Mario",
+      "status": "approved-for-full-build",
+      "owner": "Elon",
       "summary": "Streamlined maintenance command center for small landlords: request intake, status tracking, vendor dispatch, tenant updates, and issue history.",
       "stages": {
         "backlog": "complete",
@@ -14,9 +14,11 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Turn PROPERTY_MANAGER_V1.md into a product spec and implementation architecture.",
+      "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
+      "nextStep": "Elon proceeds to full build. Jeff tests after the first finished build is ready.",
       "notes": [
+        "Barry Bot: Sim approved Property Manager V1 for complete build.",
+        "Barry Bot: Jeff is the explicit post-build test gate for this app.",
         "Barry Bot: promoted to one of the two clearest active app tracks.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
