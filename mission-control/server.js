@@ -13,6 +13,7 @@ const publicDir = path.join(__dirname, 'public');
 const dataDir = path.join(__dirname, 'data');
 const kanbanPath = path.join(dataDir, 'kanban.json');
 const port = process.env.PORT || 3210;
+let lastAuditAction = null;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -25,6 +26,15 @@ const mimeTypes = {
 function sendJson(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
+}
+
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
 }
 
 async function readKanban() {
@@ -50,10 +60,15 @@ function scoreLabel(score) {
   return 'Needs attention';
 }
 
+async function runCommand(command) {
+  const { stdout, stderr } = await exec(command, { cwd: path.join(__dirname, '..') });
+  return { stdout, stderr };
+}
+
 async function getMissionControlData() {
   const [healthResult, auditResult, board] = await Promise.all([
-    exec('openclaw health --json', { cwd: path.join(__dirname, '..') }),
-    exec('openclaw security audit --json', { cwd: path.join(__dirname, '..') }),
+    runCommand('openclaw health --json'),
+    runCommand('openclaw security audit --json'),
     readKanban()
   ]);
 
@@ -87,10 +102,36 @@ async function getMissionControlData() {
       score,
       label: scoreLabel(score),
       counts,
-      issues: findings.filter((item) => item.severity !== 'info')
+      issues: findings.filter((item) => item.severity !== 'info'),
+      lastAuditAction
     },
     kanban: board
   };
+}
+
+async function runAuditAction(action) {
+  const command = action === 'fix'
+    ? 'openclaw security audit --fix --json'
+    : 'openclaw security audit --json';
+
+  try {
+    const result = await runCommand(command);
+    lastAuditAction = {
+      action,
+      ok: true,
+      ranAt: new Date().toISOString(),
+      output: result.stdout || result.stderr || 'Done.'
+    };
+    return lastAuditAction;
+  } catch (error) {
+    lastAuditAction = {
+      action,
+      ok: false,
+      ranAt: new Date().toISOString(),
+      output: error.stdout || error.stderr || error.message
+    };
+    return lastAuditAction;
+  }
 }
 
 async function serveStatic(req, res) {
@@ -110,23 +151,30 @@ async function serveStatic(req, res) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && req.url === '/api/mission-control') {
-      const data = await getMissionControlData();
-      return sendJson(res, 200, data);
+      return sendJson(res, 200, await getMissionControlData());
     }
 
     if (req.method === 'PUT' && req.url === '/api/kanban') {
-      let body = '';
-      req.on('data', (chunk) => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const parsed = JSON.parse(body);
-          await writeKanban(parsed);
-          sendJson(res, 200, { ok: true });
-        } catch (error) {
-          sendJson(res, 400, { ok: false, error: error.message });
+      try {
+        const parsed = JSON.parse(await readRequestBody(req));
+        await writeKanban(parsed);
+        return sendJson(res, 200, { ok: true });
+      } catch (error) {
+        return sendJson(res, 400, { ok: false, error: error.message });
+      }
+    }
+
+    if (req.method === 'POST' && req.url === '/api/audit-action') {
+      try {
+        const { action } = JSON.parse(await readRequestBody(req));
+        if (!['run', 'fix'].includes(action)) {
+          return sendJson(res, 400, { ok: false, error: 'Invalid action' });
         }
-      });
-      return;
+        const result = await runAuditAction(action);
+        return sendJson(res, 200, { ok: result.ok, result });
+      } catch (error) {
+        return sendJson(res, 400, { ok: false, error: error.message });
+      }
     }
 
     await serveStatic(req, res);

@@ -14,12 +14,21 @@
           <h1>Operations board</h1>
           <p class="subtle">Live status, security posture, and the work queue in one place.</p>
         </div>
-        <button id="refreshButton">Refresh</button>
+        <div class="hero-actions">
+          <button id="refreshButton">Refresh</button>
+          <label class="auto-refresh-toggle">
+            <input id="autoRefreshToggle" type="checkbox" checked />
+            Auto-refresh
+          </label>
+        </div>
       </header>
 
       <section class="grid top-grid">
         <article class="card status-card">
-          <h2>Status</h2>
+          <div class="card-header split">
+            <h2>Status</h2>
+            <span id="lastUpdated" class="subtle">Loading…</span>
+          </div>
           <div id="statusStats" class="stats"></div>
         </article>
 
@@ -28,8 +37,13 @@
             <h2>Security score</h2>
             <div id="securityScore" class="score-pill">--</div>
           </div>
+          <div class="audit-controls">
+            <button id="runAuditButton">Run audit</button>
+            <button id="fixAuditButton" class="danger-button">Run safe fix</button>
+          </div>
           <div id="securityCounts" class="chips"></div>
           <p id="securityLabel" class="subtle">Loading audit…</p>
+          <pre id="auditOutput" class="audit-output subtle">No audit action run yet.</pre>
         </article>
       </section>
 
@@ -43,7 +57,10 @@
 
       <section class="card kanban-card">
         <div class="card-header split">
-          <h2>Kanban</h2>
+          <div>
+            <h2>Kanban</h2>
+            <p class="subtle">Drag cards between columns.</p>
+          </div>
           <button id="addTaskButton">Add task</button>
         </div>
         <div class="kanban-board" id="kanbanBoard"></div>

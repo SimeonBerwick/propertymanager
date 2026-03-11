@@ -6,6 +6,8 @@ const columnLabels = {
 };
 
 let missionData = null;
+let autoRefreshTimer = null;
+let draggedTaskId = null;
 
 const statusStats = document.getElementById('statusStats');
 const securityScore = document.getElementById('securityScore');
@@ -17,6 +19,11 @@ const refreshButton = document.getElementById('refreshButton');
 const addTaskButton = document.getElementById('addTaskButton');
 const taskDialog = document.getElementById('taskDialog');
 const taskForm = document.getElementById('taskForm');
+const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+const runAuditButton = document.getElementById('runAuditButton');
+const fixAuditButton = document.getElementById('fixAuditButton');
+const auditOutput = document.getElementById('auditOutput');
+const lastUpdated = document.getElementById('lastUpdated');
 
 function ageText(ms) {
   if (!ms && ms !== 0) return 'n/a';
@@ -28,7 +35,16 @@ function ageText(ms) {
   return `${hours}h ago`;
 }
 
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+}
+
 function renderStatus(status) {
+  const channelSummary = status.channels.map((channel) => {
+    const live = channel.connected === true ? 'connected' : channel.linked ? 'linked' : 'offline';
+    return `${channel.key} (${live})`;
+  }).join(', ') || 'none';
+
   const items = [
     ['Primary model', status.primaryModel],
     ['Fallback model', status.fallbackModel],
@@ -37,7 +53,7 @@ function renderStatus(status) {
     ['Active sessions', status.activeSessions],
     ['Latest session', ageText(status.latestSessionAgeMs)],
     ['Heartbeat', `${status.heartbeatMinutes} min`],
-    ['Channels', status.channels.map((c) => c.key).join(', ') || 'none']
+    ['Channels', channelSummary]
   ];
 
   statusStats.innerHTML = items.map(([label, value]) => `
@@ -56,6 +72,13 @@ function renderSecurity(security) {
     ['warn', security.counts.warn || 0],
     ['info', security.counts.info || 0]
   ].map(([level, count]) => `<span class="chip">${level}: ${count}</span>`).join('');
+
+  if (security.lastAuditAction) {
+    const badge = security.lastAuditAction.ok ? 'OK' : 'FAILED';
+    auditOutput.textContent = `[${badge}] ${security.lastAuditAction.action} · ${formatTime(security.lastAuditAction.ranAt)}\n\n${security.lastAuditAction.output}`;
+  } else {
+    auditOutput.textContent = 'No audit action run yet.';
+  }
 
   if (!security.issues.length) {
     issuesList.innerHTML = '<div class="issue"><strong>No open security issues.</strong></div>';
@@ -77,7 +100,7 @@ function renderSecurity(security) {
 function taskCard(task, columnKey) {
   const moveTargets = Object.keys(columnLabels).filter((key) => key !== columnKey);
   return `
-    <article class="task">
+    <article class="task" draggable="true" data-task-id="${task.id}">
       <h4>${task.title}</h4>
       <p>${task.description || ''}</p>
       <div class="task-footer">
@@ -90,9 +113,45 @@ function taskCard(task, columnKey) {
   `;
 }
 
+function bindTaskEvents() {
+  document.querySelectorAll('[data-move-task]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await moveTask(button.dataset.moveTask, button.dataset.targetColumn);
+    });
+  });
+
+  document.querySelectorAll('.task').forEach((taskEl) => {
+    taskEl.addEventListener('dragstart', () => {
+      draggedTaskId = taskEl.dataset.taskId;
+      taskEl.classList.add('dragging');
+    });
+    taskEl.addEventListener('dragend', () => {
+      draggedTaskId = null;
+      taskEl.classList.remove('dragging');
+    });
+  });
+
+  document.querySelectorAll('.column').forEach((columnEl) => {
+    columnEl.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      columnEl.classList.add('drag-over');
+    });
+    columnEl.addEventListener('dragleave', () => {
+      columnEl.classList.remove('drag-over');
+    });
+    columnEl.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      columnEl.classList.remove('drag-over');
+      if (draggedTaskId) {
+        await moveTask(draggedTaskId, columnEl.dataset.columnKey);
+      }
+    });
+  });
+}
+
 function renderKanban(board) {
   kanbanBoard.innerHTML = Object.entries(columnLabels).map(([key, label]) => `
-    <section class="column">
+    <section class="column" data-column-key="${key}">
       <h3>${label}</h3>
       <div class="column-body">
         ${(board.columns[key] || []).map((task) => taskCard(task, key)).join('') || '<p class="subtle">Nothing here.</p>'}
@@ -100,19 +159,21 @@ function renderKanban(board) {
     </section>
   `).join('');
 
-  document.querySelectorAll('[data-move-task]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      await moveTask(button.dataset.moveTask, button.dataset.targetColumn);
-    });
-  });
+  bindTaskEvents();
 }
 
-async function fetchData() {
-  const response = await fetch('/api/mission-control');
-  missionData = await response.json();
-  renderStatus(missionData.status);
-  renderSecurity(missionData.security);
-  renderKanban(missionData.kanban);
+async function fetchData({ silent = false } = {}) {
+  if (!silent) refreshButton.disabled = true;
+  try {
+    const response = await fetch('/api/mission-control');
+    missionData = await response.json();
+    lastUpdated.textContent = `Updated ${formatTime(missionData.generatedAt)}`;
+    renderStatus(missionData.status);
+    renderSecurity(missionData.security);
+    renderKanban(missionData.kanban);
+  } finally {
+    refreshButton.disabled = false;
+  }
 }
 
 async function saveKanban() {
@@ -142,7 +203,37 @@ async function moveTask(taskId, targetColumn) {
   renderKanban(missionData.kanban);
 }
 
-refreshButton.addEventListener('click', fetchData);
+async function runAuditAction(action) {
+  const button = action === 'fix' ? fixAuditButton : runAuditButton;
+  button.disabled = true;
+  auditOutput.textContent = `${action === 'fix' ? 'Applying safe fixes' : 'Running audit'}...`;
+  try {
+    const response = await fetch('/api/audit-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    const result = await response.json();
+    if (!result.ok) {
+      auditOutput.textContent = result.error || 'Action failed.';
+    }
+    await fetchData();
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function syncAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  if (autoRefreshToggle.checked) {
+    autoRefreshTimer = setInterval(() => fetchData({ silent: true }), 30000);
+  }
+}
+
+refreshButton.addEventListener('click', () => fetchData());
+autoRefreshToggle.addEventListener('change', syncAutoRefresh);
+runAuditButton.addEventListener('click', () => runAuditAction('run'));
+fixAuditButton.addEventListener('click', () => runAuditAction('fix'));
 addTaskButton.addEventListener('click', () => {
   taskForm.reset();
   taskDialog.showModal();
@@ -164,4 +255,5 @@ taskForm.addEventListener('submit', async (event) => {
   taskDialog.close();
 });
 
+syncAutoRefresh();
 fetchData();

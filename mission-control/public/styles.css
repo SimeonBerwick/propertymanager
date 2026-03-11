@@ -30,12 +30,15 @@ button {
   font-weight: 700;
   cursor: pointer;
 }
+button:disabled { opacity: 0.6; cursor: progress; }
 main.app-shell {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
 }
 .hero, .split { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.hero-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.auto-refresh-toggle { display: flex; align-items: center; gap: 0.45rem; color: var(--muted); }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-size: 0.8rem; }
 .subtle { color: var(--muted); }
 .grid.top-grid {
@@ -43,6 +46,7 @@ main.app-shell {
   grid-template-columns: 1.3fr 1fr;
   gap: 1rem;
 }
+.card-header { margin-bottom: 0.9rem; }
 .card {
   background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
   border: 1px solid var(--line);
@@ -73,6 +77,17 @@ main.app-shell {
   padding: 0.5rem 0.9rem;
   border-radius: 999px;
   background: var(--panel-2);
+}
+.audit-controls { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.danger-button { background: linear-gradient(135deg, #ffb86b, #ff6d87); }
+.audit-output {
+  background: #08101e;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem;
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
 }
 .chips { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 1rem 0 0.2rem; }
 .chip {
@@ -107,14 +122,16 @@ main.app-shell {
   padding: 0.85rem;
   min-height: 320px;
 }
+.column.drag-over { outline: 2px dashed var(--accent); background: rgba(86,194,255,0.08); }
 .column h3 { margin-top: 0; }
-.column-body { display: grid; gap: 0.7rem; }
+.column-body { display: grid; gap: 0.7rem; min-height: 220px; }
 .task {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 0.8rem;
 }
+.task.dragging { opacity: 0.45; }
 .task h4 { margin: 0 0 0.35rem; }
 .task p { margin: 0 0 0.7rem; color: var(--muted); font-size: 0.95rem; }
 .task-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
