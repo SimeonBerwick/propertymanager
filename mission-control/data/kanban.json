@@ -2,6 +2,15 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-1773255874567",
+        "title": "Realtor Drone Aid",
+        "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
+        "priority": "medium",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": []
+      },
+      {
         "id": "task-1773254257803",
         "title": "Realtor Aid",
         "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
@@ -73,6 +82,10 @@
         "executionScore": 3,
         "notes": [
           {
+            "text": "Barry Bot: first concrete shortlist captured in SHORTLIST_APP_IDEAS.md. Strongest buckets: clipboard/text workflow, audio/device switching, file preview/triage, and single-purpose PowerToys-style utilities. Weak buckets: cosmetic customization and commodity archive tools.",
+            "ts": 1773259600000
+          },
+          {
             "text": "Warren: Focus on desktop-control and workflow utilities with recurring pain. Best categories: clipboard/text workflow, file workflow, audio/device switching. Avoid cosmetic-only utilities and broad consumer apps with weak conversion.",
             "ts": 1773257600000
           },
@@ -81,7 +94,7 @@
             "ts": 1773257500000
           },
           {
-            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "text": "Mario: Don\u2019t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
             "ts": 1773257400000
           },
           {
