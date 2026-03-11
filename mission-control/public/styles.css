@@ -62,7 +62,11 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .app-stage.not-started { color: var(--muted); }
 .org-chart { display: grid; gap: 0.3rem; margin-bottom: 1rem; padding: 0.35rem; }
 .org-top { display: flex; justify-content: center; }
-.org-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; }
+.org-row { display: grid; gap: 0.8rem; }
+.leadership-row { grid-template-columns: repeat(4, 1fr); }
+.jeff-row { grid-template-columns: minmax(220px, 320px); justify-content: start; max-width: 25%; }
+.org-subtree { display: grid; gap: 0.5rem; margin-top: 0.2rem; }
+.subtree-line { width: 2px; height: 18px; background: rgba(255,255,255,0.18); margin-left: 12.5%; }
 .org-tree-lines { display: grid; justify-items: center; gap: 0; margin: 0.2rem 0 0.6rem; }
 .vertical-line { width: 2px; height: 18px; background: rgba(255,255,255,0.18); }
 .horizontal-line { width: min(80%, 900px); height: 2px; background: rgba(255,255,255,0.18); }
