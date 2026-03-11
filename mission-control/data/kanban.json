@@ -2,48 +2,6 @@
   "columns": {
     "backlog": [
       {
-        "id": "task-1773251865400",
-        "title": "Finding app ideas",
-        "description": "Find successful apps in windows store that do not exist in apple store",
-        "priority": "high",
-        "owner": "Elon",
-        "roleLens": "Mario",
-        "deadline": "",
-        "decisionMode": "stage-gate",
-        "strategyScore": 3,
-        "technologyScore": 3,
-        "financeScore": 3,
-        "executionScore": 3
-      },
-      {
-        "id": "task-1773251862315",
-        "title": "Finding app ideas",
-        "description": "Find successful apps in windows store that do not exist in apple store",
-        "priority": "high",
-        "owner": "Elon",
-        "roleLens": "Mario",
-        "deadline": "",
-        "decisionMode": "stage-gate",
-        "strategyScore": 3,
-        "technologyScore": 3,
-        "financeScore": 3,
-        "executionScore": 3
-      },
-      {
-        "id": "task-1773251861186",
-        "title": "Finding app ideas",
-        "description": "Find successful apps in windows store that do not exist in apple store",
-        "priority": "high",
-        "owner": "Elon",
-        "roleLens": "Mario",
-        "deadline": "",
-        "decisionMode": "stage-gate",
-        "strategyScore": 3,
-        "technologyScore": 3,
-        "financeScore": 3,
-        "executionScore": 3
-      },
-      {
         "id": "task-4",
         "title": "Decide whether Control UI will ever sit behind a reverse proxy",
         "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
@@ -52,7 +10,40 @@
         "roleLens": "Warren"
       }
     ],
-    "inProgress": [],
+    "inProgress": [
+      {
+        "id": "task-1773251865400",
+        "title": "Finding app ideas",
+        "description": "Find successful apps in Windows Store that do not exist in Apple Store.",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Mario",
+        "deadline": "",
+        "decisionMode": "stage-gate",
+        "strategyScore": 3,
+        "technologyScore": 3,
+        "financeScore": 3,
+        "executionScore": 3,
+        "notes": [
+          {
+            "text": "Warren: Focus on desktop-control and workflow utilities with recurring pain. Best categories: clipboard/text workflow, file workflow, audio/device switching. Avoid cosmetic-only utilities and broad consumer apps with weak conversion.",
+            "ts": 1773257600000
+          },
+          {
+            "text": "Elon: Fastest credible path is a 48-hour sprint: scrape 200-500 Windows candidates across transferable categories, score by reviews/ratings/polish, narrow to 50-75, manually verify Apple absence, then produce a top-10 list with MVP difficulty and monetization angle.",
+            "ts": 1773257500000
+          },
+          {
+            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "ts": 1773257400000
+          },
+          {
+            "text": "Barry Bot: deduplicated three duplicate backlog cards into this single canonical task and moved it to In Progress.",
+            "ts": 1773256900000
+          }
+        ]
+      }
+    ],
     "blocked": [],
     "complete": [
       {
