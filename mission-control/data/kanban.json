@@ -44,26 +44,16 @@
         "roleLens": "Mario",
         "notes": [
           {
+            "text": "Barry Bot: elevated as a top active app track. Streamlined v1 concept is documented in PROPERTY_MANAGER_V1.md.",
+            "ts": 1773266900000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
           {
             "text": "Mario: start as a maintenance command center for small landlords. Exclude accounting, rent, leases, screening, big owner portals, and feature gravity traps from v1.",
             "ts": 1773266320000
-          }
-        ]
-      },
-      {
-        "id": "task-1773255874567",
-        "title": "Realtor Drone Aid",
-        "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
-        "priority": "high",
-        "owner": "Elon",
-        "roleLens": "Elon",
-        "notes": [
-          {
-            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
-            "ts": 1773264200000
           }
         ]
       },
@@ -75,6 +65,10 @@
         "owner": "Elon",
         "roleLens": "Elon",
         "notes": [
+          {
+            "text": "Barry Bot: elevated as a top active app track after Elon said this should be pursued now as the main realtor build.",
+            "ts": 1773266900000
+          },
           {
             "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
             "ts": 1773264200000
@@ -103,7 +97,7 @@
         "id": "task-1773251865400",
         "title": "Finding app ideas",
         "description": "Find successful apps in Windows Store that do not exist in Apple Store.",
-        "priority": "high",
+        "priority": "medium",
         "owner": "Elon",
         "roleLens": "Mario",
         "deadline": "",
@@ -113,6 +107,10 @@
         "financeScore": 3,
         "executionScore": 3,
         "notes": [
+          {
+            "text": "Barry Bot: kept active as supporting research, but demoted below the current core build tracks now that it has already produced the shortlist and MVP direction.",
+            "ts": 1773266900000
+          },
           {
             "text": "Barry Bot: second pass complete. Top recommendation is a role-specific clipboard workflow utility. Decision pack written to TOP5_APP_OPPORTUNITIES.md with ranked Top 5 and an MVP spec for the best candidate.",
             "ts": 1773260500000
@@ -136,6 +134,24 @@
           {
             "text": "Barry Bot: deduplicated three duplicate backlog cards into this single canonical task and moved it to In Progress.",
             "ts": 1773256900000
+          }
+        ]
+      },
+      {
+        "id": "task-1773255874567",
+        "title": "Realtor Drone Aid",
+        "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
+        "priority": "medium",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Barry Bot: demoted to a weaker/secondary R&D track after Elon said it should not be the primary build due to accuracy and trust risk.",
+            "ts": 1773266900000
+          },
+          {
+            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
+            "ts": 1773264200000
           }
         ]
       }
