@@ -14,8 +14,10 @@ const dataDir = path.join(__dirname, 'data');
 const kanbanPath = path.join(dataDir, 'kanban.json');
 const reviewsPath = path.join(dataDir, 'reviews.json');
 const decisionTemplatePath = path.join(dataDir, 'decision-template.json');
+const advisoryRoutingPath = path.join(dataDir, 'advisory-routing.json');
 const port = process.env.PORT || 3210;
 let lastAuditAction = null;
+let lastExecutiveConsult = null;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -70,6 +72,30 @@ async function runCommand(command) {
   return { stdout, stderr };
 }
 
+function shellEscape(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+async function consultExecutive(agentId, perspective, prompt) {
+  const command = `openclaw agent --agent ${agentId} --message ${shellEscape(prompt)}`;
+  try {
+    const result = await runCommand(command);
+    return {
+      agentId,
+      perspective,
+      ok: true,
+      output: (result.stdout || result.stderr || '').trim()
+    };
+  } catch (error) {
+    return {
+      agentId,
+      perspective,
+      ok: false,
+      output: (error.stdout || error.stderr || error.message || '').trim()
+    };
+  }
+}
+
 function taskFromDecision(decision) {
   return {
     id: `task-${Date.now()}`,
@@ -88,12 +114,13 @@ function taskFromDecision(decision) {
 }
 
 async function getMissionControlData() {
-  const [healthResult, auditResult, board, reviews, decisionTemplate] = await Promise.all([
+  const [healthResult, auditResult, board, reviews, decisionTemplate, advisoryRouting] = await Promise.all([
     runCommand('openclaw health --json'),
     runCommand('openclaw security audit --json'),
     readKanban(),
     readJson(reviewsPath),
-    readJson(decisionTemplatePath)
+    readJson(decisionTemplatePath),
+    readJson(advisoryRoutingPath)
   ]);
 
   const health = JSON.parse(healthResult.stdout);
@@ -131,7 +158,9 @@ async function getMissionControlData() {
     },
     kanban: board,
     reviews,
-    decisionTemplate
+    decisionTemplate,
+    advisoryRouting,
+    executiveConsult: lastExecutiveConsult
   };
 }
 
@@ -158,6 +187,22 @@ async function runAuditAction(action) {
     };
     return lastAuditAction;
   }
+}
+
+async function runExecutiveConsult(prompt) {
+  const rubric = [
+    ['mario', 'Strategy'],
+    ['elon', 'Technology'],
+    ['warren', 'Finance']
+  ];
+  const fullPrompt = `Evaluate this for Sim from your role. Be concise and practical. Return: 1) verdict 2) top concern 3) best next step.\n\n${prompt}`;
+  const results = await Promise.all(rubric.map(([agentId, perspective]) => consultExecutive(agentId, perspective, fullPrompt)));
+  lastExecutiveConsult = {
+    ranAt: new Date().toISOString(),
+    prompt,
+    results
+  };
+  return lastExecutiveConsult;
 }
 
 async function serveStatic(req, res) {
@@ -200,6 +245,17 @@ const server = http.createServer(async (req, res) => {
         board.columns[column].unshift(task);
         await writeKanban(board);
         return sendJson(res, 200, { ok: true, task });
+      } catch (error) {
+        return sendJson(res, 400, { ok: false, error: error.message });
+      }
+    }
+
+    if (req.method === 'POST' && req.url === '/api/executive-consult') {
+      try {
+        const { prompt } = JSON.parse(await readRequestBody(req));
+        if (!prompt?.trim()) return sendJson(res, 400, { ok: false, error: 'Prompt is required' });
+        const result = await runExecutiveConsult(prompt.trim());
+        return sendJson(res, 200, { ok: true, result });
       } catch (error) {
         return sendJson(res, 400, { ok: false, error: error.message });
       }

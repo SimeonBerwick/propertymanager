@@ -56,7 +56,22 @@
           <div id="weeklyReview"></div>
         </section>
 
-        <section class="card intake-card">
+        <section class="card consult-card">
+          <div class="card-header split">
+            <h2>Executive consult</h2>
+            <span class="subtle">Query the real Mario / Elon / Warren agents</span>
+          </div>
+          <form id="consultForm" class="task-form">
+            <label>Prompt<textarea id="consultPrompt" name="prompt" rows="5" placeholder="Ask all three executives to evaluate a move, plan, product, or risk."></textarea></label>
+            <button id="consultButton" type="submit">Run through Mario / Elon / Warren</button>
+          </form>
+          <div id="consultResults" class="consult-results subtle">No executive consult run yet.</div>
+          <div id="advisoryRouting" class="subtle"></div>
+        </section>
+      </section>
+
+      <section class="grid top-grid lower-grid">
+        <section class="card intake-card full-width">
           <div class="card-header split">
             <h2>Decision intake</h2>
             <span class="subtle">Create structured work from the framework</span>

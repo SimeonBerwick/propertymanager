@@ -1,0 +1,13 @@
+{
+  "mode": "direct-agent-invocation",
+  "notes": [
+    "Mario, Elon, and Warren are available as real OpenClaw agents.",
+    "Mission Control can consult them directly without rebinding Sim's main chat.",
+    "Deliberate channel/session binding should be done only when you choose a specific surface to hand over."
+  ],
+  "recommendedCommands": [
+    "openclaw agent --agent mario --message \"<prompt>\"",
+    "openclaw agent --agent elon --message \"<prompt>\"",
+    "openclaw agent --agent warren --message \"<prompt>\""
+  ]
+}

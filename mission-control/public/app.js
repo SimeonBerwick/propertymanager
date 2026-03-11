@@ -26,6 +26,10 @@ const auditOutput = document.getElementById('auditOutput');
 const lastUpdated = document.getElementById('lastUpdated');
 const weeklyReview = document.getElementById('weeklyReview');
 const decisionForm = document.getElementById('decisionForm');
+const consultForm = document.getElementById('consultForm');
+const consultButton = document.getElementById('consultButton');
+const consultResults = document.getElementById('consultResults');
+const advisoryRouting = document.getElementById('advisoryRouting');
 
 function ageText(ms) {
   if (!ms && ms !== 0) return 'n/a';
@@ -82,6 +86,36 @@ function renderReview(reviews) {
         <strong>Checkpoints</strong>
         <ul>${review.checkpoints.map((item) => `<li>${item}</li>`).join('')}</ul>
       </div>
+    </div>
+  `;
+}
+
+function renderConsult(data) {
+  const route = data.advisoryRouting;
+  advisoryRouting.innerHTML = `
+    <div class="review-box">
+      <strong>Direct agent route</strong>
+      <ul>${route.notes.map((item) => `<li>${item}</li>`).join('')}</ul>
+    </div>
+  `;
+
+  if (!data.executiveConsult) {
+    consultResults.textContent = 'No executive consult run yet.';
+    return;
+  }
+
+  consultResults.innerHTML = `
+    <div class="review-box">
+      <div class="review-chips">
+        <span class="chip">Ran ${formatTime(data.executiveConsult.ranAt)}</span>
+      </div>
+      <p><strong>Prompt:</strong> ${data.executiveConsult.prompt}</p>
+      ${data.executiveConsult.results.map((result) => `
+        <div class="consult-result ${result.ok ? '' : 'failed'}">
+          <strong>${result.perspective} · ${result.agentId}</strong>
+          <pre class="audit-output">${result.output || 'No output.'}</pre>
+        </div>
+      `).join('')}
     </div>
   `;
 }
@@ -202,6 +236,7 @@ async function fetchData({ silent = false } = {}) {
     renderStatus(missionData.status);
     renderSecurity(missionData.security);
     renderReview(missionData.reviews);
+    renderConsult(missionData);
     renderKanban(missionData.kanban);
   } finally {
     refreshButton.disabled = false;
@@ -248,6 +283,23 @@ async function runAuditAction(action) {
     await fetchData();
   } finally {
     button.disabled = false;
+  }
+}
+
+async function runExecutiveConsult(event) {
+  event.preventDefault();
+  const prompt = new FormData(consultForm).get('prompt');
+  consultButton.disabled = true;
+  consultResults.textContent = 'Consulting Mario / Elon / Warren...';
+  try {
+    await fetch('/api/executive-consult', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    await fetchData();
+  } finally {
+    consultButton.disabled = false;
   }
 }
 
@@ -300,6 +352,7 @@ addTaskButton.addEventListener('click', () => {
   taskDialog.showModal();
 });
 decisionForm.addEventListener('submit', createDecisionTask);
+consultForm.addEventListener('submit', runExecutiveConsult);
 
 taskForm.addEventListener('submit', async (event) => {
   event.preventDefault();
