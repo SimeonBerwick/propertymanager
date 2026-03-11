@@ -24,7 +24,7 @@
     {
       "id": "app-realtor-aid",
       "name": "Realtor Aid",
-      "status": "top-priority",
+      "status": "approved-for-full-build",
       "owner": "Elon",
       "summary": "Photorealistic virtual staging app for listing photos; strongest current realtor build path.",
       "stages": {
@@ -35,9 +35,11 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Get Elon’s MVP architecture and first prototype slice into implementation-ready form.",
+      "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
+      "nextStep": "Elon proceeds to full build. Jeff tests after the first finished build is ready.",
       "notes": [
+        "Barry Bot: Sim approved Realtor Aid for complete build.",
+        "Barry Bot: Jeff is the explicit post-build test gate for this app.",
         "Barry Bot: promoted to one of the two clearest active app tracks.",
         "Elon: this is worth pursuing now as the main realtor build."
       ]
