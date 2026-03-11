@@ -3,20 +3,22 @@
     {
       "id": "app-clipboard-workflow",
       "name": "Clipboard Workflow Utility",
-      "status": "paused-waiting-for-mac",
+      "status": "windows-execution-started",
       "owner": "Elon",
-      "summary": "Role-specific clipboard workflow utility for prosumers; paused until Sim has a Mac/Xcode environment.",
+      "summary": "Role-specific clipboard workflow utility for prosumers; now reframed as Windows-first, with Chrome later as a secondary surface.",
       "stages": {
         "backlog": "complete",
-        "building": "not-started",
+        "building": "in-progress",
         "appleApproval": "not-started",
         "chromeApproval": "not-started",
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
       "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Resume once a Mac/Xcode environment is available.",
+      "nextStep": "Windows-first M1: WPF shell, text-only clipboard listener, SQLite persistence for last 100 items, recent history list, and click-to-copy loop.",
       "notes": [
+        "Barry Bot: reactivated on a Windows-first path so work can continue before Sim has a Mac.",
+        "Elon: Windows-first plan uses a WPF desktop shell with text-only clipboard listener, SQLite persistence, and a basic recent-history loop. Chrome should be a later phase, not the primary product surface.",
         "Barry Bot: paused while Sim finds a Mac. Elon already produced scaffold/build-plan work, but actual compilation is blocked by platform.",
         "Barry Bot: Elon has been told to proceed to completion from the current build plan and is now in active execution mode.",
         "Elon: technical plan ready. Stack: macOS + SwiftUI + Swift + local persistence. Start with M1 core engine, then snippets, search, and global hotkey.",
