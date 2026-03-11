@@ -1,15 +1,16 @@
 # Clipboard Workflow Utility
 
-A macOS-first, local-first clipboard workflow app for repeated text work.
+A Windows-first, local-first clipboard workflow app for repeated text work.
 
 ## Product direction
 Build a role-specific clipboard workflow utility rather than a generic clipboard manager.
 
 ## Target platform
-- macOS desktop first
-- SwiftUI + Swift
-- Local-first persistence
+- Windows desktop first
+- WPF + .NET 8 + C#
+- Local-first persistence with SQLite
 - No backend/auth/sync in v1
+- Chrome is a later companion surface, not the core product
 
 ## MVP milestones
 - M1: clipboard capture + local history
@@ -19,7 +20,7 @@ Build a role-specific clipboard workflow utility rather than a generic clipboard
 - M5: privacy/polish/release hardening
 
 ## Current status
-Scaffolded architecture and M1 implementation skeleton.
+Windows-first architecture and M1 implementation scaffold created.
 
 ## Notes
-This workspace is running under Linux/WSL, so the macOS app cannot be compiled here. The code is structured to be opened on macOS in Xcode and continued there.
+This workspace currently lacks `dotnet`, so the WPF app cannot be built or run here. The code is structured to be opened on a Windows machine with the .NET desktop workload.

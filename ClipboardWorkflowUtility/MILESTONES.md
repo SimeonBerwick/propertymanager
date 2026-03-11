@@ -1,22 +1,20 @@
 # Milestone Tracker
 
 ## M1 — Clipboard capture + local history
-Status: In progress
-- [x] Define app architecture
-- [x] Define data models
-- [x] Create clipboard watcher skeleton
-- [x] Create local repository protocol and in-memory implementation
+Status: Scaffolded for Windows
+- [x] Define Windows-first app architecture
+- [x] Define Windows data models
+- [x] Create WPF app shell files
+- [x] Create clipboard listener service skeleton
+- [x] Create SQLite repository skeleton
 - [x] Create history view model skeleton
-- [x] Create SwiftUI history screen skeleton
-- [ ] Wire SQLite/GRDB persistence
-- [ ] Add app settings and retention configuration
-- [ ] Validate on macOS host
+- [x] Create history window XAML skeleton
+- [ ] Validate on Windows host
+- [ ] Wire actual SQLite package/reference and build
 
 ## M2 — Snippet library
-Status: Scaffolded
-- [x] Snippet repository protocol
-- [x] In-memory snippet repository
-- [x] Snippet view model skeleton
+Status: Not started
+- [ ] Snippet CRUD
 - [ ] Save history item as snippet
 - [ ] Folders/tags UI
 - [ ] Pinning
@@ -41,4 +39,4 @@ Status: Not started
 - [ ] Clear history
 - [ ] Ignore sensitive sources
 - [ ] Retention settings
-- [ ] Release checklist
+- [ ] Installer/signing/release checklist
