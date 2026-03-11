@@ -110,7 +110,8 @@ function taskFromDecision(decision) {
     strategyScore: decision.scores?.strategy ?? 3,
     technologyScore: decision.scores?.technology ?? 3,
     financeScore: decision.scores?.finance ?? 3,
-    executionScore: decision.scores?.execution ?? 3
+    executionScore: decision.scores?.execution ?? 3,
+    notes: decision.notes || []
   };
 }
 
@@ -126,12 +127,11 @@ async function getExecutiveInbox() {
 }
 
 async function getMissionControlData() {
-  const [healthResult, auditResult, board, reviews, decisionTemplate, advisoryRouting, executiveInbox] = await Promise.all([
+  const [healthResult, auditResult, board, reviews, advisoryRouting, executiveInbox] = await Promise.all([
     runCommand('openclaw health --json'),
     runCommand('openclaw security audit --json'),
     readKanban(),
     readJson(reviewsPath),
-    readJson(decisionTemplatePath),
     readJson(advisoryRoutingPath),
     getExecutiveInbox()
   ]);
@@ -171,7 +171,6 @@ async function getMissionControlData() {
     },
     kanban: board,
     reviews,
-    decisionTemplate,
     advisoryRouting,
     executiveConsult: lastExecutiveConsult,
     executiveDispatch: lastExecutiveDispatch,
@@ -263,14 +262,15 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    if (req.method === 'POST' && req.url === '/api/decision-intake') {
+    if (req.method === 'POST' && req.url === '/api/task-note') {
       try {
-        const decision = JSON.parse(await readRequestBody(req));
+        const { taskId, note } = JSON.parse(await readRequestBody(req));
         const board = await readKanban();
-        const column = decision.column || 'backlog';
-        const task = taskFromDecision(decision);
-        board.columns[column] = board.columns[column] || [];
-        board.columns[column].unshift(task);
+        const allTasks = Object.values(board.columns).flat();
+        const task = allTasks.find((item) => item.id === taskId);
+        if (!task) return sendJson(res, 404, { ok: false, error: 'Task not found' });
+        task.notes = task.notes || [];
+        task.notes.unshift({ text: note, ts: Date.now() });
         await writeKanban(board);
         return sendJson(res, 200, { ok: true, task });
       } catch (error) {
@@ -287,6 +287,9 @@ const server = http.createServer(async (req, res) => {
         if (!task) return sendJson(res, 404, { ok: false, error: 'Task not found' });
         if (!['mario', 'elon', 'warren'].includes(agentId)) return sendJson(res, 400, { ok: false, error: 'Invalid executive' });
         const result = await dispatchTaskToExecutive(agentId, task);
+        task.notes = task.notes || [];
+        task.notes.unshift({ text: `${agentId}: ${result.result?.output || 'No output.'}`, ts: Date.now() });
+        await writeKanban(board);
         return sendJson(res, 200, { ok: true, result });
       } catch (error) {
         return sendJson(res, 400, { ok: false, error: error.message });
