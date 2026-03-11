@@ -5,9 +5,38 @@ const columnLabels = {
   complete: 'Complete'
 };
 
+const orgRoles = {
+  sim: {
+    name: 'Sim', title: 'Principal / Owner', emoji: '👑', agentId: null,
+    summary: 'Final authority on priorities, direction, budgets, and overrides.',
+    owns: ['Direction', 'Approvals', 'Final decisions']
+  },
+  barry: {
+    name: 'Barry Bot', title: 'Chief of Staff', emoji: 'BB', agentId: 'main',
+    summary: 'Front door, coordinator, planner, and synthesizer across the executive team.',
+    owns: ['Execution', 'Coordination', 'Planning']
+  },
+  mario: {
+    name: 'Mario', title: 'CEO', emoji: '🎯', agentId: 'mario',
+    summary: 'Long-term strategy, leverage, positioning, and sequencing.',
+    owns: ['Strategy', 'Growth direction', 'Positioning']
+  },
+  elon: {
+    name: 'Elon', title: 'CTO', emoji: '⚙️', agentId: 'elon',
+    summary: 'First-principles technical thinking, systems, architecture, and automation.',
+    owns: ['Architecture', 'Systems', 'Technical truth']
+  },
+  warren: {
+    name: 'Warren', title: 'CFO', emoji: '💼', agentId: 'warren',
+    summary: 'Cash flow stability, downside protection, durability, and financial discipline.',
+    owns: ['Cash flow', 'Risk control', 'Durability']
+  }
+};
+
 let missionData = null;
 let autoRefreshTimer = null;
 let draggedTaskId = null;
+let activeRole = 'sim';
 
 const statusStats = document.getElementById('statusStats');
 const securityScore = document.getElementById('securityScore');
@@ -17,6 +46,8 @@ const issuesList = document.getElementById('issuesList');
 const kanbanBoard = document.getElementById('kanbanBoard');
 const executiveInbox = document.getElementById('executiveInbox');
 const dispatchStatus = document.getElementById('dispatchStatus');
+const orgChart = document.getElementById('orgChart');
+const orgDetail = document.getElementById('orgDetail');
 const refreshButton = document.getElementById('refreshButton');
 const addTaskButton = document.getElementById('addTaskButton');
 const taskDialog = document.getElementById('taskDialog');
@@ -27,7 +58,6 @@ const fixAuditButton = document.getElementById('fixAuditButton');
 const auditOutput = document.getElementById('auditOutput');
 const lastUpdated = document.getElementById('lastUpdated');
 const weeklyReview = document.getElementById('weeklyReview');
-const decisionForm = document.getElementById('decisionForm');
 const consultForm = document.getElementById('consultForm');
 const consultButton = document.getElementById('consultButton');
 const consultResults = document.getElementById('consultResults');
@@ -90,6 +120,73 @@ function renderReview(reviews) {
       </div>
     </div>
   `;
+}
+
+function renderOrgChart() {
+  orgChart.innerHTML = `
+    <div class="org-top">
+      <button class="org-node ${activeRole === 'sim' ? 'active' : ''}" data-org-role="sim">👑<span>Sim</span><small>Principal</small></button>
+    </div>
+    <div class="org-line"></div>
+    <div class="org-row">
+      <button class="org-node ${activeRole === 'barry' ? 'active' : ''}" data-org-role="barry">BB<span>Barry Bot</span><small>Chief of Staff</small></button>
+      <button class="org-node ${activeRole === 'mario' ? 'active' : ''}" data-org-role="mario">🎯<span>Mario</span><small>CEO</small></button>
+      <button class="org-node ${activeRole === 'elon' ? 'active' : ''}" data-org-role="elon">⚙️<span>Elon</span><small>CTO</small></button>
+      <button class="org-node ${activeRole === 'warren' ? 'active' : ''}" data-org-role="warren">💼<span>Warren</span><small>CFO</small></button>
+    </div>
+  `;
+
+  document.querySelectorAll('[data-org-role]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeRole = button.dataset.orgRole;
+      renderOrgChart();
+      renderOrgDetail();
+    });
+  });
+}
+
+function renderOrgDetail() {
+  const role = orgRoles[activeRole];
+  const agentActions = role.agentId && role.agentId !== 'main'
+    ? `<div class="inline-actions">
+         <button class="secondary-button" data-org-consult="${role.agentId}">Ask ${role.name}</button>
+         <button class="secondary-button" data-org-create-task="${role.name}">Create task for ${role.name}</button>
+       </div>`
+    : `<div class="inline-actions">
+         <button class="secondary-button" data-org-create-task="${role.name}">Create task for ${role.name}</button>
+       </div>`;
+
+  orgDetail.innerHTML = `
+    <div class="review-box">
+      <div class="review-chips">
+        <span class="chip">${role.emoji}</span>
+        <span class="chip">${role.title}</span>
+        ${role.agentId ? `<span class="chip">agent: ${role.agentId}</span>` : '<span class="chip">human principal</span>'}
+      </div>
+      <p>${role.summary}</p>
+      <div>
+        <strong>Owns</strong>
+        <ul>${role.owns.map((item) => `<li>${item}</li>`).join('')}</ul>
+      </div>
+      ${agentActions}
+    </div>
+  `;
+
+  document.querySelectorAll('[data-org-consult]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const prompt = `Give Sim a concise ${role.title} take on the current priorities and biggest next move.`;
+      consultSingleExecutive(button.dataset.orgConsult, prompt);
+    });
+  });
+
+  document.querySelectorAll('[data-org-create-task]').forEach((button) => {
+    button.addEventListener('click', () => {
+      taskForm.reset();
+      taskForm.querySelector('[name="owner"]').value = button.dataset.orgCreateTask;
+      taskForm.querySelector('[name="roleLens"]').value = button.dataset.orgCreateTask === 'Barry Bot' ? 'Barry Bot' : button.dataset.orgCreateTask;
+      taskDialog.showModal();
+    });
+  });
 }
 
 function renderConsult(data) {
@@ -288,6 +385,8 @@ async function fetchData({ silent = false } = {}) {
     renderStatus(missionData.status);
     renderSecurity(missionData.security);
     renderReview(missionData.reviews);
+    renderOrgChart();
+    renderOrgDetail();
     renderConsult(missionData);
     renderInbox(missionData.executiveInbox);
     renderDispatch(missionData.executiveDispatch);
@@ -357,48 +456,19 @@ async function runExecutiveConsult(event) {
   }
 }
 
-async function createDecisionTask(event, sendToAgent = null) {
-  if (event) event.preventDefault();
-  const formData = new FormData(decisionForm);
-  const payload = {
-    title: formData.get('title'),
-    whyNow: formData.get('whyNow'),
-    successLooksLike: formData.get('successLooksLike'),
-    owner: formData.get('owner'),
-    roleLens: formData.get('roleLens'),
-    priority: formData.get('priority'),
-    column: formData.get('column'),
-    marioView: formData.get('marioView'),
-    elonView: formData.get('elonView'),
-    warrenView: formData.get('warrenView'),
-    barrySynthesis: formData.get('barrySynthesis'),
-    nextActions: formData.get('nextActions'),
-    decisionMode: formData.get('decisionMode'),
-    scores: {
-      strategy: Number(formData.get('strategy')),
-      technology: Number(formData.get('technology')),
-      finance: Number(formData.get('finance')),
-      execution: Number(formData.get('execution'))
-    }
-  };
-
-  const response = await fetch('/api/decision-intake', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const created = await response.json();
-
-  if (sendToAgent && created.task?.id) {
-    await fetch('/api/executive-dispatch', {
+async function consultSingleExecutive(agentId, prompt) {
+  consultButton.disabled = true;
+  consultResults.textContent = `Consulting ${agentId}...`;
+  try {
+    await fetch('/api/executive-consult', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: sendToAgent, taskId: created.task.id })
+      body: JSON.stringify({ prompt })
     });
+    await fetchData();
+  } finally {
+    consultButton.disabled = false;
   }
-
-  decisionForm.reset();
-  await fetchData();
 }
 
 async function sendTaskToExecutive(taskId, agentId) {
@@ -423,10 +493,6 @@ fixAuditButton.addEventListener('click', () => runAuditAction('fix'));
 addTaskButton.addEventListener('click', () => {
   taskForm.reset();
   taskDialog.showModal();
-});
-decisionForm.addEventListener('submit', (event) => createDecisionTask(event));
-document.querySelectorAll('[data-decision-send]').forEach((button) => {
-  button.addEventListener('click', () => createDecisionTask(null, button.dataset.decisionSend));
 });
 consultForm.addEventListener('submit', runExecutiveConsult);
 

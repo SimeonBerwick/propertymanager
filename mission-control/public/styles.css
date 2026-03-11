@@ -83,6 +83,18 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .issue.warn { border-left-color: var(--warn); }
 .issue .title-row { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
 .issue p { margin: 0.4rem 0; color: var(--muted); }
+.org-chart { display: grid; gap: 1rem; margin-bottom: 1rem; }
+.org-top { display: flex; justify-content: center; }
+.org-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; }
+.org-line { height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); }
+.org-node {
+  display: grid; gap: 0.2rem; justify-items: center; text-align: center; min-height: 110px;
+  background: #16243b; color: var(--text); border: 1px solid var(--line);
+}
+.org-node span { font-weight: 800; }
+.org-node small { color: var(--muted); }
+.org-node.active { outline: 2px solid var(--accent); background: #1a3155; }
+.org-detail { min-height: 160px; }
 .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 .column { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 16px; padding: 0.85rem; min-height: 320px; }
 .column.drag-over { outline: 2px dashed var(--accent); background: rgba(86,194,255,0.08); }
@@ -101,9 +113,8 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .task-form input, .task-form textarea, .task-form select {
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem;
 }
-.decision-form { max-height: 760px; overflow: auto; padding-right: 0.3rem; }
 menu { display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0; margin: 0.4rem 0 0; }
 @media (max-width: 960px) {
-  .grid.top-grid, .grid.lower-grid, .kanban-board, .form-grid, .audit-controls { grid-template-columns: 1fr; }
+  .grid.top-grid, .grid.lower-grid, .kanban-board, .form-grid, .audit-controls, .org-row { grid-template-columns: 1fr; }
   .hero { flex-direction: column; align-items: flex-start; }
 }

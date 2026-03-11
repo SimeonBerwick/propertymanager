@@ -2,6 +2,48 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-1773251865400",
+        "title": "Finding app ideas",
+        "description": "Find successful apps in windows store that do not exist in apple store",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Mario",
+        "deadline": "",
+        "decisionMode": "stage-gate",
+        "strategyScore": 3,
+        "technologyScore": 3,
+        "financeScore": 3,
+        "executionScore": 3
+      },
+      {
+        "id": "task-1773251862315",
+        "title": "Finding app ideas",
+        "description": "Find successful apps in windows store that do not exist in apple store",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Mario",
+        "deadline": "",
+        "decisionMode": "stage-gate",
+        "strategyScore": 3,
+        "technologyScore": 3,
+        "financeScore": 3,
+        "executionScore": 3
+      },
+      {
+        "id": "task-1773251861186",
+        "title": "Finding app ideas",
+        "description": "Find successful apps in windows store that do not exist in apple store",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Mario",
+        "deadline": "",
+        "decisionMode": "stage-gate",
+        "strategyScore": 3,
+        "technologyScore": 3,
+        "financeScore": 3,
+        "executionScore": 3
+      },
+      {
         "id": "task-4",
         "title": "Decide whether Control UI will ever sit behind a reverse proxy",
         "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",

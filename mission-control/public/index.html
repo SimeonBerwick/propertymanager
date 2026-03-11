@@ -71,75 +71,13 @@
       </section>
 
       <section class="grid top-grid lower-grid">
-        <section class="card intake-card full-width">
+        <section class="card org-card full-width">
           <div class="card-header split">
-            <h2>Decision intake</h2>
-            <span class="subtle">Create structured work from the framework</span>
+            <h2>Interactive org chart</h2>
+            <span class="subtle">Click a role to inspect and route work</span>
           </div>
-          <form id="decisionForm" class="task-form decision-form">
-            <label>Decision title<input name="title" required /></label>
-            <label>Why now<textarea name="whyNow" rows="2"></textarea></label>
-            <label>Success looks like<textarea name="successLooksLike" rows="2"></textarea></label>
-            <div class="form-grid">
-              <label>Owner
-                <select name="owner">
-                  <option>Barry Bot</option>
-                  <option>Sim</option>
-                  <option>Mario</option>
-                  <option>Elon</option>
-                  <option>Warren</option>
-                </select>
-              </label>
-              <label>Role lens
-                <select name="roleLens">
-                  <option>Barry Bot</option>
-                  <option>Mario</option>
-                  <option>Elon</option>
-                  <option>Warren</option>
-                  <option>Sim</option>
-                </select>
-              </label>
-              <label>Priority
-                <select name="priority">
-                  <option value="low">Low</option>
-                  <option value="medium" selected>Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label>Column
-                <select name="column">
-                  <option value="backlog">Backlog</option>
-                  <option value="inProgress">In Progress</option>
-                  <option value="blocked">Blocked</option>
-                </select>
-              </label>
-            </div>
-            <div class="inline-actions">
-              <button type="submit" id="createDecisionButton">Create decision task</button>
-              <button type="button" class="secondary-button" data-decision-send="mario">Create + send to Mario</button>
-              <button type="button" class="secondary-button" data-decision-send="elon">Create + send to Elon</button>
-              <button type="button" class="secondary-button" data-decision-send="warren">Create + send to Warren</button>
-            </div>
-            <label>Mario view<textarea name="marioView" rows="2"></textarea></label>
-            <label>Elon view<textarea name="elonView" rows="2"></textarea></label>
-            <label>Warren view<textarea name="warrenView" rows="2"></textarea></label>
-            <label>Barry Bot synthesis<textarea name="barrySynthesis" rows="2"></textarea></label>
-            <label>Next actions<textarea name="nextActions" rows="2"></textarea></label>
-            <div class="form-grid">
-              <label>Strategy score<input type="number" min="1" max="5" name="strategy" value="3" /></label>
-              <label>Technology score<input type="number" min="1" max="5" name="technology" value="3" /></label>
-              <label>Finance score<input type="number" min="1" max="5" name="finance" value="3" /></label>
-              <label>Execution score<input type="number" min="1" max="5" name="execution" value="3" /></label>
-            </div>
-            <label>Decision mode
-              <select name="decisionMode">
-                <option value="execute now">Execute now</option>
-                <option value="stage-gate" selected>Stage-gate</option>
-                <option value="defer">Defer</option>
-                <option value="reject">Reject</option>
-              </select>
-            </label>
-          </form>
+          <div class="org-chart" id="orgChart"></div>
+          <div class="org-detail" id="orgDetail"></div>
         </section>
       </section>
 
