@@ -2,25 +2,37 @@
   "columns": {
     "backlog": [
       {
-        "id": "task-1",
-        "title": "Fix readable credentials directory permissions",
-        "description": "Change ~/.openclaw/credentials to 700.",
-        "priority": "high"
-      },
-      {
-        "id": "task-2",
-        "title": "Correct ineffective denyCommands entries",
-        "description": "Replace invalid command IDs in gateway.nodes.denyCommands with exact supported command names.",
-        "priority": "medium"
+        "id": "task-4",
+        "title": "Decide whether Control UI will ever sit behind a reverse proxy",
+        "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
+        "priority": "low"
       }
     ],
     "inProgress": [],
     "blocked": [],
     "complete": [
       {
+        "id": "task-1",
+        "title": "Fix readable credentials directory permissions",
+        "description": "Changed ~/.openclaw/credentials to 700.",
+        "priority": "high"
+      },
+      {
+        "id": "task-2",
+        "title": "Correct ineffective denyCommands entries",
+        "description": "Removed invalid gateway.nodes.denyCommands entries that were not actually enforceable.",
+        "priority": "medium"
+      },
+      {
         "id": "task-3",
         "title": "Build Mission Control board",
         "description": "Create dashboard for status, health, security score, issues, and Kanban workflow.",
+        "priority": "high"
+      },
+      {
+        "id": "task-5",
+        "title": "Remove unsafe small-model fallback",
+        "description": "Removed ollama/qwen3.5:4b fallback so the critical sandboxing warning is gone.",
         "priority": "high"
       }
     ]
