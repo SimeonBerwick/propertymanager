@@ -18,9 +18,41 @@
             "ts": 1773259310000
           }
         ]
+      },
+      {
+        "id": "task-1773266190597-deferred",
+        "title": "Property Manager deferred features",
+        "description": "Hold rent collection, accounting, leases, screening, owner financial reporting, vendor marketplace, and broader platform complexity until the streamlined maintenance command center proves value.",
+        "priority": "medium",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Barry Bot: deferred feature set documented in PROPERTY_MANAGER_DEFERRED.md so the streamlined v1 can stay sharp.",
+            "ts": 1773266500000
+          }
+        ]
       }
     ],
     "inProgress": [
+      {
+        "id": "task-1773266190597",
+        "title": "Property Manager",
+        "description": "Streamlined property manager app focused on maintenance request intake, status tracking, vendor dispatch, tenant updates, and property/unit issue history for small landlords.",
+        "priority": "high",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
+            "ts": 1773266500000
+          },
+          {
+            "text": "Mario: start as a maintenance command center for small landlords. Exclude accounting, rent, leases, screening, big owner portals, and feature gravity traps from v1.",
+            "ts": 1773266320000
+          }
+        ]
+      },
       {
         "id": "task-1773255874567",
         "title": "Realtor Drone Aid",
