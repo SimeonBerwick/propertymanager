@@ -77,6 +77,14 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 }
 
+function roleStatus(roleKey) {
+  const role = orgRoles[roleKey];
+  if (!missionData?.executiveInbox?.length || !role.agentId) return { label: role.agentId ? 'idle' : 'human', className: role.agentId ? 'idle' : 'human' };
+  const hit = missionData.executiveInbox.find((item) => item.agentId === role.agentId);
+  if (!hit) return { label: role.agentId === 'main' ? 'front door' : 'idle', className: role.agentId === 'main' ? 'active' : 'idle' };
+  return { label: 'active', className: 'active' };
+}
+
 function renderStatus(status) {
   const channelSummary = status.channels.map((channel) => {
     const live = channel.connected === true ? 'connected' : channel.linked ? 'linked' : 'offline';
@@ -123,16 +131,28 @@ function renderReview(reviews) {
 }
 
 function renderOrgChart() {
+  const node = (key) => {
+    const role = orgRoles[key];
+    const status = roleStatus(key);
+    return `<button class="org-node ${activeRole === key ? 'active' : ''}" data-org-role="${key}" data-drop-role="${key}">
+      <div class="org-emoji">${role.emoji}</div>
+      <span>${role.name}</span>
+      <small>${role.title}</small>
+      <div class="node-status ${status.className}">${status.label}</div>
+    </button>`;
+  };
+
   orgChart.innerHTML = `
-    <div class="org-top">
-      <button class="org-node ${activeRole === 'sim' ? 'active' : ''}" data-org-role="sim">👑<span>Sim</span><small>Principal</small></button>
+    <div class="org-top">${node('sim')}</div>
+    <div class="org-tree-lines">
+      <div class="vertical-line"></div>
+      <div class="horizontal-line"></div>
     </div>
-    <div class="org-line"></div>
     <div class="org-row">
-      <button class="org-node ${activeRole === 'barry' ? 'active' : ''}" data-org-role="barry">BB<span>Barry Bot</span><small>Chief of Staff</small></button>
-      <button class="org-node ${activeRole === 'mario' ? 'active' : ''}" data-org-role="mario">🎯<span>Mario</span><small>CEO</small></button>
-      <button class="org-node ${activeRole === 'elon' ? 'active' : ''}" data-org-role="elon">⚙️<span>Elon</span><small>CTO</small></button>
-      <button class="org-node ${activeRole === 'warren' ? 'active' : ''}" data-org-role="warren">💼<span>Warren</span><small>CFO</small></button>
+      ${node('barry')}
+      ${node('mario')}
+      ${node('elon')}
+      ${node('warren')}
     </div>
   `;
 
@@ -141,6 +161,20 @@ function renderOrgChart() {
       activeRole = button.dataset.orgRole;
       renderOrgChart();
       renderOrgDetail();
+    });
+  });
+
+  document.querySelectorAll('[data-drop-role]').forEach((nodeEl) => {
+    nodeEl.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      nodeEl.classList.add('drag-over');
+    });
+    nodeEl.addEventListener('dragleave', () => nodeEl.classList.remove('drag-over'));
+    nodeEl.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      nodeEl.classList.remove('drag-over');
+      if (!draggedTaskId) return;
+      await assignTaskToRole(draggedTaskId, nodeEl.dataset.dropRole);
     });
   });
 }
@@ -168,6 +202,7 @@ function renderOrgDetail() {
         <strong>Owns</strong>
         <ul>${role.owns.map((item) => `<li>${item}</li>`).join('')}</ul>
       </div>
+      <p class="subtle">Tip: drag a Kanban card onto a role node to assign ownership and lens.</p>
       ${agentActions}
     </div>
   `;
@@ -402,6 +437,27 @@ async function saveKanban() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(missionData.kanban)
   });
+}
+
+function findTask(taskId) {
+  for (const key of Object.keys(missionData.kanban.columns)) {
+    const found = missionData.kanban.columns[key].find((task) => task.id === taskId);
+    if (found) return found;
+  }
+  return null;
+}
+
+async function assignTaskToRole(taskId, roleKey) {
+  const task = findTask(taskId);
+  const role = orgRoles[roleKey];
+  if (!task || !role) return;
+  task.owner = role.name;
+  task.roleLens = role.name === 'Barry Bot' ? 'Barry Bot' : role.name;
+  await saveKanban();
+  renderKanban(missionData.kanban);
+  activeRole = roleKey;
+  renderOrgChart();
+  renderOrgDetail();
 }
 
 async function moveTask(taskId, targetColumn) {
