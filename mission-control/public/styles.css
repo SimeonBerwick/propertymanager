@@ -1,0 +1,138 @@
+:root {
+  color-scheme: dark;
+  --bg: #07111f;
+  --panel: #101b2d;
+  --panel-2: #14243d;
+  --text: #eef4ff;
+  --muted: #9eb0cf;
+  --accent: #56c2ff;
+  --critical: #ff5a77;
+  --warn: #ffbf47;
+  --info: #7dd3fc;
+  --line: rgba(255,255,255,0.08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: radial-gradient(circle at top, #102344, var(--bg) 45%);
+  color: var(--text);
+}
+button, input, textarea, select {
+  font: inherit;
+}
+button {
+  background: var(--accent);
+  color: #001321;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+main.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.hero, .split { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-size: 0.8rem; }
+.subtle { color: var(--muted); }
+.grid.top-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1rem;
+}
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.2rem;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+  margin-bottom: 1rem;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.8rem;
+}
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.9rem;
+}
+.stat .label { color: var(--muted); font-size: 0.86rem; margin-bottom: 0.35rem; }
+.stat .value { font-size: 1.2rem; font-weight: 800; }
+.score-pill {
+  min-width: 84px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+.chips { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 1rem 0 0.2rem; }
+.chip {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.issues-list {
+  display: grid;
+  gap: 0.9rem;
+}
+.issue {
+  background: var(--panel);
+  border-left: 4px solid var(--warn);
+  border-radius: 14px;
+  padding: 1rem;
+}
+.issue.critical { border-left-color: var(--critical); }
+.issue.warn { border-left-color: var(--warn); }
+.issue .title-row { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
+.issue p { margin: 0.4rem 0; color: var(--muted); }
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.column {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.85rem;
+  min-height: 320px;
+}
+.column h3 { margin-top: 0; }
+.column-body { display: grid; gap: 0.7rem; }
+.task {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.8rem;
+}
+.task h4 { margin: 0 0 0.35rem; }
+.task p { margin: 0 0 0.7rem; color: var(--muted); font-size: 0.95rem; }
+.task-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.priority { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.08em; }
+.task-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.task-actions button { padding: 0.4rem 0.55rem; border-radius: 10px; font-size: 0.85rem; }
+.dialog::backdrop { background: rgba(0,0,0,0.55); }
+.task-form { display: grid; gap: 0.8rem; min-width: min(90vw, 420px); }
+.task-form label { display: grid; gap: 0.4rem; }
+.task-form input, .task-form textarea, .task-form select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+menu { display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0; margin: 0.4rem 0 0; }
+@media (max-width: 960px) {
+  .grid.top-grid, .kanban-board { grid-template-columns: 1fr; }
+  .hero { flex-direction: column; align-items: flex-start; }
+}

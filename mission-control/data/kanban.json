@@ -1,0 +1,28 @@
+{
+  "columns": {
+    "backlog": [
+      {
+        "id": "task-1",
+        "title": "Fix readable credentials directory permissions",
+        "description": "Change ~/.openclaw/credentials to 700.",
+        "priority": "high"
+      },
+      {
+        "id": "task-2",
+        "title": "Correct ineffective denyCommands entries",
+        "description": "Replace invalid command IDs in gateway.nodes.denyCommands with exact supported command names.",
+        "priority": "medium"
+      }
+    ],
+    "inProgress": [],
+    "blocked": [],
+    "complete": [
+      {
+        "id": "task-3",
+        "title": "Build Mission Control board",
+        "description": "Create dashboard for status, health, security score, issues, and Kanban workflow.",
+        "priority": "high"
+      }
+    ]
+  }
+}

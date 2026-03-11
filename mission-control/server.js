@@ -1,0 +1,140 @@
+import http from 'node:http';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { exec as execCb } from 'node:child_process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const exec = promisify(execCb);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, 'public');
+const dataDir = path.join(__dirname, 'data');
+const kanbanPath = path.join(dataDir, 'kanban.json');
+const port = process.env.PORT || 3210;
+
+const mimeTypes = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml'
+};
+
+function sendJson(res, status, body) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(body));
+}
+
+async function readKanban() {
+  const raw = await readFile(kanbanPath, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function writeKanban(board) {
+  await writeFile(kanbanPath, JSON.stringify(board, null, 2) + '\n', 'utf8');
+}
+
+function computeScore(findings) {
+  const weights = { critical: 30, warn: 10, info: 0 };
+  let penalty = 0;
+  for (const finding of findings) penalty += weights[finding.severity] ?? 5;
+  return Math.max(0, 100 - penalty);
+}
+
+function scoreLabel(score) {
+  if (score >= 90) return 'Solid';
+  if (score >= 75) return 'Okay';
+  if (score >= 60) return 'Shaky';
+  return 'Needs attention';
+}
+
+async function getMissionControlData() {
+  const [healthResult, auditResult, board] = await Promise.all([
+    exec('openclaw health --json', { cwd: path.join(__dirname, '..') }),
+    exec('openclaw security audit --json', { cwd: path.join(__dirname, '..') }),
+    readKanban()
+  ]);
+
+  const health = JSON.parse(healthResult.stdout);
+  const audit = JSON.parse(auditResult.stdout);
+  const findings = audit.findings ?? [];
+  const counts = findings.reduce((acc, item) => {
+    acc[item.severity] = (acc[item.severity] || 0) + 1;
+    return acc;
+  }, { critical: 0, warn: 0, info: 0 });
+
+  const score = computeScore(findings);
+  const session = health.agents?.[0]?.sessions?.recent?.[0] ?? null;
+  const channelKeys = Object.keys(health.channels ?? {});
+  const channels = channelKeys.map((key) => ({ key, ...(health.channels[key] || {}) }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    status: {
+      primaryModel: 'openai-codex/gpt-5.4',
+      fallbackModel: 'ollama/qwen3.5:4b',
+      gatewayReachable: health.gateway?.reachable ?? false,
+      gatewayMode: health.gateway?.mode ?? 'unknown',
+      defaultAgentId: health.defaultAgentId,
+      activeSessions: health.sessions?.count ?? 0,
+      latestSessionAgeMs: session?.age ?? null,
+      heartbeatMinutes: Math.round((health.heartbeatSeconds ?? 0) / 60),
+      channels
+    },
+    security: {
+      score,
+      label: scoreLabel(score),
+      counts,
+      issues: findings.filter((item) => item.severity !== 'info')
+    },
+    kanban: board
+  };
+}
+
+async function serveStatic(req, res) {
+  const target = req.url === '/' ? '/index.html' : req.url;
+  const filePath = path.join(publicDir, target);
+  if (!filePath.startsWith(publicDir) || !existsSync(filePath)) {
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+  const ext = path.extname(filePath);
+  const content = await readFile(filePath);
+  res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+  res.end(content);
+}
+
+const server = http.createServer(async (req, res) => {
+  try {
+    if (req.method === 'GET' && req.url === '/api/mission-control') {
+      const data = await getMissionControlData();
+      return sendJson(res, 200, data);
+    }
+
+    if (req.method === 'PUT' && req.url === '/api/kanban') {
+      let body = '';
+      req.on('data', (chunk) => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body);
+          await writeKanban(parsed);
+          sendJson(res, 200, { ok: true });
+        } catch (error) {
+          sendJson(res, 400, { ok: false, error: error.message });
+        }
+      });
+      return;
+    }
+
+    await serveStatic(req, res);
+  } catch (error) {
+    sendJson(res, 500, { error: error.message });
+  }
+});
+
+server.listen(port, () => {
+  console.log(`Mission Control listening on http://localhost:${port}`);
+});

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mission Control</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">OpenClaw Mission Control</p>
+          <h1>Operations board</h1>
+          <p class="subtle">Live status, security posture, and the work queue in one place.</p>
+        </div>
+        <button id="refreshButton">Refresh</button>
+      </header>
+
+      <section class="grid top-grid">
+        <article class="card status-card">
+          <h2>Status</h2>
+          <div id="statusStats" class="stats"></div>
+        </article>
+
+        <article class="card security-card">
+          <div class="card-header split">
+            <h2>Security score</h2>
+            <div id="securityScore" class="score-pill">--</div>
+          </div>
+          <div id="securityCounts" class="chips"></div>
+          <p id="securityLabel" class="subtle">Loading audit…</p>
+        </article>
+      </section>
+
+      <section class="card issues-card">
+        <div class="card-header split">
+          <h2>Outstanding security issues</h2>
+          <span class="subtle">From built-in audit</span>
+        </div>
+        <div id="issuesList" class="issues-list"></div>
+      </section>
+
+      <section class="card kanban-card">
+        <div class="card-header split">
+          <h2>Kanban</h2>
+          <button id="addTaskButton">Add task</button>
+        </div>
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </section>
+    </main>
+
+    <dialog id="taskDialog">
+      <form method="dialog" id="taskForm" class="task-form">
+        <h3>Create task</h3>
+        <label>Title<input name="title" required /></label>
+        <label>Description<textarea name="description" rows="4"></textarea></label>
+        <label>Priority
+          <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label>Column
+          <select name="column">
+            <option value="backlog">Backlog</option>
+            <option value="inProgress">In Progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="complete">Complete</option>
+          </select>
+        </label>
+        <menu>
+          <button value="cancel" type="reset">Cancel</button>
+          <button id="saveTaskButton" value="default">Save</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
