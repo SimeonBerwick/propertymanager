@@ -6,28 +6,32 @@ import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST_STATUSES } from '@/lib/request-lifecycle';
-import { addInternalNote, updateRequestStatus } from './actions';
+import { addInternalNote, dispatchRequest, updateRequestStatus } from './actions';
 
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const request = await prisma.maintenanceRequest.findUnique({
-    where: { id },
-    include: {
-      property: true,
-      unit: true,
-      tenant: true,
-      assignedVendor: true,
-      attachments: true,
-      events: {
-        orderBy: { createdAt: 'desc' },
+  const [request, vendors] = await Promise.all([
+    prisma.maintenanceRequest.findUnique({
+      where: { id },
+      include: {
+        property: true,
+        unit: true,
+        tenant: true,
+        assignedVendor: true,
+        attachments: true,
+        events: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
-    },
-  });
+    }),
+    prisma.vendor.findMany({ orderBy: [{ trade: 'asc' }, { name: 'asc' }] }),
+  ]);
 
   if (!request) notFound();
 
   const statusAction = updateRequestStatus.bind(null, request.id);
   const noteAction = addInternalNote.bind(null, request.id);
+  const dispatchAction = dispatchRequest.bind(null, request.id);
 
   return (
     <AppShell>
@@ -87,6 +91,33 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </select>
                 </label>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update status</button>
+              </form>
+            </PageSection>
+
+            <PageSection title="Dispatch" description="Assign the vendor, set the next visit, and push a vendor-visible work order note.">
+              <form action={dispatchAction} className="space-y-3">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Assigned vendor</span>
+                  <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    <option value="">Unassigned</option>
+                    {vendors.map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Scheduled visit</span>
+                  <input name="scheduledFor" type="datetime-local" defaultValue={request.scheduledFor ? new Date(request.scheduledFor.getTime() - request.scheduledFor.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" />
+                </label>
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Dispatch note</span>
+                  <textarea name="scopeOfWork" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Scope of work, access notes, parts needed, or arrival window." />
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" name="isVendorVisible" defaultChecked={request.isVendorVisible} />
+                  Share this request with the assigned vendor portal
+                </label>
+                <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Save dispatch</button>
               </form>
             </PageSection>
 

@@ -1,11 +1,21 @@
 'use server';
 
 import { EventVisibility, RequestEventType, RequestStatus, UserRole } from '@prisma/client';
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { canTransition } from '@/lib/request-lifecycle';
 
 const OPERATOR_NAME = 'Olivia Operator';
+
+function getString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getBoolean(formData: FormData, key: string) {
+  return formData.get(key) === 'on';
+}
 
 export async function updateRequestStatus(requestId: string, formData: FormData) {
   const nextStatus = formData.get('status');
@@ -63,4 +73,109 @@ export async function addInternalNote(requestId: string, formData: FormData) {
 
   revalidatePath('/operator/requests');
   revalidatePath(`/operator/requests/${requestId}`);
+}
+
+export async function dispatchRequest(requestId: string, formData: FormData) {
+  const assignedVendorId = getString(formData, 'assignedVendorId');
+  const scheduledForInput = getString(formData, 'scheduledFor');
+  const scopeOfWork = getString(formData, 'scopeOfWork');
+  const isVendorVisible = getBoolean(formData, 'isVendorVisible');
+
+  const request = await prisma.maintenanceRequest.findUnique({
+    where: { id: requestId },
+    include: { assignedVendor: true },
+  });
+
+  if (!request) {
+    redirect('/operator/requests');
+  }
+
+  const nextVendor = assignedVendorId
+    ? await prisma.vendor.findUnique({ where: { id: assignedVendorId } })
+    : null;
+
+  if (assignedVendorId && !nextVendor) {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  const scheduledFor = scheduledForInput ? new Date(scheduledForInput) : null;
+  if (scheduledForInput && Number.isNaN(scheduledFor?.getTime())) {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  const nextStatus = assignedVendorId && scheduledFor && request.status === RequestStatus.NEW
+    ? RequestStatus.SCHEDULED
+    : request.status;
+
+  const events = [] as Array<{
+    type: RequestEventType;
+    actorRole: UserRole;
+    actorName: string;
+    body: string;
+    visibility: EventVisibility;
+  }>;
+
+  if (request.assignedVendorId !== assignedVendorId) {
+    events.push({
+      type: RequestEventType.VENDOR_ASSIGNED,
+      actorRole: UserRole.OPERATOR,
+      actorName: OPERATOR_NAME,
+      body: nextVendor ? `Vendor assigned: ${nextVendor.name}.` : 'Vendor assignment cleared.',
+      visibility: EventVisibility.ALL,
+    });
+  }
+
+  const previousSchedule = request.scheduledFor?.toISOString() ?? null;
+  const nextSchedule = scheduledFor?.toISOString() ?? null;
+  if (previousSchedule !== nextSchedule) {
+    events.push({
+      type: RequestEventType.SCHEDULE_SET,
+      actorRole: UserRole.OPERATOR,
+      actorName: OPERATOR_NAME,
+      body: scheduledFor ? `Dispatch scheduled for ${scheduledFor.toLocaleString('en-US')}.` : 'Scheduled visit cleared.',
+      visibility: EventVisibility.ALL,
+    });
+  }
+
+  if (scopeOfWork) {
+    events.push({
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.OPERATOR,
+      actorName: OPERATOR_NAME,
+      body: scopeOfWork,
+      visibility: isVendorVisible ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
+    });
+  }
+
+  if (request.status !== nextStatus) {
+    events.push({
+      type: RequestEventType.STATUS_CHANGED,
+      actorRole: UserRole.OPERATOR,
+      actorName: OPERATOR_NAME,
+      body: `Status updated to ${nextStatus.replace('_', ' ')} during dispatch.`,
+      visibility: EventVisibility.ALL,
+    });
+  }
+
+  const updated = await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      assignedVendorId: assignedVendorId || null,
+      scheduledFor,
+      isVendorVisible,
+      status: nextStatus,
+      events: events.length > 0 ? { create: events } : undefined,
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/operator/vendors');
+  revalidatePath('/vendor/queue');
+  revalidatePath(`/vendor/requests/${requestId}`);
+  revalidatePath(`/operator/properties/${updated.propertyId}`);
+  revalidatePath(`/operator/units/${updated.unitId}`);
+  revalidatePath(`/tenant/request/${requestId}`);
+  redirect(`/operator/requests/${requestId}`);
 }
