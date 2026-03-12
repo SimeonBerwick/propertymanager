@@ -44,6 +44,13 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Default users: Mario for content/video workflow direction, Barry Bot for coordination and quick packaging guidance, and any build/media support agents working on short-form video or audio tasks
 - Notes: shared context for agents working on video and audio tasks
 
+### KlingAI
+- Account ID: `68920010`
+- Plan: free
+- Use: AI video generation for short-form content and supporting video production workflows
+- Default users: Mario for AI-video-first content direction, Barry Bot for coordination, and any build/media support agents working on AI-generated video tasks
+- Notes: shared context for agents working on video tasks
+
 ---
 
 Add whatever helps you do your job. This is your cheat sheet.
