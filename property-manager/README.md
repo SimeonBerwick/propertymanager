@@ -65,6 +65,14 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Tenant: `tina@example.com` / `tenant123`
 - Vendor: `dispatch@aceplumbing.test` / `vendor123`
 
+## Auth boundary regression tests
+- Run `npm run test:authz` to boot the built app against a disposable SQLite database and verify:
+  - tampered cookie rejection
+  - expired session redirect handling
+  - tenant direct-object access denial
+  - vendor unassigned-request denial
+  - internal-note non-leakage to tenant/vendor surfaces
+
 ## Suggested next build steps
 - Enforce org/property scoping for operator data instead of today’s single-org assumption
 - Add deeper cross-account leakage tests for manipulated request IDs and list queries

@@ -1,0 +1,322 @@
+import assert from 'node:assert/strict';
+import { randomUUID, createHmac } from 'node:crypto';
+import { once } from 'node:events';
+import { mkdir, rm } from 'node:fs/promises';
+import path from 'node:path';
+import { after, before, test } from 'node:test';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { PrismaClient, EventVisibility, RequestEventType, TenantStatus, UserRole } from '@prisma/client';
+import { hashPassword } from '../lib/passwords';
+
+const repoRoot = path.resolve(__dirname, '..');
+const testDbRelativePath = './prisma/auth-boundary-test.db';
+const testDbPath = path.join(repoRoot, 'prisma', 'auth-boundary-test.db');
+const authSecret = 'auth-boundary-test-secret';
+const port = 3305;
+const baseUrl = `http://127.0.0.1:${port}`;
+const sessionCookieName = 'pm_session';
+
+let server: ChildProcess | undefined;
+let prisma: PrismaClient;
+let seededRequestId = '';
+let otherTenantRequestId = '';
+let unassignedVendorRequestId = '';
+let tenantId = '';
+let otherTenantId = '';
+let vendorId = '';
+
+function sign(value: string) {
+  return createHmac('sha256', authSecret).update(value).digest('base64url');
+}
+
+function createSessionCookie(session: Record<string, string | number | undefined>) {
+  const payload = Buffer.from(JSON.stringify(session)).toString('base64url');
+  return `${sessionCookieName}=${payload}.${sign(payload)}`;
+}
+
+async function run(command: string, args: string[], extraEnv: Record<string, string> = {}) {
+  const child = spawn(command, args, {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      DATABASE_URL: `file:${testDbRelativePath}`,
+      AUTH_SECRET: authSecret,
+      ...extraEnv,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  let stderr = '';
+  let stdout = '';
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk.toString();
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  const [code] = (await once(child, 'close')) as [number];
+  if (code !== 0) {
+    throw new Error(`${command} ${args.join(' ')} failed with code ${code}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
+  }
+}
+
+async function waitForServerReady() {
+  const deadline = Date.now() + 30_000;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`${baseUrl}/auth`, { redirect: 'manual' });
+      if (response.status < 500) return;
+    } catch {
+      // server still booting
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error('Timed out waiting for Next server to boot.');
+}
+
+before(async () => {
+  await rm(testDbPath, { force: true });
+  await mkdir(path.dirname(testDbPath), { recursive: true });
+  await run('npx', ['prisma', 'db', 'push', '--skip-generate']);
+  await run('npm', ['run', 'prisma:seed']);
+
+  prisma = new PrismaClient({ datasources: { db: { url: `file:${testDbRelativePath}` } } });
+
+  const [seededRequest, seededTenant, seededVendor, seededUnit] = await Promise.all([
+    prisma.maintenanceRequest.findFirstOrThrow({ orderBy: { createdAt: 'asc' } }),
+    prisma.tenant.findFirstOrThrow({ where: { email: 'tina@example.com' } }),
+    prisma.vendor.findFirstOrThrow({ where: { email: 'dispatch@aceplumbing.test' } }),
+    prisma.unit.findFirstOrThrow({ orderBy: { createdAt: 'asc' } }),
+  ]);
+
+  seededRequestId = seededRequest.id;
+  tenantId = seededTenant.id;
+  vendorId = seededVendor.id;
+
+  const otherTenantPasswordHash = await hashPassword('tenant456');
+  const otherTenant = await prisma.tenant.create({
+    data: {
+      unitId: seededUnit.id,
+      name: 'Terry Tenant',
+      email: 'terry@example.com',
+      phone: '555-0202',
+      status: TenantStatus.ACTIVE,
+      passwordHash: otherTenantPasswordHash,
+    },
+  });
+  otherTenantId = otherTenant.id;
+
+  const otherTenantRequest = await prisma.maintenanceRequest.create({
+    data: {
+      propertyId: seededRequest.propertyId,
+      unitId: seededRequest.unitId,
+      tenantId: otherTenant.id,
+      createdByRole: UserRole.TENANT,
+      title: 'Other tenant private request',
+      description: 'This request belongs to Terry and should never leak to Tina.',
+      category: seededRequest.category,
+      urgency: seededRequest.urgency,
+      status: seededRequest.status,
+      isTenantVisible: true,
+      isVendorVisible: false,
+    },
+  });
+  otherTenantRequestId = otherTenantRequest.id;
+
+  const unassignedRequest = await prisma.maintenanceRequest.create({
+    data: {
+      propertyId: seededRequest.propertyId,
+      unitId: seededRequest.unitId,
+      tenantId: seededTenant.id,
+      createdByRole: UserRole.TENANT,
+      title: 'Unassigned vendor trap',
+      description: 'This request is intentionally not assigned to the vendor test account.',
+      category: seededRequest.category,
+      urgency: seededRequest.urgency,
+      status: seededRequest.status,
+      isTenantVisible: true,
+      isVendorVisible: true,
+      assignedVendorId: null,
+    },
+  });
+  unassignedVendorRequestId = unassignedRequest.id;
+
+  await prisma.requestEvent.create({
+    data: {
+      requestId: seededRequestId,
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.OPERATOR,
+      actorName: 'Olivia Operator',
+      body: 'Internal note: do not leak this note to tenant or vendor portals.',
+      visibility: EventVisibility.INTERNAL,
+    },
+  });
+
+  server = spawn('npm', ['run', 'start', '--', '-p', String(port)], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      DATABASE_URL: `file:${testDbRelativePath}`,
+      AUTH_SECRET: authSecret,
+      PORT: String(port),
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  server?.stdout?.on('data', () => {});
+  server?.stderr?.on('data', () => {});
+
+  await waitForServerReady();
+});
+
+async function stopServer() {
+  if (!server || server.killed) return;
+
+  server.kill('SIGTERM');
+  const closed = once(server, 'close');
+  const timeout = new Promise((resolve) => setTimeout(resolve, 5_000));
+  await Promise.race([closed, timeout]);
+
+  if (!server.killed) {
+    server.kill('SIGKILL');
+    await once(server, 'close');
+  }
+}
+
+after(async () => {
+  await stopServer();
+
+  if (prisma) {
+    await prisma.$disconnect();
+  }
+
+  await rm(testDbPath, { force: true });
+});
+
+test('rejects a tampered session cookie with an auth redirect', async () => {
+  const validCookie = createSessionCookie({
+    role: 'tenant',
+    tenantId,
+    displayName: 'Tina Tenant',
+    email: 'tina@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+  const tamperedCookie = `${validCookie.slice(0, -1)}x`;
+
+  const response = await fetch(`${baseUrl}/tenant/submit`, {
+    headers: { cookie: tamperedCookie },
+    redirect: 'manual',
+  });
+
+  assert.equal(response.status, 307);
+  assert.match(response.headers.get('location') || '', /\/auth\?error=Your%20session%20was%20invalid/);
+});
+
+test('redirects expired sessions back to sign-in with an expiry message', async () => {
+  const expiredCookie = createSessionCookie({
+    role: 'tenant',
+    tenantId,
+    displayName: 'Tina Tenant',
+    email: 'tina@example.com',
+    expiresAt: Date.now() - 60_000,
+  });
+
+  const response = await fetch(`${baseUrl}/tenant/submit`, {
+    headers: { cookie: expiredCookie },
+    redirect: 'manual',
+  });
+
+  assert.equal(response.status, 307);
+  assert.match(response.headers.get('location') || '', /\/auth\?error=Your%20session%20expired/);
+});
+
+test('denies tenant direct-object access to another tenant request', async () => {
+  const tenantCookie = createSessionCookie({
+    role: 'tenant',
+    tenantId,
+    displayName: 'Tina Tenant',
+    email: 'tina@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+
+  const response = await fetch(`${baseUrl}/tenant/request/${otherTenantRequestId}`, {
+    headers: { cookie: tenantCookie },
+    redirect: 'manual',
+  });
+
+  assert.equal(response.status, 404);
+});
+
+test('denies vendor direct-object access to unassigned work', async () => {
+  const vendorCookie = createSessionCookie({
+    role: 'vendor',
+    vendorId,
+    displayName: 'Ace Plumbing',
+    email: 'dispatch@aceplumbing.test',
+    expiresAt: Date.now() + 60_000,
+  });
+
+  const response = await fetch(`${baseUrl}/vendor/requests/${unassignedVendorRequestId}`, {
+    headers: { cookie: vendorCookie },
+    redirect: 'manual',
+  });
+
+  assert.equal(response.status, 404);
+});
+
+test('keeps internal notes off tenant and vendor pages while preserving operator visibility', async () => {
+  const operatorCookie = createSessionCookie({
+    role: 'operator',
+    userId: (await prisma.appUser.findFirstOrThrow({ where: { email: 'olivia@example.com' } })).id,
+    displayName: 'Olivia Operator',
+    email: 'olivia@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+  const tenantCookie = createSessionCookie({
+    role: 'tenant',
+    tenantId,
+    displayName: 'Tina Tenant',
+    email: 'tina@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+  const vendorCookie = createSessionCookie({
+    role: 'vendor',
+    vendorId,
+    displayName: 'Ace Plumbing',
+    email: 'dispatch@aceplumbing.test',
+    expiresAt: Date.now() + 60_000,
+  });
+
+  const [operatorResponse, tenantResponse, vendorResponse] = await Promise.all([
+    fetch(`${baseUrl}/operator/requests/${seededRequestId}`, {
+      headers: { cookie: operatorCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/tenant/request/${seededRequestId}`, {
+      headers: { cookie: tenantCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/vendor/requests/${seededRequestId}`, {
+      headers: { cookie: vendorCookie },
+      redirect: 'manual',
+    }),
+  ]);
+
+  const [operatorHtml, tenantHtml, vendorHtml] = await Promise.all([
+    operatorResponse.text(),
+    tenantResponse.text(),
+    vendorResponse.text(),
+  ]);
+
+  assert.equal(operatorResponse.status, 200);
+  assert.equal(tenantResponse.status, 200);
+  assert.equal(vendorResponse.status, 200);
+
+  assert.match(operatorHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
+  assert.doesNotMatch(tenantHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
+  assert.doesNotMatch(vendorHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
+});
