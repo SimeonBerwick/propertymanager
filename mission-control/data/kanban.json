@@ -144,6 +144,18 @@
             "ts": 1773354780000
           },
           {
+            "text": "Barry Bot: PostgreSQL + pilot deployment planning landed in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md via commit 5493a36, with Vercel + Neon + private Cloudflare R2 recommended as the simplest sane pilot stack.",
+            "ts": 1773370380000
+          },
+          {
+            "text": "Barry Bot: Bob hardened operator organization scoping in commit 8cb7e16 so operator reads, writes, and request actions no longer trust raw IDs across org boundaries.",
+            "ts": 1773370440000
+          },
+          {
+            "text": "Barry Bot: next gate on this slice is Jeff verifying foreign-org access denial and then stabilizing the auth-boundary test harness mismatch on valid-session automated cases.",
+            "ts": 1773370500000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
