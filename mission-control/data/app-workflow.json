@@ -15,7 +15,7 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff cleared auth/authz as PASS WITH CONDITIONS for a controlled private beta; broader QA and hardening are still required before anything beyond that.",
-      "nextStep": "Auth/authz now clears the controlled-private-beta threshold after credential sign-in, server-enforced vendor permissions, invalid-session fixes, and auth boundary integration tests (6230b65, a83f5be, 46221bf, 022bb72). Next: extend automated boundary coverage, tighten operator/org scoping, and continue workflow polish + broader QA.",
+      "nextStep": "Use PROPERTY_MANAGER_SELLABILITY_CHECKLIST.md as the commercialization path. Immediate priorities: PostgreSQL + deployment, real object storage for photos, tighter operator/org scoping, onboarding/password reset, and billing. Chrome and Windows are supported as browser targets because this is a web-first Next.js app, but it is not a native Windows app or Chrome extension.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
@@ -34,6 +34,8 @@
         "Barry Bot: invalid-session 500s were fixed in commit 46221bf by removing cookie mutation from render-time auth checks and preserving fail-closed redirects.",
         "Barry Bot: Jeff cleared the auth/authz slice as PASS WITH CONDITIONS for a controlled private beta after confirming protected routes, ownership scoping, visibility boundaries, and invalid-session redirects are materially correct.",
         "Barry Bot: auth boundary integration tests landed in commit 022bb72 covering tampered cookies, expired sessions, tenant object-access denial, vendor unassigned-request denial, and internal-note non-leakage.",
+        "Barry Bot: sellability path is now documented in PROPERTY_MANAGER_SELLABILITY_CHECKLIST.md with explicit stages for pilot-ready, paid beta-ready, and publicly sellable.",
+        "Barry Bot: Property Manager is Chrome-compatible and Windows-compatible as a deployed web app, but it is not a native Windows application or a Chrome extension.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
     },
