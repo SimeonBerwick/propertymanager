@@ -4,6 +4,7 @@ import { AppShell } from '@/components/app-shell';
 import { PageSection } from '@/components/page-section';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
+import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getVendorPortalData, getVendorVisibleRequest } from '@/lib/vendor-requests';
 
 export default async function VendorRequestDetailPage({
@@ -78,17 +79,21 @@ export default async function VendorRequestDetailPage({
                 <p className="text-sm text-slate-600">No photos were attached to this request.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {request.attachments.map((attachment) => (
-                    <a
-                      key={attachment.id}
-                      href={attachment.storagePath}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                    >
-                      <Image src={attachment.storagePath} alt={`Request attachment ${attachment.id}`} width={640} height={320} className="h-40 w-full object-cover" />
-                    </a>
-                  ))}
+                  {request.attachments.map((attachment) => {
+                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+
+                    return (
+                      <a
+                        key={attachment.id}
+                        href={attachmentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                      >
+                        <Image src={attachmentUrl} alt={`Request attachment ${attachment.id}`} width={640} height={320} className="h-40 w-full object-cover" />
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </PageSection>

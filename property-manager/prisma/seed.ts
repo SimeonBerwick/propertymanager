@@ -108,8 +108,8 @@ async function main() {
         create: [
           {
             uploaderRole: UserRole.TENANT,
-            storagePath: 'seed/kitchen-sink-leak.jpg',
-            mimeType: 'image/jpeg',
+            storagePath: '/seed/kitchen-sink-leak.png',
+            mimeType: 'image/png',
           },
         ],
       },

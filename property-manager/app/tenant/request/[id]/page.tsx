@@ -4,6 +4,7 @@ import { AppShell } from '@/components/app-shell';
 import { PageSection } from '@/components/page-section';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
+import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getTenantVisibleRequest } from '@/lib/tenant-requests';
 
 export default async function TenantRequestStatusPage({
@@ -74,12 +75,16 @@ export default async function TenantRequestStatusPage({
                 <p className="text-sm text-slate-600">No photos attached yet.</p>
               ) : (
                 <div className="grid gap-3">
-                  {request.attachments.map((attachment) => (
-                    <a key={attachment.id} href={attachment.storagePath} target="_blank" className="block overflow-hidden rounded-lg border border-slate-200 no-underline">
-                      <Image src={attachment.storagePath} alt="Request attachment" width={800} height={320} className="h-40 w-full object-cover" />
-                      <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">Open full image</div>
-                    </a>
-                  ))}
+                  {request.attachments.map((attachment) => {
+                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+
+                    return (
+                      <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 no-underline">
+                        <Image src={attachmentUrl} alt="Request attachment" width={800} height={320} className="h-40 w-full object-cover" />
+                        <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">Open full image</div>
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </PageSection>
