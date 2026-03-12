@@ -133,13 +133,11 @@ export async function getSession() {
 
   const decoded = decodeSession(token);
   if (!decoded.ok) {
-    cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
   const canonicalUser = await resolveCanonicalUser(decoded.session);
   if (!canonicalUser) {
-    cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
@@ -234,13 +232,11 @@ export async function requireSession(role?: AppRole) {
 
   const decoded = decodeSession(token);
   if (!decoded.ok) {
-    cookieStore.delete(SESSION_COOKIE);
     redirect(buildAuthRedirect(decoded.reason));
   }
 
   const canonicalUser = await resolveCanonicalUser(decoded.session);
   if (!canonicalUser) {
-    cookieStore.delete(SESSION_COOKIE);
     redirect(buildAuthRedirect('invalid'));
   }
 
