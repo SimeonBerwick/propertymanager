@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parsePropertyInput } from '@/lib/operator-crud';
 import { requireOperatorSession } from '@/lib/auth';
+import { getOperatorPropertyWhere } from '@/lib/operator-scope';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -13,8 +14,8 @@ function getErrorMessage(error: unknown) {
 
 export async function createProperty(formData: FormData) {
   try {
-    await requireOperatorSession();
-    const data = parsePropertyInput(formData);
+    const session = await requireOperatorSession();
+    const data = parsePropertyInput(formData, session.organizationId);
     const property = await prisma.property.create({ data });
 
     revalidatePath('/operator');
@@ -27,13 +28,14 @@ export async function createProperty(formData: FormData) {
 
 export async function updateProperty(propertyId: string, formData: FormData) {
   try {
-    await requireOperatorSession();
-    const data = parsePropertyInput(formData);
+    const session = await requireOperatorSession();
+    const data = parsePropertyInput(formData, session.organizationId);
 
-    await prisma.property.update({
-      where: { id: propertyId },
+    const result = await prisma.property.updateMany({
+      where: getOperatorPropertyWhere(session.organizationId, propertyId),
       data,
     });
+    if (result.count === 0) throw new Error('Property not found in your organization.');
 
     revalidatePath('/operator');
     revalidatePath('/operator/properties');

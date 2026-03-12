@@ -8,14 +8,16 @@ import {
   userRoleOptions,
 } from '@/lib/operator-crud';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { createRequest } from '../actions';
 
 export default async function NewRequestPage({ searchParams }: { searchParams?: Promise<{ error?: string; propertyId?: string; unitId?: string }> }) {
+  const session = await requireOperatorSession();
   const [properties, units, tenants, vendors] = await Promise.all([
-    prisma.property.findMany({ orderBy: { name: 'asc' } }),
-    prisma.unit.findMany({ orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }], include: { property: true } }),
-    prisma.tenant.findMany({ orderBy: { name: 'asc' }, include: { unit: { include: { property: true } } } }),
-    prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
+    prisma.property.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
+    prisma.unit.findMany({ where: { property: { organizationId: session.organizationId } }, orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }], include: { property: true } }),
+    prisma.tenant.findMany({ where: { unit: { property: { organizationId: session.organizationId } } }, orderBy: { name: 'asc' }, include: { unit: { include: { property: true } } } }),
+    prisma.vendor.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
   ]);
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { canTransition } from '@/lib/request-lifecycle';
 import { requireOperatorSession } from '@/lib/auth';
+import { getOperatorRequestWhere, getOperatorVendorWhere } from '@/lib/operator-scope';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -21,7 +22,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   const nextStatus = formData.get('status');
   if (typeof nextStatus !== 'string') return;
 
-  const request = await prisma.maintenanceRequest.findUnique({ where: { id: requestId } });
+  const request = await prisma.maintenanceRequest.findFirst({ where: getOperatorRequestWhere(session.organizationId, requestId) });
   if (!request) return;
 
   if (!Object.values(RequestStatus).includes(nextStatus as RequestStatus)) return;
@@ -61,6 +62,12 @@ export async function addInternalNote(requestId: string, formData: FormData) {
   const body = formData.get('body');
   if (typeof body !== 'string' || !body.trim()) return;
 
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    select: { id: true },
+  });
+  if (!request) return;
+
   await prisma.requestEvent.create({
     data: {
       requestId,
@@ -83,8 +90,8 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
   const scopeOfWork = getString(formData, 'scopeOfWork');
   const isVendorVisible = getBoolean(formData, 'isVendorVisible');
 
-  const request = await prisma.maintenanceRequest.findUnique({
-    where: { id: requestId },
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
     include: { assignedVendor: true },
   });
 
@@ -93,7 +100,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
   }
 
   const nextVendor = assignedVendorId
-    ? await prisma.vendor.findUnique({ where: { id: assignedVendorId } })
+    ? await prisma.vendor.findFirst({ where: getOperatorVendorWhere(session.organizationId, assignedVendorId) })
     : null;
 
   if (assignedVendorId && !nextVendor) {

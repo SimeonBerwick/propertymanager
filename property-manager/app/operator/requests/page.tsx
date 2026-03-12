@@ -3,11 +3,14 @@ import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestStatusLabel } from '@/lib/request-lifecycle';
 
 export default async function RequestsPage() {
+  const session = await requireOperatorSession();
   const requests = await prisma.maintenanceRequest.findMany({
+    where: { property: { organizationId: session.organizationId } }, 
     orderBy: [{ status: 'asc' }, { urgency: 'desc' }, { updatedAt: 'desc' }],
     include: {
       property: true,

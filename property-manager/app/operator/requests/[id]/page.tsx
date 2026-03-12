@@ -4,15 +4,17 @@ import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST_STATUSES } from '@/lib/request-lifecycle';
 import { addInternalNote, dispatchRequest, updateRequestStatus } from './actions';
 
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
   const [request, vendors] = await Promise.all([
-    prisma.maintenanceRequest.findUnique({
-      where: { id },
+    prisma.maintenanceRequest.findFirst({
+      where: { id, property: { organizationId: session.organizationId } }, 
       include: {
         property: true,
         unit: true,
@@ -24,7 +26,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
         },
       },
     }),
-    prisma.vendor.findMany({ orderBy: [{ trade: 'asc' }, { name: 'asc' }] }),
+    prisma.vendor.findMany({ where: { organizationId: session.organizationId }, orderBy: [{ trade: 'asc' }, { name: 'asc' }] }),
   ]);
 
   if (!request) notFound();

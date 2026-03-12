@@ -6,6 +6,12 @@ import {
   UserRole,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import {
+  assertPropertyInOrganization,
+  assertTenantInOrganization,
+  assertUnitInOrganization,
+  assertVendorInOrganization,
+} from '@/lib/operator-scope';
 
 export type ActionState = {
   error?: string;
@@ -39,15 +45,14 @@ function parseOptionalFloat(value: string, label: string) {
   return parsed;
 }
 
-export function parsePropertyInput(formData: FormData): Prisma.PropertyUncheckedCreateInput {
+export function parsePropertyInput(formData: FormData, organizationId: string): Prisma.PropertyUncheckedCreateInput {
   const name = getString(formData, 'name');
   const addressLine1 = getString(formData, 'addressLine1');
   const city = getString(formData, 'city');
   const state = getString(formData, 'state');
   const postalCode = getString(formData, 'postalCode');
-  const organizationId = getString(formData, 'organizationId');
 
-  if (!organizationId) throw new Error('Organization is required. Seed data may be missing.');
+  if (!organizationId) throw new Error('Organization is required.');
   if (!name) throw new Error('Property name is required.');
   if (!addressLine1) throw new Error('Address line 1 is required.');
   if (!city) throw new Error('City is required.');
@@ -66,7 +71,7 @@ export function parsePropertyInput(formData: FormData): Prisma.PropertyUnchecked
   };
 }
 
-export function parseUnitInput(formData: FormData): Prisma.UnitUncheckedCreateInput {
+export async function parseUnitInput(formData: FormData, organizationId: string): Promise<Prisma.UnitUncheckedCreateInput> {
   const propertyId = getString(formData, 'propertyId');
   const label = getString(formData, 'label');
   const bedroomCount = getString(formData, 'bedroomCount');
@@ -74,6 +79,8 @@ export function parseUnitInput(formData: FormData): Prisma.UnitUncheckedCreateIn
 
   if (!propertyId) throw new Error('Property is required.');
   if (!label) throw new Error('Unit label is required.');
+
+  await assertPropertyInOrganization(organizationId, propertyId);
 
   return {
     propertyId,
@@ -84,7 +91,7 @@ export function parseUnitInput(formData: FormData): Prisma.UnitUncheckedCreateIn
   };
 }
 
-export async function parseRequestInput(formData: FormData): Promise<Prisma.MaintenanceRequestUncheckedCreateInput> {
+export async function parseRequestInput(formData: FormData, organizationId: string): Promise<Prisma.MaintenanceRequestUncheckedCreateInput> {
   const propertyId = getString(formData, 'propertyId');
   const unitId = getString(formData, 'unitId');
   const tenantId = getOptionalString(formData, 'tenantId');
@@ -106,19 +113,18 @@ export async function parseRequestInput(formData: FormData): Promise<Prisma.Main
   if (!Object.values(RequestStatus).includes(status as RequestStatus)) throw new Error('Status is invalid.');
   if (!Object.values(UserRole).includes(createdByRole as UserRole)) throw new Error('Created-by role is invalid.');
 
-  const unit = await prisma.unit.findUnique({ where: { id: unitId }, select: { id: true, propertyId: true } });
-  if (!unit) throw new Error('Selected unit was not found.');
+  await assertPropertyInOrganization(organizationId, propertyId);
+
+  const unit = await assertUnitInOrganization(organizationId, unitId);
   if (unit.propertyId !== propertyId) throw new Error('Selected unit does not belong to the selected property.');
 
   if (tenantId) {
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true, unitId: true } });
-    if (!tenant) throw new Error('Selected tenant was not found.');
+    const tenant = await assertTenantInOrganization(organizationId, tenantId);
     if (tenant.unitId !== unitId) throw new Error('Selected tenant does not belong to the selected unit.');
   }
 
   if (assignedVendorId) {
-    const vendor = await prisma.vendor.findUnique({ where: { id: assignedVendorId }, select: { id: true } });
-    if (!vendor) throw new Error('Selected vendor was not found.');
+    await assertVendorInOrganization(organizationId, assignedVendorId);
   }
 
   const scheduledDate = scheduledFor ? new Date(scheduledFor) : null;

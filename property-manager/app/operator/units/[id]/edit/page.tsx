@@ -3,6 +3,7 @@ import { AppShell } from '@/components/app-shell';
 import { ErrorBanner, Field, FormActions, Input, Select } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { updateUnit } from '../../actions';
 
 export default async function EditUnitPage({
@@ -12,10 +13,11 @@ export default async function EditUnitPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ error?: string }>;
 }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
   const [unit, properties] = await Promise.all([
-    prisma.unit.findUnique({ where: { id } }),
-    prisma.property.findMany({ orderBy: { name: 'asc' } }),
+    prisma.unit.findFirst({ where: { id, property: { organizationId: session.organizationId } } }),
+    prisma.property.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
   ]);
 
   if (!unit) notFound();

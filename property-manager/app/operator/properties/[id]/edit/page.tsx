@@ -3,6 +3,7 @@ import { AppShell } from '@/components/app-shell';
 import { ErrorBanner, Field, FormActions, Input, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { updateProperty } from '../../actions';
 
 export default async function EditPropertyPage({
@@ -12,8 +13,9 @@ export default async function EditPropertyPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ error?: string }>;
 }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
-  const property = await prisma.property.findUnique({ where: { id } });
+  const property = await prisma.property.findFirst({ where: { id, organizationId: session.organizationId } });
   if (!property) notFound();
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;

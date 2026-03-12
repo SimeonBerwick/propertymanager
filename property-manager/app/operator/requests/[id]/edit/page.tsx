@@ -9,6 +9,7 @@ import {
   userRoleOptions,
 } from '@/lib/operator-crud';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { updateRequest } from '../../actions';
 
 function formatDateTimeLocal(value: Date | null) {
@@ -24,13 +25,14 @@ export default async function EditRequestPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ error?: string }>;
 }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
   const [request, properties, units, tenants, vendors] = await Promise.all([
-    prisma.maintenanceRequest.findUnique({ where: { id } }),
-    prisma.property.findMany({ orderBy: { name: 'asc' } }),
-    prisma.unit.findMany({ orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }], include: { property: true } }),
-    prisma.tenant.findMany({ orderBy: { name: 'asc' }, include: { unit: { include: { property: true } } } }),
-    prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
+    prisma.maintenanceRequest.findFirst({ where: { id, property: { organizationId: session.organizationId } } }),
+    prisma.property.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
+    prisma.unit.findMany({ where: { property: { organizationId: session.organizationId } }, orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }], include: { property: true } }),
+    prisma.tenant.findMany({ where: { unit: { property: { organizationId: session.organizationId } } }, orderBy: { name: 'asc' }, include: { unit: { include: { property: true } } } }),
+    prisma.vendor.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
   ]);
 
   if (!request) notFound();

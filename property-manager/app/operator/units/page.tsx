@@ -4,9 +4,13 @@ import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
+import { OPEN_REQUEST_STATUSES } from '@/lib/operator-scope';
 
 export default async function UnitsPage() {
+  const session = await requireOperatorSession();
   const units = await prisma.unit.findMany({
+    where: { property: { organizationId: session.organizationId } }, 
     orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }],
     include: {
       property: true,
@@ -14,7 +18,7 @@ export default async function UnitsPage() {
       _count: {
         select: {
           requests: {
-            where: { status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] } },
+            where: { status: { in: OPEN_REQUEST_STATUSES } },
           },
         },
       },

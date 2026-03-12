@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parseUnitInput } from '@/lib/operator-crud';
 import { requireOperatorSession } from '@/lib/auth';
+import { getOperatorUnitWhere } from '@/lib/operator-scope';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -17,8 +18,8 @@ function getErrorMessage(error: unknown) {
 
 export async function createUnit(formData: FormData) {
   try {
-    await requireOperatorSession();
-    const data = parseUnitInput(formData);
+    const session = await requireOperatorSession();
+    const data = await parseUnitInput(formData, session.organizationId);
     const unit = await prisma.unit.create({ data });
 
     revalidatePath('/operator/units');
@@ -32,8 +33,14 @@ export async function createUnit(formData: FormData) {
 
 export async function updateUnit(unitId: string, formData: FormData) {
   try {
-    await requireOperatorSession();
-    const data = parseUnitInput(formData);
+    const session = await requireOperatorSession();
+    const data = await parseUnitInput(formData, session.organizationId);
+    const existingUnit = await prisma.unit.findFirst({
+      where: getOperatorUnitWhere(session.organizationId, unitId),
+      select: { id: true },
+    });
+    if (!existingUnit) throw new Error('Unit not found in your organization.');
+
     const unit = await prisma.unit.update({
       where: { id: unitId },
       data,

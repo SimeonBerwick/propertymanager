@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parseRequestInput } from '@/lib/operator-crud';
 import { requireOperatorSession } from '@/lib/auth';
+import { getOperatorRequestWhere } from '@/lib/operator-scope';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -15,7 +16,7 @@ function getErrorMessage(error: unknown) {
 export async function createRequest(formData: FormData) {
   try {
     const session = await requireOperatorSession();
-    const data = await parseRequestInput(formData);
+    const data = await parseRequestInput(formData, session.organizationId);
     const request = await prisma.maintenanceRequest.create({
       data: {
         ...data,
@@ -46,10 +47,10 @@ export async function createRequest(formData: FormData) {
 export async function updateRequest(requestId: string, formData: FormData) {
   try {
     const session = await requireOperatorSession();
-    const existing = await prisma.maintenanceRequest.findUnique({ where: { id: requestId } });
-    if (!existing) throw new Error('Request not found.');
+    const existing = await prisma.maintenanceRequest.findFirst({ where: getOperatorRequestWhere(session.organizationId, requestId) });
+    if (!existing) throw new Error('Request not found in your organization.');
 
-    const data = await parseRequestInput(formData);
+    const data = await parseRequestInput(formData, session.organizationId);
     const events: Prisma.RequestEventUncheckedCreateWithoutRequestInput[] = [
       {
         type: RequestEventType.COMMENT,

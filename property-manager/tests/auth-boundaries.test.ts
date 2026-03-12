@@ -24,6 +24,11 @@ let unassignedVendorRequestId = '';
 let tenantId = '';
 let otherTenantId = '';
 let vendorId = '';
+let operatorId = '';
+let foreignOperatorId = '';
+let foreignPropertyId = '';
+let foreignUnitId = '';
+let foreignRequestId = '';
 
 function sign(value: string) {
   return createHmac('sha256', authSecret).update(value).digest('base64url');
@@ -86,16 +91,18 @@ before(async () => {
 
   prisma = new PrismaClient({ datasources: { db: { url: `file:${testDbRelativePath}` } } });
 
-  const [seededRequest, seededTenant, seededVendor, seededUnit] = await Promise.all([
+  const [seededRequest, seededTenant, seededVendor, seededUnit, seededOperator] = await Promise.all([
     prisma.maintenanceRequest.findFirstOrThrow({ orderBy: { createdAt: 'asc' } }),
     prisma.tenant.findFirstOrThrow({ where: { email: 'tina@example.com' } }),
     prisma.vendor.findFirstOrThrow({ where: { email: 'dispatch@aceplumbing.test' } }),
     prisma.unit.findFirstOrThrow({ orderBy: { createdAt: 'asc' } }),
+    prisma.appUser.findFirstOrThrow({ where: { email: 'olivia@example.com' } }),
   ]);
 
   seededRequestId = seededRequest.id;
   tenantId = seededTenant.id;
   vendorId = seededVendor.id;
+  operatorId = seededOperator.id;
 
   const otherTenantPasswordHash = await hashPassword('tenant456');
   const otherTenant = await prisma.tenant.create({
@@ -155,6 +162,60 @@ before(async () => {
       visibility: EventVisibility.INTERNAL,
     },
   });
+
+  const foreignOperatorPasswordHash = await hashPassword('operator456');
+  const foreignOrg = await prisma.organization.create({
+    data: {
+      name: 'Canyon Ridge Holdings',
+      users: {
+        create: {
+          name: 'Oscar Operator',
+          email: 'oscar@example.com',
+          role: UserRole.OPERATOR,
+          passwordHash: foreignOperatorPasswordHash,
+        },
+      },
+      properties: {
+        create: {
+          name: 'Canyon Ridge Condos',
+          addressLine1: '202 Mesa Drive',
+          city: 'Tempe',
+          state: 'AZ',
+          postalCode: '85281',
+          units: {
+            create: {
+              label: '9C',
+              occupancyStatus: 'occupied',
+            },
+          },
+        },
+      },
+    },
+    include: {
+      users: true,
+      properties: { include: { units: true } },
+    },
+  });
+
+  foreignOperatorId = foreignOrg.users[0].id;
+  foreignPropertyId = foreignOrg.properties[0].id;
+  foreignUnitId = foreignOrg.properties[0].units[0].id;
+
+  const foreignRequest = await prisma.maintenanceRequest.create({
+    data: {
+      propertyId: foreignPropertyId,
+      unitId: foreignUnitId,
+      createdByRole: UserRole.OPERATOR,
+      title: 'Foreign org boiler issue',
+      description: 'This request belongs to a different organization and should not leak.',
+      category: seededRequest.category,
+      urgency: seededRequest.urgency,
+      status: seededRequest.status,
+      isTenantVisible: false,
+      isVendorVisible: false,
+    },
+  });
+  foreignRequestId = foreignRequest.id;
 
   server = spawn('npm', ['run', 'start', '--', '-p', String(port)], {
     cwd: repoRoot,
@@ -268,10 +329,51 @@ test('denies vendor direct-object access to unassigned work', async () => {
   assert.equal(response.status, 404);
 });
 
+test('operator org scoping blocks foreign-org direct-object access', async () => {
+  const operatorCookie = createSessionCookie({
+    role: 'operator',
+    userId: operatorId,
+    displayName: 'Olivia Operator',
+    email: 'olivia@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+  const foreignOperatorCookie = createSessionCookie({
+    role: 'operator',
+    userId: foreignOperatorId,
+    displayName: 'Oscar Operator',
+    email: 'oscar@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+
+  const [foreignPropertyResponse, foreignUnitResponse, foreignRequestResponse, reverseLeakResponse] = await Promise.all([
+    fetch(`${baseUrl}/operator/properties/${foreignPropertyId}`, {
+      headers: { cookie: operatorCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/operator/units/${foreignUnitId}`, {
+      headers: { cookie: operatorCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/operator/requests/${foreignRequestId}`, {
+      headers: { cookie: operatorCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/operator/requests/${seededRequestId}`, {
+      headers: { cookie: foreignOperatorCookie },
+      redirect: 'manual',
+    }),
+  ]);
+
+  assert.equal(foreignPropertyResponse.status, 404);
+  assert.equal(foreignUnitResponse.status, 404);
+  assert.equal(foreignRequestResponse.status, 404);
+  assert.equal(reverseLeakResponse.status, 404);
+});
+
 test('keeps internal notes off tenant and vendor pages while preserving operator visibility', async () => {
   const operatorCookie = createSessionCookie({
     role: 'operator',
-    userId: (await prisma.appUser.findFirstOrThrow({ where: { email: 'olivia@example.com' } })).id,
+    userId: operatorId,
     displayName: 'Olivia Operator',
     email: 'olivia@example.com',
     expiresAt: Date.now() + 60_000,

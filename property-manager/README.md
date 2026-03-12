@@ -23,6 +23,7 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Credential-based sign-in with seeded operator / tenant / vendor accounts and signed session cookies
 - Explicit unauthorized and expired-session handling for protected pages
 - Vendor-side progress updates on assigned jobs with server-side ownership checks
+- Operator org-scoped sessions plus org-filtered operator reads/writes for properties, units, requests, and dispatch flows
 
 ## Assumptions
 - V1 remains maintenance-only and intentionally avoids broader property-management scope.
@@ -74,8 +75,8 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
   - internal-note non-leakage to tenant/vendor surfaces
 
 ## Suggested next build steps
-- Enforce org/property scoping for operator data instead of today’s single-org assumption
-- Add deeper cross-account leakage tests for manipulated request IDs and list queries
+- Extend org scoping beyond the current operator hardening slice into memberships, invite flows, and eventually row-level posture suitable for PostgreSQL
+- Add deeper cross-account leakage tests for manipulated list queries and cross-org write attempts
 - Expand vendor updates into richer completion / parts / invoice-ready workflow if V1 needs it
 - Replace local SQLite with PostgreSQL when deployment path is chosen
 - Move session storage, password reset, invite flows, and audit logging to a fuller auth subsystem before production use

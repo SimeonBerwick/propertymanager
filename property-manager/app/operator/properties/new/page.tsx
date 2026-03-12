@@ -2,10 +2,12 @@ import { AppShell } from '@/components/app-shell';
 import { ErrorBanner, Field, FormActions, Input, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { createProperty } from '../actions';
 
 export default async function NewPropertyPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
-  const organization = await prisma.organization.findFirst({ orderBy: { createdAt: 'asc' } });
+  const session = await requireOperatorSession();
+  const organization = await prisma.organization.findFirst({ where: { id: session.organizationId } });
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   return (

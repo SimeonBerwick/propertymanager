@@ -11,6 +11,7 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 type SessionData = {
   role: AppRole;
   userId?: string;
+  organizationId?: string;
   tenantId?: string;
   vendorId?: string;
   displayName: string;
@@ -23,6 +24,7 @@ type CanonicalUser = {
   displayName: string;
   email?: string;
   userId?: string;
+  organizationId?: string;
   tenantId?: string;
   vendorId?: string;
 };
@@ -99,10 +101,10 @@ async function resolveCanonicalUser(session: SessionData): Promise<CanonicalUser
   if (session.role === 'operator' && session.userId) {
     const user = await prisma.appUser.findFirst({
       where: { id: session.userId, role: 'OPERATOR' },
-      select: { id: true, name: true, email: true },
+      select: { id: true, organizationId: true, name: true, email: true },
     });
     if (!user) return null;
-    return { role: 'operator', userId: user.id, displayName: user.name, email: user.email };
+    return { role: 'operator', userId: user.id, organizationId: user.organizationId, displayName: user.name, email: user.email };
   }
 
   if (session.role === 'tenant' && session.tenantId) {
@@ -144,6 +146,7 @@ export async function getSession() {
   const normalizedSession: SessionData = {
     role: canonicalUser.role,
     userId: canonicalUser.userId,
+    organizationId: canonicalUser.organizationId,
     tenantId: canonicalUser.tenantId,
     vendorId: canonicalUser.vendorId,
     displayName: canonicalUser.displayName,
@@ -162,7 +165,7 @@ export async function signInWithPassword(role: AppRole, email: string, password:
   if (role === 'operator') {
     const user = await prisma.appUser.findFirst({
       where: { email: normalizedEmail, role: 'OPERATOR' },
-      select: { id: true, name: true, email: true, passwordHash: true },
+      select: { id: true, organizationId: true, name: true, email: true, passwordHash: true },
     });
 
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
@@ -172,6 +175,7 @@ export async function signInWithPassword(role: AppRole, email: string, password:
     await setSession({
       role: 'operator',
       userId: user.id,
+      organizationId: user.organizationId,
       displayName: user.name,
       email: user.email,
       expiresAt: Date.now() + SESSION_TTL_MS,
@@ -243,6 +247,7 @@ export async function requireSession(role?: AppRole) {
   const session: SessionData = {
     role: canonicalUser.role,
     userId: canonicalUser.userId,
+    organizationId: canonicalUser.organizationId,
     tenantId: canonicalUser.tenantId,
     vendorId: canonicalUser.vendorId,
     displayName: canonicalUser.displayName,
@@ -258,7 +263,11 @@ export async function requireSession(role?: AppRole) {
 }
 
 export async function requireOperatorSession() {
-  return requireSession('operator');
+  const session = await requireSession('operator');
+  if (!session.userId || !session.organizationId) {
+    redirect('/auth?error=Operator%20session%20is%20invalid.');
+  }
+  return session as SessionData & { role: 'operator'; userId: string; organizationId: string };
 }
 
 export async function requireTenantSession() {

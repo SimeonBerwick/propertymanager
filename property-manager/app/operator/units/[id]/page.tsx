@@ -5,12 +5,14 @@ import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { formatDate } from '@/lib/operator-data';
 
 export default async function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
-  const unit = await prisma.unit.findUnique({
-    where: { id },
+  const unit = await prisma.unit.findFirst({
+    where: { id, property: { organizationId: session.organizationId } },
     include: {
       property: true,
       tenants: { orderBy: { createdAt: 'desc' } },

@@ -4,15 +4,19 @@ import { AppShell } from '@/components/app-shell';
 import { PageSection } from '@/components/page-section';
 import { StatCard } from '@/components/stat-card';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestStatusLabel } from '@/lib/request-lifecycle';
+import { OPEN_REQUEST_STATUSES, URGENT_REQUEST_URGENCIES } from '@/lib/operator-scope';
 
 export default async function OperatorDashboardPage() {
+  const session = await requireOperatorSession();
   const [openCount, urgentCount, propertiesCount, recentRequests] = await Promise.all([
-    prisma.maintenanceRequest.count({ where: { status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] } } }),
-    prisma.maintenanceRequest.count({ where: { status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] }, urgency: { in: [RequestUrgency.HIGH, RequestUrgency.EMERGENCY] } } }),
-    prisma.property.count(),
+    prisma.maintenanceRequest.count({ where: { property: { organizationId: session.organizationId }, status: { in: OPEN_REQUEST_STATUSES } } }),
+    prisma.maintenanceRequest.count({ where: { property: { organizationId: session.organizationId }, status: { in: OPEN_REQUEST_STATUSES }, urgency: { in: URGENT_REQUEST_URGENCIES } } }),
+    prisma.property.count({ where: { organizationId: session.organizationId } }),
     prisma.maintenanceRequest.findMany({
+      where: { property: { organizationId: session.organizationId } },
       orderBy: [{ updatedAt: 'desc' }],
       take: 5,
       include: { property: true, unit: true },

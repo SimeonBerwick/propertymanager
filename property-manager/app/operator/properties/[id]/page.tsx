@@ -5,11 +5,14 @@ import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
+import { requireOperatorSession } from '@/lib/auth';
+import { OPEN_REQUEST_STATUSES } from '@/lib/operator-scope';
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await requireOperatorSession();
   const { id } = await params;
-  const property = await prisma.property.findUnique({
-    where: { id },
+  const property = await prisma.property.findFirst({
+    where: { id, organizationId: session.organizationId },
     include: {
       units: {
         orderBy: { label: 'asc' },
@@ -18,14 +21,14 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           _count: {
             select: {
               requests: {
-                where: { status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] } },
+                where: { status: { in: OPEN_REQUEST_STATUSES } },
               },
             },
           },
         },
       },
       requests: {
-        where: { status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] } },
+        where: { status: { in: OPEN_REQUEST_STATUSES } },
         orderBy: [{ updatedAt: 'desc' }],
         include: { unit: true },
       },
