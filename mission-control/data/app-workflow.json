@@ -15,7 +15,7 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
-      "nextStep": "Slice 1 passed Jeff QA for operator scope in commit 0ce1e6b. Slice 2 is now underway: tenant intake, photo upload, and tenant-facing request status/timeline.",
+      "nextStep": "Tenant submission/status/photo flow landed in commit 58d3d98 and vendor dispatch + vendor queue/detail landed in commit 25a92ea. Next: Jeff reviews the new multi-role workflow, then fix findings and push final polish/auth/review-ready completion.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
@@ -25,7 +25,9 @@
         "Barry Bot: app now boots successfully, build/typecheck/lint pass, and live Prisma-backed operator dashboard, inbox, property/unit detail, status transitions, and internal notes are working in commit 0dde178.",
         "Barry Bot: operator create/edit flows for properties, units, and requests are now live in commit fa83e96, bringing Slice 1 to formal Jeff QA review.",
         "Barry Bot: Jeff fixed request validation, status-history integrity, and operator page revalidation issues in commit 0ce1e6b, clearing Slice 1 for operator scope.",
-        "Barry Bot: Slice 2 has started for tenant submission, tenant-facing status/timeline, and photo upload.",
+        "Barry Bot: tenant submission, tenant-facing status/timeline, and photo upload landed in commit 58d3d98.",
+        "Barry Bot: Bob the Builder shipped vendor dispatch plus vendor queue/detail workflow in commit 25a92ea, making the multi-role flow materially real.",
+        "Barry Bot: next step is Jeff QA on the new vendor/tenant slices, then final polish and review-ready completion.",
         "Barry Bot: Bob the Builder has been designated as Elon's focused and precise assistant coder for active implementation work.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]

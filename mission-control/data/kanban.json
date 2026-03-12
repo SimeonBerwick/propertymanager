@@ -100,6 +100,14 @@
             "ts": 1773340500000
           },
           {
+            "text": "Barry Bot: tenant submission, tenant-facing status/timeline, and photo upload landed in commit 58d3d98.",
+            "ts": 1773341760000
+          },
+          {
+            "text": "Barry Bot: Bob the Builder added vendor dispatch and vendor queue/detail workflow in commit 25a92ea. Next is Jeff QA on the multi-role flow, then final polish.",
+            "ts": 1773342000000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
