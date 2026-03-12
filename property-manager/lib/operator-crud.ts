@@ -5,6 +5,7 @@ import {
   RequestUrgency,
   UserRole,
 } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export type ActionState = {
   error?: string;
@@ -83,7 +84,7 @@ export function parseUnitInput(formData: FormData): Prisma.UnitUncheckedCreateIn
   };
 }
 
-export function parseRequestInput(formData: FormData): Prisma.MaintenanceRequestUncheckedCreateInput {
+export async function parseRequestInput(formData: FormData): Promise<Prisma.MaintenanceRequestUncheckedCreateInput> {
   const propertyId = getString(formData, 'propertyId');
   const unitId = getString(formData, 'unitId');
   const tenantId = getOptionalString(formData, 'tenantId');
@@ -105,6 +106,26 @@ export function parseRequestInput(formData: FormData): Prisma.MaintenanceRequest
   if (!Object.values(RequestStatus).includes(status as RequestStatus)) throw new Error('Status is invalid.');
   if (!Object.values(UserRole).includes(createdByRole as UserRole)) throw new Error('Created-by role is invalid.');
 
+  const unit = await prisma.unit.findUnique({ where: { id: unitId }, select: { id: true, propertyId: true } });
+  if (!unit) throw new Error('Selected unit was not found.');
+  if (unit.propertyId !== propertyId) throw new Error('Selected unit does not belong to the selected property.');
+
+  if (tenantId) {
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true, unitId: true } });
+    if (!tenant) throw new Error('Selected tenant was not found.');
+    if (tenant.unitId !== unitId) throw new Error('Selected tenant does not belong to the selected unit.');
+  }
+
+  if (assignedVendorId) {
+    const vendor = await prisma.vendor.findUnique({ where: { id: assignedVendorId }, select: { id: true } });
+    if (!vendor) throw new Error('Selected vendor was not found.');
+  }
+
+  const scheduledDate = scheduledFor ? new Date(scheduledFor) : null;
+  if (scheduledFor && Number.isNaN(scheduledDate?.getTime())) {
+    throw new Error('Scheduled date is invalid.');
+  }
+
   return {
     propertyId,
     unitId,
@@ -118,7 +139,7 @@ export function parseRequestInput(formData: FormData): Prisma.MaintenanceRequest
     createdByRole: createdByRole as UserRole,
     isTenantVisible: formData.get('isTenantVisible') === 'on',
     isVendorVisible: formData.get('isVendorVisible') === 'on',
-    scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+    scheduledFor: scheduledDate,
     closedAt: status === RequestStatus.DONE ? new Date() : null,
   };
 }

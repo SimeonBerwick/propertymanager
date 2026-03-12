@@ -19,7 +19,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   const status = nextStatus as RequestStatus;
   if (!canTransition(request.status, status)) return;
 
-  await prisma.maintenanceRequest.update({
+  const updated = await prisma.maintenanceRequest.update({
     where: { id: requestId },
     data: {
       status,
@@ -39,6 +39,10 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   revalidatePath('/operator');
   revalidatePath('/operator/requests');
   revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/operator/properties');
+  revalidatePath(`/operator/properties/${updated.propertyId}`);
+  revalidatePath('/operator/units');
+  revalidatePath(`/operator/units/${updated.unitId}`);
 }
 
 export async function addInternalNote(requestId: string, formData: FormData) {

@@ -1,6 +1,6 @@
 'use server';
 
-import { EventVisibility, RequestEventType, UserRole } from '@prisma/client';
+import { EventVisibility, Prisma, RequestEventType, UserRole } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -15,7 +15,7 @@ function getErrorMessage(error: unknown) {
 
 export async function createRequest(formData: FormData) {
   try {
-    const data = parseRequestInput(formData);
+    const data = await parseRequestInput(formData);
     const request = await prisma.maintenanceRequest.create({
       data: {
         ...data,
@@ -34,7 +34,9 @@ export async function createRequest(formData: FormData) {
     revalidatePath('/operator');
     revalidatePath('/operator/requests');
     revalidatePath('/operator/properties');
+    revalidatePath(`/operator/properties/${request.propertyId}`);
     revalidatePath('/operator/units');
+    revalidatePath(`/operator/units/${request.unitId}`);
     redirect(`/operator/requests/${request.id}`);
   } catch (error) {
     redirect(`/operator/requests/new?error=${encodeURIComponent(getErrorMessage(error))}`);
@@ -46,19 +48,33 @@ export async function updateRequest(requestId: string, formData: FormData) {
     const existing = await prisma.maintenanceRequest.findUnique({ where: { id: requestId } });
     if (!existing) throw new Error('Request not found.');
 
-    const data = parseRequestInput(formData);
-    await prisma.maintenanceRequest.update({
+    const data = await parseRequestInput(formData);
+    const events: Prisma.RequestEventUncheckedCreateWithoutRequestInput[] = [
+      {
+        type: RequestEventType.COMMENT,
+        actorRole: UserRole.OPERATOR,
+        actorName: OPERATOR_NAME,
+        body: 'Request details updated from operator form.',
+        visibility: EventVisibility.INTERNAL,
+      },
+    ];
+
+    if (existing.status !== data.status) {
+      events.unshift({
+        type: RequestEventType.STATUS_CHANGED,
+        actorRole: UserRole.OPERATOR,
+        actorName: OPERATOR_NAME,
+        body: `Status changed from ${existing.status} to ${data.status}.`,
+        visibility: EventVisibility.INTERNAL,
+      });
+    }
+
+    const updated = await prisma.maintenanceRequest.update({
       where: { id: requestId },
       data: {
         ...data,
         events: {
-          create: {
-            type: RequestEventType.COMMENT,
-            actorRole: UserRole.OPERATOR,
-            actorName: OPERATOR_NAME,
-            body: 'Request details updated from operator form.',
-            visibility: EventVisibility.INTERNAL,
-          },
+          create: events,
         },
       },
     });
@@ -67,7 +83,11 @@ export async function updateRequest(requestId: string, formData: FormData) {
     revalidatePath('/operator/requests');
     revalidatePath(`/operator/requests/${requestId}`);
     revalidatePath('/operator/properties');
+    revalidatePath(`/operator/properties/${existing.propertyId}`);
+    revalidatePath(`/operator/properties/${updated.propertyId}`);
     revalidatePath('/operator/units');
+    revalidatePath(`/operator/units/${existing.unitId}`);
+    revalidatePath(`/operator/units/${updated.unitId}`);
     redirect(`/operator/requests/${requestId}`);
   } catch (error) {
     redirect(`/operator/requests/${requestId}/edit?error=${encodeURIComponent(getErrorMessage(error))}`);
