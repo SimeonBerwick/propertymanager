@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { EventVisibility, RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
@@ -31,6 +32,9 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   return (
     <AppShell>
       <div className="space-y-6">
+        <PageActions>
+          <ActionLink href={`/operator/requests/${request.id}/edit`}>Edit request</ActionLink>
+        </PageActions>
         <PageSection title={request.title} description={`${request.property.name} · Unit ${request.unit.label}`}>
           <div className="space-y-3 text-sm text-slate-700">
             <p>{request.description}</p>

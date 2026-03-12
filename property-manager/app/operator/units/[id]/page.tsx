@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/lib/operator-data';
@@ -27,6 +28,10 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   return (
     <AppShell>
       <div className="space-y-6">
+        <PageActions>
+          <ActionLink href={`/operator/units/${unit.id}/edit`}>Edit unit</ActionLink>
+          <ActionLink href={`/operator/requests/new?propertyId=${unit.propertyId}&unitId=${unit.id}`}>Add request</ActionLink>
+        </PageActions>
         <PageSection title={`${unit.property.name} / Unit ${unit.label}`} description={`${unit.bedroomCount ?? '—'} bed / ${unit.bathroomCount ?? '—'} bath · ${unit.occupancyStatus || 'unknown occupancy'}`}>
           <div className="space-y-2 text-sm text-slate-700">
             {unit.tenants.length === 0 ? <p>No tenant history loaded.</p> : unit.tenants.map((tenant) => (

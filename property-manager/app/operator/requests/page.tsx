@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
@@ -19,6 +20,10 @@ export default async function RequestsPage() {
 
   return (
     <AppShell>
+      <div className="space-y-6">
+        <PageActions>
+          <ActionLink href="/operator/requests/new">Add request</ActionLink>
+        </PageActions>
       <PageSection title="Maintenance inbox" description="Real operator inbox with property, unit, status, and timeline depth.">
         <div className="space-y-3">
           {requests.map((request) => (
@@ -38,6 +43,7 @@ export default async function RequestsPage() {
           ))}
         </div>
       </PageSection>
+      </div>
     </AppShell>
   );
 }

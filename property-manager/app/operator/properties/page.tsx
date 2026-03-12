@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 
@@ -23,6 +24,11 @@ export default async function PropertiesPage() {
 
   return (
     <AppShell>
+      <div className="space-y-6">
+        <PageActions>
+          <ActionLink href="/operator/properties/new">Add property</ActionLink>
+          <ActionLink href="/operator/units/new">Add unit</ActionLink>
+        </PageActions>
       <PageSection title="Properties" description="Real operator portfolio list with live inventory and maintenance load.">
         <div className="overflow-hidden rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -49,6 +55,7 @@ export default async function PropertiesPage() {
           </table>
         </div>
       </PageSection>
+      </div>
     </AppShell>
   );
 }

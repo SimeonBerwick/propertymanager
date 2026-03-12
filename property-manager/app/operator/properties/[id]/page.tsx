@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 
@@ -36,6 +37,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   return (
     <AppShell>
       <div className="space-y-6">
+        <PageActions>
+          <ActionLink href={`/operator/properties/${property.id}/edit`}>Edit property</ActionLink>
+          <ActionLink href={`/operator/units/new?propertyId=${property.id}`}>Add unit</ActionLink>
+          <ActionLink href={`/operator/requests/new?propertyId=${property.id}`}>Add request</ActionLink>
+        </PageActions>
         <PageSection title={property.name} description={`${property.addressLine1}, ${property.city}, ${property.state} ${property.postalCode}`}>
           <p className="text-sm text-slate-700">{property.notes || 'No property-level notes yet.'}</p>
         </PageSection>

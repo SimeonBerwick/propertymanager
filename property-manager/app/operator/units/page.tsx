@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { RequestStatus, TenantStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
+import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 
@@ -22,6 +23,10 @@ export default async function UnitsPage() {
 
   return (
     <AppShell>
+      <div className="space-y-6">
+        <PageActions>
+          <ActionLink href="/operator/units/new">Add unit</ActionLink>
+        </PageActions>
       <PageSection title="Units" description="Live inventory with occupancy and active maintenance counts.">
         <div className="grid gap-4 md:grid-cols-2">
           {units.map((unit) => (
@@ -34,6 +39,7 @@ export default async function UnitsPage() {
           ))}
         </div>
       </PageSection>
+      </div>
     </AppShell>
   );
 }
