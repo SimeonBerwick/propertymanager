@@ -48,6 +48,10 @@
             "ts": 1773266900000
           },
           {
+            "text": "Barry Bot: converted Property Manager into an executable build package with PROPERTY_MANAGER_MVP_SPEC.md and PROPERTY_MANAGER_BUILD_CHECKLIST.md.",
+            "ts": 1773323600000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },

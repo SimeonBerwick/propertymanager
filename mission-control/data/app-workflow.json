@@ -15,11 +15,12 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
-      "nextStep": "Elon proceeds to full build. Jeff tests after the first finished build is ready.",
+      "nextStep": "Elon should execute against PROPERTY_MANAGER_MVP_SPEC.md and PROPERTY_MANAGER_BUILD_CHECKLIST.md, then hand the first finished build to Jeff for QA.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
         "Barry Bot: promoted to one of the two clearest active app tracks.",
+        "Barry Bot: converted the concept into a concrete MVP spec and build checklist so Elon has an executable package.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
     },

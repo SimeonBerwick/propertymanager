@@ -1,0 +1,340 @@
+# Property Manager V1 - MVP Spec
+
+## Product thesis
+Property Manager V1 is a maintenance command center for small landlords and small property managers.
+
+The product wins if it replaces scattered maintenance coordination across texts, calls, email, and memory with one clean tracked workflow.
+
+## Target user
+### Primary user
+- small landlords
+- owner-operators
+- small property managers with limited portfolios
+
+### Secondary users
+- tenants submitting issues
+- vendors receiving dispatches
+
+## Core problem
+Maintenance requests are high-frequency, operationally messy, and easy to lose when they are managed informally.
+
+## V1 goal
+Make it easy for a small landlord to:
+- receive a maintenance issue
+- understand urgency
+- track status
+- assign a vendor
+- keep the tenant updated
+- preserve unit/property issue history
+- see basic operational reporting
+
+## Success test
+A small landlord should be able to move maintenance coordination out of ad hoc texting and into one simple tracked workflow.
+
+## Explicit non-goals
+These are out of scope for V1:
+- rent collection
+- accounting / bookkeeping
+- lease management
+- e-signatures
+- tenant screening
+- owner financial portal
+- broad vendor marketplace
+- enterprise workflow layers
+- broad AI automation
+
+## Product shape
+### Recommended surface
+Web-first, mobile-responsive application.
+
+### Why
+- fastest path to shipping
+- one codebase across landlord, tenant, and vendor workflows
+- no forced app install for tenants or vendors
+- easier to validate workflow before building native apps
+
+## User roles
+### Operator / landlord
+Can:
+- create and manage properties and units
+- create, review, and update maintenance requests
+- assign vendors
+- update statuses
+- add internal notes
+- view history and reporting
+
+### Tenant
+Can:
+- submit a maintenance request
+- upload photos
+- provide issue details, category, and urgency
+- view request status and visible updates
+
+Cannot:
+- view internal-only notes
+- edit property configuration
+- see unrelated requests
+
+### Vendor
+Can:
+- view assigned work orders / requests
+- see scheduling details
+- see contact and issue context relevant to assigned work
+- add vendor-facing updates if enabled
+
+Cannot:
+- browse unrelated properties or requests
+- access internal operator-only reporting
+
+## V1 workflows
+### 1. Tenant issue submission
+Tenant submits:
+- property / unit context
+- issue description
+- category
+- urgency
+- one or more photos
+- contact details if needed
+
+### 2. Operator inbox / triage
+Operator can:
+- view new requests
+- sort/filter by status, urgency, property, unit
+- open a request detail page
+- correct category / urgency
+- assign or defer
+
+### 3. Request lifecycle
+Canonical statuses:
+- new
+- scheduled
+- in progress
+- done
+
+Rules:
+- every status change creates a timestamped status event
+- request timeline should be readable by operator
+- tenant sees only customer-visible updates
+
+### 4. Vendor dispatch
+Operator can:
+- assign a vendor
+- add scheduling notes
+- set scheduled date/time
+- record dispatch notes
+
+### 5. Tenant updates / communication trail
+System must support:
+- visible request timeline
+- operator updates visible to tenant
+- communication history attached to request
+
+V1 can start with in-app status/history and optional email later.
+
+### 6. Property / unit issue history
+Operator can view:
+- prior requests for a unit
+- prior requests for a property
+- repeat issue patterns
+
+### 7. Basic reporting
+V1 reporting includes:
+- open vs closed counts
+- aging buckets
+- repeat issue flags by property / unit
+
+## MVP screens
+### Operator screens
+- sign in / auth shell
+- properties list
+- property detail
+- units list/detail
+- maintenance inbox
+- request detail page
+- vendor assignment modal / panel
+- reporting summary page
+
+### Tenant screens
+- submit request form
+- request confirmation page
+- request status / timeline page
+
+### Vendor screens
+- assigned request detail page
+- optional vendor work queue page
+
+## Core data model
+### Organization
+Fields:
+- id
+- name
+- createdAt
+
+### Property
+Fields:
+- id
+- organizationId
+- name
+- address fields
+- notes
+- createdAt
+
+### Unit
+Fields:
+- id
+- propertyId
+- label / number
+- bedroom/bath metadata optional
+- occupancy status optional
+- createdAt
+
+### Tenant
+Fields:
+- id
+- unitId
+- name
+- email
+- phone
+- status
+- createdAt
+
+### Vendor
+Fields:
+- id
+- organizationId
+- name
+- trade/category
+- phone
+- email
+- notes
+- createdAt
+
+### MaintenanceRequest
+Fields:
+- id
+- propertyId
+- unitId
+- tenantId nullable
+- createdByRole
+- title
+- description
+- category
+- urgency
+- status
+- visibility flags
+- assignedVendorId nullable
+- scheduledFor nullable
+- createdAt
+- updatedAt
+- closedAt nullable
+
+### RequestEvent
+Fields:
+- id
+- requestId
+- type
+- actorRole
+- actorName or actorId
+- body
+- visibility
+- createdAt
+
+Types include:
+- status_changed
+- comment
+- vendor_assigned
+- schedule_set
+- tenant_update
+
+### Attachment
+Fields:
+- id
+- requestId
+- uploaderRole
+- storagePath
+- mimeType
+- createdAt
+
+## Acceptance criteria
+### Tenant submission
+- tenant can submit a request with description, category, urgency, and photo
+- submitted request appears in operator inbox
+- request is created with status = new
+
+### Operator inbox
+- operator can see all open requests
+- operator can filter by status, urgency, property, and unit
+- operator can open request detail and update status
+
+### Request detail
+- operator can view issue details, attachments, and timeline
+- operator can add an internal note
+- operator can add a tenant-visible update
+
+### Vendor dispatch
+- operator can assign a vendor to a request
+- operator can record a scheduled date
+- vendor assignment appears in the request timeline
+
+### Tenant visibility
+- tenant can view current status and visible updates for their request
+- tenant cannot see internal-only notes
+
+### Property history
+- operator can see prior issues for a unit/property
+- repeat issue patterns are visible through simple counts/flags
+
+### Reporting
+- operator can see open vs closed counts
+- operator can see aging by request age bucket
+- operator can see repeat issue flags
+
+## Architecture recommendation
+### Stack
+- Next.js
+- TypeScript
+- React
+- Tailwind
+- PostgreSQL
+- Prisma
+- object storage for photo uploads
+
+### Principles
+- keep the model boring
+- avoid premature microservices
+- prefer server-rendered/admin-friendly UX where possible
+- isolate tenant-visible vs internal-only data carefully
+
+## Notifications
+### V1 baseline
+- in-app timeline and status visibility
+- optional email notifications can be added after core workflow is stable
+
+### Defer from first slice
+- SMS
+- complex automation rules
+- multi-channel notification orchestration
+
+## Risks to control
+- scope creep into full property management
+- role/permission complexity across operator, tenant, vendor
+- unreliable communication expectations
+- photo/file handling edge cases
+- weak onboarding friction for tenants/vendors
+- privacy and access control sloppiness
+
+## QA gate
+Jeff is the explicit post-build QA gate.
+
+Before sign-off, Jeff should test:
+- tenant submission works end to end
+- operator inbox reflects new requests correctly
+- status changes persist correctly
+- vendor assignment is visible and auditable
+- tenant-visible updates exclude internal notes
+- property/unit history is preserved
+- basic reporting matches seeded data
+
+## Build readiness verdict
+The product is strategically approved and now spec-defined enough to begin architecture and scaffold work.
+It is still pre-implementation until the repo, schema, and first slice are created.
