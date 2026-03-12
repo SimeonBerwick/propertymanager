@@ -15,7 +15,7 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff cleared auth/authz as PASS WITH CONDITIONS for a controlled private beta; broader QA and hardening are still required before anything beyond that.",
-      "nextStep": "Execution has started on the sellability path. PostgreSQL/deployment planning is now documented in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md (commit 5493a36), and operator org-scoping hardening landed in commit 8cb7e16. Rollout direction is now explicit: the operator pays, tenant/vendor access stays free, and tenant/vendor onboarding should connect into the paying operator workspace via operator-generated invite links or access codes. Next: stabilize the auth boundary test harness, have Jeff verify the new org-scope protections, then define the invite/code onboarding model alongside real Postgres/object-storage implementation and broader pilot-readiness QA.",
+      "nextStep": "Execution has started on the sellability path. PostgreSQL/deployment planning is now documented in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md (commit 5493a36), operator org-scoping hardening landed in commit 8cb7e16, and onboarding direction is now formalized in PROPERTY_MANAGER_ONBOARDING_INVITE_SPEC.md. Next: stabilize the auth boundary test harness, have Jeff verify the new org-scope protections, then turn the invite/code onboarding model into a concrete build plan alongside real Postgres/object-storage implementation and broader pilot-readiness QA.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
