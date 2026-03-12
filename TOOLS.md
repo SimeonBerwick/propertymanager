@@ -41,6 +41,7 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Username: `user9956229319856`
 - Plan: free
 - Use: stitching TikTok videos, captions, light edits, and audio/video assembly
+- Default users: Mario for content/video workflow direction, Barry Bot for coordination and quick packaging guidance, and any build/media support agents working on short-form video or audio tasks
 - Notes: shared context for agents working on video and audio tasks
 
 ---
