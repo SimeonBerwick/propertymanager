@@ -192,7 +192,7 @@
       },
       {
         "id": "task-6",
-        "title": "Tag Mission Control cards by executive lens",
+        "title": "Tag Mission Control cards by executive route",
         "description": "Mission Control now visibly shows whether cards belong to Mario, Elon, Warren, Barry Bot, or Sim.",
         "priority": "medium",
         "owner": "Barry Bot",

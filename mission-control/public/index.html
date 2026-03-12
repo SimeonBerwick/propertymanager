@@ -23,6 +23,18 @@
         </div>
       </header>
 
+      <section class="card workflow-card">
+        <div class="card-header split"><div><h2>How to use Mission Control</h2><p class="subtle">Simple operator loop for day-to-day use.</p></div></div>
+        <div class="review-box">
+          <ol>
+            <li><strong>Check status and security</strong> to make sure OpenClaw is healthy and nothing risky is drifting.</li>
+            <li><strong>Review active work</strong> in the app workflow board and Kanban to see what matters now.</li>
+            <li><strong>Consult or dispatch</strong> when you want executive input or want to route a task to Mario, Elon, or Warren.</li>
+            <li><strong>Update ownership and notes</strong> so the board stays honest and useful.</li>
+          </ol>
+        </div>
+      </section>
+
       <section class="grid top-grid">
         <article class="card status-card">
           <div class="card-header split"><h2>Status</h2><span id="lastUpdated" class="subtle">Loading…</span></div>
@@ -59,7 +71,7 @@
         </section>
         <section class="card consult-card">
           <div class="card-header split"><h2>Executive consult</h2><span class="subtle">Query the real Mario / Elon / Warren agents</span></div>
-          <form id="consultForm" class="task-form"><label>Prompt<textarea id="consultPrompt" name="prompt" rows="5" placeholder="Ask all three executives to evaluate a move, plan, product, or risk."></textarea></label><button id="consultButton" type="submit">Run through Mario / Elon / Warren</button></form>
+          <form id="consultForm" class="task-form"><label>Prompt<textarea id="consultPrompt" name="prompt" rows="5" placeholder="Ask all three executives to evaluate a move, plan, product, or risk."></textarea></label><p class="subtle">Consult = get advice from all three. Dispatch = send a specific task to one executive from a Kanban card.</p><button id="consultButton" type="submit">Run through Mario / Elon / Warren</button></form>
           <div id="consultResults" class="consult-results subtle">No executive consult run yet.</div>
           <div id="advisoryRouting" class="subtle"></div>
         </section>
@@ -71,6 +83,7 @@
           <div class="org-chart" id="orgChart"></div>
           <div class="org-detail" id="orgDetail"></div>
           <p class="subtle">Jeff is the final review gate: contrarian QA, clarity check, and sign-off before something counts as truly good.</p>
+          <p class="subtle">Owner = who carries it. Route = whose judgment or execution path the task should follow.</p>
         </section>
       </section>
 
@@ -103,7 +116,7 @@
         <label>Description<textarea name="description" rows="4"></textarea></label>
         <div class="form-grid">
           <label>Owner<select name="owner"><option>Barry Bot</option><option>Sim</option><option>Mario</option><option>Elon</option><option>Warren</option></select></label>
-          <label>Role lens<select name="roleLens"><option>Barry Bot</option><option>Mario</option><option>Elon</option><option>Warren</option><option>Sim</option></select></label>
+          <label>Route<select name="roleLens"><option>Barry Bot</option><option>Mario</option><option>Elon</option><option>Warren</option><option>Sim</option></select></label>
         </div>
         <label>Priority<select name="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
         <label>Column<select name="column"><option value="backlog">Backlog</option><option value="inProgress">In Progress</option><option value="blocked">Blocked</option><option value="complete">Complete</option></select></label>
