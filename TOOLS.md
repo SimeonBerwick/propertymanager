@@ -51,6 +51,13 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Default users: Mario for AI-video-first content direction, Barry Bot for coordination, and any build/media support agents working on AI-generated video tasks
 - Notes: shared context for agents working on video tasks
 
+### Suno
+- Account: `@simeonberwick`
+- Plan: free
+- Use: AI music generation for short-form videos, background tracks, and audio concepting
+- Default users: Mario for content/music direction, Barry Bot for coordination, and any build/media support agents working on music or audio tasks
+- Notes: shared context for agents working on audio and short-form content tasks
+
 ---
 
 Add whatever helps you do your job. This is your cheat sheet.
