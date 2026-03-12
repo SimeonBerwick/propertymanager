@@ -36,6 +36,34 @@
     ],
     "inProgress": [
       {
+        "id": "task-1773336614022",
+        "title": "Tik Tok Reels",
+        "description": "Work out a plan of action to create 1 minute videos to post weekly on tiktok",
+        "priority": "high",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Barry Bot: Mario produced the execution plan in TIKTOK_WEEKLY_1MIN_VIDEO_ACTION_PLAN.md. Focus is a durable 1-minute weekly content machine and 12 straight weeks of publishing.",
+            "ts": 1773340680000
+          }
+        ]
+      },
+      {
+        "id": "task-1773336647260",
+        "title": "Tiktok store",
+        "description": "Create a plan to create a merch store in tiktok to sell t-shirts",
+        "priority": "high",
+        "owner": "Warren",
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Barry Bot: Warren produced the plan in TIKTOK_TSHIRT_STORE_CFO_PLAN.md. Recommendation is validate with content first, then launch one hero POD shirt with strict margin discipline.",
+            "ts": 1773340680000
+          }
+        ]
+      },
+      {
         "id": "task-1773266190597",
         "title": "Property Manager",
         "description": "Streamlined property manager app focused on maintenance request intake, status tracking, vendor dispatch, tenant updates, and property/unit issue history for small landlords.",
