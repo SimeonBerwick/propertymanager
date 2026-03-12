@@ -72,8 +72,9 @@ Safe enough to use with a small number of friendly real users.
 Good enough to charge a small number of early customers.
 
 ### Customer onboarding
-- [ ] Create landlord account onboarding flow
-- [ ] Create user invite flow for operator/team access if needed
+- [ ] Create landlord/operator paid account onboarding flow
+- [ ] Create tenant/vendor invite or access-code onboarding flow tied to the operator organization
+- [ ] Decide default join model: invite link, property/unit code, vendor company code, or hybrid
 - [ ] Add password reset flow
 - [ ] Add cleaner account/session management UX
 
