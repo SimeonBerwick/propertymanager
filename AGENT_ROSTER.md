@@ -22,6 +22,12 @@
 - Lens: usability, clarity, polish, completeness, honest final judgment
 - Workspace: `/home/simeo/.openclaw/workspace-jeff`
 
+### Bob the Builder (`bob-the-builder`)
+- Role: Assistant coder under Elon
+- Lens: focused implementation, precise execution, low-fluff technical progress
+- Workspace: `/home/simeo/.openclaw/workspace`
+- Notes: supports Elon on active builds; optimized for scoped coding, verification, and clean commits
+
 ## Main Agent
 
 ### Barry Bot (`main`)
