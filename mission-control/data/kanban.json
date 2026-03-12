@@ -108,6 +108,30 @@
             "ts": 1773342000000
           },
           {
+            "text": "Barry Bot: credential-based auth landed in commit 6230b65, replacing the demo role picker with real sign-in and canonical operator/tenant/vendor roles.",
+            "ts": 1773346914000
+          },
+          {
+            "text": "Barry Bot: stronger auth failure handling and vendor request permissions landed in commit a83f5be, including dedicated unauthorized routing and server-enforced vendor updates.",
+            "ts": 1773348120000
+          },
+          {
+            "text": "Barry Bot: invalid-session 500s were fixed in commit 46221bf by removing cookie mutation from render-time auth checks while preserving fail-closed redirects.",
+            "ts": 1773349260000
+          },
+          {
+            "text": "Barry Bot: Jeff cleared the auth/authz slice as PASS WITH CONDITIONS for a controlled private beta checkpoint after confirming protected routes, ownership scoping, visibility boundaries, and invalid-session redirects are materially correct.",
+            "ts": 1773353400000
+          },
+          {
+            "text": "Barry Bot: auth boundary integration tests landed in commit 022bb72 covering tampered cookies, expired sessions, tenant object-access denial, vendor unassigned-request denial, and internal-note non-leakage.",
+            "ts": 1773353760000
+          },
+          {
+            "text": "Barry Bot: Property Manager now qualifies as a controlled private beta candidate; next step is broader QA, workflow polish, and tighter operator/org scoping rather than pretending it is production-ready.",
+            "ts": 1773354060000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
