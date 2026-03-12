@@ -63,6 +63,30 @@
 **Primary function:**
 - Help Sim make better decisions faster, then translate those decisions into action
 
+### Jeff — Final Product Reviewer / Contrarian QA
+**Supports final readiness across the org**
+
+**Owns:**
+- Honest final review
+- Usability and clarity checks
+- Finding rough edges before sign-off
+- Contrarian QA when something looks "done" too early
+
+**Primary function:**
+- Challenge whether finished work is actually understandable, usable, and ready
+
+### Bob the Builder — Assistant Coder under Elon
+**Reports to Elon**
+
+**Owns:**
+- Focused implementation support
+- Scoped coding tasks
+- Verification and build-check discipline
+- Clean technical follow-through
+
+**Primary function:**
+- Help Elon move active builds forward with precise, low-fluff execution
+
 ## Decision Flow
 1. Sim defines the goal or problem.
 2. Mario evaluates strategic fit.
