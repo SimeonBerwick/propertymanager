@@ -27,6 +27,10 @@ type CanonicalUser = {
   vendorId?: string;
 };
 
+type SessionDecodeResult =
+  | { ok: true; session: SessionData }
+  | { ok: false; reason: 'invalid' | 'expired' };
+
 function getSessionSecret() {
   return process.env.AUTH_SECRET || 'property-manager-demo-secret-change-me';
 }
@@ -49,23 +53,25 @@ function encodeSession(session: SessionData) {
   return `${payload}.${signature}`;
 }
 
-function decodeSession(token: string): SessionData | null {
+function decodeSession(token: string): SessionDecodeResult {
   const [payload, signature] = token.split('.');
-  if (!payload || !signature) return null;
+  if (!payload || !signature) return { ok: false, reason: 'invalid' };
 
   const expectedSignature = sign(payload);
   const expectedBuffer = Buffer.from(expectedSignature);
   const providedBuffer = Buffer.from(signature);
-  if (expectedBuffer.length !== providedBuffer.length) return null;
-  if (!timingSafeEqual(expectedBuffer, providedBuffer)) return null;
+  if (expectedBuffer.length !== providedBuffer.length) return { ok: false, reason: 'invalid' };
+  if (!timingSafeEqual(expectedBuffer, providedBuffer)) return { ok: false, reason: 'invalid' };
 
   try {
     const parsed = JSON.parse(fromBase64Url(payload)) as SessionData;
-    if (!parsed?.role || !parsed?.displayName || typeof parsed.expiresAt !== 'number') return null;
-    if (parsed.expiresAt < Date.now()) return null;
-    return parsed;
+    if (!parsed?.role || !parsed?.displayName || typeof parsed.expiresAt !== 'number') {
+      return { ok: false, reason: 'invalid' };
+    }
+    if (parsed.expiresAt < Date.now()) return { ok: false, reason: 'expired' };
+    return { ok: true, session: parsed };
   } catch {
-    return null;
+    return { ok: false, reason: 'invalid' };
   }
 }
 
@@ -125,13 +131,13 @@ export async function getSession() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const parsed = decodeSession(token);
-  if (!parsed) {
+  const decoded = decodeSession(token);
+  if (!decoded.ok) {
     cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
-  const canonicalUser = await resolveCanonicalUser(parsed);
+  const canonicalUser = await resolveCanonicalUser(decoded.session);
   if (!canonicalUser) {
     cookieStore.delete(SESSION_COOKIE);
     return null;
@@ -144,7 +150,7 @@ export async function getSession() {
     vendorId: canonicalUser.vendorId,
     displayName: canonicalUser.displayName,
     email: canonicalUser.email,
-    expiresAt: parsed.expiresAt,
+    expiresAt: decoded.session.expiresAt,
   };
 
   return normalizedSession;
@@ -215,10 +221,43 @@ export async function signInWithPassword(role: AppRole, email: string, password:
   });
 }
 
+function buildAuthRedirect(reason: 'signin' | 'expired' | 'invalid') {
+  if (reason === 'expired') return '/auth?error=Your%20session%20expired.%20Please%20sign%20in%20again.';
+  if (reason === 'invalid') return '/auth?error=Your%20session%20was%20invalid.%20Please%20sign%20in%20again.';
+  return '/auth?error=Please%20sign%20in%20to%20continue.';
+}
+
 export async function requireSession(role?: AppRole) {
-  const session = await getSession();
-  if (!session) redirect('/auth?error=Please%20sign%20in%20to%20continue.');
-  if (role && session.role !== role) redirect('/auth?error=That%20account%20cannot%20access%20that%20area.');
+  const cookieStore = await getCookieStore();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) redirect(buildAuthRedirect('signin'));
+
+  const decoded = decodeSession(token);
+  if (!decoded.ok) {
+    cookieStore.delete(SESSION_COOKIE);
+    redirect(buildAuthRedirect(decoded.reason));
+  }
+
+  const canonicalUser = await resolveCanonicalUser(decoded.session);
+  if (!canonicalUser) {
+    cookieStore.delete(SESSION_COOKIE);
+    redirect(buildAuthRedirect('invalid'));
+  }
+
+  const session: SessionData = {
+    role: canonicalUser.role,
+    userId: canonicalUser.userId,
+    tenantId: canonicalUser.tenantId,
+    vendorId: canonicalUser.vendorId,
+    displayName: canonicalUser.displayName,
+    email: canonicalUser.email,
+    expiresAt: decoded.session.expiresAt,
+  };
+
+  if (role && session.role !== role) {
+    redirect(`/unauthorized?requiredRole=${role}&currentRole=${session.role}`);
+  }
+
   return session;
 }
 

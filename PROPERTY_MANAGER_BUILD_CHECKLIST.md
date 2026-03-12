@@ -97,11 +97,11 @@ Move Property Manager V1 from a convincing local demo to a controlled private be
 ### Workstream 1 - Auth & role authorization
 - [x] Add real sign-in flow
 - [x] Define canonical roles: operator, tenant, vendor
-- [ ] Enforce route-level permissions
-- [ ] Enforce action-level permissions
+- [x] Enforce route-level permissions
+- [x] Enforce action-level permissions
 - [ ] Prevent cross-account and cross-property data leakage
-- [ ] Verify tenant-visible vs internal-only content boundaries
-- [ ] Add unauthorized/expired-session handling
+- [x] Verify tenant-visible vs internal-only content boundaries
+- [x] Add unauthorized/expired-session handling
 
 ### Workstream 2 - Core workflow polish
 - [ ] Tighten operator dashboard triage flow

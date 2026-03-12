@@ -21,6 +21,8 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - `lib/permissions.ts` for role/action checks
 - `lib/request-lifecycle.ts` for canonical status transitions
 - Credential-based sign-in with seeded operator / tenant / vendor accounts and signed session cookies
+- Explicit unauthorized and expired-session handling for protected pages
+- Vendor-side progress updates on assigned jobs with server-side ownership checks
 
 ## Assumptions
 - V1 remains maintenance-only and intentionally avoids broader property-management scope.
@@ -65,8 +67,8 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 
 ## Suggested next build steps
 - Enforce org/property scoping for operator data instead of today’s single-org assumption
-- Add explicit unauthorized and expired-session screens instead of auth-page redirects
-- Add vendor-side action updates with server-side permission checks
+- Add deeper cross-account leakage tests for manipulated request IDs and list queries
+- Expand vendor updates into richer completion / parts / invoice-ready workflow if V1 needs it
 - Replace local SQLite with PostgreSQL when deployment path is chosen
 - Move session storage, password reset, invite flows, and audit logging to a fuller auth subsystem before production use
 
