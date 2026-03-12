@@ -29,8 +29,8 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
           type: RequestEventType.STATUS_CHANGED,
           actorRole: UserRole.OPERATOR,
           actorName: OPERATOR_NAME,
-          body: `Status changed from ${request.status} to ${status}.`,
-          visibility: EventVisibility.INTERNAL,
+          body: `Status updated to ${status.replace('_', ' ')}.`,
+          visibility: EventVisibility.ALL,
         },
       },
     },
@@ -43,6 +43,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   revalidatePath(`/operator/properties/${updated.propertyId}`);
   revalidatePath('/operator/units');
   revalidatePath(`/operator/units/${updated.unitId}`);
+  revalidatePath(`/tenant/request/${requestId}`);
 }
 
 export async function addInternalNote(requestId: string, formData: FormData) {

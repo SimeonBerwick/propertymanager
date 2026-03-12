@@ -1,32 +1,87 @@
 import { AppShell } from '@/components/app-shell';
+import { ErrorBanner, Field, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
+import { requestCategoryOptions, requestUrgencyOptions } from '@/lib/operator-crud';
+import { getTenantPortalData } from '@/lib/tenant-requests';
+import { submitTenantRequest } from './actions';
 
-export default function TenantSubmitPage() {
+export default async function TenantSubmitPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
+  const [tenants, resolvedSearchParams] = await Promise.all([
+    getTenantPortalData(),
+    searchParams ? searchParams : Promise.resolve(undefined),
+  ]);
+
   return (
     <AppShell>
-      <PageSection title="Submit a maintenance request" description="Placeholder tenant intake screen for description, category, urgency, contact details, and photo uploads.">
-        <form className="grid gap-4 md:grid-cols-2">
-          <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Unit" />
-          <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Contact phone" />
-          <input className="rounded-md border border-slate-300 px-3 py-2 md:col-span-2" placeholder="Issue title" />
-          <textarea className="min-h-32 rounded-md border border-slate-300 px-3 py-2 md:col-span-2" placeholder="Describe the issue" />
-          <select className="rounded-md border border-slate-300 px-3 py-2">
-            <option>Category</option>
-            <option>Plumbing</option>
-            <option>Electrical</option>
-            <option>HVAC</option>
-          </select>
-          <select className="rounded-md border border-slate-300 px-3 py-2">
-            <option>Urgency</option>
-            <option>Low</option>
-            <option>Medium</option>
-            <option>High</option>
-            <option>Emergency</option>
-          </select>
-          <input className="rounded-md border border-slate-300 px-3 py-2 md:col-span-2" type="file" />
-          <button className="w-fit rounded-md bg-brand-700 px-4 py-2 text-white" type="button">Submit request</button>
-        </form>
-      </PageSection>
+      <div className="space-y-6">
+        <PageSection
+          title="Submit a maintenance request"
+          description="Simple tenant intake for active residents. Pick the resident, describe the problem, and optionally attach photos."
+        >
+          <form action={submitTenantRequest} className="space-y-4" encType="multipart/form-data">
+            <ErrorBanner message={resolvedSearchParams?.error} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Resident">
+                <Select name="tenantId" defaultValue="" required>
+                  <option value="">Select resident</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>{tenant.name} — {tenant.unit.property.name} / Unit {tenant.unit.label}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Best callback number (optional)">
+                <Input name="contactPhone" placeholder="555-0101" />
+              </Field>
+              <Field label="Issue title" >
+                <Input name="title" placeholder="Kitchen sink leak" required />
+              </Field>
+              <Field label="Category">
+                <Select name="category" defaultValue="GENERAL" required>
+                  {requestCategoryOptions.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Urgency">
+                <Select name="urgency" defaultValue="MEDIUM" required>
+                  {requestUrgencyOptions.map((urgency) => (
+                    <option key={urgency} value={urgency}>{urgency.replace('_', ' ')}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Entry / access notes (optional)">
+                <Input name="entryNotes" placeholder="Dog in unit, call before entry, gate code, etc." />
+              </Field>
+            </div>
+            <Field label="Describe the issue">
+              <Textarea
+                name="description"
+                rows={7}
+                placeholder="What happened, when it started, where it is happening, and anything that makes it better or worse."
+                required
+              />
+            </Field>
+            <Field label="Photos (optional)">
+              <Input name="photos" type="file" accept="image/*" multiple />
+            </Field>
+            <div className="flex flex-wrap items-center gap-3">
+              <button className="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white" type="submit">Submit request</button>
+              <p className="text-sm text-slate-500">Uploads support JPG, PNG, WebP, and GIF up to 5 MB each.</p>
+            </div>
+          </form>
+        </PageSection>
+
+        <PageSection title="What happens next" description="The tenant portal now links to a real request record and visible timeline.">
+          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+            <li>Your request is logged immediately in the operator inbox.</li>
+            <li>You land on a tenant-facing status page for the request after submitting.</li>
+            <li>Tenant-visible updates appear there as the status changes.</li>
+          </ul>
+          <div className="mt-4 text-sm text-slate-600">
+            Seed data includes at least one tenant-visible request already, and new submissions land directly on their own status page.
+          </div>
+        </PageSection>
+      </div>
     </AppShell>
   );
 }
