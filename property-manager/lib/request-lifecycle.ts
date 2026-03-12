@@ -1,22 +1,26 @@
-export const REQUEST_STATUSES = ['new', 'scheduled', 'in_progress', 'done'] as const;
-export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+import { RequestEventType, RequestStatus } from '@prisma/client';
+
+export const REQUEST_STATUSES = [
+  RequestStatus.NEW,
+  RequestStatus.SCHEDULED,
+  RequestStatus.IN_PROGRESS,
+  RequestStatus.DONE,
+] as const;
 
 export const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
-  new: ['scheduled', 'in_progress', 'done'],
-  scheduled: ['in_progress', 'done'],
-  in_progress: ['scheduled', 'done'],
-  done: [],
+  [RequestStatus.NEW]: [RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS, RequestStatus.DONE],
+  [RequestStatus.SCHEDULED]: [RequestStatus.IN_PROGRESS, RequestStatus.DONE],
+  [RequestStatus.IN_PROGRESS]: [RequestStatus.SCHEDULED, RequestStatus.DONE],
+  [RequestStatus.DONE]: [],
 };
 
 export const REQUEST_EVENT_TYPES = [
-  'status_changed',
-  'comment',
-  'vendor_assigned',
-  'schedule_set',
-  'tenant_update',
+  RequestEventType.STATUS_CHANGED,
+  RequestEventType.COMMENT,
+  RequestEventType.VENDOR_ASSIGNED,
+  RequestEventType.SCHEDULE_SET,
+  RequestEventType.TENANT_UPDATE,
 ] as const;
-
-export type RequestEventType = (typeof REQUEST_EVENT_TYPES)[number];
 
 export function canTransition(from: RequestStatus, to: RequestStatus): boolean {
   return STATUS_TRANSITIONS[from].includes(to);
@@ -24,13 +28,28 @@ export function canTransition(from: RequestStatus, to: RequestStatus): boolean {
 
 export function getRequestStatusLabel(status: RequestStatus): string {
   switch (status) {
-    case 'new':
+    case RequestStatus.NEW:
       return 'New';
-    case 'scheduled':
+    case RequestStatus.SCHEDULED:
       return 'Scheduled';
-    case 'in_progress':
+    case RequestStatus.IN_PROGRESS:
       return 'In Progress';
-    case 'done':
+    case RequestStatus.DONE:
       return 'Done';
+  }
+}
+
+export function getRequestEventTypeLabel(type: RequestEventType): string {
+  switch (type) {
+    case RequestEventType.STATUS_CHANGED:
+      return 'Status changed';
+    case RequestEventType.COMMENT:
+      return 'Internal note';
+    case RequestEventType.VENDOR_ASSIGNED:
+      return 'Vendor assigned';
+    case RequestEventType.SCHEDULE_SET:
+      return 'Schedule set';
+    case RequestEventType.TENANT_UPDATE:
+      return 'Tenant update';
   }
 }
