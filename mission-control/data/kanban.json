@@ -132,6 +132,18 @@
             "ts": 1773354060000
           },
           {
+            "text": "Barry Bot: sellability path is now documented in PROPERTY_MANAGER_SELLABILITY_CHECKLIST.md with explicit stages for pilot-ready, paid beta-ready, and publicly sellable.",
+            "ts": 1773354660000
+          },
+          {
+            "text": "Barry Bot: Property Manager is Chrome-compatible and Windows-compatible as a deployed web app, but it is not a native Windows app or a Chrome extension.",
+            "ts": 1773354720000
+          },
+          {
+            "text": "Barry Bot: immediate commercialization priorities are PostgreSQL + deployment, real object storage for photos, tighter operator/org scoping, onboarding/password reset, and billing.",
+            "ts": 1773354780000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
