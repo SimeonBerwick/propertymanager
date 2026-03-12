@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OPERATOR
+  TENANT
+  VENDOR
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  FORMER
+}
+
+enum RequestCategory {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  APPLIANCE
+  GENERAL
+  OTHER
+}
+
+enum RequestUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum RequestStatus {
+  NEW
+  SCHEDULED
+  IN_PROGRESS
+  DONE
+}
+
+enum RequestEventType {
+  STATUS_CHANGED
+  COMMENT
+  VENDOR_ASSIGNED
+  SCHEDULE_SET
+  TENANT_UPDATE
+}
+
+enum EventVisibility {
+  INTERNAL
+  TENANT
+  VENDOR
+  ALL
+}
+
+model Organization {
+  id         String               @id @default(cuid())
+  name       String
+  createdAt  DateTime             @default(now())
+  users      AppUser[]
+  properties Property[]
+  vendors    Vendor[]
+
+  @@index([createdAt])
+}
+
+model AppUser {
+  id             String         @id @default(cuid())
+  organizationId String
+  email          String         @unique
+  name           String
+  role           UserRole
+  createdAt      DateTime       @default(now())
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestEvents  RequestEvent[]
+
+  @@index([organizationId, role])
+}
+
+model Property {
+  id             String               @id @default(cuid())
+  organizationId String
+  name           String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  postalCode     String
+  notes          String?
+  createdAt      DateTime             @default(now())
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  units          Unit[]
+  requests       MaintenanceRequest[]
+
+  @@index([organizationId, createdAt])
+}
+
+model Unit {
+  id              String               @id @default(cuid())
+  propertyId      String
+  label           String
+  bedroomCount    Int?
+  bathroomCount   Float?
+  occupancyStatus String?
+  createdAt       DateTime             @default(now())
+  property        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenants         Tenant[]
+  requests        MaintenanceRequest[]
+
+  @@unique([propertyId, label])
+  @@index([propertyId, createdAt])
+}
+
+model Tenant {
+  id          String               @id @default(cuid())
+  unitId       String
+  name         String
+  email        String?
+  phone        String?
+  status       TenantStatus        @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  unit         Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requests     MaintenanceRequest[]
+
+  @@index([unitId, status])
+}
+
+model Vendor {
+  id             String               @id @default(cuid())
+  organizationId String
+  name           String
+  trade          String
+  phone          String?
+  email          String?
+  notes          String?
+  createdAt      DateTime             @default(now())
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requests       MaintenanceRequest[]
+
+  @@index([organizationId, trade])
+}
+
+model MaintenanceRequest {
+  id                 String            @id @default(cuid())
+  propertyId         String
+  unitId             String
+  tenantId           String?
+  createdByRole      UserRole
+  title              String
+  description        String
+  category           RequestCategory
+  urgency            RequestUrgency
+  status             RequestStatus     @default(NEW)
+  isTenantVisible    Boolean           @default(true)
+  isVendorVisible    Boolean           @default(true)
+  assignedVendorId   String?
+  scheduledFor       DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  closedAt           DateTime?
+  property           Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit               Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  tenant             Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  assignedVendor     Vendor?           @relation(fields: [assignedVendorId], references: [id], onDelete: SetNull)
+  events             RequestEvent[]
+  attachments        Attachment[]
+
+  @@index([propertyId, status, createdAt])
+  @@index([unitId, status])
+  @@index([tenantId])
+  @@index([assignedVendorId])
+}
+
+model RequestEvent {
+  id             String             @id @default(cuid())
+  requestId      String
+  type           RequestEventType
+  actorRole      UserRole
+  actorName      String?
+  actorUserId    String?
+  body           String
+  visibility     EventVisibility    @default(INTERNAL)
+  createdAt      DateTime           @default(now())
+  request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actorUser      AppUser?           @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, createdAt])
+  @@index([actorUserId])
+}
+
+model Attachment {
+  id            String             @id @default(cuid())
+  requestId      String
+  uploaderRole   UserRole
+  storagePath    String
+  mimeType       String
+  createdAt      DateTime           @default(now())
+  request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+}
