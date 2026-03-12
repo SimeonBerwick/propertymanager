@@ -156,6 +156,9 @@ Ready for wider marketing and normal customer acquisition.
 - Scoping and auth hardening make it trustworthy
 - Onboarding and billing make it commercially real
 
+### Planning reference
+- `PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md` - recommended default stack, env/config, migration sequence, and pilot rollout path
+
 ---
 
 ## Current recommendation
