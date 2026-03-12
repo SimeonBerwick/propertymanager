@@ -60,6 +60,10 @@
             "ts": 1773328500000
           },
           {
+            "text": "Barry Bot: operator create/edit flows for properties, units, and requests landed in commit fa83e96, and Slice 1 is now under Jeff QA review before Slice 2 begins.",
+            "ts": 1773336900000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },
