@@ -3,7 +3,7 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "approved-for-full-build",
+      "status": "controlled-private-beta-candidate",
       "owner": "Elon",
       "summary": "Streamlined maintenance command center for small landlords: request intake, status tracking, vendor dispatch, tenant updates, and issue history.",
       "stages": {
@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
-      "nextStep": "Tenant submission/status/photo flow landed in commit 58d3d98 and vendor dispatch + vendor queue/detail landed in commit 25a92ea. Next: Jeff reviews the new multi-role workflow, then fix findings and push final polish/auth/review-ready completion.",
+      "reviewGate": "Jeff cleared auth/authz as PASS WITH CONDITIONS for a controlled private beta; broader QA and hardening are still required before anything beyond that.",
+      "nextStep": "Auth/authz now clears the controlled-private-beta threshold after credential sign-in, server-enforced vendor permissions, invalid-session fixes, and auth boundary integration tests (6230b65, a83f5be, 46221bf, 022bb72). Next: extend automated boundary coverage, tighten operator/org scoping, and continue workflow polish + broader QA.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
@@ -29,6 +29,11 @@
         "Barry Bot: Bob the Builder shipped vendor dispatch plus vendor queue/detail workflow in commit 25a92ea, making the multi-role flow materially real.",
         "Barry Bot: next step is Jeff QA on the new vendor/tenant slices, then final polish and review-ready completion.",
         "Barry Bot: Bob the Builder has been designated as Elon's focused and precise assistant coder for active implementation work.",
+        "Barry Bot: credential-based auth landed in commit 6230b65, replacing the demo role picker with real sign-in and canonical operator/tenant/vendor roles.",
+        "Barry Bot: stronger auth failure handling and vendor request permissions landed in commit a83f5be, including dedicated unauthorized routing and server-enforced vendor updates.",
+        "Barry Bot: invalid-session 500s were fixed in commit 46221bf by removing cookie mutation from render-time auth checks and preserving fail-closed redirects.",
+        "Barry Bot: Jeff cleared the auth/authz slice as PASS WITH CONDITIONS for a controlled private beta after confirming protected routes, ownership scoping, visibility boundaries, and invalid-session redirects are materially correct.",
+        "Barry Bot: auth boundary integration tests landed in commit 022bb72 covering tampered cookies, expired sessions, tenant object-access denial, vendor unassigned-request denial, and internal-note non-leakage.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
     },
