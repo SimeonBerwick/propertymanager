@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parseUnitInput } from '@/lib/operator-crud';
+import { requireOperatorSession } from '@/lib/auth';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -16,6 +17,7 @@ function getErrorMessage(error: unknown) {
 
 export async function createUnit(formData: FormData) {
   try {
+    await requireOperatorSession();
     const data = parseUnitInput(formData);
     const unit = await prisma.unit.create({ data });
 
@@ -30,6 +32,7 @@ export async function createUnit(formData: FormData) {
 
 export async function updateUnit(unitId: string, formData: FormData) {
   try {
+    await requireOperatorSession();
     const data = parseUnitInput(formData);
     const unit = await prisma.unit.update({
       where: { id: unitId },

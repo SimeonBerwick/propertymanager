@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createTenantRequest } from '@/lib/tenant-requests';
+import { requireTenantSession } from '@/lib/auth';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unable to submit your request.';
@@ -10,7 +11,8 @@ function getErrorMessage(error: unknown) {
 
 export async function submitTenantRequest(formData: FormData) {
   try {
-    const request = await createTenantRequest(formData);
+    const session = await requireTenantSession();
+    const request = await createTenantRequest(session.tenantId, formData);
     revalidatePath('/operator');
     revalidatePath('/operator/requests');
     revalidatePath('/operator/properties');

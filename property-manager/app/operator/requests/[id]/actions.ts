@@ -5,8 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { canTransition } from '@/lib/request-lifecycle';
-
-const OPERATOR_NAME = 'Olivia Operator';
+import { requireOperatorSession } from '@/lib/auth';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -18,6 +17,7 @@ function getBoolean(formData: FormData, key: string) {
 }
 
 export async function updateRequestStatus(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
   const nextStatus = formData.get('status');
   if (typeof nextStatus !== 'string') return;
 
@@ -38,7 +38,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
         create: {
           type: RequestEventType.STATUS_CHANGED,
           actorRole: UserRole.OPERATOR,
-          actorName: OPERATOR_NAME,
+          actorName: session.displayName,
           body: `Status updated to ${status.replace('_', ' ')}.`,
           visibility: EventVisibility.ALL,
         },
@@ -57,6 +57,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
 }
 
 export async function addInternalNote(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
   const body = formData.get('body');
   if (typeof body !== 'string' || !body.trim()) return;
 
@@ -65,7 +66,7 @@ export async function addInternalNote(requestId: string, formData: FormData) {
       requestId,
       type: RequestEventType.COMMENT,
       actorRole: UserRole.OPERATOR,
-      actorName: OPERATOR_NAME,
+      actorName: session.displayName,
       body: body.trim(),
       visibility: EventVisibility.INTERNAL,
     },
@@ -76,6 +77,7 @@ export async function addInternalNote(requestId: string, formData: FormData) {
 }
 
 export async function dispatchRequest(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
   const assignedVendorId = getString(formData, 'assignedVendorId');
   const scheduledForInput = getString(formData, 'scheduledFor');
   const scopeOfWork = getString(formData, 'scopeOfWork');
@@ -119,7 +121,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     events.push({
       type: RequestEventType.VENDOR_ASSIGNED,
       actorRole: UserRole.OPERATOR,
-      actorName: OPERATOR_NAME,
+      actorName: session.displayName,
       body: nextVendor ? `Vendor assigned: ${nextVendor.name}.` : 'Vendor assignment cleared.',
       visibility: EventVisibility.ALL,
     });
@@ -131,7 +133,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     events.push({
       type: RequestEventType.SCHEDULE_SET,
       actorRole: UserRole.OPERATOR,
-      actorName: OPERATOR_NAME,
+      actorName: session.displayName,
       body: scheduledFor ? `Dispatch scheduled for ${scheduledFor.toLocaleString('en-US')}.` : 'Scheduled visit cleared.',
       visibility: EventVisibility.ALL,
     });
@@ -141,7 +143,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     events.push({
       type: RequestEventType.COMMENT,
       actorRole: UserRole.OPERATOR,
-      actorName: OPERATOR_NAME,
+      actorName: session.displayName,
       body: scopeOfWork,
       visibility: isVendorVisible ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
     });
@@ -151,7 +153,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     events.push({
       type: RequestEventType.STATUS_CHANGED,
       actorRole: UserRole.OPERATOR,
-      actorName: OPERATOR_NAME,
+      actorName: session.displayName,
       body: `Status updated to ${nextStatus.replace('_', ' ')} during dispatch.`,
       visibility: EventVisibility.ALL,
     });

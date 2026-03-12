@@ -1,9 +1,9 @@
 import { EventVisibility } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
-export async function getVendorPortalData() {
-  const vendors = await prisma.vendor.findMany({
-    orderBy: [{ name: 'asc' }],
+export async function getVendorPortalData(vendorId: string) {
+  return prisma.vendor.findUnique({
+    where: { id: vendorId },
     include: {
       _count: {
         select: {
@@ -17,10 +17,6 @@ export async function getVendorPortalData() {
       },
     },
   });
-
-  const selectedVendor = vendors[0] ?? null;
-
-  return { vendors, selectedVendor };
 }
 
 export async function getVendorQueue(vendorId: string) {

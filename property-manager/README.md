@@ -25,7 +25,7 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - V1 remains maintenance-only and intentionally avoids broader property-management scope.
 - The long-term target database is PostgreSQL per spec, but this scaffold uses SQLite locally so the repo can boot quickly and seed without external infrastructure.
 - File uploads are represented in schema and placeholders only; object storage wiring is deferred to the next implementation slice.
-- Auth is represented as a shell/navigation concern only in Sprint 1; real authentication and route protection are not implemented yet.
+- The demo now includes a simple signed-cookie auth layer with role switcher, route guards, and tenant/vendor ownership checks. It is practical demo security, not production IAM.
 
 ## Local setup
 1. Copy env example:
@@ -48,7 +48,11 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
    ```bash
    npm run prisma:seed
    ```
-6. Run the app:
+6. Set an auth secret in `.env` (required for signed session cookies):
+   ```bash
+   AUTH_SECRET="replace-with-a-long-random-string"
+   ```
+7. Run the app:
    ```bash
    npm run dev
    ```
@@ -59,7 +63,9 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Build tenant intake form actions and attachment upload pipeline
 - Add vendor assignment UI and scheduling form flow
 - Replace local SQLite with PostgreSQL when deployment path is chosen
-- Implement real auth and permission-aware data access
+- Replace demo role-picker sign-in with real user identity verification / passwords or magic links
+- Add per-request share tokens or invite links if tenants/vendors need deep links without a pre-existing session
+- Move session storage and audit logging to a proper auth subsystem before production use
 
 ## QA handoff reminder
 Jeff is the explicit QA gate after the first functional build. Use the checklist in the root workspace docs plus seeded data to validate operator, tenant, and vendor flows.

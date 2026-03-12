@@ -2,12 +2,12 @@ import { AppShell } from '@/components/app-shell';
 import { ErrorBanner, Field, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { requestCategoryOptions, requestUrgencyOptions } from '@/lib/operator-crud';
-import { getTenantPortalData } from '@/lib/tenant-requests';
+import { requireTenantSession } from '@/lib/auth';
 import { submitTenantRequest } from './actions';
 
 export default async function TenantSubmitPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
-  const [tenants, resolvedSearchParams] = await Promise.all([
-    getTenantPortalData(),
+  const [session, resolvedSearchParams] = await Promise.all([
+    requireTenantSession(),
     searchParams ? searchParams : Promise.resolve(undefined),
   ]);
 
@@ -16,19 +16,14 @@ export default async function TenantSubmitPage({ searchParams }: { searchParams?
       <div className="space-y-6">
         <PageSection
           title="Submit a maintenance request"
-          description="Simple tenant intake for active residents. Pick the resident, describe the problem, and optionally attach photos."
+          description={`Signed in as ${session.displayName}. Submit a new maintenance issue for your unit and optionally attach photos.`}
         >
           <form action={submitTenantRequest} className="space-y-4" encType="multipart/form-data">
             <ErrorBanner message={resolvedSearchParams?.error} />
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Resident">
-                <Select name="tenantId" defaultValue="" required>
-                  <option value="">Select resident</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>{tenant.name} — {tenant.unit.property.name} / Unit {tenant.unit.label}</option>
-                  ))}
-                </Select>
-              </Field>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 md:col-span-2">
+                Signed in as <strong>{session.displayName}</strong>. You can only submit and view requests tied to your own tenant record.
+              </div>
               <Field label="Best callback number (optional)">
                 <Input name="contactPhone" placeholder="555-0101" />
               </Field>

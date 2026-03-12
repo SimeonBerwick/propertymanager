@@ -5,8 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { parseRequestInput } from '@/lib/operator-crud';
-
-const OPERATOR_NAME = 'Olivia Operator';
+import { requireOperatorSession } from '@/lib/auth';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -15,6 +14,7 @@ function getErrorMessage(error: unknown) {
 
 export async function createRequest(formData: FormData) {
   try {
+    const session = await requireOperatorSession();
     const data = await parseRequestInput(formData);
     const request = await prisma.maintenanceRequest.create({
       data: {
@@ -23,7 +23,7 @@ export async function createRequest(formData: FormData) {
           create: {
             type: RequestEventType.STATUS_CHANGED,
             actorRole: UserRole.OPERATOR,
-            actorName: OPERATOR_NAME,
+            actorName: session.displayName,
             body: `Request created with status ${data.status}.`,
             visibility: EventVisibility.INTERNAL,
           },
@@ -45,6 +45,7 @@ export async function createRequest(formData: FormData) {
 
 export async function updateRequest(requestId: string, formData: FormData) {
   try {
+    const session = await requireOperatorSession();
     const existing = await prisma.maintenanceRequest.findUnique({ where: { id: requestId } });
     if (!existing) throw new Error('Request not found.');
 
@@ -53,7 +54,7 @@ export async function updateRequest(requestId: string, formData: FormData) {
       {
         type: RequestEventType.COMMENT,
         actorRole: UserRole.OPERATOR,
-        actorName: OPERATOR_NAME,
+        actorName: session.displayName,
         body: 'Request details updated from operator form.',
         visibility: EventVisibility.INTERNAL,
       },
@@ -63,7 +64,7 @@ export async function updateRequest(requestId: string, formData: FormData) {
       events.unshift({
         type: RequestEventType.STATUS_CHANGED,
         actorRole: UserRole.OPERATOR,
-        actorName: OPERATOR_NAME,
+        actorName: session.displayName,
         body: `Status changed from ${existing.status} to ${data.status}.`,
         visibility: EventVisibility.INTERNAL,
       });

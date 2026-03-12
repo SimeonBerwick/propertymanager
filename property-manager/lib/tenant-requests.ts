@@ -78,8 +78,7 @@ export async function getTenantPortalData() {
   });
 }
 
-export async function createTenantRequest(formData: FormData) {
-  const tenantId = getString(formData, 'tenantId');
+export async function createTenantRequest(tenantId: string, formData: FormData) {
   const title = getString(formData, 'title');
   const description = getString(formData, 'description');
   const category = getString(formData, 'category');
@@ -88,7 +87,6 @@ export async function createTenantRequest(formData: FormData) {
   const entryNotes = getString(formData, 'entryNotes');
   const photos = getUploadedFiles(formData, 'photos');
 
-  if (!tenantId) throw new Error('Tenant is required.');
   if (!title) throw new Error('Title is required.');
   if (!description) throw new Error('Description is required.');
   if (!Object.values(RequestCategory).includes(category as RequestCategory)) throw new Error('Category is invalid.');
@@ -154,10 +152,11 @@ export async function createTenantRequest(formData: FormData) {
   return request;
 }
 
-export async function getTenantVisibleRequest(requestId: string) {
+export async function getTenantVisibleRequest(requestId: string, tenantId: string) {
   return prisma.maintenanceRequest.findFirst({
     where: {
       id: requestId,
+      tenantId,
       isTenantVisible: true,
     },
     include: {

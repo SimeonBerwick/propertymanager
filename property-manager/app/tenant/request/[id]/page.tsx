@@ -6,6 +6,7 @@ import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/opera
 import { getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getTenantVisibleRequest } from '@/lib/tenant-requests';
+import { requireTenantSession } from '@/lib/auth';
 
 export default async function TenantRequestStatusPage({
   params,
@@ -14,8 +15,8 @@ export default async function TenantRequestStatusPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ submitted?: string }>;
 }) {
-  const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined)]);
-  const request = await getTenantVisibleRequest(id);
+  const [{ id }, resolvedSearchParams, session] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined), requireTenantSession()]);
+  const request = await getTenantVisibleRequest(id, session.tenantId);
 
   if (!request) notFound();
 
@@ -26,7 +27,7 @@ export default async function TenantRequestStatusPage({
       <div className="space-y-6">
         {resolvedSearchParams?.submitted === '1' ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Request submitted. Save this page if you want a direct status link for this issue.
+            Request submitted. This page is now protected by your signed tenant session instead of bare request ID access.
           </div>
         ) : null}
 

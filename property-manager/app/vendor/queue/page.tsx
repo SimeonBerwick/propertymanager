@@ -4,16 +4,11 @@ import { PageSection } from '@/components/page-section';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getVendorPortalData, getVendorQueue } from '@/lib/vendor-requests';
+import { requireVendorSession } from '@/lib/auth';
 
-export default async function VendorQueuePage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ vendorId?: string }>;
-}) {
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const { vendors, selectedVendor } = await getVendorPortalData();
-  const activeVendorId = resolvedSearchParams.vendorId ?? selectedVendor?.id;
-  const activeVendor = vendors.find((vendor) => vendor.id === activeVendorId) ?? selectedVendor;
+export default async function VendorQueuePage() {
+  const session = await requireVendorSession();
+  const activeVendor = await getVendorPortalData(session.vendorId);
   const queue = activeVendor ? await getVendorQueue(activeVendor.id) : [];
 
   return (
@@ -21,22 +16,12 @@ export default async function VendorQueuePage({
       <div className="space-y-6">
         <PageSection title="Vendor queue" description="Assigned, vendor-visible work orders with the latest schedule and job context.">
           <div className="space-y-4 text-sm text-slate-700">
-            {vendors.length === 0 ? (
+            {!activeVendor ? (
               <p>No vendors loaded yet.</p>
             ) : (
-              <form action="/vendor/queue" className="flex flex-wrap items-end gap-3">
-                <label className="block min-w-64">
-                  <span className="mb-1 block font-medium text-slate-900">View queue for vendor</span>
-                  <select name="vendorId" defaultValue={activeVendor?.id} className="w-full rounded-md border border-slate-300 px-3 py-2">
-                    {vendors.map((vendor) => (
-                      <option key={vendor.id} value={vendor.id}>
-                        {vendor.name} · {vendor.trade} · {vendor._count.requests} active
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button className="rounded-md bg-slate-900 px-4 py-2 text-white" type="submit">Load queue</button>
-              </form>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                Signed in as <strong>{activeVendor.name}</strong>. This vendor view is now bound to your signed session rather than a URL query parameter.
+              </div>
             )}
           </div>
         </PageSection>
@@ -53,7 +38,7 @@ export default async function VendorQueuePage({
                 queue.map((request) => (
                   <Link
                     key={request.id}
-                    href={`/vendor/requests/${request.id}?vendorId=${activeVendor.id}`}
+                    href={`/vendor/requests/${request.id}`}
                     className="block rounded-lg border border-slate-200 bg-white p-4 hover:border-brand-300"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">

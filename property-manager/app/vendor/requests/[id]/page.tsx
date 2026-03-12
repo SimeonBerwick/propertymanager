@@ -6,24 +6,18 @@ import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/opera
 import { getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getVendorPortalData, getVendorVisibleRequest } from '@/lib/vendor-requests';
+import { requireVendorSession } from '@/lib/auth';
 
 export default async function VendorRequestDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ vendorId?: string }>;
 }) {
-  const { id } = await params;
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const { vendors, selectedVendor } = await getVendorPortalData();
-  const activeVendorId = resolvedSearchParams.vendorId ?? selectedVendor?.id;
+  const [{ id }, session] = await Promise.all([params, requireVendorSession()]);
+  const activeVendor = await getVendorPortalData(session.vendorId);
+  if (!activeVendor) notFound();
 
-  if (!activeVendorId || !vendors.some((vendor) => vendor.id === activeVendorId)) {
-    notFound();
-  }
-
-  const request = await getVendorVisibleRequest(id, activeVendorId);
+  const request = await getVendorVisibleRequest(id, activeVendor.id);
   if (!request) notFound();
 
   return (
@@ -64,7 +58,7 @@ export default async function VendorRequestDetailPage({
           </PageSection>
 
           <div className="space-y-6">
-            <PageSection title="Access + contact" description="Keep the vendor loop minimal until auth and messaging land.">
+            <PageSection title="Access + contact" description="Vendor access is scoped to the signed-in company and no longer impersonated via URL parameters.">
               <div className="space-y-2 text-sm text-slate-700">
                 <p><strong>Property:</strong> {request.property.name}</p>
                 <p><strong>Address:</strong> {request.property.addressLine1}, {request.property.city}, {request.property.state} {request.property.postalCode}</p>
