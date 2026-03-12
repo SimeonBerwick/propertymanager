@@ -15,13 +15,14 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
-      "nextStep": "Boot-verify property-manager/, then continue Slice 1 implementation for operator-only properties, units, requests, inbox, request detail, status timeline, and internal notes before Jeff QA.",
+      "nextStep": "Continue Slice 1 by adding create/edit flows for properties, units, and requests, then expand vendor assignment and tenant-visible update workflows before Jeff QA.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
         "Barry Bot: promoted to one of the two clearest active app tracks.",
         "Barry Bot: converted the concept into a concrete MVP spec and build checklist so Elon has an executable package.",
         "Barry Bot: initial property-manager scaffold was created and committed as fbdfe7c; boot verification and Slice 1 implementation are now in flight.",
+        "Barry Bot: app now boots successfully, build/typecheck/lint pass, and live Prisma-backed operator dashboard, inbox, property/unit detail, status transitions, and internal notes are working in commit 0dde178.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
     },
