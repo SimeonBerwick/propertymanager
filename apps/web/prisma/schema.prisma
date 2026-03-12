@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RequestStatus {
+  new
+  scheduled
+  in_progress
+  done
+}
+
+enum Urgency {
+  low
+  medium
+  high
+  urgent
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+
+  properties Property[]
+  comments   RequestComment[]
+}
+
+model Property {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  address   String
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+  units Unit[]
+  requests MaintenanceRequest[]
+}
+
+model Unit {
+  id          String   @id @default(cuid())
+  propertyId  String
+  label       String
+  tenantName  String?
+  tenantEmail String?
+  createdAt   DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id])
+  requests MaintenanceRequest[]
+}
+
+model MaintenanceRequest {
+  id                 String          @id @default(cuid())
+  propertyId         String
+  unitId             String
+  submittedByUserId  String?
+  title              String
+  description        String
+  category           String
+  urgency            Urgency
+  status             RequestStatus   @default(new)
+  assignedVendorName String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  closedAt           DateTime?
+
+  property Property @relation(fields: [propertyId], references: [id])
+  unit     Unit     @relation(fields: [unitId], references: [id])
+  photos   MaintenancePhoto[]
+  comments RequestComment[]
+  events   StatusEvent[]
+}
+
+model MaintenancePhoto {
+  id        String             @id @default(cuid())
+  requestId String
+  imageUrl  String
+  createdAt DateTime           @default(now())
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+}
+
+model RequestComment {
+  id           String   @id @default(cuid())
+  requestId    String
+  authorUserId String?
+  body         String
+  visibility   String   @default("external")
+  createdAt    DateTime @default(now())
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  author  User?              @relation(fields: [authorUserId], references: [id])
+}
+
+model StatusEvent {
+  id          String        @id @default(cuid())
+  requestId   String
+  fromStatus  RequestStatus?
+  toStatus    RequestStatus
+  actorUserId String?
+  createdAt   DateTime      @default(now())
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+}
