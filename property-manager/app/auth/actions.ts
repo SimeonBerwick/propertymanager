@@ -1,7 +1,8 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { clearSession, signInAsOperator, signInAsTenant, signInAsVendor } from '@/lib/auth';
+import { clearSession, signInWithPassword } from '@/lib/auth';
+import type { AppRole } from '@/lib/permissions';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -13,26 +14,20 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function login(formData: FormData) {
-  const role = getString(formData, 'role');
-  const selectedId = getString(formData, 'selectedId');
+  const role = getString(formData, 'role') as AppRole;
+  const email = getString(formData, 'email');
+  const password = getString(formData, 'password');
 
   try {
-    if (role === 'operator') {
-      await signInAsOperator(selectedId);
-      redirect('/operator');
+    if (!['operator', 'tenant', 'vendor'].includes(role)) {
+      redirect('/auth?error=Choose%20a%20valid%20role%20to%20continue.');
     }
 
-    if (role === 'tenant') {
-      await signInAsTenant(selectedId);
-      redirect('/tenant/submit');
-    }
+    await signInWithPassword(role, email, password);
 
-    if (role === 'vendor') {
-      await signInAsVendor(selectedId);
-      redirect('/vendor/queue');
-    }
-
-    redirect('/auth?error=Choose%20a%20role%20to%20continue.');
+    if (role === 'operator') redirect('/operator');
+    if (role === 'tenant') redirect('/tenant/submit');
+    redirect('/vendor/queue');
   } catch (error) {
     redirect(`/auth?error=${encodeURIComponent(getErrorMessage(error))}`);
   }

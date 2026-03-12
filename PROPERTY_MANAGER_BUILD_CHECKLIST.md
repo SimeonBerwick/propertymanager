@@ -95,8 +95,8 @@
 Move Property Manager V1 from a convincing local demo to a controlled private beta candidate.
 
 ### Workstream 1 - Auth & role authorization
-- [ ] Add real sign-in flow
-- [ ] Define canonical roles: operator, tenant, vendor
+- [x] Add real sign-in flow
+- [x] Define canonical roles: operator, tenant, vendor
 - [ ] Enforce route-level permissions
 - [ ] Enforce action-level permissions
 - [ ] Prevent cross-account and cross-property data leakage

@@ -72,6 +72,7 @@ model AppUser {
   id             String         @id @default(cuid())
   organizationId String
   email          String         @unique
+  passwordHash   String
   name           String
   role           UserRole
   createdAt      DateTime       @default(now())
@@ -116,15 +117,16 @@ model Unit {
 }
 
 model Tenant {
-  id          String               @id @default(cuid())
-  unitId       String
-  name         String
-  email        String?
-  phone        String?
-  status       TenantStatus        @default(ACTIVE)
-  createdAt    DateTime            @default(now())
-  unit         Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  requests     MaintenanceRequest[]
+  id           String               @id @default(cuid())
+  unitId        String
+  name          String
+  email         String?              @unique
+  passwordHash  String?
+  phone         String?
+  status        TenantStatus         @default(ACTIVE)
+  createdAt     DateTime             @default(now())
+  unit          Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requests      MaintenanceRequest[]
 
   @@index([unitId, status])
 }
@@ -135,7 +137,8 @@ model Vendor {
   name           String
   trade          String
   phone          String?
-  email          String?
+  email          String?              @unique
+  passwordHash   String?
   notes          String?
   createdAt      DateTime             @default(now())
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)

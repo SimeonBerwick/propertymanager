@@ -1,4 +1,5 @@
 import { PrismaClient, RequestCategory, RequestEventType, RequestStatus, RequestUrgency, TenantStatus, UserRole, EventVisibility } from '@prisma/client';
+import { hashPassword } from '../lib/passwords';
 
 const prisma = new PrismaClient();
 
@@ -13,13 +14,23 @@ async function main() {
   await prisma.appUser.deleteMany();
   await prisma.organization.deleteMany();
 
+  const [operatorPasswordHash, vendorPasswordHash, tenantPasswordHash] = await Promise.all([
+    hashPassword('operator123'),
+    hashPassword('vendor123'),
+    hashPassword('tenant123'),
+  ]);
+
   const organization = await prisma.organization.create({
     data: {
       name: 'Sunset Property Group',
       users: {
         create: [
-          { name: 'Olivia Operator', email: 'olivia@example.com', role: UserRole.OPERATOR },
-          { name: 'Victor Vendor', email: 'victor@example.com', role: UserRole.VENDOR },
+          {
+            name: 'Olivia Operator',
+            email: 'olivia@example.com',
+            role: UserRole.OPERATOR,
+            passwordHash: operatorPasswordHash,
+          },
         ],
       },
       properties: {
@@ -38,7 +49,15 @@ async function main() {
                   bathroomCount: 1,
                   occupancyStatus: 'occupied',
                   tenants: {
-                    create: [{ name: 'Tina Tenant', email: 'tina@example.com', phone: '555-0101', status: TenantStatus.ACTIVE }],
+                    create: [
+                      {
+                        name: 'Tina Tenant',
+                        email: 'tina@example.com',
+                        phone: '555-0101',
+                        status: TenantStatus.ACTIVE,
+                        passwordHash: tenantPasswordHash,
+                      },
+                    ],
                   },
                 },
                 { label: '2B', bedroomCount: 1, bathroomCount: 1, occupancyStatus: 'vacant' },
@@ -48,7 +67,15 @@ async function main() {
         ],
       },
       vendors: {
-        create: [{ name: 'Ace Plumbing', trade: 'Plumbing', phone: '555-2222', email: 'dispatch@aceplumbing.test' }],
+        create: [
+          {
+            name: 'Ace Plumbing',
+            trade: 'Plumbing',
+            phone: '555-2222',
+            email: 'dispatch@aceplumbing.test',
+            passwordHash: vendorPasswordHash,
+          },
+        ],
       },
     },
     include: {
@@ -117,6 +144,10 @@ async function main() {
   });
 
   console.log(`Seeded organization ${organization.name} with request ${request.id}`);
+  console.log('Demo credentials:');
+  console.log('  Operator: olivia@example.com / operator123');
+  console.log('  Tenant:   tina@example.com / tenant123');
+  console.log('  Vendor:   dispatch@aceplumbing.test / vendor123');
 }
 
 main()

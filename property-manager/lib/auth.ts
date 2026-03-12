@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { verifyPassword } from '@/lib/passwords';
 import type { AppRole } from '@/lib/permissions';
 
 const SESSION_COOKIE = 'pm_session';
@@ -13,7 +14,17 @@ type SessionData = {
   tenantId?: string;
   vendorId?: string;
   displayName: string;
+  email?: string;
   expiresAt: number;
+};
+
+type CanonicalUser = {
+  role: AppRole;
+  displayName: string;
+  email?: string;
+  userId?: string;
+  tenantId?: string;
+  vendorId?: string;
 };
 
 function getSessionSecret() {
@@ -62,20 +73,6 @@ async function getCookieStore() {
   return cookies();
 }
 
-export async function getSession() {
-  const cookieStore = await getCookieStore();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-
-  const session = decodeSession(token);
-  if (!session) {
-    cookieStore.delete(SESSION_COOKIE);
-    return null;
-  }
-
-  return session;
-}
-
 async function setSession(session: SessionData) {
   const cookieStore = await getCookieStore();
   cookieStore.set(SESSION_COOKIE, encodeSession(session), {
@@ -92,58 +89,136 @@ export async function clearSession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function signInAsOperator(userId: string) {
-  const user = await prisma.appUser.findFirst({
-    where: {
-      id: userId,
-      role: 'OPERATOR',
-    },
-  });
+async function resolveCanonicalUser(session: SessionData): Promise<CanonicalUser | null> {
+  if (session.role === 'operator' && session.userId) {
+    const user = await prisma.appUser.findFirst({
+      where: { id: session.userId, role: 'OPERATOR' },
+      select: { id: true, name: true, email: true },
+    });
+    if (!user) return null;
+    return { role: 'operator', userId: user.id, displayName: user.name, email: user.email };
+  }
 
-  if (!user) throw new Error('Operator account not found.');
+  if (session.role === 'tenant' && session.tenantId) {
+    const tenant = await prisma.tenant.findFirst({
+      where: { id: session.tenantId, status: 'ACTIVE' },
+      select: { id: true, name: true, email: true },
+    });
+    if (!tenant) return null;
+    return { role: 'tenant', tenantId: tenant.id, displayName: tenant.name, email: tenant.email ?? undefined };
+  }
 
-  await setSession({
-    role: 'operator',
-    userId: user.id,
-    displayName: user.name,
-    expiresAt: Date.now() + SESSION_TTL_MS,
-  });
+  if (session.role === 'vendor' && session.vendorId) {
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: session.vendorId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!vendor) return null;
+    return { role: 'vendor', vendorId: vendor.id, displayName: vendor.name, email: vendor.email ?? undefined };
+  }
+
+  return null;
 }
 
-export async function signInAsTenant(tenantId: string) {
-  const tenant = await prisma.tenant.findFirst({
-    where: {
-      id: tenantId,
-      status: 'ACTIVE',
-    },
-  });
+export async function getSession() {
+  const cookieStore = await getCookieStore();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
 
-  if (!tenant) throw new Error('Active tenant not found.');
+  const parsed = decodeSession(token);
+  if (!parsed) {
+    cookieStore.delete(SESSION_COOKIE);
+    return null;
+  }
 
-  await setSession({
-    role: 'tenant',
-    tenantId: tenant.id,
-    displayName: tenant.name,
-    expiresAt: Date.now() + SESSION_TTL_MS,
-  });
+  const canonicalUser = await resolveCanonicalUser(parsed);
+  if (!canonicalUser) {
+    cookieStore.delete(SESSION_COOKIE);
+    return null;
+  }
+
+  const normalizedSession: SessionData = {
+    role: canonicalUser.role,
+    userId: canonicalUser.userId,
+    tenantId: canonicalUser.tenantId,
+    vendorId: canonicalUser.vendorId,
+    displayName: canonicalUser.displayName,
+    email: canonicalUser.email,
+    expiresAt: parsed.expiresAt,
+  };
+
+  return normalizedSession;
 }
 
-export async function signInAsVendor(vendorId: string) {
-  const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
-  if (!vendor) throw new Error('Vendor not found.');
+export async function signInWithPassword(role: AppRole, email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error('Email is required.');
+  if (!password) throw new Error('Password is required.');
+
+  if (role === 'operator') {
+    const user = await prisma.appUser.findFirst({
+      where: { email: normalizedEmail, role: 'OPERATOR' },
+      select: { id: true, name: true, email: true, passwordHash: true },
+    });
+
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      throw new Error('Invalid operator credentials.');
+    }
+
+    await setSession({
+      role: 'operator',
+      userId: user.id,
+      displayName: user.name,
+      email: user.email,
+      expiresAt: Date.now() + SESSION_TTL_MS,
+    });
+
+    return;
+  }
+
+  if (role === 'tenant') {
+    const tenant = await prisma.tenant.findFirst({
+      where: { email: normalizedEmail, status: 'ACTIVE' },
+      select: { id: true, name: true, email: true, passwordHash: true },
+    });
+
+    if (!tenant?.passwordHash || !(await verifyPassword(password, tenant.passwordHash))) {
+      throw new Error('Invalid tenant credentials.');
+    }
+
+    await setSession({
+      role: 'tenant',
+      tenantId: tenant.id,
+      displayName: tenant.name,
+      email: tenant.email ?? undefined,
+      expiresAt: Date.now() + SESSION_TTL_MS,
+    });
+
+    return;
+  }
+
+  const vendor = await prisma.vendor.findFirst({
+    where: { email: normalizedEmail },
+    select: { id: true, name: true, email: true, passwordHash: true },
+  });
+
+  if (!vendor?.passwordHash || !(await verifyPassword(password, vendor.passwordHash))) {
+    throw new Error('Invalid vendor credentials.');
+  }
 
   await setSession({
     role: 'vendor',
     vendorId: vendor.id,
     displayName: vendor.name,
+    email: vendor.email ?? undefined,
     expiresAt: Date.now() + SESSION_TTL_MS,
   });
 }
 
 export async function requireSession(role?: AppRole) {
   const session = await getSession();
-  if (!session) redirect('/auth');
-  if (role && session.role !== role) redirect('/auth');
+  if (!session) redirect('/auth?error=Please%20sign%20in%20to%20continue.');
+  if (role && session.role !== role) redirect('/auth?error=That%20account%20cannot%20access%20that%20area.');
   return session;
 }
 
@@ -153,12 +228,12 @@ export async function requireOperatorSession() {
 
 export async function requireTenantSession() {
   const session = await requireSession('tenant');
-  if (!session.tenantId) redirect('/auth');
+  if (!session.tenantId) redirect('/auth?error=Tenant%20session%20is%20invalid.');
   return session as SessionData & { role: 'tenant'; tenantId: string };
 }
 
 export async function requireVendorSession() {
   const session = await requireSession('vendor');
-  if (!session.vendorId) redirect('/auth');
+  if (!session.vendorId) redirect('/auth?error=Vendor%20session%20is%20invalid.');
   return session as SessionData & { role: 'vendor'; vendorId: string };
 }

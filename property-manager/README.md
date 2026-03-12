@@ -20,12 +20,13 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Vendor placeholders for queue and assigned request detail
 - `lib/permissions.ts` for role/action checks
 - `lib/request-lifecycle.ts` for canonical status transitions
+- Credential-based sign-in with seeded operator / tenant / vendor accounts and signed session cookies
 
 ## Assumptions
 - V1 remains maintenance-only and intentionally avoids broader property-management scope.
 - The long-term target database is PostgreSQL per spec, but this scaffold uses SQLite locally so the repo can boot quickly and seed without external infrastructure.
 - File uploads are represented in schema and placeholders only; object storage wiring is deferred to the next implementation slice.
-- The demo now includes a simple signed-cookie auth layer with role switcher, route guards, and tenant/vendor ownership checks. It is practical demo security, not production IAM.
+- Auth is now materially stronger than the original role picker, but it is still app-local auth rather than production-grade IAM / MFA / invite management.
 
 ## Local setup
 1. Copy env example:
@@ -57,15 +58,17 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
    npm run dev
    ```
 
+## Seeded credentials
+- Operator: `olivia@example.com` / `operator123`
+- Tenant: `tina@example.com` / `tenant123`
+- Vendor: `dispatch@aceplumbing.test` / `vendor123`
+
 ## Suggested next build steps
-- Wire operator dashboard and inbox pages to Prisma queries
-- Add request detail page with timeline, internal notes, and tenant-visible updates
-- Build tenant intake form actions and attachment upload pipeline
-- Add vendor assignment UI and scheduling form flow
+- Enforce org/property scoping for operator data instead of today’s single-org assumption
+- Add explicit unauthorized and expired-session screens instead of auth-page redirects
+- Add vendor-side action updates with server-side permission checks
 - Replace local SQLite with PostgreSQL when deployment path is chosen
-- Replace demo role-picker sign-in with real user identity verification / passwords or magic links
-- Add per-request share tokens or invite links if tenants/vendors need deep links without a pre-existing session
-- Move session storage and audit logging to a proper auth subsystem before production use
+- Move session storage, password reset, invite flows, and audit logging to a fuller auth subsystem before production use
 
 ## QA handoff reminder
 Jeff is the explicit QA gate after the first functional build. Use the checklist in the root workspace docs plus seeded data to validate operator, tenant, and vendor flows.
