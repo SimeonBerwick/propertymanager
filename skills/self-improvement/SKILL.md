@@ -242,13 +242,40 @@ Review `.learnings/`:
 - when revisiting an area with past learnings
 - weekly during active development
 
+## Review Actions
+
+At natural review points:
+- resolve fixed items
+- promote applicable learnings
+- link related entries
+- escalate recurring issues
+
 ## Detection Triggers
 
-Log automatically when you notice:
-- corrections
-- feature requests
-- knowledge gaps
-- command/tool/API errors
+Automatically log when you notice:
+
+### Corrections → learning with `correction`
+- "No, that's not right..."
+- "Actually, it should be..."
+- "You're wrong about..."
+- "That's outdated..."
+
+### Feature Requests → feature request
+- "Can you also..."
+- "I wish you could..."
+- "Is there a way to..."
+- "Why can't you..."
+
+### Knowledge Gaps → learning with `knowledge_gap`
+- user provides information you didn't know
+- documentation you referenced is outdated
+- API behavior differs from your understanding
+
+### Errors → error entry
+- command returns non-zero exit code
+- exception or stack trace
+- unexpected output or behavior
+- timeout or connection failure
 
 ## Priority Guidelines
 
