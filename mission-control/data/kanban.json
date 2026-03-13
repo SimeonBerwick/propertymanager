@@ -172,6 +172,14 @@
             "ts": 1773382980000
           },
           {
+            "text": "Barry Bot: request workflow now explicitly needs visible urgency levels (Low / Medium / High / Emergency) and a separate expected completion date that can be set and updated independently from scheduled date.",
+            "ts": 1773388260000
+          },
+          {
+            "text": "Barry Bot: expected completion changes should be traceable in request history so operator planning, vendor coordination, and tenant expectation-setting do not turn into guesswork.",
+            "ts": 1773388320000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },

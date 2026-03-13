@@ -34,6 +34,8 @@ Safe enough to use with a small number of friendly real users.
 - [ ] Request lifecycle works end-to-end without manual cleanup
 - [ ] Core reporting is useful enough for a small landlord
 - [ ] Region support is good enough for operators managing properties and vendors across multiple towns/service areas
+- [ ] Urgency is visible and editable as Low / Medium / High / Emergency across request workflow
+- [ ] Expected completion date is separate from scheduled date and can be updated cleanly as the job evolves
 
 ### Infrastructure
 - [ ] Replace local SQLite with PostgreSQL

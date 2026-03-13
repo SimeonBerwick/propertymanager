@@ -113,9 +113,11 @@ Tenant submits:
 ### 2. Operator inbox / triage
 Operator can:
 - view new requests
-- sort/filter by status, urgency, property, unit
+- sort/filter by status, urgency, property, unit, and region where applicable
 - open a request detail page
 - correct category / urgency
+- set or change urgency as Low / Medium / High / Emergency
+- set or change an expected completion date
 - assign or defer
 
 ### 3. Request lifecycle
@@ -125,10 +127,19 @@ Canonical statuses:
 - in progress
 - done
 
+Canonical urgency levels:
+- low
+- medium
+- high
+- emergency
+
 Rules:
 - every status change creates a timestamped status event
 - request timeline should be readable by operator
 - tenant sees only customer-visible updates
+- urgency should be visible and editable throughout the request lifecycle
+- expected completion date should be separate from scheduled date/time
+- changes to expected completion date should be traceable in request history/timeline
 
 ### 4. Vendor dispatch
 Operator can:
@@ -256,6 +267,7 @@ Fields:
 - visibility flags
 - assignedVendorId nullable
 - scheduledFor nullable
+- expectedCompletionAt nullable
 - createdAt
 - updatedAt
 - closedAt nullable
@@ -302,6 +314,8 @@ Fields:
 - operator can view issue details, attachments, and timeline
 - operator can add an internal note
 - operator can add a tenant-visible update
+- operator can set and update urgency as Low / Medium / High / Emergency
+- operator can set and update expected completion date separately from scheduled date
 
 ### Vendor dispatch
 - operator can assign a vendor to a request
