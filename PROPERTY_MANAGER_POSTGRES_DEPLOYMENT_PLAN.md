@@ -57,7 +57,7 @@ Neon Postgres   Cloudflare R2
   - upload orchestration
   - UI for operator / tenant / vendor flows
 - **Postgres**
-  - organizations, users, properties, units, requests, events, attachment metadata
+  - organizations, regions, users, properties, units, requests, events, attachment metadata
 - **R2**
   - actual photo/object bytes
   - private bucket preferred

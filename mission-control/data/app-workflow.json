@@ -15,7 +15,7 @@
         "landed": "not-started"
       },
       "reviewGate": "Jeff cleared auth/authz as PASS WITH CONDITIONS for a controlled private beta; broader QA and hardening are still required before anything beyond that.",
-      "nextStep": "Execution has started on the sellability path. PostgreSQL/deployment planning is now documented in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md (commit 5493a36), operator org-scoping hardening landed in commit 8cb7e16, onboarding direction is formalized in PROPERTY_MANAGER_ONBOARDING_INVITE_SPEC.md, and the implementation path is now broken down in PROPERTY_MANAGER_INVITE_SYSTEM_BUILD_PLAN.md. Next: stabilize the auth boundary test harness, have Jeff verify the new org-scope protections, then hand the invite-system build plan to Bob alongside real Postgres/object-storage implementation and broader pilot-readiness QA.",
+      "nextStep": "Execution has started on the sellability path. PostgreSQL/deployment planning is now documented in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md (commit 5493a36), operator org-scoping hardening landed in commit 8cb7e16, onboarding direction is formalized in PROPERTY_MANAGER_ONBOARDING_INVITE_SPEC.md, and the implementation path is broken down in PROPERTY_MANAGER_INVITE_SYSTEM_BUILD_PLAN.md. Product direction now also includes optional region support inside an operator organization so properties and vendors can be grouped by town/service area. Next: stabilize the auth boundary test harness, have Jeff verify the new org-scope protections, finish invite-system hardening, then add the region layer as an organizational/filtering primitive before deciding whether it should become a harder permission boundary later.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
@@ -40,6 +40,7 @@
         "Barry Bot: Bob hardened operator organization scoping in commit 8cb7e16 so operator reads, writes, and request actions no longer trust raw IDs across org boundaries.",
         "Barry Bot: next quality gate on this slice is Jeff verifying foreign-org access denial and then cleaning up the auth-boundary test harness mismatch on valid-session automated cases.",
         "Barry Bot: rollout direction is now explicit: the operator pays, tenant access is free, vendor access is free, and tenant/vendor accounts should join the operator's workspace via operator-generated invite links or access codes rather than acting like standalone paid products.",
+        "Barry Bot: product direction now includes optional regions inside an operator organization so properties and vendors can be grouped across multiple towns/service areas without prematurely turning that into a giant enterprise hierarchy.",
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
       ]
     },

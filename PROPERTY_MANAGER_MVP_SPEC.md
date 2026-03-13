@@ -69,12 +69,13 @@ Web-first, mobile-responsive application.
 ## User roles
 ### Operator / landlord
 Can:
-- create and manage properties and units
+- create and manage properties, optional regions, and units
 - create, review, and update maintenance requests
 - assign vendors
 - update statuses
 - add internal notes
 - view history and reporting
+- organize work across multiple towns/service areas inside one organization
 
 ### Tenant
 Can:
@@ -183,10 +184,24 @@ Fields:
 - name
 - createdAt
 
+### Region
+Fields:
+- id
+- organizationId
+- name
+- optional code/slug
+- optional notes
+- createdAt
+
+Purpose:
+- operational grouping for properties and vendors across different towns or service areas inside one operator organization
+- used first for organization/filtering, with harder permissions optional later
+
 ### Property
 Fields:
 - id
 - organizationId
+- regionId nullable
 - name
 - address fields
 - notes
@@ -221,6 +236,10 @@ Fields:
 - email
 - notes
 - createdAt
+
+Region support direction:
+- vendor should support optional region coverage so operators can reflect which towns/service areas a vendor serves
+- first version can be simple filtering/coverage metadata rather than hard permissions
 
 ### MaintenanceRequest
 Fields:

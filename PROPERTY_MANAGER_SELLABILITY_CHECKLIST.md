@@ -28,11 +28,12 @@ That means:
 Safe enough to use with a small number of friendly real users.
 
 ### Product and workflow
-- [ ] Operator can manage real properties and units without demo-only assumptions
+- [ ] Operator can manage real properties, optional regions, and units without demo-only assumptions
 - [ ] Tenant can submit maintenance requests cleanly on mobile
 - [ ] Vendor can receive and update assigned work cleanly
 - [ ] Request lifecycle works end-to-end without manual cleanup
 - [ ] Core reporting is useful enough for a small landlord
+- [ ] Region support is good enough for operators managing properties and vendors across multiple towns/service areas
 
 ### Infrastructure
 - [ ] Replace local SQLite with PostgreSQL
