@@ -13,6 +13,18 @@ enum UserRole {
   VENDOR
 }
 
+enum InviteType {
+  TENANT
+  VENDOR
+}
+
+enum InviteStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+}
+
 enum TenantStatus {
   ACTIVE
   INACTIVE
@@ -58,12 +70,13 @@ enum EventVisibility {
 }
 
 model Organization {
-  id         String               @id @default(cuid())
+  id         String     @id @default(cuid())
   name       String
-  createdAt  DateTime             @default(now())
+  createdAt  DateTime   @default(now())
   users      AppUser[]
   properties Property[]
   vendors    Vendor[]
+  invites    Invite[]
 
   @@index([createdAt])
 }
@@ -78,6 +91,7 @@ model AppUser {
   createdAt      DateTime       @default(now())
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requestEvents  RequestEvent[]
+  invitesCreated Invite[]
 
   @@index([organizationId, role])
 }
@@ -96,6 +110,7 @@ model Property {
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   units          Unit[]
   requests       MaintenanceRequest[]
+  invites        Invite[]
 
   @@index([organizationId, createdAt])
 }
@@ -111,6 +126,7 @@ model Unit {
   property        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenants         Tenant[]
   requests        MaintenanceRequest[]
+  invites         Invite[]
 
   @@unique([propertyId, label])
   @@index([propertyId, createdAt])
@@ -118,15 +134,16 @@ model Unit {
 
 model Tenant {
   id           String               @id @default(cuid())
-  unitId        String
-  name          String
-  email         String?              @unique
-  passwordHash  String?
-  phone         String?
-  status        TenantStatus         @default(ACTIVE)
-  createdAt     DateTime             @default(now())
-  unit          Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  requests      MaintenanceRequest[]
+  unitId       String
+  name         String
+  email        String?              @unique
+  passwordHash String?
+  phone        String?
+  status       TenantStatus         @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  unit         Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requests     MaintenanceRequest[]
+  invites      Invite[]
 
   @@index([unitId, status])
 }
@@ -143,34 +160,35 @@ model Vendor {
   createdAt      DateTime             @default(now())
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requests       MaintenanceRequest[]
+  invites        Invite[]
 
   @@index([organizationId, trade])
 }
 
 model MaintenanceRequest {
-  id                 String            @id @default(cuid())
-  propertyId         String
-  unitId             String
-  tenantId           String?
-  createdByRole      UserRole
-  title              String
-  description        String
-  category           RequestCategory
-  urgency            RequestUrgency
-  status             RequestStatus     @default(NEW)
-  isTenantVisible    Boolean           @default(true)
-  isVendorVisible    Boolean           @default(true)
-  assignedVendorId   String?
-  scheduledFor       DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  closedAt           DateTime?
-  property           Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  unit               Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  tenant             Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  assignedVendor     Vendor?           @relation(fields: [assignedVendorId], references: [id], onDelete: SetNull)
-  events             RequestEvent[]
-  attachments        Attachment[]
+  id               String          @id @default(cuid())
+  propertyId       String
+  unitId           String
+  tenantId         String?
+  createdByRole    UserRole
+  title            String
+  description      String
+  category         RequestCategory
+  urgency          RequestUrgency
+  status           RequestStatus   @default(NEW)
+  isTenantVisible  Boolean         @default(true)
+  isVendorVisible  Boolean         @default(true)
+  assignedVendorId String?
+  scheduledFor     DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  closedAt         DateTime?
+  property         Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit             Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  tenant           Tenant?         @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  assignedVendor   Vendor?         @relation(fields: [assignedVendorId], references: [id], onDelete: SetNull)
+  events           RequestEvent[]
+  attachments      Attachment[]
 
   @@index([propertyId, status, createdAt])
   @@index([unitId, status])
@@ -179,30 +197,59 @@ model MaintenanceRequest {
 }
 
 model RequestEvent {
-  id             String             @id @default(cuid())
-  requestId      String
-  type           RequestEventType
-  actorRole      UserRole
-  actorName      String?
-  actorUserId    String?
-  body           String
-  visibility     EventVisibility    @default(INTERNAL)
-  createdAt      DateTime           @default(now())
-  request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  actorUser      AppUser?           @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  id          String             @id @default(cuid())
+  requestId   String
+  type        RequestEventType
+  actorRole   UserRole
+  actorName   String?
+  actorUserId String?
+  body        String
+  visibility  EventVisibility    @default(INTERNAL)
+  createdAt   DateTime           @default(now())
+  request     MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actorUser   AppUser?           @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([requestId, createdAt])
   @@index([actorUserId])
 }
 
 model Attachment {
-  id            String             @id @default(cuid())
-  requestId      String
-  uploaderRole   UserRole
-  storagePath    String
-  mimeType       String
-  createdAt      DateTime           @default(now())
-  request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  id           String             @id @default(cuid())
+  requestId    String
+  uploaderRole UserRole
+  storagePath  String
+  mimeType     String
+  createdAt    DateTime           @default(now())
+  request      MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([requestId, createdAt])
+}
+
+model Invite {
+  id              String       @id @default(cuid())
+  type            InviteType
+  status          InviteStatus @default(ACTIVE)
+  organizationId  String
+  propertyId      String?
+  unitId          String?
+  tenantId        String?
+  vendorId        String?
+  email           String?
+  tokenHash       String       @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  createdByUserId String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  property        Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  unit            Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  tenant          Tenant?      @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  vendor          Vendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  createdByUser   AppUser      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, type, status])
+  @@index([tenantId, status])
+  @@index([vendorId, status])
+  @@index([expiresAt])
 }

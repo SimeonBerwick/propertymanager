@@ -4,6 +4,7 @@ import { hashPassword } from '../lib/passwords';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.invite.deleteMany();
   await prisma.attachment.deleteMany();
   await prisma.requestEvent.deleteMany();
   await prisma.maintenanceRequest.deleteMany();

@@ -16,6 +16,7 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
   - Attachment
 - Seed script scaffold with realistic starter data
 - Operator route stubs for dashboard, properties, units, requests, vendors, and reporting
+- Invite foundation for tenant/vendor onboarding with hashed tokens and operator-generated invite links
 - Tenant placeholders for submission and request status
 - Vendor placeholders for queue and assigned request detail
 - `lib/permissions.ts` for role/action checks
@@ -75,11 +76,13 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
   - internal-note non-leakage to tenant/vendor surfaces
 
 ## Suggested next build steps
+- Build `/join` invite acceptance UX and attach accepted users to the existing tenant/vendor records
+- Add invite revocation/status management UI instead of one-shot creation only
 - Extend org scoping beyond the current operator hardening slice into memberships, invite flows, and eventually row-level posture suitable for PostgreSQL
 - Add deeper cross-account leakage tests for manipulated list queries and cross-org write attempts
 - Expand vendor updates into richer completion / parts / invoice-ready workflow if V1 needs it
 - Replace local SQLite with PostgreSQL when deployment path is chosen
-- Move session storage, password reset, invite flows, and audit logging to a fuller auth subsystem before production use
+- Move session storage, password reset, and audit logging to a fuller auth subsystem before production use
 
 ## QA handoff reminder
 Jeff is the explicit QA gate after the first functional build. Use the checklist in the root workspace docs plus seeded data to validate operator, tenant, and vendor flows.
