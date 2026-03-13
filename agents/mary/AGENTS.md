@@ -89,3 +89,19 @@ Watch for signals that a learning should become a skill.
 - high priority plus resolved status
 - category `best_practice` with broad applicability
 - user feedback praising the solution
+
+## Skill quality gates
+Before extracting a skill, verify:
+- the solution is tested and working
+- the description is clear without original context
+- code examples are self-contained
+- there are no project-specific hardcoded values
+- the name follows skill naming conventions (lowercase, hyphens)
+
+## Agent-agnostic guidance
+Apply self-improvement when you:
+- discover something non-obvious and the solution was not immediate
+- correct yourself because the initial approach was wrong
+- learn project conventions that were undocumented
+- hit unexpected errors, especially when diagnosis was difficult
+- find a better approach than the original one

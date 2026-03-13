@@ -317,6 +317,24 @@ Watch for these signals that a learning should become a skill.
 - category `best_practice` with broad applicability
 - user feedback praising the solution
 
+### Skill Quality Gates
+
+Before extraction, verify:
+- solution is tested and working
+- description is clear without original context
+- code examples are self-contained
+- no project-specific hardcoded values
+- skill naming follows lowercase-hyphen conventions
+
+## Agent-Agnostic Guidance
+
+Regardless of agent, apply self-improvement when you:
+- discover something non-obvious and the solution wasn't immediate
+- correct yourself because the initial approach was wrong
+- learn project conventions that were undocumented
+- hit unexpected errors, especially if diagnosis was difficult
+- find a better approach than the original solution
+
 ## Multi-Agent Support
 
 This skill works across:
