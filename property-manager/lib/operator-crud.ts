@@ -8,6 +8,7 @@ import {
 import { prisma } from '@/lib/prisma';
 import {
   assertPropertyInOrganization,
+  assertRegionInOrganization,
   assertTenantInOrganization,
   assertUnitInOrganization,
   assertVendorInOrganization,
@@ -45,12 +46,38 @@ function parseOptionalFloat(value: string, label: string) {
   return parsed;
 }
 
-export function parsePropertyInput(formData: FormData, organizationId: string): Prisma.PropertyUncheckedCreateInput {
+export function parseRegionInput(formData: FormData, organizationId: string): Prisma.RegionUncheckedCreateInput {
+  const name = getString(formData, 'name');
+  const slugInput = getOptionalString(formData, 'slug');
+
+  if (!organizationId) throw new Error('Organization is required.');
+  if (!name) throw new Error('Region name is required.');
+
+  const slug = slugInput
+    ? slugInput
+        .toLowerCase()
+        .replace(/[^a-z0-9-\s]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+    : null;
+
+  if (slugInput && !slug) throw new Error('Region slug must contain letters or numbers.');
+
+  return {
+    organizationId,
+    name,
+    slug,
+    notes: getOptionalString(formData, 'notes'),
+  };
+}
+
+export async function parsePropertyInput(formData: FormData, organizationId: string): Promise<Prisma.PropertyUncheckedCreateInput> {
   const name = getString(formData, 'name');
   const addressLine1 = getString(formData, 'addressLine1');
   const city = getString(formData, 'city');
   const state = getString(formData, 'state');
   const postalCode = getString(formData, 'postalCode');
+  const regionId = getOptionalString(formData, 'regionId');
 
   if (!organizationId) throw new Error('Organization is required.');
   if (!name) throw new Error('Property name is required.');
@@ -59,8 +86,13 @@ export function parsePropertyInput(formData: FormData, organizationId: string): 
   if (!state) throw new Error('State is required.');
   if (!postalCode) throw new Error('Postal code is required.');
 
+  if (regionId) {
+    await assertRegionInOrganization(organizationId, regionId);
+  }
+
   return {
     organizationId,
+    regionId,
     name,
     addressLine1,
     addressLine2: getOptionalString(formData, 'addressLine2'),

@@ -15,7 +15,7 @@ function getErrorMessage(error: unknown) {
 export async function createProperty(formData: FormData) {
   try {
     const session = await requireOperatorSession();
-    const data = parsePropertyInput(formData, session.organizationId);
+    const data = await parsePropertyInput(formData, session.organizationId);
     const property = await prisma.property.create({ data });
 
     revalidatePath('/operator');
@@ -29,7 +29,7 @@ export async function createProperty(formData: FormData) {
 export async function updateProperty(propertyId: string, formData: FormData) {
   try {
     const session = await requireOperatorSession();
-    const data = parsePropertyInput(formData, session.organizationId);
+    const data = await parsePropertyInput(formData, session.organizationId);
 
     const result = await prisma.property.updateMany({
       where: getOperatorPropertyWhere(session.organizationId, propertyId),

@@ -14,6 +14,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const property = await prisma.property.findFirst({
     where: { id, organizationId: session.organizationId },
     include: {
+      region: true,
       units: {
         orderBy: { label: 'asc' },
         include: {
@@ -46,7 +47,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           <ActionLink href={`/operator/requests/new?propertyId=${property.id}`}>Add request</ActionLink>
         </PageActions>
         <PageSection title={property.name} description={`${property.addressLine1}, ${property.city}, ${property.state} ${property.postalCode}`}>
-          <p className="text-sm text-slate-700">{property.notes || 'No property-level notes yet.'}</p>
+          <div className="space-y-2 text-sm text-slate-700">
+            <p><span className="font-medium text-slate-900">Region:</span> {property.region ? property.region.name : 'Unassigned'}</p>
+            <p>{property.notes || 'No property-level notes yet.'}</p>
+          </div>
         </PageSection>
         <PageSection title="Units" description="Occupancy snapshot and live request load by unit.">
           <div className="grid gap-4 md:grid-cols-2">

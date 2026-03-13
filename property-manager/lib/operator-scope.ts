@@ -12,6 +12,13 @@ export function getOperatorOrganizationWhere(organizationId: string) {
   return { organizationId };
 }
 
+export function getOperatorRegionWhere(organizationId: string, regionId: string) {
+  return {
+    id: regionId,
+    organizationId,
+  };
+}
+
 export function getOperatorPropertyWhere(organizationId: string, propertyId: string) {
   return {
     id: propertyId,
@@ -42,6 +49,16 @@ export function getOperatorVendorWhere(organizationId: string, vendorId: string)
     id: vendorId,
     organizationId,
   };
+}
+
+export async function assertRegionInOrganization(organizationId: string, regionId: string) {
+  const region = await prisma.region.findFirst({
+    where: getOperatorRegionWhere(organizationId, regionId),
+    select: { id: true, organizationId: true },
+  });
+
+  if (!region) throw new Error('Selected region was not found in your organization.');
+  return region;
 }
 
 export async function assertPropertyInOrganization(organizationId: string, propertyId: string) {

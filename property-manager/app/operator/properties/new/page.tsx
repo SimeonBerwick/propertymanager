@@ -1,13 +1,16 @@
 import { AppShell } from '@/components/app-shell';
-import { ErrorBanner, Field, FormActions, Input, Textarea } from '@/components/operator-form-ui';
+import { ErrorBanner, Field, FormActions, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorSession } from '@/lib/auth';
 import { createProperty } from '../actions';
 
-export default async function NewPropertyPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
+export default async function NewPropertyPage({ searchParams }: { searchParams?: Promise<{ error?: string; regionId?: string }> }) {
   const session = await requireOperatorSession();
-  const organization = await prisma.organization.findFirst({ where: { id: session.organizationId } });
+  const [organization, regions] = await Promise.all([
+    prisma.organization.findFirst({ where: { id: session.organizationId } }),
+    prisma.region.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
+  ]);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   return (
@@ -19,6 +22,14 @@ export default async function NewPropertyPage({ searchParams }: { searchParams?:
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Property name">
               <Input name="name" placeholder="Desert Bloom Apartments" required />
+            </Field>
+            <Field label="Region (optional)">
+              <Select name="regionId" defaultValue={resolvedSearchParams?.regionId ?? ''}>
+                <option value="">No region assigned</option>
+                {regions.map((region) => (
+                  <option key={region.id} value={region.id}>{region.name}</option>
+                ))}
+              </Select>
             </Field>
             <Field label="Address line 1">
               <Input name="addressLine1" placeholder="101 Main Street" required />

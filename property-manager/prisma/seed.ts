@@ -12,6 +12,7 @@ async function main() {
   await prisma.vendor.deleteMany();
   await prisma.unit.deleteMany();
   await prisma.property.deleteMany();
+  await prisma.region.deleteMany();
   await prisma.appUser.deleteMany();
   await prisma.organization.deleteMany();
 
@@ -34,39 +35,6 @@ async function main() {
           },
         ],
       },
-      properties: {
-        create: [
-          {
-            name: 'Desert Bloom Apartments',
-            addressLine1: '101 Main Street',
-            city: 'Phoenix',
-            state: 'AZ',
-            postalCode: '85001',
-            units: {
-              create: [
-                {
-                  label: '1A',
-                  bedroomCount: 2,
-                  bathroomCount: 1,
-                  occupancyStatus: 'occupied',
-                  tenants: {
-                    create: [
-                      {
-                        name: 'Tina Tenant',
-                        email: 'tina@example.com',
-                        phone: '555-0101',
-                        status: TenantStatus.ACTIVE,
-                        passwordHash: tenantPasswordHash,
-                      },
-                    ],
-                  },
-                },
-                { label: '2B', bedroomCount: 1, bathroomCount: 1, occupancyStatus: 'vacant' },
-              ],
-            },
-          },
-        ],
-      },
       vendors: {
         create: [
           {
@@ -81,12 +49,64 @@ async function main() {
     },
     include: {
       users: true,
-      properties: { include: { units: { include: { tenants: true } } } },
       vendors: true,
     },
   });
 
-  const property = organization.properties[0];
+  const [phoenixMetro] = await Promise.all([
+    prisma.region.create({
+      data: {
+        organizationId: organization.id,
+        name: 'Phoenix Metro',
+        slug: 'phoenix-metro',
+        notes: 'Core metro service area with the densest request volume.',
+      },
+    }),
+    prisma.region.create({
+      data: {
+        organizationId: organization.id,
+        name: 'West Valley',
+        slug: 'west-valley',
+        notes: 'Secondary service area for growth and overflow coverage.',
+      },
+    }),
+  ]);
+
+  const property = await prisma.property.create({
+    data: {
+      organizationId: organization.id,
+      regionId: phoenixMetro.id,
+      name: 'Desert Bloom Apartments',
+      addressLine1: '101 Main Street',
+      city: 'Phoenix',
+      state: 'AZ',
+      postalCode: '85001',
+      units: {
+        create: [
+          {
+            label: '1A',
+            bedroomCount: 2,
+            bathroomCount: 1,
+            occupancyStatus: 'occupied',
+            tenants: {
+              create: [
+                {
+                  name: 'Tina Tenant',
+                  email: 'tina@example.com',
+                  phone: '555-0101',
+                  status: TenantStatus.ACTIVE,
+                  passwordHash: tenantPasswordHash,
+                },
+              ],
+            },
+          },
+          { label: '2B', bedroomCount: 1, bathroomCount: 1, occupancyStatus: 'vacant' },
+        ],
+      },
+    },
+    include: { units: { include: { tenants: true } } },
+  });
+
   const unit = property.units[0];
   const tenant = unit.tenants[0];
   const operator = organization.users.find((user) => user.role === UserRole.OPERATOR)!;

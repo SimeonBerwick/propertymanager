@@ -11,15 +11,16 @@ import { OPEN_REQUEST_STATUSES, URGENT_REQUEST_URGENCIES } from '@/lib/operator-
 
 export default async function OperatorDashboardPage() {
   const session = await requireOperatorSession();
-  const [openCount, urgentCount, propertiesCount, recentRequests] = await Promise.all([
+  const [openCount, urgentCount, propertiesCount, regionsCount, recentRequests] = await Promise.all([
     prisma.maintenanceRequest.count({ where: { property: { organizationId: session.organizationId }, status: { in: OPEN_REQUEST_STATUSES } } }),
     prisma.maintenanceRequest.count({ where: { property: { organizationId: session.organizationId }, status: { in: OPEN_REQUEST_STATUSES }, urgency: { in: URGENT_REQUEST_URGENCIES } } }),
     prisma.property.count({ where: { organizationId: session.organizationId } }),
+    prisma.region.count({ where: { organizationId: session.organizationId } }),
     prisma.maintenanceRequest.findMany({
       where: { property: { organizationId: session.organizationId } },
       orderBy: [{ updatedAt: 'desc' }],
       take: 5,
-      include: { property: true, unit: true },
+      include: { property: { include: { region: true } }, unit: true },
     }),
   ]);
 
@@ -31,10 +32,11 @@ export default async function OperatorDashboardPage() {
           <h2 className="text-3xl font-semibold text-slate-900">Maintenance dashboard</h2>
           <p className="mt-2 text-slate-600">Live operator view for open workload, urgent triage, and request follow-through.</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Open requests" value={String(openCount)} hint="New, scheduled, and in progress" />
           <StatCard label="Urgent queue" value={String(urgentCount)} hint="High or emergency requests needing attention" />
           <StatCard label="Properties" value={String(propertiesCount)} hint="Portfolio currently loaded into the local seed" />
+          <StatCard label="Regions" value={String(regionsCount)} hint="Operational groupings for towns and service areas" />
         </div>
         <PageSection title="Recently updated requests" description="Fast path into the real inbox and request detail pages.">
           <div className="space-y-3">
@@ -43,7 +45,7 @@ export default async function OperatorDashboardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-medium text-slate-900">{request.title}</p>
-                    <p className="text-sm text-slate-600">{request.property.name} · Unit {request.unit.label}</p>
+                    <p className="text-sm text-slate-600">{request.property.name} · {request.property.region?.name || 'Unassigned region'} · Unit {request.unit.label}</p>
                     <p className="mt-1 text-xs text-slate-500">Updated {formatDateTime(request.updatedAt)}</p>
                   </div>
                   <div className="flex gap-2 text-xs font-medium">

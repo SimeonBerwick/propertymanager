@@ -7,6 +7,7 @@ import { logout } from '@/app/auth/actions';
 const navItemsByRole: Record<string, Array<{ href: Route; label: string }>> = {
   operator: [
     { href: '/operator', label: 'Dashboard' },
+    { href: '/operator/regions', label: 'Regions' },
     { href: '/operator/properties', label: 'Properties' },
     { href: '/operator/units', label: 'Units' },
     { href: '/operator/requests', label: 'Requests' },

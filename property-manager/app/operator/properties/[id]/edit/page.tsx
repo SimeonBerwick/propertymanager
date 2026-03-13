@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { ErrorBanner, Field, FormActions, Input, Textarea } from '@/components/operator-form-ui';
+import { ErrorBanner, Field, FormActions, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorSession } from '@/lib/auth';
@@ -15,7 +15,10 @@ export default async function EditPropertyPage({
 }) {
   const session = await requireOperatorSession();
   const { id } = await params;
-  const property = await prisma.property.findFirst({ where: { id, organizationId: session.organizationId } });
+  const [property, regions] = await Promise.all([
+    prisma.property.findFirst({ where: { id, organizationId: session.organizationId } }),
+    prisma.region.findMany({ where: { organizationId: session.organizationId }, orderBy: { name: 'asc' } }),
+  ]);
   if (!property) notFound();
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -30,6 +33,14 @@ export default async function EditPropertyPage({
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Property name">
               <Input name="name" defaultValue={property.name} required />
+            </Field>
+            <Field label="Region (optional)">
+              <Select name="regionId" defaultValue={property.regionId ?? ''}>
+                <option value="">No region assigned</option>
+                {regions.map((region) => (
+                  <option key={region.id} value={region.id}>{region.name}</option>
+                ))}
+              </Select>
             </Field>
             <Field label="Address line 1">
               <Input name="addressLine1" defaultValue={property.addressLine1} required />

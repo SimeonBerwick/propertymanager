@@ -74,11 +74,27 @@ model Organization {
   name       String
   createdAt  DateTime   @default(now())
   users      AppUser[]
+  regions    Region[]
   properties Property[]
   vendors    Vendor[]
   invites    Invite[]
 
   @@index([createdAt])
+}
+
+model Region {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  properties     Property[]
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, slug])
+  @@index([organizationId, createdAt])
 }
 
 model AppUser {
@@ -99,6 +115,7 @@ model AppUser {
 model Property {
   id             String               @id @default(cuid())
   organizationId String
+  regionId       String?
   name           String
   addressLine1   String
   addressLine2   String?
@@ -108,11 +125,12 @@ model Property {
   notes          String?
   createdAt      DateTime             @default(now())
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  region         Region?              @relation(fields: [regionId], references: [id], onDelete: SetNull)
   units          Unit[]
   requests       MaintenanceRequest[]
   invites        Invite[]
 
-  @@index([organizationId, createdAt])
+  @@index([organizationId, regionId, createdAt])
 }
 
 model Unit {
