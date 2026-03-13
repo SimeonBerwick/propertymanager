@@ -1,4 +1,4 @@
-import { PrismaClient, RequestCategory, RequestEventType, RequestStatus, RequestUrgency, TenantStatus, UserRole, EventVisibility } from '@prisma/client';
+import { PrismaClient, RequestCategory, RequestEventType, RequestStatus, RequestUrgency, TenantStatus, UserRole, EventVisibility, VendorPricingType, VendorResponseStatus } from '@prisma/client';
 import { hashPassword } from '../lib/passwords';
 
 const prisma = new PrismaClient();
@@ -125,6 +125,11 @@ async function main() {
       status: RequestStatus.SCHEDULED,
       assignedVendorId: vendor.id,
       scheduledFor: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      vendorResponseStatus: VendorResponseStatus.ACCEPTED,
+      vendorPlannedStartDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      vendorExpectedCompletionDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      vendorPricingType: VendorPricingType.INITIAL_SERVICE_FEE,
+      vendorPriceCents: 12500,
       events: {
         create: [
           {
@@ -158,6 +163,11 @@ async function main() {
             uploaderRole: UserRole.TENANT,
             storagePath: '/seed/kitchen-sink-leak.png',
             mimeType: 'image/png',
+          },
+          {
+            uploaderRole: UserRole.VENDOR,
+            storagePath: '/seed/ace-plumbing-bid.pdf',
+            mimeType: 'application/pdf',
           },
         ],
       },

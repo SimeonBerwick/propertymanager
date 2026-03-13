@@ -69,6 +69,18 @@ enum EventVisibility {
   ALL
 }
 
+enum VendorResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum VendorPricingType {
+  NONE
+  FULL_BID
+  INITIAL_SERVICE_FEE
+}
+
 model Organization {
   id         String     @id @default(cuid())
   name       String
@@ -184,24 +196,29 @@ model Vendor {
 }
 
 model MaintenanceRequest {
-  id               String          @id @default(cuid())
-  propertyId       String
-  unitId           String
-  tenantId         String?
-  createdByRole    UserRole
-  title            String
-  description      String
-  category         RequestCategory
-  urgency          RequestUrgency
-  status           RequestStatus   @default(NEW)
-  isTenantVisible  Boolean         @default(true)
-  isVendorVisible  Boolean         @default(true)
-  assignedVendorId String?
-  scheduledFor     DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  closedAt         DateTime?
-  property         Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id                          String               @id @default(cuid())
+  propertyId                  String
+  unitId                      String
+  tenantId                    String?
+  createdByRole               UserRole
+  title                       String
+  description                 String
+  category                    RequestCategory
+  urgency                     RequestUrgency
+  status                      RequestStatus        @default(NEW)
+  isTenantVisible             Boolean              @default(true)
+  isVendorVisible             Boolean              @default(true)
+  assignedVendorId            String?
+  scheduledFor                DateTime?
+  vendorResponseStatus        VendorResponseStatus @default(PENDING)
+  vendorPlannedStartDate      DateTime?
+  vendorExpectedCompletionDate DateTime?
+  vendorPricingType           VendorPricingType    @default(NONE)
+  vendorPriceCents            Int?
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  closedAt                    DateTime?
+  property                    Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   unit             Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
   tenant           Tenant?         @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   assignedVendor   Vendor?         @relation(fields: [assignedVendorId], references: [id], onDelete: SetNull)

@@ -1,73 +1,10 @@
 import { EventVisibility, RequestCategory, RequestEventType, RequestStatus, RequestUrgency, UserRole } from '@prisma/client';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
-
-const uploadRoot = path.join(process.cwd(), 'public', 'uploads', 'requests');
-const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const maxFileSizeBytes = 5 * 1024 * 1024;
+import { getFormFiles, persistTenantPhotos } from '@/lib/request-attachments';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function getUploadedFiles(formData: FormData, key: string) {
-  return formData
-    .getAll(key)
-    .filter((value): value is File => value instanceof File && value.size > 0);
-}
-
-function getFileExtension(file: File) {
-  const nameExtension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
-  if (nameExtension) return nameExtension;
-
-  switch (file.type) {
-    case 'image/jpeg':
-      return 'jpg';
-    case 'image/png':
-      return 'png';
-    case 'image/webp':
-      return 'webp';
-    case 'image/gif':
-      return 'gif';
-    default:
-      return 'bin';
-  }
-}
-
-async function persistPhotos(requestId: string, files: File[]) {
-  if (files.length === 0) return [] as Array<{ uploaderRole: UserRole; storagePath: string; mimeType: string }>;
-
-  const requestDir = path.join(uploadRoot, requestId);
-  await mkdir(requestDir, { recursive: true });
-
-  const attachments = [] as Array<{ uploaderRole: UserRole; storagePath: string; mimeType: string }>;
-
-  for (const file of files) {
-    if (!allowedMimeTypes.has(file.type)) {
-      throw new Error('Photos must be JPEG, PNG, WebP, or GIF.');
-    }
-
-    if (file.size > maxFileSizeBytes) {
-      throw new Error('Each photo must be 5 MB or smaller.');
-    }
-
-    const extension = getFileExtension(file);
-    const filename = `${randomUUID()}.${extension}`;
-    const outputPath = path.join(requestDir, filename);
-    const bytes = Buffer.from(await file.arrayBuffer());
-    await writeFile(outputPath, bytes);
-
-    attachments.push({
-      uploaderRole: UserRole.TENANT,
-      storagePath: `/uploads/requests/${requestId}/${filename}`,
-      mimeType: file.type,
-    });
-  }
-
-  return attachments;
 }
 
 export async function getTenantPortalData() {
@@ -85,7 +22,7 @@ export async function createTenantRequest(tenantId: string, formData: FormData) 
   const urgency = getString(formData, 'urgency');
   const contactPhone = getString(formData, 'contactPhone');
   const entryNotes = getString(formData, 'entryNotes');
-  const photos = getUploadedFiles(formData, 'photos');
+  const photos = getFormFiles(formData, 'photos');
 
   if (!title) throw new Error('Title is required.');
   if (!description) throw new Error('Description is required.');
@@ -131,7 +68,7 @@ export async function createTenantRequest(tenantId: string, formData: FormData) 
     },
   });
 
-  const attachments = await persistPhotos(request.id, photos);
+  const attachments = await persistTenantPhotos(request.id, photos);
   if (attachments.length > 0) {
     await prisma.attachment.createMany({
       data: attachments.map((attachment) => ({ ...attachment, requestId: request.id })),

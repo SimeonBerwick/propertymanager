@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { VendorPricingType, VendorResponseStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
 import { ErrorBanner } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
@@ -8,9 +9,12 @@ import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel } from '
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getVendorPortalData, getVendorVisibleRequest } from '@/lib/vendor-requests';
 import { requireVendorSession } from '@/lib/auth';
+import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { submitVendorUpdate } from './actions';
 
 const vendorStatusOptions = ['SCHEDULED', 'IN_PROGRESS', 'DONE'] as const;
+const vendorResponseOptions = [VendorResponseStatus.PENDING, VendorResponseStatus.ACCEPTED, VendorResponseStatus.DECLINED] as const;
+const vendorPricingOptions = [VendorPricingType.NONE, VendorPricingType.FULL_BID, VendorPricingType.INITIAL_SERVICE_FEE] as const;
 
 export default async function VendorRequestDetailPage({
   params,
@@ -27,6 +31,8 @@ export default async function VendorRequestDetailPage({
   if (!request) notFound();
 
   const vendorUpdateAction = submitVendorUpdate.bind(null, request.id);
+  const photoAttachments = request.attachments.filter((attachment) => attachment.mimeType.startsWith('image/'));
+  const bidAttachments = request.attachments.filter((attachment) => attachment.mimeType === 'application/pdf');
 
   return (
     <AppShell>
@@ -44,12 +50,17 @@ export default async function VendorRequestDetailPage({
               <span className={`rounded-full px-3 py-1 ${getStatusClasses(request.status)}`}>{getRequestStatusLabel(request.status)}</span>
               <span className={`rounded-full px-3 py-1 ${getUrgencyClasses(request.urgency)}`}>{request.urgency.replace('_', ' ')}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{request.category}</span>
+              <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-800">Vendor response: {getVendorResponseLabel(request.vendorResponseStatus)}</span>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <p>Vendor: {request.assignedVendor?.name || 'Unassigned'}</p>
               <p>Resident: {request.tenant?.name || 'Tenant on file'}</p>
               <p>Scheduled: {formatDateTime(request.scheduledFor)}</p>
               <p>Reference ID: <span className="font-mono text-xs">{request.id}</span></p>
+              <p>Planned start: {formatDateTime(request.vendorPlannedStartDate)}</p>
+              <p>Expected completion: {formatDateTime(request.vendorExpectedCompletionDate)}</p>
+              <p>Pricing: {getVendorPricingTypeLabel(request.vendorPricingType)} {request.vendorPriceCents != null ? `· ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
+              <p>Bid PDFs: {bidAttachments.length}</p>
             </div>
           </div>
         </PageSection>
@@ -72,7 +83,7 @@ export default async function VendorRequestDetailPage({
           </PageSection>
 
           <div className="space-y-6">
-            <PageSection title="Vendor update" description="Only the assigned vendor on a vendor-visible request can post progress or change job status.">
+            <PageSection title="Vendor update" description="Assigned vendors can now respond to the ticket, provide dates, submit pricing, and attach a PDF bid.">
               <form action={vendorUpdateAction} className="space-y-3">
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Job status</span>
@@ -84,6 +95,58 @@ export default async function VendorRequestDetailPage({
                     ))}
                   </select>
                 </label>
+
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Accept / decline</span>
+                  <select name="vendorResponseStatus" defaultValue={request.vendorResponseStatus} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    {vendorResponseOptions.map((status) => (
+                      <option key={status} value={status}>{getVendorResponseLabel(status)}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Planned start date</span>
+                    <input
+                      name="vendorPlannedStartDate"
+                      type="datetime-local"
+                      defaultValue={request.vendorPlannedStartDate ? new Date(request.vendorPlannedStartDate.getTime() - request.vendorPlannedStartDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                      className="w-full rounded-md border border-slate-300 px-3 py-2"
+                    />
+                  </label>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Expected completion</span>
+                    <input
+                      name="vendorExpectedCompletionDate"
+                      type="datetime-local"
+                      defaultValue={request.vendorExpectedCompletionDate ? new Date(request.vendorExpectedCompletionDate.getTime() - request.vendorExpectedCompletionDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                      className="w-full rounded-md border border-slate-300 px-3 py-2"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Pricing type</span>
+                    <select name="vendorPricingType" defaultValue={request.vendorPricingType} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                      {vendorPricingOptions.map((type) => (
+                        <option key={type} value={type}>{getVendorPricingTypeLabel(type)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Price (USD)</span>
+                    <input name="vendorPrice" type="text" inputMode="decimal" defaultValue={request.vendorPriceCents != null ? (request.vendorPriceCents / 100).toFixed(2) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="125.00" />
+                  </label>
+                </div>
+
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Upload PDF bid</span>
+                  <input name="bidPdf" type="file" accept="application/pdf" className="w-full rounded-md border border-slate-300 px-3 py-2" />
+                  <span className="mt-1 block text-xs text-slate-500">Attach a PDF bid or service-fee sheet directly to this ticket.</span>
+                </label>
+
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Progress update</span>
                   <textarea
@@ -101,6 +164,23 @@ export default async function VendorRequestDetailPage({
               </form>
             </PageSection>
 
+            <PageSection title="Bid documents" description="Vendor-uploaded PDF bids attached to this maintenance ticket.">
+              {bidAttachments.length === 0 ? (
+                <p className="text-sm text-slate-600">No vendor PDF bids uploaded yet.</p>
+              ) : (
+                <div className="space-y-2 text-sm text-slate-700">
+                  {bidAttachments.map((attachment) => {
+                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+                    return (
+                      <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block rounded-lg border border-slate-200 px-3 py-2 text-brand-700 underline">
+                        Open PDF bid uploaded {formatDateTime(attachment.createdAt)}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </PageSection>
+
             <PageSection title="Access + contact" description="Vendor access is scoped to the signed-in company and no longer impersonated via URL parameters.">
               <div className="space-y-2 text-sm text-slate-700">
                 <p><strong>Property:</strong> {request.property.name}</p>
@@ -112,11 +192,11 @@ export default async function VendorRequestDetailPage({
             </PageSection>
 
             <PageSection title="Photos" description="Request photos already attached by the resident flow.">
-              {request.attachments.length === 0 ? (
+              {photoAttachments.length === 0 ? (
                 <p className="text-sm text-slate-600">No photos were attached to this request.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {request.attachments.map((attachment) => {
+                  {photoAttachments.map((attachment) => {
                     const attachmentUrl = getAttachmentUrl(attachment.storagePath);
 
                     return (

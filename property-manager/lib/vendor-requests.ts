@@ -1,4 +1,4 @@
-import { EventVisibility } from '@prisma/client';
+import { EventVisibility, RequestStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export async function getVendorPortalData(vendorId: string) {
@@ -10,7 +10,7 @@ export async function getVendorPortalData(vendorId: string) {
           requests: {
             where: {
               isVendorVisible: true,
-              status: { in: ['NEW', 'SCHEDULED', 'IN_PROGRESS'] },
+              status: { in: [RequestStatus.NEW, RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS] },
             },
           },
         },

@@ -1,10 +1,18 @@
 'use server';
 
-import { EventVisibility, RequestEventType, RequestStatus, UserRole } from '@prisma/client';
+import {
+  EventVisibility,
+  RequestEventType,
+  RequestStatus,
+  UserRole,
+  VendorPricingType,
+  VendorResponseStatus,
+} from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireVendorSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { persistVendorBidPdfs } from '@/lib/request-attachments';
 import { canTransition } from '@/lib/request-lifecycle';
 
 function getString(formData: FormData, key: string) {
@@ -16,10 +24,34 @@ function getBoolean(formData: FormData, key: string) {
   return formData.get(key) === 'on';
 }
 
+function parseOptionalDate(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'invalid' : date;
+}
+
+function parsePriceCents(value: string) {
+  if (!value) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) return 'invalid';
+  return Math.round(Number(value) * 100);
+}
+
 const vendorAllowedStatuses = new Set<RequestStatus>([
   RequestStatus.SCHEDULED,
   RequestStatus.IN_PROGRESS,
   RequestStatus.DONE,
+]);
+
+const vendorResponseStatuses = new Set<VendorResponseStatus>([
+  VendorResponseStatus.PENDING,
+  VendorResponseStatus.ACCEPTED,
+  VendorResponseStatus.DECLINED,
+]);
+
+const vendorPricingTypes = new Set<VendorPricingType>([
+  VendorPricingType.NONE,
+  VendorPricingType.FULL_BID,
+  VendorPricingType.INITIAL_SERVICE_FEE,
 ]);
 
 export async function submitVendorUpdate(requestId: string, formData: FormData) {
@@ -27,9 +59,48 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   const nextStatus = getString(formData, 'status');
   const body = getString(formData, 'body');
   const shareWithTenant = getBoolean(formData, 'shareWithTenant');
+  const responseStatusValue = getString(formData, 'vendorResponseStatus');
+  const plannedStartValue = getString(formData, 'vendorPlannedStartDate');
+  const expectedCompletionValue = getString(formData, 'vendorExpectedCompletionDate');
+  const pricingTypeValue = getString(formData, 'vendorPricingType');
+  const priceValue = getString(formData, 'vendorPrice');
+  const bidFiles = formData
+    .getAll('bidPdf')
+    .filter((value): value is File => value instanceof File && value.size > 0);
 
   if (!vendorAllowedStatuses.has(nextStatus as RequestStatus)) {
     redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20vendor%20status.`);
+  }
+
+  if (!vendorResponseStatuses.has(responseStatusValue as VendorResponseStatus)) {
+    redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20vendor%20response.`);
+  }
+
+  if (!vendorPricingTypes.has(pricingTypeValue as VendorPricingType)) {
+    redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20pricing%20type.`);
+  }
+
+  const plannedStartDate = parseOptionalDate(plannedStartValue);
+  if (plannedStartDate === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20planned%20start%20date.`);
+  }
+
+  const expectedCompletionDate = parseOptionalDate(expectedCompletionValue);
+  if (expectedCompletionDate === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20expected%20completion%20date.`);
+  }
+
+  const vendorPriceCents = parsePriceCents(priceValue);
+  if (vendorPriceCents === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20price%20using%20numbers%20only.`);
+  }
+
+  const pricingType = pricingTypeValue as VendorPricingType;
+  if (pricingType === VendorPricingType.NONE && vendorPriceCents !== null) {
+    redirect(`/vendor/requests/${requestId}?error=Clear%20the%20price%20or%20choose%20a%20pricing%20type.`);
+  }
+  if (pricingType !== VendorPricingType.NONE && vendorPriceCents === null) {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20price%20for%20the%20selected%20pricing%20type.`);
   }
 
   const request = await prisma.maintenanceRequest.findFirst({
@@ -52,19 +123,29 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     redirect(`/vendor/requests/${requestId}?error=That%20status%20transition%20is%20not%20allowed.`);
   }
 
-  if (!body && request.status === status) {
-    redirect(`/vendor/requests/${requestId}?error=Add%20a%20progress%20update%20or%20change%20the%20status.`);
+  const responseStatus = responseStatusValue as VendorResponseStatus;
+  const nothingChanged =
+    !body &&
+    request.status === status &&
+    request.vendorResponseStatus === responseStatus &&
+    String(request.vendorPlannedStartDate ?? '') === String(plannedStartDate ?? '') &&
+    String(request.vendorExpectedCompletionDate ?? '') === String(expectedCompletionDate ?? '') &&
+    request.vendorPricingType === pricingType &&
+    request.vendorPriceCents === vendorPriceCents &&
+    bidFiles.length === 0;
+
+  if (nothingChanged) {
+    redirect(`/vendor/requests/${requestId}?error=Add%20an%20update%20or%20change%20one%20of%20the%20vendor%20fields.`);
   }
 
-  const events = [] as Array<{
+  const actorName = request.assignedVendor?.name || session.displayName;
+  const events: Array<{
     type: RequestEventType;
     actorRole: UserRole;
     actorName: string;
     body: string;
     visibility: EventVisibility;
-  }>;
-
-  const actorName = request.assignedVendor?.name || session.displayName;
+  }> = [];
 
   if (request.status !== status) {
     events.push({
@@ -73,6 +154,49 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
       actorName,
       body: `Vendor updated status to ${status.replace('_', ' ')}.`,
       visibility: EventVisibility.ALL,
+    });
+  }
+
+  if (request.vendorResponseStatus !== responseStatus) {
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: `Vendor ${responseStatus.toLowerCase()} the work ticket.`,
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
+  if (String(request.vendorPlannedStartDate ?? '') !== String(plannedStartDate ?? '')) {
+    events.push({
+      type: RequestEventType.SCHEDULE_SET,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: plannedStartDate ? `Vendor planned start date: ${plannedStartDate.toLocaleString()}.` : 'Vendor cleared the planned start date.',
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
+  if (String(request.vendorExpectedCompletionDate ?? '') !== String(expectedCompletionDate ?? '')) {
+    events.push({
+      type: RequestEventType.SCHEDULE_SET,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: expectedCompletionDate ? `Vendor expected completion date: ${expectedCompletionDate.toLocaleString()}.` : 'Vendor cleared the expected completion date.',
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
+  if (request.vendorPricingType !== pricingType || request.vendorPriceCents !== vendorPriceCents) {
+    const pricingLabel = pricingType === VendorPricingType.FULL_BID ? 'full bid' : pricingType === VendorPricingType.INITIAL_SERVICE_FEE ? 'initial service fee' : 'pricing';
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: pricingType === VendorPricingType.NONE || vendorPriceCents == null
+        ? 'Vendor cleared pricing from the ticket.'
+        : `Vendor submitted ${pricingLabel}: $${(vendorPriceCents / 100).toFixed(2)}.`,
+      visibility: EventVisibility.VENDOR,
     });
   }
 
@@ -86,11 +210,32 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     });
   }
 
+  const bidAttachments = await persistVendorBidPdfs(request.id, bidFiles);
+  if (bidAttachments.length > 0) {
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: `${bidAttachments.length} PDF bid attachment${bidAttachments.length === 1 ? '' : 's'} uploaded.`,
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
   await prisma.maintenanceRequest.update({
     where: { id: request.id },
     data: {
       status,
       closedAt: status === RequestStatus.DONE ? new Date() : null,
+      vendorResponseStatus: responseStatus,
+      vendorPlannedStartDate: plannedStartDate,
+      vendorExpectedCompletionDate: expectedCompletionDate,
+      vendorPricingType: pricingType,
+      vendorPriceCents,
+      attachments: bidAttachments.length > 0
+        ? {
+            create: bidAttachments,
+          }
+        : undefined,
       events: events.length > 0 ? { create: events } : undefined,
     },
   });
