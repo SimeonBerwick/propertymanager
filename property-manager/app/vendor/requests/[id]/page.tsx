@@ -1,15 +1,18 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { VendorPricingType, VendorResponseStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
 import { ErrorBanner } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
+import { TicketProgress } from '@/components/ticket-progress';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getVendorPortalData, getVendorVisibleRequest } from '@/lib/vendor-requests';
 import { requireVendorSession } from '@/lib/auth';
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
+import { getDisplayLanguage, getLocalizedDateTime, getRequestCopy } from '@/lib/request-display';
 import { submitVendorUpdate } from './actions';
 
 const vendorStatusOptions = ['SCHEDULED', 'IN_PROGRESS', 'DONE'] as const;
@@ -21,7 +24,7 @@ export default async function VendorRequestDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ error?: string; saved?: string }>;
+  searchParams?: Promise<{ error?: string; saved?: string; lang?: string }>;
 }) {
   const [{ id }, session, resolvedSearchParams] = await Promise.all([params, requireVendorSession(), searchParams]);
   const activeVendor = await getVendorPortalData(session.vendorId);
@@ -33,11 +36,18 @@ export default async function VendorRequestDetailPage({
   const vendorUpdateAction = submitVendorUpdate.bind(null, request.id);
   const photoAttachments = request.attachments.filter((attachment) => attachment.mimeType.startsWith('image/'));
   const bidAttachments = request.attachments.filter((attachment) => attachment.mimeType === 'application/pdf');
+  const language = getDisplayLanguage(resolvedSearchParams?.lang);
+  const copy = getRequestCopy(language);
 
   return (
     <AppShell>
       <div className="space-y-6">
         <PageSection title={request.title} description={`${request.property.name} · Unit ${request.unit.label}`}>
+          <div className="mb-4 flex gap-2 text-xs font-medium">
+            <span className="self-center text-slate-500">{copy.languageLabel}:</span>
+            <Link href={`/vendor/requests/${request.id}${resolvedSearchParams?.saved ? '?saved=1' : ''}`} className={`rounded-full px-3 py-1 ${language === 'en' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{copy.english}</Link>
+            <Link href={`/vendor/requests/${request.id}?lang=es${resolvedSearchParams?.saved ? '&saved=1' : ''}`} className={`rounded-full px-3 py-1 ${language === 'es' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{copy.spanish}</Link>
+          </div>
           <div className="space-y-3 text-sm text-slate-700">
             <ErrorBanner message={resolvedSearchParams?.error} />
             {resolvedSearchParams?.saved ? (
@@ -63,6 +73,16 @@ export default async function VendorRequestDetailPage({
               <p>Bid PDFs: {bidAttachments.length}</p>
             </div>
           </div>
+        </PageSection>
+
+        <PageSection title={copy.progressTitle} description={copy.progressDescription}>
+          <TicketProgress
+            language={language}
+            status={request.status}
+            assignedVendorId={request.assignedVendorId}
+            vendorResponseStatus={request.vendorResponseStatus}
+            completedAt={request.status === 'DONE' ? getLocalizedDateTime(request.closedAt ?? request.updatedAt, language) : null}
+          />
         </PageSection>
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">

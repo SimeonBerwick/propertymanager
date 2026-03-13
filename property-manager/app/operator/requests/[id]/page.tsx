@@ -3,6 +3,7 @@ import { EventVisibility, RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
+import { TicketProgress } from '@/components/ticket-progress';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorSession } from '@/lib/auth';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
@@ -10,6 +11,7 @@ import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { addInternalNote, dispatchRequest, updateRequestStatus } from './actions';
+import { getLocalizedDateTime } from '@/lib/request-display';
 
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireOperatorSession();
@@ -65,6 +67,16 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               <p><strong>Pricing:</strong> {getVendorPricingTypeLabel(request.vendorPricingType)}{request.vendorPriceCents != null ? ` · ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
             </div>
           </div>
+        </PageSection>
+
+        <PageSection title="Request progress" description="Human-facing milestone view layered on top of the deeper workflow state.">
+          <TicketProgress
+            language="en"
+            status={request.status}
+            assignedVendorId={request.assignedVendorId}
+            vendorResponseStatus={request.vendorResponseStatus}
+            completedAt={request.status === RequestStatus.DONE ? getLocalizedDateTime(request.closedAt ?? request.updatedAt, 'en') : null}
+          />
         </PageSection>
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">

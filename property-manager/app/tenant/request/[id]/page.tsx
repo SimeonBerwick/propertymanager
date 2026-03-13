@@ -1,19 +1,22 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import Link from 'next/link';
 import { PageSection } from '@/components/page-section';
+import { TicketProgress } from '@/components/ticket-progress';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { getRequestEventTypeLabel, getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getTenantVisibleRequest } from '@/lib/tenant-requests';
 import { requireTenantSession } from '@/lib/auth';
+import { getDisplayLanguage, getLocalizedDateTime, getRequestCopy } from '@/lib/request-display';
 
 export default async function TenantRequestStatusPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ submitted?: string }>;
+  searchParams?: Promise<{ submitted?: string; lang?: string }>;
 }) {
   const [{ id }, resolvedSearchParams, session] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined), requireTenantSession()]);
   const request = await getTenantVisibleRequest(id, session.tenantId);
@@ -21,6 +24,8 @@ export default async function TenantRequestStatusPage({
   if (!request) notFound();
 
   const timeline = request.events;
+  const language = getDisplayLanguage(resolvedSearchParams?.lang);
+  const copy = getRequestCopy(language);
 
   return (
     <AppShell>
@@ -32,6 +37,11 @@ export default async function TenantRequestStatusPage({
         ) : null}
 
         <PageSection title={request.title} description={`${request.property.name} · Unit ${request.unit.label}`}>
+          <div className="mb-4 flex gap-2 text-xs font-medium">
+            <span className="self-center text-slate-500">{copy.languageLabel}:</span>
+            <Link href={`/tenant/request/${request.id}`} className={`rounded-full px-3 py-1 ${language === 'en' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{copy.english}</Link>
+            <Link href={`/tenant/request/${request.id}?lang=es`} className={`rounded-full px-3 py-1 ${language === 'es' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{copy.spanish}</Link>
+          </div>
           <div className="space-y-3 text-sm text-slate-700">
             <p>{request.description}</p>
             <div className="flex flex-wrap gap-2 text-xs font-medium">
@@ -46,6 +56,16 @@ export default async function TenantRequestStatusPage({
               <p>Vendor: {request.assignedVendor?.name || 'Not assigned yet'}</p>
             </div>
           </div>
+        </PageSection>
+
+        <PageSection title={copy.progressTitle} description={copy.progressDescription}>
+          <TicketProgress
+            language={language}
+            status={request.status}
+            assignedVendorId={request.assignedVendorId}
+            vendorResponseStatus={request.vendorResponseStatus}
+            completedAt={request.status === 'DONE' ? getLocalizedDateTime(request.closedAt ?? request.updatedAt, language) : null}
+          />
         </PageSection>
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
