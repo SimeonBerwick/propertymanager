@@ -66,3 +66,11 @@ Automatically log when you notice:
 - exception or stack trace
 - unexpected output or behavior
 - timeout or connection failure
+
+## Best practices
+- log immediately while context is fresh
+- be specific so future agents understand quickly
+- include reproduction steps, especially for errors
+- link related files to speed fixes
+- suggest concrete fixes, not just "investigate"
+- use consistent categories so entries remain filterable

@@ -288,12 +288,12 @@ Automatically log when you notice:
 
 ## Best Practices
 
-1. Log immediately
-2. Be specific
-3. Include reproduction steps
-4. Link related files
-5. Suggest concrete fixes
-6. Use consistent categories
+1. Log immediately - context is freshest right after the issue
+2. Be specific - future agents need to understand quickly
+3. Include reproduction steps - especially for errors
+4. Link related files - makes fixes easier
+5. Suggest concrete fixes - not just "investigate"
+6. Use consistent categories - enables filtering
 7. Promote aggressively when durable
 8. Review regularly
 
