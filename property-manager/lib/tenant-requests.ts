@@ -101,7 +101,12 @@ export async function getTenantVisibleRequest(requestId: string, tenantId: strin
       unit: true,
       tenant: true,
       assignedVendor: true,
-      attachments: { orderBy: { createdAt: 'asc' } },
+      attachments: {
+        where: {
+          mimeType: { startsWith: 'image/' },
+        },
+        orderBy: { createdAt: 'asc' },
+      },
       events: {
         where: {
           visibility: { in: [EventVisibility.TENANT, EventVisibility.ALL] },

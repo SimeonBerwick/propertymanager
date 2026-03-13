@@ -29,6 +29,8 @@ let foreignOperatorId = '';
 let foreignPropertyId = '';
 let foreignUnitId = '';
 let foreignRequestId = '';
+let seededPhotoAttachmentPath = '';
+let seededPdfAttachmentPath = '';
 
 function sign(value: string) {
   return createHmac('sha256', authSecret).update(value).digest('base64url');
@@ -151,6 +153,26 @@ before(async () => {
     },
   });
   unassignedVendorRequestId = unassignedRequest.id;
+
+  seededPhotoAttachmentPath = `/uploads/requests/${seededRequestId}/tenant-photo.jpg`;
+  seededPdfAttachmentPath = `/uploads/requests/${seededRequestId}/vendor-bid.pdf`;
+
+  await prisma.attachment.createMany({
+    data: [
+      {
+        requestId: seededRequestId,
+        uploaderRole: UserRole.TENANT,
+        storagePath: seededPhotoAttachmentPath,
+        mimeType: 'image/jpeg',
+      },
+      {
+        requestId: seededRequestId,
+        uploaderRole: UserRole.VENDOR,
+        storagePath: seededPdfAttachmentPath,
+        mimeType: 'application/pdf',
+      },
+    ],
+  });
 
   await prisma.requestEvent.create({
     data: {
@@ -421,4 +443,59 @@ test('keeps internal notes off tenant and vendor pages while preserving operator
   assert.match(operatorHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
   assert.doesNotMatch(tenantHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
   assert.doesNotMatch(vendorHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
+});
+
+test('tenant query hides vendor PDF bids while operator and vendor pages still show them', async () => {
+  const operatorCookie = createSessionCookie({
+    role: 'operator',
+    userId: operatorId,
+    displayName: 'Olivia Operator',
+    email: 'olivia@example.com',
+    expiresAt: Date.now() + 60_000,
+  });
+  const vendorCookie = createSessionCookie({
+    role: 'vendor',
+    vendorId,
+    displayName: 'Ace Plumbing',
+    email: 'dispatch@aceplumbing.test',
+    expiresAt: Date.now() + 60_000,
+  });
+
+  const [operatorResponse, vendorResponse, tenantRequest] = await Promise.all([
+    fetch(`${baseUrl}/operator/requests/${seededRequestId}`, {
+      headers: { cookie: operatorCookie },
+      redirect: 'manual',
+    }),
+    fetch(`${baseUrl}/vendor/requests/${seededRequestId}`, {
+      headers: { cookie: vendorCookie },
+      redirect: 'manual',
+    }),
+    prisma.maintenanceRequest.findUniqueOrThrow({
+      where: { id: seededRequestId },
+      include: {
+        attachments: {
+          where: {
+            mimeType: { startsWith: 'image/' },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    }),
+  ]);
+
+  const [operatorHtml, vendorHtml] = await Promise.all([operatorResponse.text(), vendorResponse.text()]);
+
+  assert.equal(operatorResponse.status, 200);
+  assert.equal(vendorResponse.status, 200);
+
+  assert.match(operatorHtml, /PDF bid/);
+  assert.match(operatorHtml, new RegExp(seededPdfAttachmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(vendorHtml, /Open PDF bid uploaded/);
+  assert.match(vendorHtml, new RegExp(seededPdfAttachmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+  const tenantAttachmentPaths = tenantRequest.attachments.map((attachment) => attachment.storagePath);
+
+  assert.ok(tenantAttachmentPaths.includes(seededPhotoAttachmentPath));
+  assert.ok(!tenantAttachmentPaths.includes(seededPdfAttachmentPath));
+  assert.ok(tenantRequest.attachments.every((attachment) => attachment.mimeType.startsWith('image/')));
 });
