@@ -37,8 +37,8 @@
     "inProgress": [
       {
         "id": "task-1773336614022",
-        "title": "Tik Tok Reels",
-        "description": "Work out a plan of action to create 1 minute videos to post weekly on tiktok",
+        "title": "TikTok weekly reels",
+        "description": "Build a repeatable plan for weekly 1-minute TikTok videos.",
         "priority": "high",
         "owner": "Mario",
         "roleLens": "Mario",
@@ -51,8 +51,8 @@
       },
       {
         "id": "task-1773336647260",
-        "title": "Tiktok store",
-        "description": "Create a plan to create a merch store in tiktok to sell t-shirts",
+        "title": "TikTok merch store",
+        "description": "Create a practical plan for a TikTok merch store focused on T-shirts.",
         "priority": "high",
         "owner": "Warren",
         "roleLens": "Warren",
@@ -217,8 +217,8 @@
       },
       {
         "id": "task-1773254485314",
-        "title": "Youtube",
-        "description": "Create an action plan for building youtube videos. What websites do we need access to create screensavers that are 2 to 10 hours long with ambient music.",
+        "title": "YouTube screensaver channel plan",
+        "description": "Create the action plan and tool stack for 2-10 hour YouTube screensaver videos with ambient music.",
         "priority": "high",
         "owner": "Warren",
         "roleLens": "Warren",
