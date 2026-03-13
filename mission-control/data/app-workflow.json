@@ -3,7 +3,7 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "controlled-private-beta-candidate",
+      "status": "beta-candidate",
       "owner": "Elon",
       "summary": "Maintenance command center for small landlords: intake, dispatch, updates, and issue history.",
       "stages": {
@@ -14,46 +14,20 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Conditional pass for private beta. Build quality is acceptable; the remaining issue is QA/test harness reliability, not the vendor feature itself.",
-      "nextStep": "Finish invite acceptance, tighten QA/test harness reliability, and keep pushing beta-readiness: deployment, storage, onboarding, and workflow polish. Spanish + ticket progress display are now in flight.",
+      "reviewGate": "Beta candidate. QA harness cleanup is the main gate left.",
+      "nextStep": "Finish invite acceptance, clean up QA harness reliability, and keep pushing deployment, storage, onboarding, and workflow polish.",
       "notes": [
-        "Barry Bot: Sim approved Property Manager V1 for complete build.",
-        "Barry Bot: Jeff is the explicit post-build test gate for this app.",
-        "Barry Bot: promoted to one of the two clearest active app tracks.",
-        "Barry Bot: converted the concept into a concrete MVP spec and build checklist so Elon has an executable package.",
-        "Barry Bot: initial property-manager scaffold was created and committed as fbdfe7c; boot verification and Slice 1 implementation are now in flight.",
-        "Barry Bot: app now boots successfully, build/typecheck/lint pass, and live Prisma-backed operator dashboard, inbox, property/unit detail, status transitions, and internal notes are working in commit 0dde178.",
-        "Barry Bot: operator create/edit flows for properties, units, and requests are now live in commit fa83e96, bringing Slice 1 to formal Jeff QA review.",
-        "Barry Bot: Jeff fixed request validation, status-history integrity, and operator page revalidation issues in commit 0ce1e6b, clearing Slice 1 for operator scope.",
-        "Barry Bot: tenant submission, tenant-facing status/timeline, and photo upload landed in commit 58d3d98.",
-        "Barry Bot: Bob the Builder shipped vendor dispatch plus vendor queue/detail workflow in commit 25a92ea, making the multi-role flow materially real.",
-        "Barry Bot: next step is Jeff QA on the new vendor/tenant slices, then final polish and review-ready completion.",
-        "Barry Bot: Bob the Builder has been designated as Elon's focused and precise assistant coder for active implementation work.",
-        "Barry Bot: credential-based auth landed in commit 6230b65, replacing the demo role picker with real sign-in and canonical operator/tenant/vendor roles.",
-        "Barry Bot: stronger auth failure handling and vendor request permissions landed in commit a83f5be, including dedicated unauthorized routing and server-enforced vendor updates.",
-        "Barry Bot: invalid-session 500s were fixed in commit 46221bf by removing cookie mutation from render-time auth checks and preserving fail-closed redirects.",
-        "Barry Bot: Jeff cleared the auth/authz slice as PASS WITH CONDITIONS for a controlled private beta after confirming protected routes, ownership scoping, visibility boundaries, and invalid-session redirects are materially correct.",
-        "Barry Bot: auth boundary integration tests landed in commit 022bb72 covering tampered cookies, expired sessions, tenant object-access denial, vendor unassigned-request denial, and internal-note non-leakage.",
-        "Barry Bot: sellability path is now documented in PROPERTY_MANAGER_SELLABILITY_CHECKLIST.md with explicit stages for pilot-ready, paid beta-ready, and publicly sellable.",
-        "Barry Bot: Property Manager is Chrome-compatible and Windows-compatible as a deployed web app, but it is not a native Windows application or a Chrome extension.",
-        "Barry Bot: PostgreSQL + pilot deployment planning landed in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md via commit 5493a36, with Vercel + Neon + private Cloudflare R2 recommended as the simplest sane pilot stack.",
-        "Barry Bot: Bob hardened operator organization scoping in commit 8cb7e16 so operator reads, writes, and request actions no longer trust raw IDs across org boundaries.",
-        "Barry Bot: next quality gate on this slice is Jeff verifying foreign-org access denial and then cleaning up the auth-boundary test harness mismatch on valid-session automated cases.",
-        "Barry Bot: auth-boundary regression verification now passes end-to-end in the current repo, including tampered-cookie rejection, expired-session redirects, tenant object-access denial, vendor unassigned-request denial, foreign-org operator denial, and internal-note non-leakage.",
-        "Barry Bot: the known invalid-session 500 issue appears fixed in the current codebase rather than still being a live blocker.",
-        "Barry Bot: rollout direction is now explicit: the operator pays, tenant access is free, vendor access is free, and tenant/vendor accounts should join the operator's workspace via operator-generated invite links or access codes rather than acting like standalone paid products.",
-        "Barry Bot: vendor workflow scope now also needs vendor-side accept/decline, planned start date, expected completion date, pricing capture (full bid or initial service fee), and PDF bid upload attached to the maintenance ticket.",
-        "Barry Bot: delegation rule for Property Manager V1 is now explicit — Elon drives primary build momentum, Bob stays assigned as ongoing implementation support, and Mary reviews all agents for learning opportunities.",
-        "Barry Bot: product direction now includes optional regions inside an operator organization so properties and vendors can be grouped across multiple towns/service areas without prematurely turning that into a giant enterprise hierarchy.",
-        "Barry Bot: request workflow direction now explicitly includes visible urgency levels (Low / Medium / High / Emergency) and a separate expected completion date that can be updated as work evolves.",
-        "Barry Bot: CSV import/export is now part of product direction for setup and operational data, while full ticket history should be retained and 12-month reporting should be the default lens rather than a hard retention limit.",
-        "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite."
+        "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
+        "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
+        "Barry Bot: Current gate is QA harness cleanup, not core feature viability; Jeff's latest verdict is conditional pass for private beta.",
+        "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
+        "Barry Bot: Latest signal: vendor workflow, operator reporting, tenant attachment scoping, and bilingual ticket progress display all landed while Elon remains primary build owner and Bob supports implementation."
       ]
     },
     {
       "id": "app-realtor-aid",
       "name": "Realtor Aid",
-      "status": "approved-for-full-build",
+      "status": "building",
       "owner": "Elon",
       "summary": "Photorealistic virtual staging app for listing photos; strongest current realtor build path.",
       "stages": {
@@ -64,8 +38,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review is required immediately after build before sign-off.",
-      "nextStep": "Elon proceeds to full build. Jeff tests after the first finished build is ready.",
+      "reviewGate": "Needs Jeff QA after the first real build.",
+      "nextStep": "Keep building the first real version.",
       "notes": [
         "Barry Bot: Sim approved Realtor Aid for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
@@ -76,7 +50,7 @@
     {
       "id": "app-clipboard-workflow",
       "name": "Clipboard Workflow Utility",
-      "status": "active-secondary",
+      "status": "parked",
       "owner": "Elon",
       "summary": "Role-specific clipboard workflow utility for prosumers; now reframed as Windows-first, with Chrome later as a secondary surface.",
       "stages": {
@@ -87,8 +61,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Windows-first M1: WPF shell, text-only clipboard listener, SQLite persistence for last 100 items, recent history list, and click-to-copy loop.",
+      "reviewGate": "No review gate yet; this is not the active build.",
+      "nextStep": "Hold until the main app tracks need attention.",
       "notes": [
         "Barry Bot: kept active, but no longer framed as the top visible app track while realtor and property-manager work are being prioritized.",
         "Elon: Windows-first plan uses a WPF desktop shell with text-only clipboard listener, SQLite persistence, and a basic recent-history loop. Chrome should be a later phase, not the primary product surface."
@@ -97,7 +71,7 @@
     {
       "id": "app-realtor-drone-aid",
       "name": "Realtor Drone Aid",
-      "status": "research-secondary",
+      "status": "parked",
       "owner": "Elon",
       "summary": "Simulated drone/elevated exterior view generator using listing photos plus map/satellite reference.",
       "stages": {
@@ -108,8 +82,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff final QA review required before sign-off / ship.",
-      "nextStep": "Keep as a secondary R&D track unless trust/accuracy can be proven strongly.",
+      "reviewGate": "No review gate yet; trust and accuracy still need proof.",
+      "nextStep": "Keep parked unless trust and accuracy get much stronger.",
       "notes": [
         "Barry Bot: demoted because Elon said this should not be the primary build.",
         "Elon: interesting technically, but weaker as a primary product due to trust and accuracy risk."
