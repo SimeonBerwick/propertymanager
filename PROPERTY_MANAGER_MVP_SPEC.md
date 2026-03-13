@@ -161,12 +161,20 @@ Operator can view:
 - prior requests for a unit
 - prior requests for a property
 - repeat issue patterns
+- full maintenance history retained in the system rather than trimming storage to one year by default
 
-### 7. Basic reporting
+### 7. Data import / export
+V1 direction includes:
+- CSV import for setup/master data such as regions, properties, units, and vendors
+- CSV export for operational data such as requests, statuses, urgency, expected completion date, assigned vendor, region, and ticket/event history
+- ticket-history import is deferred until a cleaner import schema and conflict policy are defined
+
+### 8. Basic reporting
 V1 reporting includes:
 - open vs closed counts
 - aging buckets
 - repeat issue flags by property / unit
+- last 12 months as the default reporting lens, while retaining fuller history underneath
 
 ## MVP screens
 ### Operator screens

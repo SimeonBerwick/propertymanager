@@ -180,6 +180,14 @@
             "ts": 1773388320000
           },
           {
+            "text": "Barry Bot: CSV import/export is now part of product direction, starting with setup/master data import and operational/history export rather than jumping straight into messy ticket-history import.",
+            "ts": 1773399660000
+          },
+          {
+            "text": "Barry Bot: full ticket history should be retained in the system, while reporting should default to the last 12 months instead of pretending one-year storage is the right retention limit.",
+            "ts": 1773399720000
+          },
+          {
             "text": "Barry Bot: formalized the streamlined v1 concept in PROPERTY_MANAGER_V1.md and split deferred heavyweight features into a separate holding task.",
             "ts": 1773266500000
           },

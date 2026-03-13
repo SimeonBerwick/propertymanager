@@ -36,6 +36,8 @@ Safe enough to use with a small number of friendly real users.
 - [ ] Region support is good enough for operators managing properties and vendors across multiple towns/service areas
 - [ ] Urgency is visible and editable as Low / Medium / High / Emergency across request workflow
 - [ ] Expected completion date is separate from scheduled date and can be updated cleanly as the job evolves
+- [ ] CSV import/export covers the most important setup and operational data without turning import into a migration swamp
+- [ ] Full ticket history is retained, with last-12-month reporting as the default view rather than a hard retention cap
 
 ### Infrastructure
 - [ ] Replace local SQLite with PostgreSQL
