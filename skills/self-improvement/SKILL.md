@@ -301,6 +301,22 @@ Automatically log when you notice:
 
 When a learning becomes reusable, extract it into a skill when it is recurring, verified, broadly applicable, or user-flagged.
 
+### Extraction Detection Triggers
+
+Watch for these signals that a learning should become a skill.
+
+#### In conversation
+- "Save this as a skill"
+- "I keep running into this"
+- "This would be useful for other projects"
+- "Remember this pattern"
+
+#### In learning entries
+- multiple `See Also` links for a recurring issue
+- high priority + resolved status
+- category `best_practice` with broad applicability
+- user feedback praising the solution
+
 ## Multi-Agent Support
 
 This skill works across:

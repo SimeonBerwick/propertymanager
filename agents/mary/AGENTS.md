@@ -74,3 +74,18 @@ Automatically log when you notice:
 - link related files to speed fixes
 - suggest concrete fixes, not just "investigate"
 - use consistent categories so entries remain filterable
+
+## Extraction detection triggers
+Watch for signals that a learning should become a skill.
+
+### In conversation
+- "Save this as a skill"
+- "I keep running into this"
+- "This would be useful for other projects"
+- "Remember this pattern"
+
+### In learning entries
+- multiple `See Also` links for a recurring issue
+- high priority plus resolved status
+- category `best_practice` with broad applicability
+- user feedback praising the solution
