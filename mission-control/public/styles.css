@@ -49,6 +49,8 @@ main.app-shell { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .audit-output { max-height: 220px; overflow: auto; }
 .review-box { display: grid; gap: 0.7rem; }
 .review-box ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+.compact-box { margin-top: 0.8rem; }
+.compact-box p { margin: 0.25rem 0 0; color: var(--muted); }
 .chips, .task-meta, .review-chips, .exec-actions, .node-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .chips { margin: 1rem 0 0.2rem; }
 .chip { padding: 0.35rem 0.7rem; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }

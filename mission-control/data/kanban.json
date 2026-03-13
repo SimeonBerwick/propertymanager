@@ -66,7 +66,7 @@
       {
         "id": "task-1773266190597",
         "title": "Property Manager",
-        "description": "Streamlined property manager app focused on maintenance request intake, status tracking, vendor dispatch, tenant updates, and property/unit issue history for small landlords.",
+        "description": "Maintenance command center for small landlords: intake, status, vendor dispatch, tenant updates, and issue history.",
         "priority": "high",
         "owner": "Mario",
         "roleLens": "Mario",

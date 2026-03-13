@@ -5,7 +5,7 @@
       "name": "Property Manager V1",
       "status": "controlled-private-beta-candidate",
       "owner": "Elon",
-      "summary": "Streamlined maintenance command center for small landlords: request intake, status tracking, vendor dispatch, tenant updates, and issue history.",
+      "summary": "Maintenance command center for small landlords: intake, dispatch, updates, and issue history.",
       "stages": {
         "backlog": "complete",
         "building": "in-progress",
@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff previously cleared auth/authz as PASS WITH CONDITIONS for a controlled private beta; the latest auth-boundary regression suite now passes, including tampered-cookie rejection, expired-session redirects, tenant/vendor access denial, internal-note non-leakage, and foreign-org operator scoping.",
-      "nextStep": "Execution has started on the sellability path. PostgreSQL/deployment planning is documented in PROPERTY_MANAGER_POSTGRES_DEPLOYMENT_PLAN.md (commit 5493a36), operator org-scoping hardening landed in commit 8cb7e16, onboarding direction is formalized in PROPERTY_MANAGER_ONBOARDING_INVITE_SPEC.md, and the implementation path is broken down in PROPERTY_MANAGER_INVITE_SYSTEM_BUILD_PLAN.md. Product direction also includes optional region support, explicit urgency/expected-completion workflow controls, and CSV import/export with full history retention plus a default last-12-month reporting lens. Next: finish invite-system hardening and acceptance UX, carry the region/urgency/completion/import-export capabilities cleanly through operator, vendor, and tenant flows, then continue deployment/storage/beta-readiness work rather than treating the app as production-ready.",
+      "reviewGate": "Conditional pass for private beta. Build quality is acceptable; the remaining issue is QA/test harness reliability, not the vendor feature itself.",
+      "nextStep": "Finish invite acceptance, tighten QA/test harness reliability, and keep pushing beta-readiness: deployment, storage, onboarding, and workflow polish. Spanish + ticket progress display are now in flight.",
       "notes": [
         "Barry Bot: Sim approved Property Manager V1 for complete build.",
         "Barry Bot: Jeff is the explicit post-build test gate for this app.",
