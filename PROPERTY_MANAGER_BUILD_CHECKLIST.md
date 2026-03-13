@@ -110,6 +110,11 @@ Move Property Manager V1 from a convincing local demo to a controlled private be
 - [ ] Standardize allowed status transitions
 - [ ] Improve vendor job queue clarity
 - [ ] Improve vendor detail/update flow
+- [ ] Add vendor accept / decline action for assigned tickets
+- [ ] Add vendor planned start date capture
+- [ ] Add vendor expected completion date capture
+- [ ] Add vendor pricing capture for either full bid or initial service fee / trip charge
+- [ ] Add PDF bid upload attached to the maintenance ticket
 - [ ] Improve tenant request submission UX
 - [ ] Improve tenant status visibility across request lifecycle
 

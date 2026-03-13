@@ -92,7 +92,12 @@ Cannot:
 ### Vendor
 Can:
 - view assigned work orders / requests
+- accept or decline assigned work
 - see scheduling details
+- set or update planned start date
+- set or update expected completion date
+- submit a bid for the work as either a full bid amount or an initial service fee / trip charge
+- upload a PDF bid attachment tied to the ticket
 - see contact and issue context relevant to assigned work
 - add vendor-facing updates if enabled
 
@@ -147,6 +152,14 @@ Operator can:
 - add scheduling notes
 - set scheduled date/time
 - record dispatch notes
+
+Vendor can:
+- accept or decline the assigned work ticket
+- provide a planned start date
+- provide an expected completion date
+- submit pricing as either a full bid amount or an initial service fee / trip charge
+- upload a PDF bid document attached to the request
+- add vendor status updates tied to the request timeline
 
 ### 5. Tenant updates / communication trail
 System must support:
@@ -329,6 +342,11 @@ Fields:
 - operator can assign a vendor to a request
 - operator can record a scheduled date
 - vendor assignment appears in the request timeline
+- vendor can accept or decline the ticket
+- vendor can submit planned start date and expected completion date
+- vendor can enter either a full bid amount or an initial service fee / trip charge
+- vendor can upload a PDF bid attachment to the ticket
+- vendor updates appear in the request timeline
 
 ### Tenant visibility
 - tenant can view current status and visible updates for their request
