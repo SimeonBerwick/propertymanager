@@ -3,6 +3,7 @@ import { randomUUID, createHmac } from 'node:crypto';
 import { once } from 'node:events';
 import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
+import net from 'node:net';
 import { after, before, test } from 'node:test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { PrismaClient, EventVisibility, RequestEventType, TenantStatus, UserRole } from '@prisma/client';
@@ -12,9 +13,10 @@ const repoRoot = path.resolve(__dirname, '..');
 const testDbRelativePath = './prisma/auth-boundary-test.db';
 const testDbPath = path.join(repoRoot, 'prisma', 'auth-boundary-test.db');
 const authSecret = 'auth-boundary-test-secret';
-const port = 3305;
-const baseUrl = `http://127.0.0.1:${port}`;
+let port = 3305;
+let baseUrl = `http://127.0.0.1:${port}`;
 const sessionCookieName = 'pm_session';
+const serverStartupLogs: string[] = [];
 
 let server: ChildProcess | undefined;
 let prisma: PrismaClient;
@@ -68,10 +70,35 @@ async function run(command: string, args: string[], extraEnv: Record<string, str
   }
 }
 
+async function getAvailablePort() {
+  return await new Promise<number>((resolve, reject) => {
+    const candidate = net.createServer();
+    candidate.unref();
+    candidate.on('error', reject);
+    candidate.listen(0, '127.0.0.1', () => {
+      const address = candidate.address();
+      if (!address || typeof address === 'string') {
+        candidate.close(() => reject(new Error('Failed to determine an available test port.')));
+        return;
+      }
+
+      const freePort = address.port;
+      candidate.close((error) => {
+        if (error) reject(error);
+        else resolve(freePort);
+      });
+    });
+  });
+}
+
 async function waitForServerReady() {
   const deadline = Date.now() + 30_000;
 
   while (Date.now() < deadline) {
+    if (server?.exitCode !== null && server?.exitCode !== undefined) {
+      throw new Error(`Next server exited before becoming ready (code ${server.exitCode}).\nLogs:\n${serverStartupLogs.join('')}`);
+    }
+
     try {
       const response = await fetch(`${baseUrl}/auth`, { redirect: 'manual' });
       if (response.status < 500) return;
@@ -82,10 +109,14 @@ async function waitForServerReady() {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  throw new Error('Timed out waiting for Next server to boot.');
+  throw new Error(`Timed out waiting for Next server to boot.\nLogs:\n${serverStartupLogs.join('')}`);
 }
 
 before(async () => {
+  port = await getAvailablePort();
+  baseUrl = `http://127.0.0.1:${port}`;
+  serverStartupLogs.length = 0;
+
   await rm(testDbPath, { force: true });
   await mkdir(path.dirname(testDbPath), { recursive: true });
   await run('npx', ['prisma', 'db', 'push', '--skip-generate']);
@@ -250,8 +281,12 @@ before(async () => {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  server?.stdout?.on('data', () => {});
-  server?.stderr?.on('data', () => {});
+  server?.stdout?.on('data', (chunk) => {
+    serverStartupLogs.push(chunk.toString());
+  });
+  server?.stderr?.on('data', (chunk) => {
+    serverStartupLogs.push(chunk.toString());
+  });
 
   await waitForServerReady();
 });
