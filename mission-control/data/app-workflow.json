@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Beta candidate. QA harness cleanup is the main gate left.",
-      "nextStep": "Finish invite acceptance, clean up QA harness reliability, and keep pushing deployment, storage, onboarding, and workflow polish.",
+      "reviewGate": "Beta candidate. Core QA checks now pass again after the auth-boundary harness fix; remaining work is beta-readiness and broader polish, not a broken gate.",
+      "nextStep": "Finish invite acceptance and keep pushing deployment, storage, onboarding, and workflow polish toward a stronger private beta.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
