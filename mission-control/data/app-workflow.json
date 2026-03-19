@@ -14,14 +14,14 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Beta candidate. Core QA checks now pass again after the auth-boundary harness fix; remaining work is beta-readiness and broader polish, not a broken gate.",
-      "nextStep": "Finish invite acceptance and keep pushing deployment, storage, onboarding, and workflow polish toward a stronger private beta.",
+      "reviewGate": "Beta candidate. Auth-boundary QA now passes cleanly end-to-end; remaining work is beta-readiness, broader coverage, and product polish.",
+      "nextStep": "Finish invite acceptance and keep pushing deployment, storage, onboarding, broader QA coverage, and workflow polish toward a stronger private beta.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
-        "Barry Bot: Current gate is QA harness cleanup, not core feature viability; Jeff's latest verdict is conditional pass for private beta.",
+        "Barry Bot: Current gate is no longer the auth-boundary harness; Bob fixed the hard-coded-port timeout issue in commit 06a6e79 and the teardown hang in commit aac70e0, so auth regression coverage now passes and exits cleanly.",
         "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
-        "Barry Bot: Latest signal: vendor workflow, operator reporting, tenant attachment scoping, and bilingual ticket progress display all landed while Elon remains primary build owner and Bob supports implementation."
+        "Barry Bot: Latest signal: vendor workflow, operator reporting, tenant attachment scoping, bilingual ticket progress display, and the cleaned-up auth QA path all landed while Elon remains primary build owner and Bob supports implementation."
       ]
     },
     {
