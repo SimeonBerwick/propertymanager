@@ -294,16 +294,28 @@ before(async () => {
 
 async function stopServer() {
   if (!server) return;
-  if (server.exitCode !== null || server.signalCode !== null) return;
 
-  server.kill('SIGTERM');
-  const closed = once(server, 'close');
-  const timeout = new Promise((resolve) => setTimeout(resolve, 5_000));
+  const child = server;
+  server = undefined;
+
+  child.stdout?.removeAllListeners('data');
+  child.stderr?.removeAllListeners('data');
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+  child.stdin?.end();
+
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+
+  child.kill('SIGTERM');
+  const closed = once(child, 'close');
+  const timeout = new Promise<undefined>((resolve) => setTimeout(resolve, 5_000));
   const result = await Promise.race([closed, timeout]);
 
-  if (!result && server.exitCode === null && server.signalCode === null) {
-    server.kill('SIGKILL');
-    await once(server, 'close');
+  if (!result && child.exitCode === null && child.signalCode === null) {
+    child.kill('SIGKILL');
+    await once(child, 'close');
   }
 }
 
