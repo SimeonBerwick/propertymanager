@@ -119,6 +119,7 @@ before(async () => {
 
   await rm(testDbPath, { force: true });
   await mkdir(path.dirname(testDbPath), { recursive: true });
+  await run('npm', ['run', 'build']);
   await run('npx', ['prisma', 'db', 'push', '--skip-generate']);
   await run('npm', ['run', 'prisma:seed']);
 
@@ -292,14 +293,15 @@ before(async () => {
 });
 
 async function stopServer() {
-  if (!server || server.killed) return;
+  if (!server) return;
+  if (server.exitCode !== null || server.signalCode !== null) return;
 
   server.kill('SIGTERM');
   const closed = once(server, 'close');
   const timeout = new Promise((resolve) => setTimeout(resolve, 5_000));
-  await Promise.race([closed, timeout]);
+  const result = await Promise.race([closed, timeout]);
 
-  if (!server.killed) {
+  if (!result && server.exitCode === null && server.signalCode === null) {
     server.kill('SIGKILL');
     await once(server, 'close');
   }
