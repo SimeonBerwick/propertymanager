@@ -12,6 +12,8 @@ Status: In progress
 - [x] Dashboard shell
 - [x] Property detail route scaffold
 - [x] Request detail route scaffold
+- [x] Prisma-backed data layer (with seed fallback)
+- [x] DB seed script
 
 ## M2 - Tenant issue submission
 Status: Not started

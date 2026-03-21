@@ -1,14 +1,13 @@
 import Link from 'next/link'
-import { getProperties } from '@/lib/data'
-import { units } from '@/lib/seed-data'
+import { getAllUnits, getProperties } from '@/lib/data'
 
 export default async function PropertiesPage() {
-  const properties = await getProperties()
+  const [properties, allUnits] = await Promise.all([getProperties(), getAllUnits()])
 
   return (
     <div className="grid cols-2">
       {properties.map((property) => {
-        const propertyUnits = units.filter((unit) => unit.propertyId === property.id)
+        const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id)
         return (
           <section key={property.id} className="card stack">
             <div>
