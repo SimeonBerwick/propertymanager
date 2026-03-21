@@ -194,6 +194,10 @@
           {
             "text": "Mario: start as a maintenance command center for small landlords. Exclude accounting, rent, leases, screening, big owner portals, and feature gravity traps from v1.",
             "ts": 1773266320000
+          },
+          {
+            "text": "Barry Bot: execution focus is now explicitly narrowed to completing Property Manager V1 only. New briefs written in PROPERTY_MANAGER_ELON_BRIEF.md and PROPERTY_MANAGER_BOB_EXECUTION_BRIEF.md. Immediate sequence: finish leakage prevention and role/org scoping, then operator triage polish, canonical status normalization, vendor workflow completion, tenant UX improvement, reliability/audit basics, and Jeff QA prep.",
+            "ts": 1774127904093
           }
         ]
       },
