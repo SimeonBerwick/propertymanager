@@ -1,5 +1,12 @@
 import type { MaintenanceRequest, Property, RequestComment, RequestStatus, StatusEvent, Unit } from '@/lib/types'
-import { properties, requestComments, requests, statusEvents, units } from '@/lib/seed-data'
+import {
+  properties as seedProperties,
+  units as seedUnits,
+  requests as seedRequests,
+  requestComments as seedComments,
+  statusEvents as seedEvents,
+} from '@/lib/seed-data'
+import { prisma } from '@/lib/prisma'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
   propertyName: string
@@ -25,10 +32,11 @@ export interface RequestDetailData {
   events: StatusEvent[]
 }
 
-function attachRequestContext(request: MaintenanceRequest): DashboardRequestRow {
-  const property = properties.find((item) => item.id === request.propertyId)
-  const unit = units.find((item) => item.id === request.unitId)
+// --- Seed fallback helper ---
 
+function attachSeedContext(request: MaintenanceRequest): DashboardRequestRow {
+  const property = seedProperties.find((p) => p.id === request.propertyId)
+  const unit = seedUnits.find((u) => u.id === request.unitId)
   return {
     ...request,
     propertyName: property?.name ?? 'Unknown property',
@@ -37,48 +45,162 @@ function attachRequestContext(request: MaintenanceRequest): DashboardRequestRow 
   }
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
-  const requestRows = requests.map(attachRequestContext)
+// --- Prisma row mappers ---
+// Prisma includes are typed inline; using any here keeps the mapper simple and
+// avoids re-declaring complex generated Prisma types in app code.
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProperty(p: any): Property {
+  return { id: p.id, name: p.name, address: p.address, unitCount: p._count?.units ?? 0 }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapUnit(u: any): Unit {
   return {
-    properties,
-    requestRows,
-    statusCounts: {
-      new: requestRows.filter((request) => request.status === 'new').length,
-      scheduled: requestRows.filter((request) => request.status === 'scheduled').length,
-      in_progress: requestRows.filter((request) => request.status === 'in_progress').length,
-      done: requestRows.filter((request) => request.status === 'done').length,
-    },
+    id: u.id,
+    propertyId: u.propertyId,
+    label: u.label,
+    tenantName: u.tenantName ?? undefined,
+    tenantEmail: u.tenantEmail ?? undefined,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRequestRow(r: any): DashboardRequestRow {
+  return {
+    id: r.id,
+    propertyId: r.propertyId,
+    unitId: r.unitId,
+    title: r.title,
+    description: r.description,
+    category: r.category,
+    urgency: r.urgency as MaintenanceRequest['urgency'],
+    status: r.status as MaintenanceRequest['status'],
+    assignedVendorName: r.assignedVendorName ?? undefined,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+    propertyName: r.property?.name ?? 'Unknown property',
+    propertyAddress: r.property?.address ?? 'Unknown address',
+    unitLabel: r.unit?.label ?? 'Unknown unit',
+  }
+}
+
+function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, number> {
+  return {
+    new: rows.filter((r) => r.status === 'new').length,
+    scheduled: rows.filter((r) => r.status === 'scheduled').length,
+    in_progress: rows.filter((r) => r.status === 'in_progress').length,
+    done: rows.filter((r) => r.status === 'done').length,
+  }
+}
+
+// --- Public data functions ---
+// Each function attempts a Prisma query. On any error (DB not configured,
+// connection refused, schema not migrated) it falls back to seed data so
+// the app remains browsable during local development.
+
+export async function getDashboardData(): Promise<DashboardData> {
+  try {
+    const [dbProperties, dbRequests] = await Promise.all([
+      prisma.property.findMany({ include: { _count: { select: { units: true } } } }),
+      prisma.maintenanceRequest.findMany({
+        include: { property: true, unit: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+    const requestRows = dbRequests.map(mapRequestRow)
+    return { properties: dbProperties.map(mapProperty), requestRows, statusCounts: countStatuses(requestRows) }
+  } catch {
+    const requestRows = seedRequests.map(attachSeedContext)
+    return { properties: seedProperties, requestRows, statusCounts: countStatuses(requestRows) }
   }
 }
 
 export async function getProperties(): Promise<Property[]> {
-  return properties
+  try {
+    const dbProperties = await prisma.property.findMany({
+      include: { _count: { select: { units: true } } },
+    })
+    return dbProperties.map(mapProperty)
+  } catch {
+    return seedProperties
+  }
+}
+
+export async function getAllUnits(): Promise<Unit[]> {
+  try {
+    const dbUnits = await prisma.unit.findMany()
+    return dbUnits.map(mapUnit)
+  } catch {
+    return seedUnits
+  }
 }
 
 export async function getPropertyDetailData(propertyId: string): Promise<PropertyDetailData | null> {
-  const property = properties.find((item) => item.id === propertyId)
-  if (!property) return null
-
-  const propertyUnits = units.filter((unit) => unit.propertyId === propertyId)
-  const propertyRequests = requests
-    .filter((request) => request.propertyId === propertyId)
-    .map(attachRequestContext)
-
-  return {
-    property,
-    units: propertyUnits,
-    requests: propertyRequests,
+  try {
+    const dbProperty = await prisma.property.findUnique({
+      where: { id: propertyId },
+      include: {
+        _count: { select: { units: true } },
+        units: true,
+        requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
+      },
+    })
+    if (!dbProperty) return null
+    return {
+      property: mapProperty(dbProperty),
+      units: dbProperty.units.map(mapUnit),
+      requests: dbProperty.requests.map(mapRequestRow),
+    }
+  } catch {
+    const property = seedProperties.find((p) => p.id === propertyId)
+    if (!property) return null
+    return {
+      property,
+      units: seedUnits.filter((u) => u.propertyId === propertyId),
+      requests: seedRequests.filter((r) => r.propertyId === propertyId).map(attachSeedContext),
+    }
   }
 }
 
 export async function getRequestDetailData(requestId: string): Promise<RequestDetailData | null> {
-  const request = requests.find((item) => item.id === requestId)
-  if (!request) return null
+  try {
+    const dbRequest = await prisma.maintenanceRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        property: true,
+        unit: true,
+        comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
+        events: { orderBy: { createdAt: 'asc' } },
+      },
+    })
+    if (!dbRequest) return null
 
-  return {
-    request: attachRequestContext(request),
-    comments: requestComments.filter((comment) => comment.requestId === requestId),
-    events: statusEvents.filter((event) => event.requestId === requestId),
+    const comments: RequestComment[] = dbRequest.comments.map((c) => ({
+      id: c.id,
+      requestId: c.requestId,
+      authorName: c.author?.email ?? 'System',
+      body: c.body,
+      visibility: c.visibility as 'internal' | 'external',
+      createdAt: c.createdAt.toISOString(),
+    }))
+
+    const events: StatusEvent[] = dbRequest.events.map((e) => ({
+      id: e.id,
+      requestId: e.requestId,
+      fromStatus: e.fromStatus as RequestStatus | undefined,
+      toStatus: e.toStatus as RequestStatus,
+      actorName: e.actorUserId ?? 'System',
+      createdAt: e.createdAt.toISOString(),
+    }))
+
+    return { request: mapRequestRow(dbRequest), comments, events }
+  } catch {
+    const request = seedRequests.find((r) => r.id === requestId)
+    if (!request) return null
+    return {
+      request: attachSeedContext(request),
+      comments: seedComments.filter((c) => c.requestId === requestId),
+      events: seedEvents.filter((e) => e.requestId === requestId),
+    }
   }
 }
