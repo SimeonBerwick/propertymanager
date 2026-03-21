@@ -1,23 +1,26 @@
+import Link from 'next/link'
 import { StatusBadge } from '@/components/status-badge'
-import { getProperty, getStatusCount, getUnit, requests } from '@/lib/dashboard-data'
+import { getDashboardData } from '@/lib/data'
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const data = await getDashboardData()
+
   return (
     <div className="stack">
       <section className="grid cols-3">
         <div className="card">
           <div className="kicker">New</div>
-          <h2>{getStatusCount('new')}</h2>
+          <h2>{data.statusCounts.new}</h2>
           <div className="muted">Needs triage</div>
         </div>
         <div className="card">
           <div className="kicker">Scheduled</div>
-          <h2>{getStatusCount('scheduled')}</h2>
+          <h2>{data.statusCounts.scheduled}</h2>
           <div className="muted">Vendor date set</div>
         </div>
         <div className="card">
           <div className="kicker">In Progress</div>
-          <h2>{getStatusCount('in_progress')}</h2>
+          <h2>{data.statusCounts.in_progress}</h2>
           <div className="muted">Active work in flight</div>
         </div>
       </section>
@@ -42,25 +45,25 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {requests.map((request) => {
-              const property = getProperty(request.propertyId)
-              const unit = getUnit(request.unitId)
-              return (
-                <tr key={request.id}>
-                  <td>
+            {data.requestRows.map((request) => (
+              <tr key={request.id}>
+                <td>
+                  <Link href={`/requests/${request.id}`}>
                     <div style={{ fontWeight: 600 }}>{request.title}</div>
-                    <div className="muted">{unit?.label} · {request.urgency} urgency</div>
-                  </td>
-                  <td>
-                    <div>{property?.name}</div>
-                    <div className="muted">{property?.address}</div>
-                  </td>
-                  <td>{request.category}</td>
-                  <td><StatusBadge status={request.status} /></td>
-                  <td>{request.assignedVendorName ?? 'Unassigned'}</td>
-                </tr>
-              )
-            })}
+                    <div className="muted">{request.unitLabel} · {request.urgency} urgency</div>
+                  </Link>
+                </td>
+                <td>
+                  <Link href={`/properties/${request.propertyId}`}>
+                    <div>{request.propertyName}</div>
+                    <div className="muted">{request.propertyAddress}</div>
+                  </Link>
+                </td>
+                <td>{request.category}</td>
+                <td><StatusBadge status={request.status} /></td>
+                <td>{request.assignedVendorName ?? 'Unassigned'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>

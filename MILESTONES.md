@@ -5,11 +5,13 @@ Status: In progress
 - [x] Product direction locked
 - [x] Build architecture defined
 - [x] Milestone plan created
-- [ ] App scaffold
+- [x] App scaffold
 - [ ] Auth shell
-- [ ] Property/unit schema
-- [ ] Maintenance request schema
-- [ ] Dashboard shell
+- [x] Property/unit schema
+- [x] Maintenance request schema
+- [x] Dashboard shell
+- [x] Property detail route scaffold
+- [x] Request detail route scaffold
 
 ## M2 - Tenant issue submission
 Status: Not started

@@ -13,6 +13,7 @@ export interface Unit {
   propertyId: string
   label: string
   tenantName?: string
+  tenantEmail?: string
 }
 
 export interface MaintenanceRequest {
@@ -25,5 +26,23 @@ export interface MaintenanceRequest {
   urgency: Urgency
   status: RequestStatus
   assignedVendorName?: string
+  createdAt: string
+}
+
+export interface RequestComment {
+  id: string
+  requestId: string
+  authorName: string
+  body: string
+  visibility: 'internal' | 'external'
+  createdAt: string
+}
+
+export interface StatusEvent {
+  id: string
+  requestId: string
+  fromStatus?: RequestStatus
+  toStatus: RequestStatus
+  actorName: string
   createdAt: string
 }

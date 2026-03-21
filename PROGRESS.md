@@ -10,7 +10,7 @@
 - Jeff first-build test gate defined
 
 ## Current state
-Execution planning is complete enough to begin scaffolding the app immediately.
+Execution has started. The web app scaffold, initial Prisma schema, landlord dashboard route, property route, request detail route, and seeded server-side data layer now exist in the workspace.
 
 ## Next milestone
-M1: app scaffold + auth shell + property/unit schema + maintenance request schema + dashboard shell
+Finish M1 by adding auth shell and beginning database-backed queries to replace seeded data.
