@@ -198,6 +198,10 @@
           {
             "text": "Barry Bot: execution focus is now explicitly narrowed to completing Property Manager V1 only. New briefs written in PROPERTY_MANAGER_ELON_BRIEF.md and PROPERTY_MANAGER_BOB_EXECUTION_BRIEF.md. Immediate sequence: finish leakage prevention and role/org scoping, then operator triage polish, canonical status normalization, vendor workflow completion, tenant UX improvement, reliability/audit basics, and Jeff QA prep.",
             "ts": 1774127904093
+          },
+          {
+            "text": "Barry Bot: inspected the PM repo and picked the single best next coding task. Next task for Elon/Bob queue: upgrade the operator maintenance inbox + request detail into a real triage surface using existing data already in the app. Specifically: expose vendor response, planned start, expected completion, pricing/bid state, and clearer status/urgency signals in operator list/detail views; reduce triage friction before adding more new features. Reason: auth boundaries and vendor workflow plumbing already exist, but operator triage still underuses them and this is now the highest-leverage workflow gap.",
+            "ts": 1774128480636
           }
         ]
       },
