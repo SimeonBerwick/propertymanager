@@ -68,8 +68,8 @@
         "title": "Property Manager",
         "description": "Maintenance command center for small landlords: intake, status, vendor dispatch, tenant updates, and issue history.",
         "priority": "high",
-        "owner": "Mario",
-        "roleLens": "Mario",
+        "owner": "Elon",
+        "roleLens": "Elon",
         "notes": [
           {
             "text": "Barry Bot: elevated as a top active app track. Streamlined v1 concept is documented in PROPERTY_MANAGER_V1.md.",
@@ -206,6 +206,10 @@
           {
             "text": "Barry Bot: wrote the next implementation ticket to PROPERTY_MANAGER_NEXT_TASK_OPERATOR_TRIAGE.md. Elon/Bob next coding task is now explicit: upgrade operator inbox/detail into a real triage surface using existing vendor/date/pricing/bid signals already in the app.",
             "ts": 1774128521397
+          },
+          {
+            "text": "Barry Bot: clarified active execution ownership for this phase: Elon is primary owner for PM V1 completion and Bob remains implementation support under Elon. Current shared task is the operator triage surface upgrade.",
+            "ts": 1774128702299
           }
         ]
       },
