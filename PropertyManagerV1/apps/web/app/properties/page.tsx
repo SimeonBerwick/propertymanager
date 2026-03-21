@@ -1,6 +1,10 @@
-import { properties, units } from '@/lib/dashboard-data'
+import Link from 'next/link'
+import { getProperties } from '@/lib/data'
+import { units } from '@/lib/seed-data'
 
-export default function PropertiesPage() {
+export default async function PropertiesPage() {
+  const properties = await getProperties()
+
   return (
     <div className="grid cols-2">
       {properties.map((property) => {
@@ -9,7 +13,9 @@ export default function PropertiesPage() {
           <section key={property.id} className="card stack">
             <div>
               <div className="kicker">Property</div>
-              <h2 style={{ margin: '4px 0' }}>{property.name}</h2>
+              <Link href={`/properties/${property.id}`}>
+                <h2 style={{ margin: '4px 0' }}>{property.name}</h2>
+              </Link>
               <div className="muted">{property.address}</div>
             </div>
             <div>
