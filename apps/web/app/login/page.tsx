@@ -9,7 +9,7 @@ export default function LoginPage() {
           <h2 style={{ margin: '4px 0 0' }}>Landlord sign in</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Real landlord identity now lives behind email + password. Local dev can still fall back when Postgres is not wired.
+          Sign in to manage your properties, maintenance requests, and tenant communications.
         </p>
         <LoginForm />
       </div>

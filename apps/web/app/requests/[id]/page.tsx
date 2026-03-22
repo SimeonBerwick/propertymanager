@@ -1,9 +1,26 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { StatusBadge } from '@/components/status-badge'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
+
+const VISIBILITY_LABELS: Record<string, string> = {
+  internal: 'Internal note',
+  external: 'Tenant-facing',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  new: 'New',
+  scheduled: 'Scheduled',
+  in_progress: 'In Progress',
+  done: 'Done',
+}
+
+function statusLabel(s: string) {
+  return STATUS_LABELS[s] ?? s
+}
 
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,7 +37,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <div>
             <div className="kicker">Request</div>
             <h2 style={{ margin: '4px 0' }}>{data.request.title}</h2>
-            <div className="muted">{data.request.propertyName} · {data.request.unitLabel}</div>
+            <div className="muted">
+              <Link href={`/properties/${data.request.propertyId}`}>{data.request.propertyName}</Link>
+              {' · '}
+              <Link href={`/units/${data.request.unitId}`}>{data.request.unitLabel}</Link>
+            </div>
           </div>
 
           <div className="row" style={{ justifyContent: 'flex-start', gap: 10 }}>
@@ -89,7 +110,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           {data.events.length ? data.events.map((event) => (
             <div key={event.id}>
               <div style={{ fontWeight: 600 }}>
-                {event.fromStatus ? `${event.fromStatus} → ${event.toStatus}` : event.toStatus}
+                {event.fromStatus
+                  ? `${statusLabel(event.fromStatus)} → ${statusLabel(event.toStatus)}`
+                  : statusLabel(event.toStatus)}
               </div>
               <div className="muted">{event.actorName} · {new Date(event.createdAt).toLocaleString()}</div>
             </div>
@@ -104,18 +127,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <h3 style={{ marginTop: 4 }}>Comments and updates</h3>
           </div>
           {data.comments.length ? data.comments.map((comment) => (
-            <div key={comment.id}>
-              <div className="row" style={{ justifyContent: 'space-between' }}>
+            <div key={comment.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
                 <strong>{comment.authorName}</strong>
-                <span className="muted">{comment.visibility}</span>
+                <span className="badge" style={{ fontSize: 11, background: comment.visibility === 'internal' ? '#f0f4ff' : '#f0fff4', color: comment.visibility === 'internal' ? '#3b5bdb' : '#2b7a47' }}>
+                  {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
+                </span>
               </div>
               <div>{comment.body}</div>
-              <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
             </div>
           )) : (
             <div className="muted">No comments yet.</div>
           )}
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
             <AddCommentForm requestId={data.request.id} />
           </div>
         </div>

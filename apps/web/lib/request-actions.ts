@@ -87,6 +87,11 @@ export async function submitMaintenanceRequest(
     return { error: 'All required fields must be filled in.' }
   }
 
+  if (tenantName.length > 120) return { error: 'Name must be 120 characters or fewer.' }
+  if (tenantEmail.length > 254) return { error: 'Email address is too long.' }
+  if (title.length > 200) return { error: 'Issue title must be 200 characters or fewer.' }
+  if (description.length > 2000) return { error: 'Description must be 2 000 characters or fewer.' }
+
   if (!REQUEST_CATEGORIES.includes(category as (typeof REQUEST_CATEGORIES)[number])) {
     return { error: 'Choose a valid maintenance category.' }
   }

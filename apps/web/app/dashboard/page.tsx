@@ -52,7 +52,13 @@ export default async function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {data.requestRows.map((request) => (
+            {data.requestRows.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted)' }}>
+                  No maintenance requests yet. Use the tenant issue form to submit the first one.
+                </td>
+              </tr>
+            ) : data.requestRows.map((request) => (
               <tr key={request.id}>
                 <td>
                   <Link href={`/requests/${request.id}`}>

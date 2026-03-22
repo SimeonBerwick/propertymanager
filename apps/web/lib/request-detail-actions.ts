@@ -82,6 +82,8 @@ export async function updateVendorFormAction(
   const requestId = formData.get('requestId') as string
   const vendorName = ((formData.get('vendorName') as string) ?? '').trim()
 
+  if (vendorName.length > 120) return { error: 'Vendor name must be 120 characters or fewer.' }
+
   try {
     await prisma.maintenanceRequest.update({
       where: { id: requestId },
@@ -103,6 +105,7 @@ export async function addCommentFormAction(
   const visibility = formData.get('visibility') as string
 
   if (!body) return { error: 'Comment body is required.' }
+  if (body.length > 2000) return { error: 'Comment must be 2 000 characters or fewer.' }
   if (visibility !== 'internal' && visibility !== 'external') return { error: 'Invalid visibility.' }
 
   try {

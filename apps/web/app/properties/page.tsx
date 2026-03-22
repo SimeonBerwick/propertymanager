@@ -4,6 +4,19 @@ import { getAllUnits, getProperties } from '@/lib/data'
 export default async function PropertiesPage() {
   const [properties, allUnits] = await Promise.all([getProperties(), getAllUnits()])
 
+  if (!properties.length) {
+    return (
+      <div className="card stack" style={{ maxWidth: 480, margin: '48px auto 0' }}>
+        <div className="kicker">Properties</div>
+        <h2 style={{ margin: '4px 0 0' }}>No properties yet</h2>
+        <p className="muted" style={{ margin: 0 }}>
+          Properties and units are created via the database seed or directly in Postgres.
+          Once seeded, they will appear here.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="grid cols-2">
       {properties.map((property) => {
@@ -19,11 +32,18 @@ export default async function PropertiesPage() {
             </div>
             <div>
               <strong>Units</strong>
-              <ul>
-                {propertyUnits.map((unit) => (
-                  <li key={unit.id}>{unit.label}{unit.tenantName ? ` — ${unit.tenantName}` : ''}</li>
-                ))}
-              </ul>
+              {propertyUnits.length ? (
+                <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                  {propertyUnits.map((unit) => (
+                    <li key={unit.id}>
+                      <Link href={`/units/${unit.id}`}>{unit.label}</Link>
+                      {unit.tenantName ? ` — ${unit.tenantName}` : ' — Vacant'}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted" style={{ margin: '8px 0 0' }}>No units on record.</p>
+              )}
             </div>
           </section>
         )

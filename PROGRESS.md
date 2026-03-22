@@ -51,8 +51,20 @@
 - `.next/types/link.d.ts`: Patched generated route types to include `/reports` and `/units/[id]` (will be regenerated properly on next build).
 - TypeScript check: zero errors.
 
-## Current state
-M1, M2, M3, M4 all complete. Next is M5 (hardening for Jeff test gate).
+## 2026-03-22 (M5)
+- **Seed data expanded**: Palm Court Fourplex now has all 4 units (added unit-2a/Maria Soto, unit-2b/Dev Patel, unit-2d/Vacant). Added req-1004 (Plumbing, in_progress) and req-1005 (Plumbing, new) — req-1005 shares unit+category with req-1001, triggering the repeat issue flag. req-1003 promoted to `done` with full event lifecycle (new→scheduled→in_progress→done). All requests now include `submittedByName/Email`. Event trail expanded to 10 events. Comments expanded to 6 with richer copy.
+- **Empty states**: Dashboard inbox table shows a centred message when no requests exist. Properties list shows a standalone card when no properties are found. Properties page unit list falls back to "No units on record."
+- **Validation**: `request-actions.ts` now enforces max-length on tenantName (120), tenantEmail (254), title (200), description (2000). `request-detail-actions.ts` enforces vendorName (120) and comment body (2000).
+- **Login page**: Replaced internal dev note with user-facing copy.
+- **Request detail**: Status event labels now display human-readable names (e.g. "In Progress" not `in_progress`). Comment visibility rendered as "Internal note" / "Tenant-facing" with colour-coded badge. Property name and unit label are now hyperlinked.
+- **`.gitignore`**: Added `public/uploads/` — photo uploads are local disk and must not be committed.
+- **QA checklist**: `JEFF_TEST_GATE.md` expanded with a 12-section step-by-step walk-through script covering every Jeff test gate criterion.
+- TypeScript check: zero errors.
 
-## Next milestone
-M5: permissions cleanup, validation pass, empty states audit, demo seed data, QA checklist.
+## Current state
+All milestones M1–M5 complete. App is ready for Jeff test gate walk-through.
+
+## Known limitations / post-V1 work
+- Photo URLs are served from `public/uploads/` — no auth check on direct URL access. For V2: move uploads behind an authenticated API route.
+- No property/unit creation UI — currently managed via DB seed or direct Postgres. Jeff's test gate step 2 ("create a property and unit") requires a seeded DB.
+- Email notifications require `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` env vars; dev uses log sink.
