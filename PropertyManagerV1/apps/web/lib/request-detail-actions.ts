@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import type { RequestStatus } from '@/lib/types'
+import { sendNotification, buildStatusChangedMessage } from '@/lib/notify'
 
 export type RequestActionState = { error: string | null; success?: boolean }
 
@@ -22,25 +23,56 @@ export async function updateStatusFormAction(
   if (!VALID_STATUSES.includes(toStatus)) return { error: 'Invalid status.' }
   if (toStatus === fromStatus) return { error: 'Request is already in that status.' }
 
+  let tenantEmail: string | undefined
+  let tenantName: string | undefined
+  let title: string | undefined
+  let propertyName: string | undefined
+  let unitLabel: string | undefined
+
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.maintenanceRequest.update({
+      const updated = await tx.maintenanceRequest.update({
         where: { id: requestId },
         data: {
           status: toStatus,
           closedAt: toStatus === 'done' ? new Date() : null,
         },
+        include: { property: true, unit: true },
       })
       await tx.statusEvent.create({
         data: { requestId, fromStatus, toStatus },
       })
+
+      tenantEmail = updated.submittedByEmail ?? undefined
+      tenantName = updated.submittedByName ?? undefined
+      title = updated.title
+      propertyName = updated.property.name
+      unitLabel = updated.unit.label
     })
-    revalidatePath(`/requests/${requestId}`)
-    revalidatePath('/dashboard')
-    return { error: null, success: true }
   } catch {
     return { error: 'Could not update status. Database may not be connected.' }
   }
+
+  revalidatePath(`/requests/${requestId}`)
+  revalidatePath('/dashboard')
+
+  // Notify tenant if we have their email (best-effort, never throws).
+  if (tenantEmail && tenantName && title && propertyName && unitLabel) {
+    await sendNotification(
+      buildStatusChangedMessage({
+        requestId,
+        title,
+        propertyName,
+        unitLabel,
+        tenantEmail,
+        tenantName,
+        fromStatus,
+        toStatus,
+      }),
+    )
+  }
+
+  return { error: null, success: true }
 }
 
 export async function updateVendorFormAction(

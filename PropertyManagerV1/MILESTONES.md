@@ -24,12 +24,12 @@ Status: Complete
 - [x] Confirmation flow
 
 ## M3 - Request operations
-Status: In progress
+Status: Complete
 - [x] Request detail page
 - [x] Status transitions
 - [x] Vendor assignment
 - [x] Comment trail
-- [ ] Email notifications
+- [x] Email notifications (provider-agnostic; log sink in dev, SMTP in prod)
 
 ## M4 - History + reporting
 Status: Not started

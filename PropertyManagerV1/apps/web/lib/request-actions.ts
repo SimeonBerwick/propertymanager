@@ -6,6 +6,8 @@ import path from 'node:path'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
+import { getLandlordEmail } from '@/lib/auth-config'
+import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -109,9 +111,27 @@ export async function submitMaintenanceRequest(
 
   const savedPhotoPaths = await savePhotos(photoFiles)
 
+  // Fetch the unit so we can include property name + unit label in notifications.
+  let propertyName = 'Unknown property'
+  let unitLabel = 'Unknown unit'
+  try {
+    const unit = await prisma.unit.findUnique({
+      where: { id: unitId },
+      include: { property: true },
+    })
+    if (unit) {
+      unitLabel = unit.label
+      propertyName = unit.property.name
+    }
+  } catch {
+    // Non-fatal — we still have IDs; notifications will use fallback labels.
+  }
+
+  let createdRequestId: string
+
   try {
     const request = await prisma.$transaction(async (tx) => {
-      const createdRequest = await tx.maintenanceRequest.create({
+      return tx.maintenanceRequest.create({
         data: {
           propertyId,
           unitId,
@@ -134,21 +154,32 @@ export async function submitMaintenanceRequest(
             ],
           },
           events: {
-            create: [
-              {
-                toStatus: 'new',
-              },
-            ],
+            create: [{ toStatus: 'new' }],
           },
         },
       })
-
-      return createdRequest
     })
 
-    redirect(`/submit?submitted=${request.id}`)
+    createdRequestId = request.id
   } catch {
     await cleanupPhotos(savedPhotoPaths)
-    return { error: 'Submission is wired, but request creation needs a configured Postgres database. Set DATABASE_URL, run the migration, and seed it.' }
+    return { error: 'Could not create request. Set DATABASE_URL, run the migration, and seed the database.' }
   }
+
+  // Notifications are best-effort — sendNotification never throws.
+  const [tenantMsg, landlordMsg] = buildNewRequestMessages({
+    requestId: createdRequestId,
+    title,
+    propertyName,
+    unitLabel,
+    tenantName,
+    tenantEmail,
+    landlordEmail: getLandlordEmail(),
+    urgency,
+    category,
+    description,
+  })
+  await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
+
+  redirect(`/submit?submitted=${createdRequestId}`)
 }
