@@ -3,36 +3,104 @@
 import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { redirect } from 'next/navigation'
-import { sessionOptions, type SessionData } from '@/lib/session'
+import { prisma } from '@/lib/prisma'
+import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } from '@/lib/auth-config'
+import { verifyPassword } from '@/lib/password'
+import { getSessionOptions, type SessionData } from '@/lib/session'
 
 export type LoginState = { error: string } | null
 
-function getExpectedPassword() {
-  const password = process.env.LANDLORD_PASSWORD
+function isDatabaseUnavailable(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
 
-  if (process.env.NODE_ENV === 'production' && (!password || password === 'changeme')) {
-    throw new Error('LANDLORD_PASSWORD must be set to a non-default value in production')
+  return (
+    message.includes('DATABASE_URL') ||
+    message.includes('Can\'t reach database server') ||
+    message.includes('Environment variable not found') ||
+    message.includes('Prisma')
+  )
+}
+
+async function authenticateAgainstDatabase(email: string, password: string) {
+  const user = await prisma.user.findUnique({ where: { email } })
+
+  if (!user || user.role !== 'landlord' || !user.passwordHash) {
+    return null
   }
 
-  return password ?? 'changeme'
+  if (!verifyPassword(password, user.passwordHash)) {
+    return null
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+  }
+}
+
+function authenticateAgainstDevFallback(email: string, password: string) {
+  if (process.env.NODE_ENV === 'production') {
+    return null
+  }
+
+  const expectedEmail = getLandlordEmail()
+  const expectedPassword = getDevFallbackPassword()
+
+  if (email !== expectedEmail || password !== expectedPassword) {
+    return null
+  }
+
+  return {
+    userId: 'dev-landlord',
+    email: expectedEmail,
+    role: 'landlord',
+  }
 }
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const password = formData.get('password')
-  const expected = getExpectedPassword()
+  assertProductionAuthEnv()
 
-  if (typeof password !== 'string' || password !== expected) {
-    return { error: 'Invalid password' }
+  const email = formData.get('email')
+  const password = formData.get('password')
+
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return { error: 'Email and password are required' }
   }
 
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  const normalizedEmail = email.trim().toLowerCase()
+
+  if (!normalizedEmail || !password) {
+    return { error: 'Email and password are required' }
+  }
+
+  let authenticatedUser: { userId: string; email: string; role: string } | null = null
+
+  try {
+    authenticatedUser = await authenticateAgainstDatabase(normalizedEmail, password)
+  } catch (error) {
+    if (!isDatabaseUnavailable(error)) {
+      throw error
+    }
+  }
+
+  authenticatedUser ??= authenticateAgainstDevFallback(normalizedEmail, password)
+
+  if (!authenticatedUser) {
+    return { error: 'Invalid email or password' }
+  }
+
+  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
   session.isLoggedIn = true
+  session.userId = authenticatedUser.userId
+  session.email = authenticatedUser.email
+  session.role = authenticatedUser.role
   await session.save()
   redirect('/dashboard')
 }
 
 export async function logout(): Promise<void> {
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
   session.destroy()
   redirect('/login')
 }

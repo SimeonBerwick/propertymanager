@@ -31,7 +31,9 @@ export default async function DashboardPage() {
             <div className="kicker">Inbox</div>
             <h2 style={{ margin: '4px 0 0' }}>Maintenance requests</h2>
           </div>
-          <button className="button primary">New request</button>
+          <Link href="/submit" className="button primary">
+            Tenant issue form
+          </Link>
         </div>
 
         <table className="table">

@@ -9,25 +9,32 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="stack">
-      {state?.error && (
-        <div style={{ color: 'var(--danger)', fontSize: 14 }}>{state.error}</div>
-      )}
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: 14 }}>Password</span>
+      {state?.error && <div className="notice error">{state.error}</div>}
+
+      <label className="field">
+        <span className="field-label">Email</span>
         <input
+          className="input"
+          type="email"
+          name="email"
+          required
+          autoFocus
+          autoComplete="email"
+          placeholder="landlord@example.com"
+        />
+      </label>
+
+      <label className="field">
+        <span className="field-label">Password</span>
+        <input
+          className="input"
           type="password"
           name="password"
           required
-          autoFocus
-          style={{
-            padding: '10px 12px',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            fontSize: 14,
-            outline: 'none',
-          }}
+          autoComplete="current-password"
         />
       </label>
+
       <button type="submit" className="button primary" disabled={isPending}>
         {isPending ? 'Signing in…' : 'Sign in'}
       </button>

@@ -16,10 +16,18 @@ export interface Unit {
   tenantEmail?: string
 }
 
+export interface MaintenancePhoto {
+  id: string
+  imageUrl: string
+  createdAt: string
+}
+
 export interface MaintenanceRequest {
   id: string
   propertyId: string
   unitId: string
+  submittedByName?: string
+  submittedByEmail?: string
   title: string
   description: string
   category: string

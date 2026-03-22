@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
-import { sessionOptions, type SessionData } from '@/lib/session'
+import { getSessionOptions, type SessionData } from '@/lib/session'
 import { logout } from '@/lib/auth-actions'
 
 export const metadata = {
@@ -12,7 +12,7 @@ export const metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
 
   return (
     <html lang="en">

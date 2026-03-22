@@ -1,4 +1,12 @@
-import type { MaintenanceRequest, Property, RequestComment, RequestStatus, StatusEvent, Unit } from '@/lib/types'
+import type {
+  MaintenancePhoto,
+  MaintenanceRequest,
+  Property,
+  RequestComment,
+  RequestStatus,
+  StatusEvent,
+  Unit,
+} from '@/lib/types'
 import {
   properties as seedProperties,
   units as seedUnits,
@@ -30,13 +38,13 @@ export interface RequestDetailData {
   request: DashboardRequestRow
   comments: RequestComment[]
   events: StatusEvent[]
+  photos: MaintenancePhoto[]
 }
-
-// --- Seed fallback helper ---
 
 function attachSeedContext(request: MaintenanceRequest): DashboardRequestRow {
   const property = seedProperties.find((p) => p.id === request.propertyId)
   const unit = seedUnits.find((u) => u.id === request.unitId)
+
   return {
     ...request,
     propertyName: property?.name ?? 'Unknown property',
@@ -45,10 +53,8 @@ function attachSeedContext(request: MaintenanceRequest): DashboardRequestRow {
   }
 }
 
-// --- Prisma row mappers ---
 // Prisma includes are typed inline; using any here keeps the mapper simple and
 // avoids re-declaring complex generated Prisma types in app code.
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapProperty(p: any): Property {
   return { id: p.id, name: p.name, address: p.address, unitCount: p._count?.units ?? 0 }
@@ -71,6 +77,8 @@ function mapRequestRow(r: any): DashboardRequestRow {
     id: r.id,
     propertyId: r.propertyId,
     unitId: r.unitId,
+    submittedByName: r.submittedByName ?? undefined,
+    submittedByEmail: r.submittedByEmail ?? undefined,
     title: r.title,
     description: r.description,
     category: r.category,
@@ -84,6 +92,15 @@ function mapRequestRow(r: any): DashboardRequestRow {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPhoto(photo: any): MaintenancePhoto {
+  return {
+    id: photo.id,
+    imageUrl: photo.imageUrl,
+    createdAt: photo.createdAt instanceof Date ? photo.createdAt.toISOString() : String(photo.createdAt),
+  }
+}
+
 function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, number> {
   return {
     new: rows.filter((r) => r.status === 'new').length,
@@ -92,11 +109,6 @@ function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, numbe
     done: rows.filter((r) => r.status === 'done').length,
   }
 }
-
-// --- Public data functions ---
-// Each function attempts a Prisma query. On any error (DB not configured,
-// connection refused, schema not migrated) it falls back to seed data so
-// the app remains browsable during local development.
 
 export async function getDashboardData(): Promise<DashboardData> {
   try {
@@ -119,6 +131,7 @@ export async function getProperties(): Promise<Property[]> {
   try {
     const dbProperties = await prisma.property.findMany({
       include: { _count: { select: { units: true } } },
+      orderBy: { name: 'asc' },
     })
     return dbProperties.map(mapProperty)
   } catch {
@@ -128,7 +141,7 @@ export async function getProperties(): Promise<Property[]> {
 
 export async function getAllUnits(): Promise<Unit[]> {
   try {
-    const dbUnits = await prisma.unit.findMany()
+    const dbUnits = await prisma.unit.findMany({ orderBy: [{ propertyId: 'asc' }, { label: 'asc' }] })
     return dbUnits.map(mapUnit)
   } catch {
     return seedUnits
@@ -169,8 +182,9 @@ export async function getRequestDetailData(requestId: string): Promise<RequestDe
       include: {
         property: true,
         unit: true,
+        photos: { orderBy: { createdAt: 'asc' } },
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
-        events: { orderBy: { createdAt: 'asc' } },
+        events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
       },
     })
     if (!dbRequest) return null
@@ -189,11 +203,16 @@ export async function getRequestDetailData(requestId: string): Promise<RequestDe
       requestId: e.requestId,
       fromStatus: e.fromStatus as RequestStatus | undefined,
       toStatus: e.toStatus as RequestStatus,
-      actorName: e.actorUserId ?? 'System',
+      actorName: e.actorUser?.email ?? 'System',
       createdAt: e.createdAt.toISOString(),
     }))
 
-    return { request: mapRequestRow(dbRequest), comments, events }
+    return {
+      request: mapRequestRow(dbRequest),
+      comments,
+      events,
+      photos: dbRequest.photos.map(mapPhoto),
+    }
   } catch {
     const request = seedRequests.find((r) => r.id === requestId)
     if (!request) return null
@@ -201,6 +220,7 @@ export async function getRequestDetailData(requestId: string): Promise<RequestDe
       request: attachSeedContext(request),
       comments: seedComments.filter((c) => c.requestId === requestId),
       events: seedEvents.filter((e) => e.requestId === requestId),
+      photos: [],
     }
   }
 }

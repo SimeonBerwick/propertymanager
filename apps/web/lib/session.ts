@@ -2,6 +2,9 @@ import type { SessionOptions } from 'iron-session'
 
 export interface SessionData {
   isLoggedIn: boolean
+  userId?: string
+  email?: string
+  role?: string
 }
 
 // Dev default is intentionally weak and obvious; production requires SESSION_SECRET env var.
@@ -23,12 +26,14 @@ function getSessionSecret() {
   return secret ?? DEV_SECRET
 }
 
-export const sessionOptions: SessionOptions = {
-  password: getSessionSecret(),
-  cookieName: 'pm_session',
-  cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'lax',
-  },
+export function getSessionOptions(): SessionOptions {
+  return {
+    password: getSessionSecret(),
+    cookieName: 'pm_session',
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+    },
+  }
 }

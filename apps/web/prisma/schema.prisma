@@ -22,13 +22,16 @@ enum Urgency {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  role      String
-  createdAt DateTime @default(now())
+  id                String               @id @default(cuid())
+  email             String               @unique
+  passwordHash      String
+  role              String
+  createdAt         DateTime             @default(now())
 
-  properties Property[]
-  comments   RequestComment[]
+  properties        Property[]
+  comments          RequestComment[]
+  submittedRequests MaintenanceRequest[] @relation("SubmittedRequests")
+  statusEvents      StatusEvent[]        @relation("StatusActor")
 }
 
 model Property {
@@ -38,8 +41,8 @@ model Property {
   address   String
   createdAt DateTime @default(now())
 
-  owner User @relation(fields: [ownerId], references: [id])
-  units Unit[]
+  owner    User                 @relation(fields: [ownerId], references: [id])
+  units    Unit[]
   requests MaintenanceRequest[]
 }
 
@@ -51,7 +54,7 @@ model Unit {
   tenantEmail String?
   createdAt   DateTime @default(now())
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property             @relation(fields: [propertyId], references: [id])
   requests MaintenanceRequest[]
 }
 
@@ -60,6 +63,8 @@ model MaintenanceRequest {
   propertyId         String
   unitId             String
   submittedByUserId  String?
+  submittedByName    String?
+  submittedByEmail   String?
   title              String
   description        String
   category           String
@@ -70,18 +75,19 @@ model MaintenanceRequest {
   updatedAt          DateTime        @updatedAt
   closedAt           DateTime?
 
-  property Property @relation(fields: [propertyId], references: [id])
-  unit     Unit     @relation(fields: [unitId], references: [id])
-  photos   MaintenancePhoto[]
-  comments RequestComment[]
-  events   StatusEvent[]
+  property          Property           @relation(fields: [propertyId], references: [id])
+  unit              Unit               @relation(fields: [unitId], references: [id])
+  submittedByUser   User?              @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
+  photos            MaintenancePhoto[]
+  comments          RequestComment[]
+  events            StatusEvent[]
 }
 
 model MaintenancePhoto {
-  id        String             @id @default(cuid())
+  id        String   @id @default(cuid())
   requestId String
   imageUrl  String
-  createdAt DateTime           @default(now())
+  createdAt DateTime @default(now())
 
   request MaintenanceRequest @relation(fields: [requestId], references: [id])
 }
@@ -106,5 +112,6 @@ model StatusEvent {
   actorUserId String?
   createdAt   DateTime      @default(now())
 
-  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  request   MaintenanceRequest @relation(fields: [requestId], references: [id])
+  actorUser User?              @relation("StatusActor", fields: [actorUserId], references: [id])
 }
