@@ -72,6 +72,10 @@
         "roleLens": "Elon",
         "notes": [
           {
+            "text": "Barry Bot: Elon reports package.json now includes nodemailer + @types/nodemailer and milestones M1, M2, and M3 are complete. Next planned milestone is M4: history + reporting.",
+            "ts": 1774197300000
+          },
+          {
             "text": "Barry Bot: updated Mission Control status context — Elon reports 'Claude is on auth shell now,' so Claude should be treated as reachable at the auth shell stage rather than fully verified end-to-end.",
             "ts": 1774148124644
           },
