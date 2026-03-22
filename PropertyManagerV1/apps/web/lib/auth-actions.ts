@@ -7,10 +7,19 @@ import { sessionOptions, type SessionData } from '@/lib/session'
 
 export type LoginState = { error: string } | null
 
+function getExpectedPassword() {
+  const password = process.env.LANDLORD_PASSWORD
+
+  if (process.env.NODE_ENV === 'production' && (!password || password === 'changeme')) {
+    throw new Error('LANDLORD_PASSWORD must be set to a non-default value in production')
+  }
+
+  return password ?? 'changeme'
+}
+
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const password = formData.get('password')
-  // Dev fallback: LANDLORD_PASSWORD=changeme. Set a real value in production.
-  const expected = process.env.LANDLORD_PASSWORD ?? 'changeme'
+  const expected = getExpectedPassword()
 
   if (typeof password !== 'string' || password !== expected) {
     return { error: 'Invalid password' }
