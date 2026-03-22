@@ -5,6 +5,7 @@ import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { isDatabaseAvailable } from '@/lib/db-status'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { getLandlordEmail } from '@/lib/auth-config'
 import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
@@ -71,6 +72,10 @@ export async function submitMaintenanceRequest(
   _prevState: SubmitRequestState,
   formData: FormData,
 ): Promise<SubmitRequestState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode — no database connected. Request submission is disabled.' }
+  }
+
   const propertyId = getString(formData, 'propertyId')
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')

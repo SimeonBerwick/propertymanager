@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { logout } from '@/lib/auth-actions'
+import { isDatabaseAvailable } from '@/lib/db-status'
 
 export const metadata = {
   title: 'Property Manager V1',
@@ -13,11 +14,28 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
+  const dbAvailable = await isDatabaseAvailable()
 
   return (
     <html lang="en">
       <body>
         <div className="page">
+          {!dbAvailable && (
+            <div
+              className="notice"
+              style={{
+                marginBottom: 16,
+                background: '#fff8e1',
+                borderColor: '#ffe082',
+                color: '#7a5500',
+                fontWeight: 500,
+              }}
+            >
+              <strong>Demo Mode — Seed Data — Read-Only</strong>
+              {': '}
+              No database is connected. All data shown is sample data. Writes (submitting requests, status updates, comments, creating properties) are disabled.
+            </div>
+          )}
           <header className="header">
             <div>
               <div className="kicker">Property Manager V1</div>
