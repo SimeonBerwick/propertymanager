@@ -2,6 +2,114 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-1773251865400",
+        "title": "Finding app ideas",
+        "description": "Find successful apps in Windows Store that do not exist in Apple Store.",
+        "priority": "medium",
+        "owner": "Elon",
+        "roleLens": "Mario",
+        "deadline": "",
+        "decisionMode": "stage-gate",
+        "strategyScore": 3,
+        "technologyScore": 3,
+        "financeScore": 3,
+        "executionScore": 3,
+        "notes": [
+          {
+            "text": "Barry Bot: kept active as supporting research, but demoted below the current core build tracks now that it has already produced the shortlist and MVP direction.",
+            "ts": 1773266900000
+          },
+          {
+            "text": "Barry Bot: second pass complete. Top recommendation is a role-specific clipboard workflow utility. Decision pack written to TOP5_APP_OPPORTUNITIES.md with ranked Top 5 and an MVP spec for the best candidate.",
+            "ts": 1773260500000
+          },
+          {
+            "text": "Barry Bot: first concrete shortlist captured in SHORTLIST_APP_IDEAS.md. Strongest buckets: clipboard/text workflow, audio/device switching, file preview/triage, and single-purpose PowerToys-style utilities. Weak buckets: cosmetic customization and commodity archive tools.",
+            "ts": 1773259600000
+          },
+          {
+            "text": "Warren: Focus on desktop-control and workflow utilities with recurring pain. Best categories: clipboard/text workflow, file workflow, audio/device switching. Avoid cosmetic-only utilities and broad consumer apps with weak conversion.",
+            "ts": 1773257600000
+          },
+          {
+            "text": "Elon: Fastest credible path is a 48-hour sprint: scrape 200-500 Windows candidates across transferable categories, score by reviews/ratings/polish, narrow to 50-75, manually verify Apple absence, then produce a top-10 list with MVP difficulty and monetization angle.",
+            "ts": 1773257500000
+          },
+          {
+            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
+            "ts": 1773257400000
+          },
+          {
+            "text": "Barry Bot: deduplicated three duplicate backlog cards into this single canonical task and moved it to In Progress.",
+            "ts": 1773256900000
+          }
+        ]
+      },
+      {
+        "id": "task-1773255874567",
+        "title": "Realtor Drone Aid",
+        "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
+        "priority": "medium",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Barry Bot: demoted to a weaker/secondary R&D track after Elon said it should not be the primary build due to accuracy and trust risk.",
+            "ts": 1773266900000
+          },
+          {
+            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
+            "ts": 1773264200000
+          }
+        ]
+      },
+      {
+        "id": "task-1773254485314",
+        "title": "YouTube screensaver channel plan",
+        "description": "Create the action plan and tool stack for 2-10 hour YouTube screensaver videos with ambient music.",
+        "priority": "high",
+        "owner": "Warren",
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Barry Bot: finished practical action plan written to YOUTUBE_SCREENSAVER_SOP.md. Core stack: DaVinci Resolve, FFmpeg, Canva, Pexels, Pixabay, YouTube Audio Library, Google Drive, and YouTube Studio. Includes licensing checklist, workflow, recurring cost bands, and what to avoid.",
+            "ts": 1773263400000
+          },
+          {
+            "text": "Barry Bot: kicked off Warren review for cheapest viable stack, recurring costs, licensing risks, and what to avoid.",
+            "ts": 1773259300000
+          }
+        ]
+      },
+      {
+        "id": "task-1773336647260",
+        "title": "TikTok merch store",
+        "description": "Create a practical plan for a TikTok merch store focused on T-shirts.",
+        "priority": "high",
+        "owner": "Warren",
+        "roleLens": "Warren",
+        "notes": [
+          {
+            "text": "Barry Bot: Warren produced the plan in TIKTOK_TSHIRT_STORE_CFO_PLAN.md. Recommendation is validate with content first, then launch one hero POD shirt with strict margin discipline.",
+            "ts": 1773340680000
+          }
+        ]
+      },
+      {
+        "id": "task-1773336614022",
+        "title": "TikTok weekly reels",
+        "description": "Build a repeatable plan for weekly 1-minute TikTok videos.",
+        "priority": "high",
+        "owner": "Mario",
+        "roleLens": "Mario",
+        "notes": [
+          {
+            "text": "Barry Bot: Mario produced the execution plan in TIKTOK_WEEKLY_1MIN_VIDEO_ACTION_PLAN.md. Focus is a durable 1-minute weekly content machine and 12 straight weeks of publishing.",
+            "ts": 1773340680000
+          }
+        ]
+      },
+      {
         "id": "task-4",
         "title": "Decide whether Control UI will ever sit behind a reverse proxy",
         "description": "If exposed through a reverse proxy later, set gateway.trustedProxies explicitly. If it stays local-only on loopback, this warning is acceptable.",
@@ -36,34 +144,6 @@
     ],
     "inProgress": [
       {
-        "id": "task-1773336614022",
-        "title": "TikTok weekly reels",
-        "description": "Build a repeatable plan for weekly 1-minute TikTok videos.",
-        "priority": "high",
-        "owner": "Mario",
-        "roleLens": "Mario",
-        "notes": [
-          {
-            "text": "Barry Bot: Mario produced the execution plan in TIKTOK_WEEKLY_1MIN_VIDEO_ACTION_PLAN.md. Focus is a durable 1-minute weekly content machine and 12 straight weeks of publishing.",
-            "ts": 1773340680000
-          }
-        ]
-      },
-      {
-        "id": "task-1773336647260",
-        "title": "TikTok merch store",
-        "description": "Create a practical plan for a TikTok merch store focused on T-shirts.",
-        "priority": "high",
-        "owner": "Warren",
-        "roleLens": "Warren",
-        "notes": [
-          {
-            "text": "Barry Bot: Warren produced the plan in TIKTOK_TSHIRT_STORE_CFO_PLAN.md. Recommendation is validate with content first, then launch one hero POD shirt with strict margin discipline.",
-            "ts": 1773340680000
-          }
-        ]
-      },
-      {
         "id": "task-1773266190597",
         "title": "Property Manager",
         "description": "Maintenance command center for small landlords: intake, status, vendor dispatch, tenant updates, and issue history.",
@@ -71,6 +151,10 @@
         "owner": "Elon",
         "roleLens": "Elon",
         "notes": [
+          {
+            "text": "Barry Bot: Elon reports M4 is now complete in commit 7c87310. History/reporting landed with a /reports page, unit history pages, property stats links, dashboard Done count, Reports nav, and expanded reporting/history queries. State is now M1-M4 complete; only M5 remains for Jeff-gate hardening.",
+            "ts": 1774202940000
+          },
           {
             "text": "Barry Bot: Elon reports package.json now includes nodemailer + @types/nodemailer and milestones M1, M2, and M3 are complete. Next planned milestone is M4: history + reporting.",
             "ts": 1774197300000
@@ -235,86 +319,6 @@
         "notes": [
           {
             "text": "Barry Bot: elevated as a top active app track after Elon said this should be pursued now as the main realtor build.",
-            "ts": 1773266900000
-          },
-          {
-            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
-            "ts": 1773264200000
-          }
-        ]
-      },
-      {
-        "id": "task-1773254485314",
-        "title": "YouTube screensaver channel plan",
-        "description": "Create the action plan and tool stack for 2-10 hour YouTube screensaver videos with ambient music.",
-        "priority": "high",
-        "owner": "Warren",
-        "roleLens": "Warren",
-        "notes": [
-          {
-            "text": "Barry Bot: finished practical action plan written to YOUTUBE_SCREENSAVER_SOP.md. Core stack: DaVinci Resolve, FFmpeg, Canva, Pexels, Pixabay, YouTube Audio Library, Google Drive, and YouTube Studio. Includes licensing checklist, workflow, recurring cost bands, and what to avoid.",
-            "ts": 1773263400000
-          },
-          {
-            "text": "Barry Bot: kicked off Warren review for cheapest viable stack, recurring costs, licensing risks, and what to avoid.",
-            "ts": 1773259300000
-          }
-        ]
-      },
-      {
-        "id": "task-1773251865400",
-        "title": "Finding app ideas",
-        "description": "Find successful apps in Windows Store that do not exist in Apple Store.",
-        "priority": "medium",
-        "owner": "Elon",
-        "roleLens": "Mario",
-        "deadline": "",
-        "decisionMode": "stage-gate",
-        "strategyScore": 3,
-        "technologyScore": 3,
-        "financeScore": 3,
-        "executionScore": 3,
-        "notes": [
-          {
-            "text": "Barry Bot: kept active as supporting research, but demoted below the current core build tracks now that it has already produced the shortlist and MVP direction.",
-            "ts": 1773266900000
-          },
-          {
-            "text": "Barry Bot: second pass complete. Top recommendation is a role-specific clipboard workflow utility. Decision pack written to TOP5_APP_OPPORTUNITIES.md with ranked Top 5 and an MVP spec for the best candidate.",
-            "ts": 1773260500000
-          },
-          {
-            "text": "Barry Bot: first concrete shortlist captured in SHORTLIST_APP_IDEAS.md. Strongest buckets: clipboard/text workflow, audio/device switching, file preview/triage, and single-purpose PowerToys-style utilities. Weak buckets: cosmetic customization and commodity archive tools.",
-            "ts": 1773259600000
-          },
-          {
-            "text": "Warren: Focus on desktop-control and workflow utilities with recurring pain. Best categories: clipboard/text workflow, file workflow, audio/device switching. Avoid cosmetic-only utilities and broad consumer apps with weak conversion.",
-            "ts": 1773257600000
-          },
-          {
-            "text": "Elon: Fastest credible path is a 48-hour sprint: scrape 200-500 Windows candidates across transferable categories, score by reviews/ratings/polish, narrow to 50-75, manually verify Apple absence, then produce a top-10 list with MVP difficulty and monetization angle.",
-            "ts": 1773257500000
-          },
-          {
-            "text": "Mario: Don’t just look for anything missing on Apple. Hunt for neglected but valuable workflows. Most interesting gaps are workflow utilities, desktop control/customization, prosumer niche tools, and light enterprise edge cases. Build a shortlist of 20, then score top 5 deeply.",
-            "ts": 1773257400000
-          },
-          {
-            "text": "Barry Bot: deduplicated three duplicate backlog cards into this single canonical task and moved it to In Progress.",
-            "ts": 1773256900000
-          }
-        ]
-      },
-      {
-        "id": "task-1773255874567",
-        "title": "Realtor Drone Aid",
-        "description": "Build an app that can use the exterior listing photos to create a simulated drone photo from above. Uses google earth to get a birds eye photo as reference.",
-        "priority": "medium",
-        "owner": "Elon",
-        "roleLens": "Elon",
-        "notes": [
-          {
-            "text": "Barry Bot: demoted to a weaker/secondary R&D track after Elon said it should not be the primary build due to accuracy and trust risk.",
             "ts": 1773266900000
           },
           {
