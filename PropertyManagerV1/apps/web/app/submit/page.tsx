@@ -9,23 +9,34 @@ export default async function SubmitPage({
   const { submitted } = await searchParams
   const [properties, units] = await Promise.all([getProperties(), getAllUnits()])
 
+  if (submitted) {
+    return (
+      <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
+        <section className="card stack">
+          <div>
+            <div className="kicker">Submit a request</div>
+            <h2 style={{ margin: '4px 0 0' }}>Request received</h2>
+          </div>
+          <p style={{ margin: 0 }}>
+            Your maintenance request has been submitted. The property manager has been notified and will be in touch.
+          </p>
+          <a href="/submit" className="button" style={{ alignSelf: 'flex-start' }}>Submit another request</a>
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
       <section className="card stack">
         <div>
-          <div className="kicker">Tenant issue submission</div>
+          <div className="kicker">Submit a request</div>
           <h2 style={{ margin: '4px 0 0' }}>Report a maintenance issue</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Use this form to send a new issue into the maintenance queue with property, unit, urgency, details, and photos.
+          Fill out this form to report an issue in your unit. Include as much detail as possible so we can respond quickly.
         </p>
       </section>
-
-      {submitted && (
-        <section className="notice success">
-          Request submitted. Reference ID: <strong>{submitted}</strong>
-        </section>
-      )}
 
       <section className="card stack">
         <SubmitRequestForm properties={properties} units={units} />

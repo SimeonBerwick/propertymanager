@@ -62,6 +62,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor }: P
           <label className="field">
             <span className="field-label">Vendor name</span>
             <input
+              key={currentVendor ?? ''}
               className="input"
               type="text"
               name="vendorName"

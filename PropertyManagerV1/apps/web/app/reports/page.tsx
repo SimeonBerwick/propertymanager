@@ -66,7 +66,7 @@ export default async function ReportsPage() {
                   <td>{p.totalCount}</td>
                   <td>
                     {p.openCount > 0
-                      ? <span style={{ fontWeight: 600, color: p.openCount > 0 ? 'var(--accent)' : undefined }}>{p.openCount}</span>
+                      ? <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{p.openCount}</span>
                       : <span className="muted">0</span>
                     }
                   </td>
@@ -159,10 +159,10 @@ export default async function ReportsPage() {
                     <span className="badge age-old">{issue.count}×</span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <div className="stack" style={{ gap: 4 }}>
                       {issue.requestIds.map((id, i) => (
-                        <Link key={id} href={`/requests/${id}`} className="muted" style={{ fontSize: 12 }}>
-                          #{i + 1}
+                        <Link key={id} href={`/requests/${id}`} style={{ fontSize: 13 }}>
+                          {issue.requestTitles[i] ?? `Request ${i + 1}`}
                         </Link>
                       ))}
                     </div>
