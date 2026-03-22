@@ -14,14 +14,14 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Build-complete for the planned M1-M5 sequence. Next gate is the Jeff walkthrough/test pass before treating it as a stronger demo/private-beta-ready candidate.",
-      "nextStep": "Shift from build mode into Jeff test/demo mode: run the walkthrough, collect gaps honestly, then decide whether to do a final polish pass or move into deployment/storage/onboarding work.",
+      "reviewGate": "In live walkthrough shape for Jeff gate. Next truth-finding step is to actually run the Jeff walkthrough/test pass and see what breaks, confuses, or feels thin.",
+      "nextStep": "Run a Jeff rehearsal or live walkthrough now. If the seeded setup dependency is too awkward, close the property/unit creation gap next; otherwise move into deployment/storage/onboarding priorities after walkthrough feedback.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
         "Barry Bot: Current gate is no longer the auth-boundary harness; Bob fixed the hard-coded-port timeout issue in commit 06a6e79 and the teardown hang in commit aac70e0, so auth regression coverage now passes and exits cleanly.",
         "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
-        "Barry Bot: Latest signal: M5 cleared in commit c75c2fd, putting Property Manager through the planned build. Jeff walkthrough is now the next gate. Hardening added richer demo seed data, tighter validation, cleaner empty states, stronger request-detail UX, uploads gitignore protection, and expanded JEFF_TEST_GATE docs. Known limitations still include public/uploads photo URL exposure, no create property/unit UI yet, and real email still depending on SMTP env vars."
+        "Barry Bot: Latest signal: final Jeff-gate polish landed in commit 3ca5e10, putting the app in live walkthrough shape rather than merely feature-complete. Tightening included smoother not-found/walkthrough copy, cleaner reports presentation, better submit-flow state/copy, a cleaner-refreshing status/vendor panel, and richer repeat-issue reporting context. Remaining risks still include public/uploads photo URL exposure, no property/unit creation UI yet, and real email still depending on SMTP env vars."
       ]
     },
     {

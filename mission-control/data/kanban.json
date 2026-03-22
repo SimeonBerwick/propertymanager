@@ -152,6 +152,10 @@
         "roleLens": "Elon",
         "notes": [
           {
+            "text": "Barry Bot: Elon reports final Jeff-gate polish landed in commit 3ca5e10. Property Manager is now in live walkthrough shape, not just feature-complete. Polish covered smoother not-found handling and walkthrough copy, cleaner reports presentation, better submit-flow copy/state handling, a cleaner-refreshing status/vendor panel, and richer repeat-issue reporting context via requestTitles. Real risks still unchanged: photo auth gap in public/uploads, no property/unit creation UI yet, and real email still needs SMTP env vars.",
+            "ts": 1774207800000
+          },
+          {
             "text": "Barry Bot: Elon reports M5 is complete in commit c75c2fd. Net state is now M1-M5 complete and Property Manager is ready for the Jeff test-gate walkthrough. M5 added stronger demo seed coverage, tighter validation, cleaner empty states, hardened request-detail UX, uploads gitignore protection, and an expanded JEFF_TEST_GATE walkthrough. Known limitations remain: photo URLs are still served from public/uploads without true auth gating, create property/unit still depends on seeded DB or direct setup, and real email still needs SMTP env vars.",
             "ts": 1774204740000
           },
