@@ -248,6 +248,7 @@ export interface RepeatIssueGroup {
   category: string
   count: number
   requestIds: string[]
+  requestTitles: string[]
 }
 
 export interface ReportData {
@@ -289,6 +290,7 @@ function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
         category,
         count: reqs.length,
         requestIds: reqs.map((r) => r.id),
+        requestTitles: reqs.map((r) => r.title),
       })
     }
   }
