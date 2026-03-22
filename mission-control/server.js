@@ -88,7 +88,7 @@ async function getMissionControlData() {
   const channels = channelKeys.map((key) => ({ key, ...(health.channels[key] || {}) }));
   return {
     generatedAt: new Date().toISOString(),
-    status: { primaryModel: 'openai-codex/gpt-5.4', fallbackModel: 'none', gatewayReachable: health.gateway?.reachable ?? false, gatewayMode: health.gateway?.mode ?? 'unknown', defaultAgentId: health.defaultAgentId, activeSessions: health.sessions?.count ?? 0, latestSessionAgeMs: session?.age ?? null, heartbeatMinutes: Math.round((health.heartbeatSeconds ?? 0) / 60), channels },
+    status: { primaryModel: health.model ?? 'ollama/smallthinker', fallbackModel: 'none', gatewayReachable: health.gateway?.reachable ?? false, gatewayMode: health.gateway?.mode ?? 'unknown', defaultAgentId: health.defaultAgentId, activeSessions: health.sessions?.count ?? 0, latestSessionAgeMs: session?.age ?? null, heartbeatMinutes: Math.round((health.heartbeatSeconds ?? 0) / 60), channels },
     security: { score, label: scoreLabel(score), counts, issues: findings.filter((item) => item.severity !== 'info'), lastAuditAction },
     kanban: board,
     reviews,
