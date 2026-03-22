@@ -20,8 +20,18 @@
 - Next.js upgraded 15.2.0 → 15.5.14 to close middleware auth-bypass CVE (GHSA-f82v-jwr5-mffw). 0 audit vulnerabilities.
 - TypeScript check: zero errors.
 
+## 2026-03-22
+- M2 complete: `/submit` tenant issue form with property/unit cascade select, category, urgency, photo upload (up to 5 × 5 MB), and confirmation screen.
+- `lib/request-actions.ts`: `submitMaintenanceRequest` server action — validates, saves photos to `public/uploads/requests/`, creates DB request + photo rows + initial status event + auto-comment in a Prisma transaction. Falls back to a clear error message when no DB is configured.
+- M3 request operations implemented (email notifications deferred):
+  - `lib/request-detail-actions.ts`: three server actions — `updateStatusFormAction` (transitions + appends StatusEvent), `updateVendorFormAction`, `addCommentFormAction`. Each calls `revalidatePath` so the page refreshes server-side.
+  - `app/requests/[id]/status-vendor-panel.tsx`: client component with status dropdown + vendor name field, both with inline success/error feedback.
+  - `app/requests/[id]/add-comment-form.tsx`: client component that clears textarea on success via `useRef` + `useEffect`.
+  - `app/requests/[id]/page.tsx`: wired in both new client components; empty-state fallback for timeline and comments.
+- TypeScript check: zero errors.
+
 ## Current state
-M1 complete. Auth shell protects all landlord routes via Next.js middleware + iron-session. Login page at `/login`. Session cleared via Sign out form action. No DB required — login uses `LANDLORD_PASSWORD` env var (dev default: `changeme`). All routes still fall back to seed data when no Postgres is configured.
+M1 + M2 complete. M3 mostly complete — status transitions, vendor assignment, and comment trail are all live on the request detail page. Email notifications are the only remaining M3 item (deferred; requires SMTP config decision from Sim). All landlord write operations require a real Postgres DB and surface a clear error if none is connected.
 
 ## Next milestone
-M2: run first migration against a live Postgres instance, seed it, then begin tenant issue submission (submission form, request creation, confirmation flow).
+M3 email notifications (needs Sim input on SMTP approach), then M4 history/reporting.

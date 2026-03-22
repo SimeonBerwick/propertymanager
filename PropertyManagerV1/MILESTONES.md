@@ -16,19 +16,19 @@ Status: Complete
 - [x] DB seed script
 
 ## M2 - Tenant issue submission
-Status: Not started
-- [ ] Submission form
-- [ ] Category + urgency
-- [ ] Photo upload
-- [ ] Request creation
-- [ ] Confirmation flow
+Status: Complete
+- [x] Submission form
+- [x] Category + urgency
+- [x] Photo upload
+- [x] Request creation
+- [x] Confirmation flow
 
 ## M3 - Request operations
-Status: Not started
-- [ ] Request detail page
-- [ ] Status transitions
-- [ ] Vendor assignment
-- [ ] Comment trail
+Status: In progress
+- [x] Request detail page
+- [x] Status transitions
+- [x] Vendor assignment
+- [x] Comment trail
 - [ ] Email notifications
 
 ## M4 - History + reporting
