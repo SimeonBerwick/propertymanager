@@ -29,9 +29,23 @@ Jeff should be able to:
 
 ---
 
+## Pre-demo Setup Checklist
+
+Before running the walk-through, confirm:
+
+- [ ] App is running (`npm run dev` in `apps/web`)
+- [ ] **DB connected** (`DATABASE_URL` set, `npx prisma migrate deploy`, `npm run prisma:seed`)
+  — Sections 3, 5, 6, 7 require a live DB. Without it, write actions show an error.
+- [ ] `public/uploads/requests/` directory exists (photo upload target)
+- [ ] Login credentials ready: `landlord@example.com` / `changeme` (or set `LANDLORD_EMAIL` + `LANDLORD_PASSWORD`)
+- [ ] Note: property/unit creation UI does not exist — properties come from the DB seed
+
+---
+
 ## QA Checklist — Walk-through Script
 
 Work through each step in order. A ✓ means the step passes; note any failure inline.
+
 
 ### 1. Auth
 - [ ] Navigate to `/` → redirected to `/login`
@@ -56,8 +70,8 @@ Work through each step in order. A ✓ means the step passes; note any failure i
 - [ ] All required fields enforce validation (submit empty → error)
 - [ ] Overlong title (>200 chars) → server error
 - [ ] Attach a valid image → accepted
-- [ ] Submit valid form → confirmation screen shows Reference ID
-- [ ] New request appears in dashboard inbox after submission
+- [ ] Submit valid form → confirmation page shows success message with no form
+- [ ] New request appears in dashboard inbox after submission (requires DB)
 
 ### 4. Request detail
 - [ ] Open a request → detail page loads with title, property/unit links, status, urgency, category
