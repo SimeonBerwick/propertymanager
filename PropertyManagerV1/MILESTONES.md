@@ -40,9 +40,9 @@ Status: Complete
 - [x] Repeat issue flags
 
 ## M5 - Hardening for Jeff test gate
-Status: Not started
-- [ ] Permissions cleanup
-- [ ] Validation pass
-- [ ] Empty states
-- [ ] Demo seed data
-- [ ] QA checklist
+Status: Complete
+- [x] Permissions cleanup
+- [x] Validation pass
+- [x] Empty states
+- [x] Demo seed data
+- [x] QA checklist
