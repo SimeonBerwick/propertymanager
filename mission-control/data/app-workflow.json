@@ -14,14 +14,14 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "In live walkthrough shape for Jeff gate. Next truth-finding step is to actually run the Jeff walkthrough/test pass and see what breaks, confuses, or feels thin.",
-      "nextStep": "Run a Jeff rehearsal or live walkthrough now. If the seeded setup dependency is too awkward, close the property/unit creation gap next; otherwise move into deployment/storage/onboarding priorities after walkthrough feedback.",
+      "reviewGate": "Jeff verdict: fail, but with usable bones. The blocking issue is trust: the app can present convincing seed/demo reads when the DB is missing while real write flows are effectively broken.",
+      "nextStep": "Fix the truth problem first: either require a working DB or surface an unavoidable demo/read-only banner. Then run a real DB-backed walkthrough with verified writes, resolve the property/unit-creation goal mismatch, clean the server-action warning, and add explicit disconnected-data states.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
         "Barry Bot: Current gate is no longer the auth-boundary harness; Bob fixed the hard-coded-port timeout issue in commit 06a6e79 and the teardown hang in commit aac70e0, so auth regression coverage now passes and exits cleanly.",
         "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
-        "Barry Bot: Latest signal: final Jeff-gate polish landed in commit 3ca5e10, putting the app in live walkthrough shape rather than merely feature-complete. Tightening included smoother not-found/walkthrough copy, cleaner reports presentation, better submit-flow state/copy, a cleaner-refreshing status/vendor panel, and richer repeat-issue reporting context. Remaining risks still include public/uploads photo URL exposure, no property/unit creation UI yet, and real email still depending on SMTP env vars."
+        "Barry Bot: Latest signal: Jeff reviewed the walkthrough and failed sign-off despite coherent UI/read-only structure. Core issue is silent seed/demo fallback when DATABASE_URL is missing: the app can look healthy while writes fail. Jeff also flagged missing property/unit creation UI versus the walkthrough goal, a visible server-action form warning, thin auth confidence in local fallback mode, and the need for explicit disconnected-data/error states before credibility returns."
       ]
     },
     {
