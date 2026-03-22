@@ -10,8 +10,7 @@ export default async function PropertiesPage() {
         <div className="kicker">Properties</div>
         <h2 style={{ margin: '4px 0 0' }}>No properties yet</h2>
         <p className="muted" style={{ margin: 0 }}>
-          Properties and units are created via the database seed or directly in Postgres.
-          Once seeded, they will appear here.
+          No properties have been set up yet. Contact your administrator to add properties and units.
         </p>
       </div>
     )

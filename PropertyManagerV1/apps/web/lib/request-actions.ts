@@ -168,7 +168,7 @@ export async function submitMaintenanceRequest(
     createdRequestId = request.id
   } catch {
     await cleanupPhotos(savedPhotoPaths)
-    return { error: 'Could not create request. Set DATABASE_URL, run the migration, and seed the database.' }
+    return { error: 'Could not submit your request. Please try again or contact the property manager directly.' }
   }
 
   // Notifications are best-effort — sendNotification never throws.
