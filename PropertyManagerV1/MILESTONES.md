@@ -32,12 +32,12 @@ Status: Complete
 - [x] Email notifications (provider-agnostic; log sink in dev, SMTP in prod)
 
 ## M4 - History + reporting
-Status: Not started
-- [ ] Property history
-- [ ] Unit history
-- [ ] Open vs closed counts
-- [ ] Aging view
-- [ ] Repeat issue flags
+Status: Complete
+- [x] Property history
+- [x] Unit history
+- [x] Open vs closed counts
+- [x] Aging view
+- [x] Repeat issue flags
 
 ## M5 - Hardening for Jeff test gate
 Status: Not started

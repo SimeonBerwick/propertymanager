@@ -27,6 +27,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <nav className="nav">
                 <Link href="/dashboard">Dashboard</Link>
                 <Link href="/properties">Properties</Link>
+                <Link href="/reports">Reports</Link>
                 <form action={logout}>
                   <button type="submit" className="button">Sign out</button>
                 </form>
