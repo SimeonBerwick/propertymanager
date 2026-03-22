@@ -34,7 +34,7 @@ export function SubmitRequestForm({ properties, units }: SubmitRequestFormProps)
   }, [filteredUnits, selectedUnitId])
 
   return (
-    <form action={formAction} className="stack" encType="multipart/form-data">
+    <form action={formAction} className="stack">
       {state.error && <div className="notice error">{state.error}</div>}
 
       <div className="grid cols-2">

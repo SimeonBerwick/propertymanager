@@ -42,10 +42,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
       <section className="grid cols-2">
         <div className="card stack">
-          <div>
-            <div className="kicker">Units</div>
-            <h3 style={{ marginTop: 4 }}>Occupancy and contact</h3>
+          <div className="row">
+            <div>
+              <div className="kicker">Units</div>
+              <h3 style={{ marginTop: 4 }}>Occupancy and contact</h3>
+            </div>
+            <Link href={`/properties/${data.property.id}/units/new`} className="button">Add unit</Link>
           </div>
+          {data.units.length === 0 && (
+            <div className="muted">No units added yet.</div>
+          )}
           {data.units.map((unit) => (
             <div key={unit.id} className="row" style={{ alignItems: 'flex-start' }}>
               <div>

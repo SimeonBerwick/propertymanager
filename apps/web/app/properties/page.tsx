@@ -10,13 +10,21 @@ export default async function PropertiesPage() {
         <div className="kicker">Properties</div>
         <h2 style={{ margin: '4px 0 0' }}>No properties yet</h2>
         <p className="muted" style={{ margin: 0 }}>
-          No properties have been set up yet. Contact your administrator to add properties and units.
+          No properties have been added yet.
         </p>
+        <Link href="/properties/new" className="button primary" style={{ alignSelf: 'flex-start' }}>
+          Add first property
+        </Link>
       </div>
     )
   }
 
   return (
+    <div className="stack">
+      <div className="row">
+        <div />
+        <Link href="/properties/new" className="button primary">Add property</Link>
+      </div>
     <div className="grid cols-2">
       {properties.map((property) => {
         const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id)
@@ -47,6 +55,7 @@ export default async function PropertiesPage() {
           </section>
         )
       })}
+    </div>
     </div>
   )
 }
