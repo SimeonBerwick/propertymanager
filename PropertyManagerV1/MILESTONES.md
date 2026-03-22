@@ -1,12 +1,12 @@
 # Property Manager V1 - Milestones
 
 ## M1 - App skeleton + core maintenance model
-Status: In progress
+Status: Complete
 - [x] Product direction locked
 - [x] Build architecture defined
 - [x] Milestone plan created
 - [x] App scaffold
-- [ ] Auth shell
+- [x] Auth shell (iron-session, password-based, middleware-enforced)
 - [x] Property/unit schema
 - [x] Maintenance request schema
 - [x] Dashboard shell
