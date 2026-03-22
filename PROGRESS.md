@@ -30,8 +30,18 @@
   - `app/requests/[id]/page.tsx`: wired in both new client components; empty-state fallback for timeline and comments.
 - TypeScript check: zero errors.
 
+- M3 email notifications complete:
+  - `lib/notify.ts`: provider-agnostic notification layer. Default transport logs to stdout (zero config, safe for dev). Set `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` for real email — works with any SMTP endpoint (Gmail, SendGrid, Resend, MailHog, etc.). `NOTIFY_FROM` is optional.
+  - `buildNewRequestMessages()`: tenant confirmation + landlord alert on new submission.
+  - `buildStatusChangedMessage()`: tenant notification when landlord transitions status.
+  - `request-actions.ts` updated: notifications fire after successful DB write, before redirect. Fixed pre-existing bug where `redirect()` inside try/catch was caught as an error.
+  - `request-detail-actions.ts` updated: `updateStatusFormAction` fetches tenant contact via `include` inside the transaction, then sends status-change notification. Revalidation happens outside the transaction.
+  - `nodemailer` + `@types/nodemailer` added as dependencies.
+  - `.env.example` updated with `NOTIFY_TRANSPORT`, `SMTP_URL`, `NOTIFY_FROM` documentation and SMTP URL examples (SendGrid, Resend, MailHog).
+- TypeScript check: zero errors.
+
 ## Current state
-M1 + M2 complete. M3 mostly complete — status transitions, vendor assignment, and comment trail are all live on the request detail page. Email notifications are the only remaining M3 item (deferred; requires SMTP config decision from Sim). All landlord write operations require a real Postgres DB and surface a clear error if none is connected.
+M1, M2, M3 all complete. Next is M4 (history + reporting).
 
 ## Next milestone
-M3 email notifications (needs Sim input on SMTP approach), then M4 history/reporting.
+M4: property history, unit history, open/closed counts, aging view, repeat issue flags.
