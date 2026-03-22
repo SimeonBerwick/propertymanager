@@ -224,3 +224,189 @@ export async function getRequestDetailData(requestId: string): Promise<RequestDe
     }
   }
 }
+
+// ── M4: History + Reporting ───────────────────────────────────────────────────
+
+export interface PropertyStats {
+  propertyId: string
+  propertyName: string
+  propertyAddress: string
+  totalCount: number
+  openCount: number
+  closedCount: number
+}
+
+export interface AgingRequest extends DashboardRequestRow {
+  ageDays: number
+}
+
+export interface RepeatIssueGroup {
+  unitId: string
+  unitLabel: string
+  propertyId: string
+  propertyName: string
+  category: string
+  count: number
+  requestIds: string[]
+}
+
+export interface ReportData {
+  propertyStats: PropertyStats[]
+  agingRequests: AgingRequest[]
+  repeatIssues: RepeatIssueGroup[]
+  totalOpen: number
+  totalClosed: number
+}
+
+export interface UnitDetailData {
+  unit: Unit
+  property: Property
+  requests: DashboardRequestRow[]
+  openCount: number
+  closedCount: number
+}
+
+function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
+  const grouped = new Map<string, DashboardRequestRow[]>()
+  for (const r of rows) {
+    const key = `${r.unitId}__${r.category}`
+    const group = grouped.get(key) ?? []
+    group.push(r)
+    grouped.set(key, group)
+  }
+  const result: RepeatIssueGroup[] = []
+  for (const [key, reqs] of grouped.entries()) {
+    if (reqs.length >= 2) {
+      const splitAt = key.indexOf('__')
+      const unitId = key.slice(0, splitAt)
+      const category = key.slice(splitAt + 2)
+      const first = reqs[0]
+      result.push({
+        unitId,
+        unitLabel: first.unitLabel,
+        propertyId: first.propertyId,
+        propertyName: first.propertyName,
+        category,
+        count: reqs.length,
+        requestIds: reqs.map((r) => r.id),
+      })
+    }
+  }
+  return result.sort((a, b) => b.count - a.count)
+}
+
+export async function getReportData(): Promise<ReportData> {
+  const now = new Date()
+  try {
+    const [dbProperties, openDbRequests, allDbRequests] = await Promise.all([
+      prisma.property.findMany({
+        include: {
+          _count: { select: { units: true } },
+          requests: { select: { id: true, status: true } },
+        },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.maintenanceRequest.findMany({
+        where: { status: { not: 'done' } },
+        include: { property: true, unit: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.maintenanceRequest.findMany({
+        include: { property: true, unit: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    const propertyStats: PropertyStats[] = dbProperties.map((p) => ({
+      propertyId: p.id,
+      propertyName: p.name,
+      propertyAddress: p.address,
+      totalCount: p.requests.length,
+      openCount: p.requests.filter((r) => r.status !== 'done').length,
+      closedCount: p.requests.filter((r) => r.status === 'done').length,
+    }))
+
+    const agingRequests: AgingRequest[] = openDbRequests.map((r) => ({
+      ...mapRequestRow(r),
+      ageDays: Math.floor((now.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
+    }))
+
+    const allRows = allDbRequests.map(mapRequestRow)
+    const totalOpen = allRows.filter((r) => r.status !== 'done').length
+    const totalClosed = allRows.filter((r) => r.status === 'done').length
+
+    return {
+      propertyStats,
+      agingRequests,
+      repeatIssues: groupRepeatIssues(allRows),
+      totalOpen,
+      totalClosed,
+    }
+  } catch {
+    const propertyStats: PropertyStats[] = seedProperties.map((p) => {
+      const reqs = seedRequests.filter((r) => r.propertyId === p.id)
+      return {
+        propertyId: p.id,
+        propertyName: p.name,
+        propertyAddress: p.address,
+        totalCount: reqs.length,
+        openCount: reqs.filter((r) => r.status !== 'done').length,
+        closedCount: reqs.filter((r) => r.status === 'done').length,
+      }
+    })
+
+    const agingRequests: AgingRequest[] = seedRequests
+      .filter((r) => r.status !== 'done')
+      .map((r) => ({
+        ...attachSeedContext(r),
+        ageDays: Math.floor((now.getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+      }))
+      .sort((a, b) => b.ageDays - a.ageDays)
+
+    const allRows = seedRequests.map(attachSeedContext)
+    const totalOpen = allRows.filter((r) => r.status !== 'done').length
+    const totalClosed = allRows.filter((r) => r.status === 'done').length
+
+    return {
+      propertyStats,
+      agingRequests,
+      repeatIssues: groupRepeatIssues(allRows),
+      totalOpen,
+      totalClosed,
+    }
+  }
+}
+
+export async function getUnitDetailData(unitId: string): Promise<UnitDetailData | null> {
+  try {
+    const dbUnit = await prisma.unit.findUnique({
+      where: { id: unitId },
+      include: {
+        property: { include: { _count: { select: { units: true } } } },
+        requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
+      },
+    })
+    if (!dbUnit) return null
+    const requests = dbUnit.requests.map(mapRequestRow)
+    return {
+      unit: mapUnit(dbUnit),
+      property: mapProperty(dbUnit.property),
+      requests,
+      openCount: requests.filter((r) => r.status !== 'done').length,
+      closedCount: requests.filter((r) => r.status === 'done').length,
+    }
+  } catch {
+    const unit = seedUnits.find((u) => u.id === unitId)
+    if (!unit) return null
+    const property = seedProperties.find((p) => p.id === unit.propertyId)
+    if (!property) return null
+    const requests = seedRequests.filter((r) => r.unitId === unitId).map(attachSeedContext)
+    return {
+      unit,
+      property,
+      requests,
+      openCount: requests.filter((r) => r.status !== 'done').length,
+      closedCount: requests.filter((r) => r.status === 'done').length,
+    }
+  }
+}

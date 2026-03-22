@@ -40,8 +40,19 @@
   - `.env.example` updated with `NOTIFY_TRANSPORT`, `SMTP_URL`, `NOTIFY_FROM` documentation and SMTP URL examples (SendGrid, Resend, MailHog).
 - TypeScript check: zero errors.
 
+## 2026-03-22 (M4)
+- `lib/data.ts`: added `getReportData()` (property stats, aging requests, repeat issue groups + seed fallback), `getUnitDetailData()` (unit + property + full request history with open/closed counts + seed fallback). New exported types: `PropertyStats`, `AgingRequest`, `RepeatIssueGroup`, `ReportData`, `UnitDetailData`.
+- `app/reports/page.tsx` (new): Reports page at `/reports`. Three sections — summary stat row (total/open/closed), open vs closed by property table, open request aging table (color-coded: green <7d, amber 7–14d, red ≥14d), repeat issue flags table (units with 2+ requests in same category).
+- `app/units/[id]/page.tsx` (new): Unit history page at `/units/[id]`. Shows tenant info, open/closed/total stat cards, full request history table with per-row age indicator.
+- `app/properties/[id]/page.tsx`: Added open/closed/total stat cards row. Unit labels now link to `/units/[id]`. Empty-state copy on history section.
+- `app/dashboard/page.tsx`: Added Done stat as 4th card; stat row changed from `cols-3` to `cols-4`.
+- `app/layout.tsx`: Added "Reports" nav link.
+- `app/globals.css`: Added `.grid.cols-4`, `.badge.age-fresh`, `.badge.age-warn`, `.badge.age-old`. Responsive breakpoint updated to include `cols-4`.
+- `.next/types/link.d.ts`: Patched generated route types to include `/reports` and `/units/[id]` (will be regenerated properly on next build).
+- TypeScript check: zero errors.
+
 ## Current state
-M1, M2, M3 all complete. Next is M4 (history + reporting).
+M1, M2, M3, M4 all complete. Next is M5 (hardening for Jeff test gate).
 
 ## Next milestone
-M4: property history, unit history, open/closed counts, aging view, repeat issue flags.
+M5: permissions cleanup, validation pass, empty states audit, demo seed data, QA checklist.

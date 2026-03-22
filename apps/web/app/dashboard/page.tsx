@@ -7,7 +7,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="stack">
-      <section className="grid cols-3">
+      <section className="grid cols-4">
         <div className="card">
           <div className="kicker">New</div>
           <h2>{data.statusCounts.new}</h2>
@@ -22,6 +22,11 @@ export default async function DashboardPage() {
           <div className="kicker">In Progress</div>
           <h2>{data.statusCounts.in_progress}</h2>
           <div className="muted">Active work in flight</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Done</div>
+          <h2>{data.statusCounts.done}</h2>
+          <div className="muted">Closed out</div>
         </div>
       </section>
 
