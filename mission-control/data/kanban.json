@@ -152,6 +152,10 @@
         "roleLens": "Elon",
         "notes": [
           {
+            "text": "Barry Bot: Elon reports M5 is complete in commit c75c2fd. Net state is now M1-M5 complete and Property Manager is ready for the Jeff test-gate walkthrough. M5 added stronger demo seed coverage, tighter validation, cleaner empty states, hardened request-detail UX, uploads gitignore protection, and an expanded JEFF_TEST_GATE walkthrough. Known limitations remain: photo URLs are still served from public/uploads without true auth gating, create property/unit still depends on seeded DB or direct setup, and real email still needs SMTP env vars.",
+            "ts": 1774204740000
+          },
+          {
             "text": "Barry Bot: Elon reports M4 is now complete in commit 7c87310. History/reporting landed with a /reports page, unit history pages, property stats links, dashboard Done count, Reports nav, and expanded reporting/history queries. State is now M1-M4 complete; only M5 remains for Jeff-gate hardening.",
             "ts": 1774202940000
           },
