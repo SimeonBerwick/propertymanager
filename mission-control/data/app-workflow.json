@@ -14,14 +14,16 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff verdict: fail, but with usable bones. The blocking issue is trust: the app can present convincing seed/demo reads when the DB is missing while real write flows are effectively broken.",
-      "nextStep": "Fix the truth problem first: either require a working DB or surface an unavoidable demo/read-only banner. Then run a real DB-backed walkthrough with verified writes, resolve the property/unit-creation goal mismatch, clean the server-action warning, and add explicit disconnected-data states.",
+      "reviewGate": "Jeff verdict: PASS WITH CONDITIONS. Property Manager is out of demo mode and now uses a real persistent SQLite database, but it is still not PostgreSQL-backed and full manual browser QA is still pending.",
+      "nextStep": "Run the full manual browser QA checklist against the SQLite-backed build, log pass/fail honestly, and only then decide whether to hold on SQLite temporarily or make the PostgreSQL migration the next explicit infra step.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
         "Barry Bot: Current gate is no longer the auth-boundary harness; Bob fixed the hard-coded-port timeout issue in commit 06a6e79 and the teardown hang in commit aac70e0, so auth regression coverage now passes and exits cleanly.",
         "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
-        "Barry Bot: Latest signal: Jeff reviewed the walkthrough and failed sign-off despite coherent UI/read-only structure. Core issue is silent seed/demo fallback when DATABASE_URL is missing: the app can look healthy while writes fail. Jeff also flagged missing property/unit creation UI versus the walkthrough goal, a visible server-action form warning, thin auth confidence in local fallback mode, and the need for explicit disconnected-data/error states before credibility returns."
+        "Barry Bot: Jeff previously failed sign-off because the app could present convincing seed/demo reads when the DB was missing while real write flows were effectively broken.",
+        "Barry Bot: Bob moved the app out of demo mode into real persisted operation in commit cd4b7fd ('Wire SQLite for real DB persistence, exit demo mode'). Seed succeeded, demo banner is gone, and writes now persist at the app/Prisma layer.",
+        "Jeff: good progress, but call it what it is — this is a real persisted SQLite app, not completion of the original PostgreSQL-backed assignment. Manual browser QA is still the next honest gate."
       ]
     },
     {
