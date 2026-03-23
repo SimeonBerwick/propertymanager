@@ -21,6 +21,35 @@ enum Urgency {
   urgent
 }
 
+enum TenantIdentityStatus {
+  pending_invite
+  active
+  inactive
+  moved_out
+}
+
+enum TenantInviteStatus {
+  pending
+  accepted
+  expired
+  revoked
+}
+
+enum TenantOtpPurpose {
+  invite_login
+  returning_login
+}
+
+enum TenantOtpChannel {
+  sms
+  email
+}
+
+enum TenantEventVisibility {
+  internal
+  tenant_visible
+}
+
 model User {
   id                String               @id @default(cuid())
   email             String               @unique
@@ -41,9 +70,10 @@ model Property {
   address   String
   createdAt DateTime @default(now())
 
-  owner    User                 @relation(fields: [ownerId], references: [id])
-  units    Unit[]
-  requests MaintenanceRequest[]
+  owner            User                 @relation(fields: [ownerId], references: [id])
+  units            Unit[]
+  requests         MaintenanceRequest[]
+  tenantIdentities TenantIdentity[]
 }
 
 model Unit {
@@ -54,14 +84,17 @@ model Unit {
   tenantEmail String?
   createdAt   DateTime @default(now())
 
-  property Property             @relation(fields: [propertyId], references: [id])
-  requests MaintenanceRequest[]
+  property         Property             @relation(fields: [propertyId], references: [id])
+  requests         MaintenanceRequest[]
+  tenantIdentities TenantIdentity[]
 }
 
 model MaintenanceRequest {
   id                 String          @id @default(cuid())
   propertyId         String
   unitId             String
+  orgId              String?
+  tenantIdentityId   String?
   submittedByUserId  String?
   submittedByName    String?
   submittedByEmail   String?
@@ -75,12 +108,16 @@ model MaintenanceRequest {
   updatedAt          DateTime        @updatedAt
   closedAt           DateTime?
 
-  property          Property           @relation(fields: [propertyId], references: [id])
-  unit              Unit               @relation(fields: [unitId], references: [id])
-  submittedByUser   User?              @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
-  photos            MaintenancePhoto[]
-  comments          RequestComment[]
-  events            StatusEvent[]
+  property        Property           @relation(fields: [propertyId], references: [id])
+  unit            Unit               @relation(fields: [unitId], references: [id])
+  tenantIdentity  TenantIdentity?    @relation(fields: [tenantIdentityId], references: [id])
+  submittedByUser User?              @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
+  photos          MaintenancePhoto[]
+  comments        RequestComment[]
+  events          StatusEvent[]
+
+  @@index([tenantIdentityId])
+  @@index([orgId])
 }
 
 model MaintenancePhoto {
@@ -105,13 +142,103 @@ model RequestComment {
 }
 
 model StatusEvent {
-  id          String        @id @default(cuid())
+  id          String                @id @default(cuid())
   requestId   String
   fromStatus  RequestStatus?
   toStatus    RequestStatus
   actorUserId String?
-  createdAt   DateTime      @default(now())
+  visibility  TenantEventVisibility @default(tenant_visible)
+  createdAt   DateTime              @default(now())
 
   request   MaintenanceRequest @relation(fields: [requestId], references: [id])
   actorUser User?              @relation("StatusActor", fields: [actorUserId], references: [id])
+}
+
+model TenantIdentity {
+  id            String               @id @default(cuid())
+  orgId         String
+  propertyId    String
+  unitId        String
+  tenantName    String
+  phoneE164     String
+  email         String?
+  status        TenantIdentityStatus @default(pending_invite)
+  verifiedAt    DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  property  Property              @relation(fields: [propertyId], references: [id])
+  unit      Unit                  @relation(fields: [unitId], references: [id])
+  requests  MaintenanceRequest[]
+  invites   TenantInvite[]
+  otpChallenges TenantOtpChallenge[]
+  sessions  TenantSession[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@unique([orgId, phoneE164, unitId])
+}
+
+model TenantInvite {
+  id               String             @id @default(cuid())
+  tenantIdentityId String
+  orgId            String
+  propertyId       String
+  unitId           String
+  tokenHash        String             @unique
+  status           TenantInviteStatus @default(pending)
+  expiresAt        DateTime
+  sentVia          TenantOtpChannel
+  sentTo           String
+  createdAt        DateTime           @default(now())
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+
+  tenantIdentity TenantIdentity @relation(fields: [tenantIdentityId], references: [id])
+
+  @@index([tenantIdentityId, status])
+  @@index([orgId, status])
+}
+
+model TenantOtpChallenge {
+  id               String           @id @default(cuid())
+  tenantIdentityId String
+  orgId            String
+  purpose          TenantOtpPurpose
+  channel          TenantOtpChannel
+  destinationMasked String
+  codeHash         String
+  codeSalt         String
+  expiresAt        DateTime
+  attemptCount     Int              @default(0)
+  maxAttempts      Int              @default(5)
+  lockedUntil      DateTime?
+  verifiedAt       DateTime?
+  createdAt        DateTime         @default(now())
+
+  tenantIdentity TenantIdentity @relation(fields: [tenantIdentityId], references: [id])
+
+  @@index([tenantIdentityId, purpose, createdAt])
+  @@index([orgId, purpose])
+}
+
+model TenantSession {
+  id               String   @id @default(cuid())
+  tenantIdentityId String
+  orgId            String
+  propertyId       String
+  unitId           String
+  sessionSecretHash String  @unique
+  issuedAt         DateTime @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  lastSeenAt       DateTime?
+  userAgent        String?
+
+  tenantIdentity TenantIdentity @relation(fields: [tenantIdentityId], references: [id])
+
+  @@index([tenantIdentityId, revokedAt])
+  @@index([orgId])
 }
