@@ -338,6 +338,10 @@
           {
             "text": "Barry Bot: Jeff ran final manual browser QA on the current SQLite-backed build and the result is NOT SIGN-OFF READY. Login, property creation, and unit creation passed with persistence after refresh, and demo mode stayed gone. But real-browser testing found two release blockers: image upload behavior breaks normal use (2.4 MB photo hits 'Body exceeded 1 MB limit', and smaller uploaded images do not preview/render correctly), and request-detail actions fail with a Next.js server-action error ('A \"use server\" file can only export async functions, found object') pointing at lib/request-detail-actions.ts. Net truth: persistence is real, but core request-detail workflow still breaks under normal use.",
             "ts": 1774230600000
+          },
+          {
+            "text": "Barry Bot: Jeff re-ran final manual browser QA after the latest fixes and PM now PASSES. In a real browser, login, property creation, unit creation, maintenance request submission with image upload, detail rendering, status change, vendor assignment, comment add, and reports/history all passed and persisted after refresh. Current truth: Property Manager is out of demo mode, uses real SQLite-backed persistence, code/docs/config are aligned to that backend, and the tested core landlord workflows now work end to end in normal browser use.",
+            "ts": 1774233900000
           }
         ]
       },
