@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff verdict: PASS WITH CONDITIONS. Property Manager is out of demo mode and now uses a real persistent SQLite database, but it is still not PostgreSQL-backed and full manual browser QA is still pending.",
-      "nextStep": "Run the full manual browser QA checklist against the SQLite-backed build, log pass/fail honestly, and only then decide whether to hold on SQLite temporarily or make the PostgreSQL migration the next explicit infra step.",
+      "reviewGate": "Jeff verdict: PASS WITH ONE REMAINING GAP. Property Manager is now cleanly SQLite-first, persistence is real, docs/config match implementation, and demo mode is gone. The remaining gap is final manual browser QA on a real machine.",
+      "nextStep": "Run the full manual browser click-through checklist on a real machine and log pass/fail for login, property creation, unit creation, request submission with upload, detail rendering, status change, vendor assignment, comment add, and reports/history correctness.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -23,7 +23,8 @@
         "Barry Bot: Product direction is now cleaner: operator pays, tenant/vendor access is free, invite-based onboarding is the path, and regions/urgency/expected completion/import-export are in scope.",
         "Barry Bot: Jeff previously failed sign-off because the app could present convincing seed/demo reads when the DB was missing while real write flows were effectively broken.",
         "Barry Bot: Bob moved the app out of demo mode into real persisted operation in commit cd4b7fd ('Wire SQLite for real DB persistence, exit demo mode'). Seed succeeded, demo banner is gone, and writes now persist at the app/Prisma layer.",
-        "Jeff: good progress, but call it what it is — this is a real persisted SQLite app, not completion of the original PostgreSQL-backed assignment. Manual browser QA is still the next honest gate."
+        "Jeff: good progress, but call it what it is — this is a real persisted SQLite app, not completion of the original PostgreSQL-backed assignment. Manual browser QA is still the next honest gate.",
+        "Jeff: better now — the repo story matches reality, SQLite is declared instead of hidden, docs no longer lie, migrate status is clean, build is clean, and backend credibility is no longer the issue. The only remaining gap before full sign-off is real manual browser QA."
       ]
     },
     {
