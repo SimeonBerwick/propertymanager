@@ -3,12 +3,12 @@
 ## 1. Target platform / stack
 - Frontend: Next.js + TypeScript
 - Backend: Next.js route handlers or NestJS later if needed
-- Database: Postgres
+- Database: SQLite (via Prisma)
 - ORM: Prisma
 - Auth: Clerk or Supabase Auth
 - File storage: S3 / R2 for issue photos
 - Notifications: email first, SMS later
-- Hosting: Vercel + managed Postgres
+- Hosting: Vercel (SQLite via embedded file; swap to Turso/Neon if distributed hosting is needed later)
 
 ## 2. MVP architecture
 
