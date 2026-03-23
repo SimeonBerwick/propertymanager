@@ -334,6 +334,10 @@
           {
             "text": "Barry Bot: Jeff now says PM is coherent and passes with one remaining gap. SQLite is now the declared backend rather than a hidden compromise, .env.example and docs match reality, prisma migrate status is clean, npm run build is clean, stale Postgres references are gone, and persistence is real rather than demo theater. Remaining gap: final manual browser click-through on a real machine to verify usability, uploads, refresh behavior, and UI edge cases before full sign-off.",
             "ts": 1774228500000
+          },
+          {
+            "text": "Barry Bot: Jeff ran final manual browser QA on the current SQLite-backed build and the result is NOT SIGN-OFF READY. Login, property creation, and unit creation passed with persistence after refresh, and demo mode stayed gone. But real-browser testing found two release blockers: image upload behavior breaks normal use (2.4 MB photo hits 'Body exceeded 1 MB limit', and smaller uploaded images do not preview/render correctly), and request-detail actions fail with a Next.js server-action error ('A \"use server\" file can only export async functions, found object') pointing at lib/request-detail-actions.ts. Net truth: persistence is real, but core request-detail workflow still breaks under normal use.",
+            "ts": 1774230600000
           }
         ]
       },
