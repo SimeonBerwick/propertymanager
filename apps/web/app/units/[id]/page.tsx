@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
 import { StatusBadge } from '@/components/status-badge'
+import { prisma } from '@/lib/prisma'
+import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -22,6 +24,10 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { unit, property, requests, openCount, closedCount } = data
+  const tenantIdentity = await prisma.tenantIdentity.findFirst({
+    where: { unitId: unit.id },
+    orderBy: { createdAt: 'desc' },
+  }).catch(() => null)
 
   return (
     <div className="stack">
@@ -60,6 +66,21 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
           <div className="muted">Completed</div>
         </div>
       </section>
+
+      <MobileIdentityPanel
+        unitId={unit.id}
+        tenantName={unit.tenantName}
+        tenantEmail={unit.tenantEmail}
+        tenantIdentity={tenantIdentity ? {
+          id: tenantIdentity.id,
+          tenantName: tenantIdentity.tenantName,
+          phoneE164: tenantIdentity.phoneE164,
+          email: tenantIdentity.email,
+          status: tenantIdentity.status,
+          verifiedAt: tenantIdentity.verifiedAt?.toISOString() ?? null,
+          lastLoginAt: tenantIdentity.lastLoginAt?.toISOString() ?? null,
+        } : null}
+      />
 
       <section className="card stack">
         <div>
