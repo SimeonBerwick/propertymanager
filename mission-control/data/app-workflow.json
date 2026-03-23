@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff verdict: PASS. Final manual browser QA passed on the corrected SQLite-backed build, and the tested core landlord workflows now work end to end in normal browser use.",
-      "nextStep": "Treat this as a real beta candidate with browser-verified core workflows. Next focus should move from proving basic app truth to broader QA, workflow polish, and the intentional future path for PostgreSQL/object storage/deployment.",
+      "reviewGate": "Jeff verdict: PASS on the current SQLite-backed build, and Elon has now added the tenant mobile access v1 slice in commit 088d51b with a successful production build.",
+      "nextStep": "Treat this as a real beta candidate with both browser-verified core workflows and a first real tenant mobile access surface. Next focus should be returning login, delivery adapters for SMS/email, media auth hardening, auth-boundary tests, and automatic tenant lifecycle revocation.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -26,7 +26,9 @@
         "Jeff: good progress, but call it what it is — this is a real persisted SQLite app, not completion of the original PostgreSQL-backed assignment. Manual browser QA is still the next honest gate.",
         "Jeff: better now — the repo story matches reality, SQLite is declared instead of hidden, docs no longer lie, migrate status is clean, build is clean, and backend credibility is no longer the issue. The only remaining gap before full sign-off is real manual browser QA.",
         "Jeff: final manual browser QA says not sign-off ready. Login, property creation, and unit creation passed, but maintenance request upload failed normal-use expectations due to a 1 MB body limit and broken image preview behavior, and request-detail actions failed with a Next.js 'use server' export violation in lib/request-detail-actions.ts.",
-        "Jeff: re-ran final manual browser QA after the latest fixes and the app now passes. Login, property creation, unit creation, maintenance request submission with image upload, detail rendering, status change, vendor assignment, comment add, and reports/history all worked and persisted after refresh in a real browser."
+        "Jeff: re-ran final manual browser QA after the latest fixes and the app now passes. Login, property creation, unit creation, maintenance request submission with image upload, detail rendering, status change, vendor assignment, comment add, and reports/history all worked and persisted after refresh in a real browser.",
+        "Barry Bot: Elon built the tenant mobile access v1 slice directly in the real repo in commit 088d51b. New surface includes operator mobile identity setup on unit pages, hashed invite tokens, hashed OTP verification, DB-backed tenant mobile sessions via httpOnly cookie, protected /mobile portal, tenant dashboard, request creation, request detail with tenant-visible comments/events only, and signout.",
+        "Barry Bot: Elon validated the tenant mobile slice with successful Prisma client generation, prisma db push, and next build. Remaining gaps called out explicitly: returning login UI, real SMS/email delivery adapters, hardened media/photo auth, automatic move-out revocation hooks, and fuller auth-boundary coverage."
       ]
     },
     {
