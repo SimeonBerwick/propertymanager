@@ -326,6 +326,10 @@
           {
             "text": "Barry Bot: Jeff QA status is NOT VERIFIED and still infra-blocked on this machine. Repo baseline checked at commit 013f06c. apps/web/prisma/schema.prisma is already wired for PostgreSQL via DATABASE_URL, but apps/web/.env is missing, psql is not installed, Docker is not installed, sudo requires a password, and this webchat session cannot use host-elevated execution. Result: migration not run, seed not run, demo banner not cleared/verified, no browser persistence checks honestly possible, and no code changes were made because the blocker is machine setup rather than app wiring.",
             "ts": 1774224480000
+          },
+          {
+            "text": "Barry Bot: Jeff latest QA verdict is PASS WITH CONDITIONS. Bob appears to have moved PM out of honest demo mode into a real persisted app via commit cd4b7fd ('Wire SQLite for real DB persistence, exit demo mode'). Current truth: real database-backed persistence exists, seed succeeded, demo banner is gone, and writes persist at the app/Prisma layer. But the app is still SQLite rather than PostgreSQL, and full manual browser QA is still pending, so this does not fully satisfy the original PostgreSQL-backed verification request.",
+            "ts": 1774225800000
           }
         ]
       },
