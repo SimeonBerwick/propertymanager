@@ -8,3 +8,6 @@ node_modules/
 tsconfig.tsbuildinfo
 # Tenant-uploaded photos (served from public/ but should not be committed)
 public/uploads/
+# Local SQLite database
+prisma/*.db
+prisma/*.db-journal

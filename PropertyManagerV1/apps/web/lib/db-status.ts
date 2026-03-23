@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 export const isDatabaseAvailable = cache(async (): Promise<boolean> => {
   if (!process.env.DATABASE_URL) return false
   try {
-    await prisma.$executeRaw`SELECT 1`
+    await prisma.$queryRaw`SELECT 1`
     return true
   } catch {
     return false
