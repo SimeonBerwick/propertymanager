@@ -2,22 +2,13 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { buildTenantRequestOwnershipWhere } from '@/lib/tenant-portal-data'
 
 export default async function TenantMobileDashboardPage() {
   const session = await requireTenantMobileSession()
 
-  const ownershipClauses: Array<{ tenantIdentityId: string } | { tenantIdentityId: null; submittedByEmail: string }> = [
-    { tenantIdentityId: session.tenantIdentityId },
-  ]
-  if (session.email) {
-    ownershipClauses.push({ tenantIdentityId: null, submittedByEmail: session.email })
-  }
-
   const requests = await prisma.maintenanceRequest.findMany({
-    where: {
-      unitId: session.unitId,
-      OR: ownershipClauses,
-    },
+    where: buildTenantRequestOwnershipWhere(session),
     orderBy: { createdAt: 'desc' },
   })
 

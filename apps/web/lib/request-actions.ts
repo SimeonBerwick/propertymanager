@@ -36,7 +36,7 @@ async function savePhotos(files: File[]) {
     return [] as string[]
   }
 
-  const diskDirectory = path.join(process.cwd(), 'public', UPLOAD_SUBDIRECTORY)
+  const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
   await mkdir(diskDirectory, { recursive: true })
 
   const savedPaths: string[] = []
@@ -45,11 +45,12 @@ async function savePhotos(files: File[]) {
     const extension = getFileExtension(file)
     const filename = `${Date.now()}-${randomUUID()}.${extension}`
     const diskPath = path.join(diskDirectory, filename)
-    const publicPath = `/${UPLOAD_SUBDIRECTORY}/${filename}`
+    // Store as a relative path from cwd — not a public URL.
+    const storagePath = `${UPLOAD_SUBDIRECTORY}/${filename}`
     const bytes = Buffer.from(await file.arrayBuffer())
 
     await writeFile(diskPath, bytes)
-    savedPaths.push(publicPath)
+    savedPaths.push(storagePath)
   }
 
   return savedPaths
@@ -58,7 +59,7 @@ async function savePhotos(files: File[]) {
 async function cleanupPhotos(photoPaths: string[]) {
   await Promise.all(
     photoPaths.map(async (photoPath) => {
-      const diskPath = path.join(process.cwd(), 'public', photoPath.replace(/^\//, ''))
+      const diskPath = path.join(process.cwd(), photoPath)
       try {
         await unlink(diskPath)
       } catch {

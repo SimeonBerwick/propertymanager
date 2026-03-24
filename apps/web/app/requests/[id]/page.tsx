@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
@@ -92,8 +91,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           {data.photos.length ? (
             <div className="photo-grid">
               {data.photos.map((photo) => (
-                <a key={photo.id} href={photo.imageUrl} target="_blank" rel="noreferrer" className="photo-card">
-                  <Image src={photo.imageUrl} alt="Maintenance issue photo" width={320} height={220} className="photo-image" />
+                <a key={photo.id} href={`/api/landlord/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/landlord/media/${photo.id}`} alt="Maintenance issue photo" className="photo-image" />
                 </a>
               ))}
             </div>

@@ -6,8 +6,10 @@ import { StatusBadge } from '@/components/status-badge'
 import {
   updateStatusFormAction,
   updateVendorFormAction,
-  INITIAL_STATE,
+  type RequestActionState,
 } from '@/lib/request-detail-actions'
+
+const INITIAL_STATE: RequestActionState = { error: null }
 
 const STATUS_OPTIONS: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const STATUS_LABELS: Record<RequestStatus, string> = {
