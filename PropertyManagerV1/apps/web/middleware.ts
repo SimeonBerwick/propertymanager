@@ -20,6 +20,11 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Tenant mobile portal handles its own session via requireTenantMobileSession().
+  if (pathname.startsWith('/mobile')) {
+    return response
+  }
+
   if (!session.isLoggedIn) {
     return NextResponse.redirect(new URL('/login', request.url))
   }

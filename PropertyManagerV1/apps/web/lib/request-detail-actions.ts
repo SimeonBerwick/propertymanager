@@ -2,13 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { getLandlordSession } from '@/lib/landlord-session'
 import type { RequestStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage } from '@/lib/notify'
 
 export type RequestActionState = { error: string | null; success?: boolean }
-
-const INITIAL_STATE: RequestActionState = { error: null }
-export { INITIAL_STATE }
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 
@@ -16,6 +14,9 @@ export async function updateStatusFormAction(
   _prev: RequestActionState,
   formData: FormData,
 ): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
   const requestId = formData.get('requestId') as string
   const fromStatus = formData.get('fromStatus') as RequestStatus
   const toStatus = formData.get('toStatus') as RequestStatus
@@ -32,7 +33,7 @@ export async function updateStatusFormAction(
   try {
     await prisma.$transaction(async (tx) => {
       const updated = await tx.maintenanceRequest.update({
-        where: { id: requestId },
+        where: { id: requestId, property: { ownerId: session.userId } },
         data: {
           status: toStatus,
           closedAt: toStatus === 'done' ? new Date() : null,
@@ -79,6 +80,9 @@ export async function updateVendorFormAction(
   _prev: RequestActionState,
   formData: FormData,
 ): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
   const requestId = formData.get('requestId') as string
   const vendorName = ((formData.get('vendorName') as string) ?? '').trim()
 
@@ -86,7 +90,7 @@ export async function updateVendorFormAction(
 
   try {
     await prisma.maintenanceRequest.update({
-      where: { id: requestId },
+      where: { id: requestId, property: { ownerId: session.userId } },
       data: { assignedVendorName: vendorName || null },
     })
     revalidatePath(`/requests/${requestId}`)
@@ -100,6 +104,9 @@ export async function addCommentFormAction(
   _prev: RequestActionState,
   formData: FormData,
 ): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
   const requestId = formData.get('requestId') as string
   const body = ((formData.get('body') as string) ?? '').trim()
   const visibility = formData.get('visibility') as string
@@ -107,6 +114,13 @@ export async function addCommentFormAction(
   if (!body) return { error: 'Comment body is required.' }
   if (body.length > 2000) return { error: 'Comment must be 2 000 characters or fewer.' }
   if (visibility !== 'internal' && visibility !== 'external') return { error: 'Invalid visibility.' }
+
+  // Verify the request belongs to this org before writing the comment.
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: session.userId } },
+    select: { id: true },
+  })
+  if (!request) return { error: 'Request not found.' }
 
   try {
     await prisma.requestComment.create({

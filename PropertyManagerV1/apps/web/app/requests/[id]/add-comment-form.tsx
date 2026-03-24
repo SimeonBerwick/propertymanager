@@ -1,7 +1,9 @@
 'use client'
 
 import { useActionState, useEffect, useRef } from 'react'
-import { addCommentFormAction, INITIAL_STATE } from '@/lib/request-detail-actions'
+import { addCommentFormAction, type RequestActionState } from '@/lib/request-detail-actions'
+
+const INITIAL_STATE: RequestActionState = { error: null }
 
 export function AddCommentForm({ requestId }: { requestId: string }) {
   const [state, formAction, isPending] = useActionState(addCommentFormAction, INITIAL_STATE)

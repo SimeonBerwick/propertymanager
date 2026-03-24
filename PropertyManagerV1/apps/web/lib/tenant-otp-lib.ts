@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
+import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -65,6 +66,13 @@ export async function createOtpChallenge(
         maxAttempts: OTP_MAX_ATTEMPTS,
       },
     })
+  })
+
+  await getTenantDeliveryAdapter().sendOtp({
+    to: destination,
+    channel,
+    code,
+    tenantName: tenantIdentity.tenantName,
   })
 
   return {

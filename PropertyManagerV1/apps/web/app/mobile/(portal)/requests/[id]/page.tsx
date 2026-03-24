@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 
 const STATUS_LABELS: Record<string, string> = {
   new: 'New',
@@ -13,33 +13,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const session = await requireTenantMobileSession()
   const { id } = await params
 
-  const ownershipClauses: Array<{ tenantIdentityId: string } | { tenantIdentityId: null; submittedByEmail: string }> = [
-    { tenantIdentityId: session.tenantIdentityId },
-  ]
-  if (session.email) {
-    ownershipClauses.push({ tenantIdentityId: null, submittedByEmail: session.email })
-  }
-
-  const request = await prisma.maintenanceRequest.findFirst({
-    where: {
-      id,
-      unitId: session.unitId,
-      OR: ownershipClauses,
-    },
-    include: {
-      comments: {
-        where: { visibility: 'external' },
-        orderBy: { createdAt: 'asc' },
-      },
-      events: {
-        where: { visibility: 'tenant_visible' },
-        orderBy: { createdAt: 'asc' },
-      },
-      photos: {
-        orderBy: { createdAt: 'asc' },
-      },
-    },
-  })
+  const request = await getTenantOwnedRequestById(id, session)
 
   if (!request) {
     notFound()
@@ -92,8 +66,8 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         {request.photos.length ? (
           <div className="photo-grid">
             {request.photos.map((photo) => (
-              <a key={photo.id} href={photo.imageUrl} target="_blank" rel="noreferrer" className="photo-card">
-                <img src={photo.imageUrl} alt="Maintenance issue photo" className="photo-image" />
+              <a key={photo.id} href={`/api/tenant/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
+                <img src={`/api/tenant/media/${photo.id}`} alt="Maintenance issue photo" className="photo-image" />
               </a>
             ))}
           </div>
