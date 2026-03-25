@@ -9,6 +9,21 @@ export function getDevFallbackPassword() {
   return process.env.LANDLORD_PASSWORD ?? DEV_LANDLORD_PASSWORD
 }
 
+/**
+ * Returns the public URL slug for the landlord's /submit/[orgSlug] page.
+ * Reads LANDLORD_SLUG env var; falls back to deriving a slug from the email
+ * prefix (e.g. landlord@example.com → "landlord", john.doe@pm.co → "john-doe").
+ */
+export function getLandlordSlug(): string {
+  const explicit = process.env.LANDLORD_SLUG?.trim().toLowerCase()
+  if (explicit) return explicit
+  const email = getLandlordEmail()
+  return email
+    .split('@')[0]
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'landlord'
+}
+
 export function assertProductionAuthEnv() {
   const email = process.env.LANDLORD_EMAIL?.trim().toLowerCase()
   const password = process.env.LANDLORD_PASSWORD

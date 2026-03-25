@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation'
 import { getAllUnits, getProperties } from '@/lib/data'
+import { prisma } from '@/lib/prisma'
 import { SubmitRequestForm } from './submit-request-form'
 
 export default async function SubmitPage({
@@ -7,13 +9,23 @@ export default async function SubmitPage({
   searchParams: Promise<{ submitted?: string }>
 }) {
   const { submitted } = await searchParams
-  // NOTE (product-level limitation): this public form loads ALL properties/units from the DB
-  // with no owner scoping because tenants are unauthenticated and there is no org-code or
-  // public-slug on the URL to identify a specific landlord. In a multi-landlord deployment
-  // this means one landlord's tenants can see another landlord's property names in the
-  // dropdown. To fully scope this, add a per-landlord public slug (e.g. /submit/[orgSlug])
-  // and pass it as a filter to getProperties/getAllUnits. Until then, seed-data fallback on
-  // DB failure has been removed — the form will show an empty dropdown rather than demo records.
+
+  // Redirect to the scoped submit URL when exactly one landlord has a slug configured.
+  // This is the common single-landlord deployment case and gives tenants a properly
+  // scoped form without requiring them to know the /submit/[orgSlug] URL directly.
+  try {
+    const sluggedUsers = await prisma.user.findMany({
+      where: { slug: { not: null } },
+      select: { slug: true },
+    })
+    if (sluggedUsers.length === 1 && sluggedUsers[0].slug) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      redirect(`/submit/${sluggedUsers[0].slug}${submitted ? `?submitted=${submitted}` : ''}` as any)
+    }
+  } catch {
+    // DB unavailable — fall through to the unscoped form below.
+  }
+
   const [properties, units] = await Promise.all([getProperties(), getAllUnits()])
 
   if (submitted) {

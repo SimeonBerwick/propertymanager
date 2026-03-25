@@ -12,7 +12,7 @@ import {
   requestComments as seedComments,
   statusEvents as seedEvents,
 } from '../lib/seed-data'
-import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } from '../lib/auth-config'
+import { getLandlordEmail, getLandlordSlug, getDevFallbackPassword, assertProductionAuthEnv } from '../lib/auth-config'
 import { hashPassword } from '../lib/password'
 
 const prisma = new PrismaClient()
@@ -22,17 +22,20 @@ async function main() {
 
   const landlordEmail = getLandlordEmail()
   const landlordPasswordHash = hashPassword(getDevFallbackPassword())
+  const landlordSlug = getLandlordSlug()
 
   const landlord = await prisma.user.upsert({
     where: { email: landlordEmail },
     update: {
       role: 'landlord',
       passwordHash: landlordPasswordHash,
+      slug: landlordSlug,
     },
     create: {
       email: landlordEmail,
       role: 'landlord',
       passwordHash: landlordPasswordHash,
+      slug: landlordSlug,
     },
   })
 
