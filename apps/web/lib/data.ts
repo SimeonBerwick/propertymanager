@@ -112,10 +112,21 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   }
 }
 
-export async function getProperties(userId?: string): Promise<Property[]> {
+export async function getLandlordBySlug(slug: string): Promise<{ id: string } | null> {
   try {
+    return await prisma.user.findUnique({ where: { slug }, select: { id: true } })
+  } catch {
+    return null
+  }
+}
+
+export async function getProperties(userId?: string, orgSlug?: string): Promise<Property[]> {
+  try {
+    let where: Record<string, unknown> | undefined
+    if (userId) where = { ownerId: userId }
+    else if (orgSlug) where = { owner: { slug: orgSlug } }
     const dbProperties = await prisma.property.findMany({
-      where: userId ? { ownerId: userId } : undefined,
+      where,
       include: { _count: { select: { units: true } } },
       orderBy: { name: 'asc' },
     })
@@ -128,10 +139,13 @@ export async function getProperties(userId?: string): Promise<Property[]> {
   }
 }
 
-export async function getAllUnits(userId?: string): Promise<Unit[]> {
+export async function getAllUnits(userId?: string, orgSlug?: string): Promise<Unit[]> {
   try {
+    let where: Record<string, unknown> | undefined
+    if (userId) where = { property: { ownerId: userId } }
+    else if (orgSlug) where = { property: { owner: { slug: orgSlug } } }
     const dbUnits = await prisma.unit.findMany({
-      where: userId ? { property: { ownerId: userId } } : undefined,
+      where,
       orderBy: [{ propertyId: 'asc' }, { label: 'asc' }],
     })
     return dbUnits.map(mapUnit)

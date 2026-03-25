@@ -10,9 +10,10 @@ const INITIAL_STATE: SubmitRequestState = { error: null }
 interface SubmitRequestFormProps {
   properties: Property[]
   units: Unit[]
+  orgSlug?: string
 }
 
-export function SubmitRequestForm({ properties, units }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -35,6 +36,7 @@ export function SubmitRequestForm({ properties, units }: SubmitRequestFormProps)
 
   return (
     <form action={formAction} className="stack">
+      {orgSlug && <input type="hidden" name="orgSlug" value={orgSlug} />}
       {state.error && <div className="notice error">{state.error}</div>}
 
       <div className="grid cols-2">

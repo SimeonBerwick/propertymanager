@@ -9,6 +9,7 @@ import { isDatabaseAvailable } from '@/lib/db-status'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { getLandlordEmail } from '@/lib/auth-config'
 import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
+import { getLandlordBySlug } from '@/lib/data'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -77,6 +78,7 @@ export async function submitMaintenanceRequest(
     return { error: 'Demo mode — no database connected. Request submission is disabled.' }
   }
 
+  const orgSlug = getString(formData, 'orgSlug') || undefined
   const propertyId = getString(formData, 'propertyId')
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')
@@ -117,6 +119,23 @@ export async function submitMaintenanceRequest(
 
     if (file.size > MAX_PHOTO_SIZE_BYTES) {
       return { error: 'Each photo must be 5 MB or smaller.' }
+    }
+  }
+
+  // When the form was served from /submit/[orgSlug], verify the submitted property
+  // actually belongs to that landlord — prevents cross-org request injection.
+  if (orgSlug) {
+    const landlord = await getLandlordBySlug(orgSlug)
+    if (!landlord) {
+      return { error: 'Invalid submission link. Please use the link provided by your property manager.' }
+    }
+    try {
+      const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { ownerId: true } })
+      if (!prop || prop.ownerId !== landlord.id) {
+        return { error: 'The selected property is not valid for this submission link.' }
+      }
+    } catch {
+      return { error: 'Could not verify property. Please try again.' }
     }
   }
 
@@ -192,5 +211,9 @@ export async function submitMaintenanceRequest(
   })
   await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
 
-  redirect(`/submit?submitted=${createdRequestId}`)
+  const successUrl = orgSlug
+    ? `/submit/${orgSlug}?submitted=${createdRequestId}`
+    : `/submit?submitted=${createdRequestId}`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  redirect(successUrl as any)
 }

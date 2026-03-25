@@ -55,6 +55,7 @@ model User {
   email             String               @unique
   passwordHash      String
   role              String
+  slug              String?              @unique
   createdAt         DateTime             @default(now())
 
   properties        Property[]
