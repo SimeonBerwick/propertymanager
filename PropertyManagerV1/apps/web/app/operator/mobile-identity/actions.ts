@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { createTenantInvite, revokeAllInvitesAndSessionsForIdentity } from '@/lib/tenant-invite-lib'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
+import { normalizePhoneToE164 } from '@/lib/phone'
 
 export type MobileIdentityState = {
   error: string | null
@@ -17,11 +18,8 @@ function getString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function normalizePhone(raw: string) {
-  const digits = raw.replace(/[^\d+]/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('+')) return digits
-  return `+1${digits}`
+function normalizePhone(raw: string): string {
+  return normalizePhoneToE164(raw) ?? ''
 }
 
 export async function setupMobileIdentityAction(
