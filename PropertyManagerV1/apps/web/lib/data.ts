@@ -148,10 +148,10 @@ export async function getAllUnits(): Promise<Unit[]> {
   }
 }
 
-export async function getPropertyDetailData(propertyId: string): Promise<PropertyDetailData | null> {
+export async function getPropertyDetailData(propertyId: string, userId: string): Promise<PropertyDetailData | null> {
   try {
     const dbProperty = await prisma.property.findUnique({
-      where: { id: propertyId },
+      where: { id: propertyId, ownerId: userId },
       include: {
         _count: { select: { units: true } },
         units: true,
@@ -175,10 +175,10 @@ export async function getPropertyDetailData(propertyId: string): Promise<Propert
   }
 }
 
-export async function getRequestDetailData(requestId: string): Promise<RequestDetailData | null> {
+export async function getRequestDetailData(requestId: string, userId: string): Promise<RequestDetailData | null> {
   try {
-    const dbRequest = await prisma.maintenanceRequest.findUnique({
-      where: { id: requestId },
+    const dbRequest = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestId, property: { ownerId: userId } },
       include: {
         property: true,
         unit: true,
@@ -379,10 +379,10 @@ export async function getReportData(): Promise<ReportData> {
   }
 }
 
-export async function getUnitDetailData(unitId: string): Promise<UnitDetailData | null> {
+export async function getUnitDetailData(unitId: string, userId: string): Promise<UnitDetailData | null> {
   try {
     const dbUnit = await prisma.unit.findUnique({
-      where: { id: unitId },
+      where: { id: unitId, property: { ownerId: userId } },
       include: {
         property: { include: { _count: { select: { units: true } } } },
         requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
