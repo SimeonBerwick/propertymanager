@@ -14,7 +14,7 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff verdict: PASS on the current SQLite-backed build, and the app has now cleared a meaningful hardening pass across server-action auth/org scoping, org-scoped detail fetches, and tenant/landlord media access control after photos were moved out of /public.",
+      "reviewGate": "Jeff previously passed the current SQLite-backed build, and the app has since cleared a meaningful hardening pass across server-action auth/org scoping, org-scoped detail fetches, and tenant/landlord media access control after photos were moved out of /public. But there is not yet a fresh Jeff QA verdict on these latest changes because the current review attempt was blocked by lack of access to the actual PM app files/runtime.",
       "nextStep": "Treat this as a real beta candidate with core browser workflows, tenant mobile access, and the main auth/media/IDOR blockers addressed. Next focus should be returning login, SMS/email delivery adapters, upload/file validation, auth-boundary regression coverage, tenant lifecycle revocation, and deployment/storage maturity for uploads.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
@@ -34,7 +34,8 @@
         "Barry Bot: Photo compatibility fix landed without requiring a migration. The protected media routes now try the new uploads/requests disk path first and fall back to legacy public/uploads-style paths so old photos continue to render while new uploads use the hardened storage location.",
         "Barry Bot: IDOR risk on landlord detail reads was also closed. getRequestDetailData, getPropertyDetailData, and getUnitDetailData now require userId and scope queries through property.ownerId, and the corresponding landlord pages establish session before any DB fetch instead of reading by bare ID.",
         "Barry Bot: The DB failure path is now safer and more honest on request forms — if the database is unavailable, the property/unit selectors render empty instead of showing misleading demo seed records. On the DB success path in a single-landlord deployment, showing all real properties remains the intended behavior and is not considered a data leak.",
-        "Barry Bot: Migration/seed implication for the landlord-scoped form rollout — the new User.slug field is nullable, so existing users continue to work without immediate breakage. The current project reality is db push-driven schema management on SQLite (with a documentation migration file added), and fresh seeds now populate slug automatically. Existing deployed instances need one seed run or a manual User.slug update before the scoped form behavior is fully activated for that landlord."
+        "Barry Bot: Migration/seed implication for the landlord-scoped form rollout — the new User.slug field is nullable, so existing users continue to work without immediate breakage. The current project reality is db push-driven schema management on SQLite (with a documentation migration file added), and fresh seeds now populate slug automatically. Existing deployed instances need one seed run or a manual User.slug update before the scoped form behavior is fully activated for that landlord.",
+        "Jeff: current QA is blocked, not refreshed. He can review the PM app, but this workspace/session did not contain the actual product files or runnable app for him to inspect, so there is no new Jeff verdict yet on the latest hardening changes until he gets the repo path, a link, screenshots/video, or the correct working session/thread."
       ]
     },
     {
