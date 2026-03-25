@@ -7,6 +7,13 @@ export default async function SubmitPage({
   searchParams: Promise<{ submitted?: string }>
 }) {
   const { submitted } = await searchParams
+  // NOTE (product-level limitation): this public form loads ALL properties/units from the DB
+  // with no owner scoping because tenants are unauthenticated and there is no org-code or
+  // public-slug on the URL to identify a specific landlord. In a multi-landlord deployment
+  // this means one landlord's tenants can see another landlord's property names in the
+  // dropdown. To fully scope this, add a per-landlord public slug (e.g. /submit/[orgSlug])
+  // and pass it as a filter to getProperties/getAllUnits. Until then, seed-data fallback on
+  // DB failure has been removed — the form will show an empty dropdown rather than demo records.
   const [properties, units] = await Promise.all([getProperties(), getAllUnits()])
 
   if (submitted) {
