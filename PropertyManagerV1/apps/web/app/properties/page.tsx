@@ -1,8 +1,12 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getAllUnits, getProperties } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 
 export default async function PropertiesPage() {
-  const [properties, allUnits] = await Promise.all([getProperties(), getAllUnits()])
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+  const [properties, allUnits] = await Promise.all([getProperties(session.userId), getAllUnits(session.userId)])
 
   if (!properties.length) {
     return (
