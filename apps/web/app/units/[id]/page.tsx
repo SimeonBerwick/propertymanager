@@ -28,7 +28,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
 
   const { unit, property, requests, openCount, closedCount } = data
   const tenantIdentity = await prisma.tenantIdentity.findFirst({
-    where: { unitId: unit.id },
+    where: { unitId: unit.id, property: { ownerId: session.userId } },
     orderBy: { createdAt: 'desc' },
   }).catch(() => null)
 

@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getReportData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
 
 function ageBadgeClass(days: number) {
@@ -9,7 +11,9 @@ function ageBadgeClass(days: number) {
 }
 
 export default async function ReportsPage() {
-  const data = await getReportData()
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+  const data = await getReportData(session.userId)
   const totalRequests = data.propertyStats.reduce((sum, p) => sum + p.totalCount, 0)
 
   return (

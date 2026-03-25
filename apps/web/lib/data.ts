@@ -110,11 +110,15 @@ function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, numbe
   }
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
+export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
     const [dbProperties, dbRequests] = await Promise.all([
-      prisma.property.findMany({ include: { _count: { select: { units: true } } } }),
+      prisma.property.findMany({
+        where: { ownerId: userId },
+        include: { _count: { select: { units: true } } },
+      }),
       prisma.maintenanceRequest.findMany({
+        where: { property: { ownerId: userId } },
         include: { property: true, unit: true },
         orderBy: { createdAt: 'desc' },
       }),
@@ -122,29 +126,33 @@ export async function getDashboardData(): Promise<DashboardData> {
     const requestRows = dbRequests.map(mapRequestRow)
     return { properties: dbProperties.map(mapProperty), requestRows, statusCounts: countStatuses(requestRows) }
   } catch {
-    const requestRows = seedRequests.map(attachSeedContext)
-    return { properties: seedProperties, requestRows, statusCounts: countStatuses(requestRows) }
+    // DB unavailable: return empty data rather than exposing unscoped seed data
+    return { properties: [], requestRows: [], statusCounts: countStatuses([]) }
   }
 }
 
-export async function getProperties(): Promise<Property[]> {
+export async function getProperties(userId?: string): Promise<Property[]> {
   try {
     const dbProperties = await prisma.property.findMany({
+      where: userId ? { ownerId: userId } : undefined,
       include: { _count: { select: { units: true } } },
       orderBy: { name: 'asc' },
     })
     return dbProperties.map(mapProperty)
   } catch {
-    return seedProperties
+    return userId ? [] : seedProperties
   }
 }
 
-export async function getAllUnits(): Promise<Unit[]> {
+export async function getAllUnits(userId?: string): Promise<Unit[]> {
   try {
-    const dbUnits = await prisma.unit.findMany({ orderBy: [{ propertyId: 'asc' }, { label: 'asc' }] })
+    const dbUnits = await prisma.unit.findMany({
+      where: userId ? { property: { ownerId: userId } } : undefined,
+      orderBy: [{ propertyId: 'asc' }, { label: 'asc' }],
+    })
     return dbUnits.map(mapUnit)
   } catch {
-    return seedUnits
+    return userId ? [] : seedUnits
   }
 }
 
@@ -297,11 +305,12 @@ function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
   return result.sort((a, b) => b.count - a.count)
 }
 
-export async function getReportData(): Promise<ReportData> {
+export async function getReportData(userId: string): Promise<ReportData> {
   const now = new Date()
   try {
     const [dbProperties, openDbRequests, allDbRequests] = await Promise.all([
       prisma.property.findMany({
+        where: { ownerId: userId },
         include: {
           _count: { select: { units: true } },
           requests: { select: { id: true, status: true } },
@@ -309,11 +318,12 @@ export async function getReportData(): Promise<ReportData> {
         orderBy: { name: 'asc' },
       }),
       prisma.maintenanceRequest.findMany({
-        where: { status: { not: 'done' } },
+        where: { status: { not: 'done' }, property: { ownerId: userId } },
         include: { property: true, unit: true },
         orderBy: { createdAt: 'asc' },
       }),
       prisma.maintenanceRequest.findMany({
+        where: { property: { ownerId: userId } },
         include: { property: true, unit: true },
         orderBy: { createdAt: 'desc' },
       }),
@@ -345,37 +355,8 @@ export async function getReportData(): Promise<ReportData> {
       totalClosed,
     }
   } catch {
-    const propertyStats: PropertyStats[] = seedProperties.map((p) => {
-      const reqs = seedRequests.filter((r) => r.propertyId === p.id)
-      return {
-        propertyId: p.id,
-        propertyName: p.name,
-        propertyAddress: p.address,
-        totalCount: reqs.length,
-        openCount: reqs.filter((r) => r.status !== 'done').length,
-        closedCount: reqs.filter((r) => r.status === 'done').length,
-      }
-    })
-
-    const agingRequests: AgingRequest[] = seedRequests
-      .filter((r) => r.status !== 'done')
-      .map((r) => ({
-        ...attachSeedContext(r),
-        ageDays: Math.floor((now.getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
-      }))
-      .sort((a, b) => b.ageDays - a.ageDays)
-
-    const allRows = seedRequests.map(attachSeedContext)
-    const totalOpen = allRows.filter((r) => r.status !== 'done').length
-    const totalClosed = allRows.filter((r) => r.status === 'done').length
-
-    return {
-      propertyStats,
-      agingRequests,
-      repeatIssues: groupRepeatIssues(allRows),
-      totalOpen,
-      totalClosed,
-    }
+    // DB unavailable: return empty data rather than exposing unscoped seed data
+    return { propertyStats: [], agingRequests: [], repeatIssues: [], totalOpen: 0, totalClosed: 0 }
   }
 }
 

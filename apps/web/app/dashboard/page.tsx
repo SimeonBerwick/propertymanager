@@ -1,9 +1,13 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { StatusBadge } from '@/components/status-badge'
 import { getDashboardData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 
 export default async function DashboardPage() {
-  const data = await getDashboardData()
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+  const data = await getDashboardData(session.userId)
 
   return (
     <div className="stack">
