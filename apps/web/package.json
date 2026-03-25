@@ -17,6 +17,7 @@
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "iron-session": "^8.0.4",
+    "libphonenumber-js": "^1.12.40",
     "next": "^15.5.14",
     "nodemailer": "^8.0.3",
     "react": "19.0.0",
