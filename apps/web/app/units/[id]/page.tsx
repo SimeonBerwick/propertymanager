@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
@@ -16,8 +17,10 @@ function ageDays(createdAt: string) {
 }
 
 export default async function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
   const { id } = await params
-  const data = await getUnitDetailData(id)
+  const data = await getUnitDetailData(id, session.userId)
 
   if (!data) {
     notFound()

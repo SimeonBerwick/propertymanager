@@ -32,12 +32,20 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
+  // Primary path: used by photos saved after the hardening pass (uploads/requests/...).
+  // Legacy fallback: photos saved before the hardening pass were stored in public/ with
+  // a leading-slash URL path (/uploads/requests/...) — try that location if primary fails.
   const diskPath = path.join(process.cwd(), photo.imageUrl)
+  const legacyDiskPath = path.join(process.cwd(), 'public', photo.imageUrl.replace(/^\/+/, ''))
   let fileBytes: Buffer
   try {
     fileBytes = await readFile(diskPath)
   } catch {
-    return new NextResponse('File not found', { status: 404 })
+    try {
+      fileBytes = await readFile(legacyDiskPath)
+    } catch {
+      return new NextResponse('File not found', { status: 404 })
+    }
   }
 
   const ext = path.extname(photo.imageUrl).toLowerCase().slice(1)

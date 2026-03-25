@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
@@ -22,8 +23,10 @@ function statusLabel(s: string) {
 }
 
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
   const { id } = await params
-  const data = await getRequestDetailData(id)
+  const data = await getRequestDetailData(id, session.userId)
 
   if (!data) {
     notFound()

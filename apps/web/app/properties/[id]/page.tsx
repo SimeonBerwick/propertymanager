@@ -1,11 +1,14 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
   const { id } = await params
-  const data = await getPropertyDetailData(id)
+  const data = await getPropertyDetailData(id, session.userId)
 
   if (!data) {
     notFound()
