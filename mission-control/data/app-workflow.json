@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff verdict: PASS on the current SQLite-backed build, and Elon has now added the tenant mobile access v1 slice in commit 088d51b with a successful production build.",
-      "nextStep": "Treat this as a real beta candidate with both browser-verified core workflows and a first real tenant mobile access surface. Next focus should be returning login, delivery adapters for SMS/email, media auth hardening, auth-boundary tests, and automatic tenant lifecycle revocation.",
+      "reviewGate": "Jeff verdict: PASS on the current SQLite-backed build, and the app has now cleared a key hardening pass across server-action auth/org scoping plus tenant/landlord media access control after photos were moved out of /public.",
+      "nextStep": "Treat this as a real beta candidate with core browser workflows, tenant mobile access, and the main auth/media hardening blockers addressed. Next focus should be returning login, SMS/email delivery adapters, upload/file validation, auth-boundary regression coverage, tenant lifecycle revocation, and deployment/storage maturity for uploads.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -28,7 +28,9 @@
         "Jeff: final manual browser QA says not sign-off ready. Login, property creation, and unit creation passed, but maintenance request upload failed normal-use expectations due to a 1 MB body limit and broken image preview behavior, and request-detail actions failed with a Next.js 'use server' export violation in lib/request-detail-actions.ts.",
         "Jeff: re-ran final manual browser QA after the latest fixes and the app now passes. Login, property creation, unit creation, maintenance request submission with image upload, detail rendering, status change, vendor assignment, comment add, and reports/history all worked and persisted after refresh in a real browser.",
         "Barry Bot: Elon built the tenant mobile access v1 slice directly in the real repo in commit 088d51b. New surface includes operator mobile identity setup on unit pages, hashed invite tokens, hashed OTP verification, DB-backed tenant mobile sessions via httpOnly cookie, protected /mobile portal, tenant dashboard, request creation, request detail with tenant-visible comments/events only, and signout.",
-        "Barry Bot: Elon validated the tenant mobile slice with successful Prisma client generation, prisma db push, and next build. Remaining gaps called out explicitly: returning login UI, real SMS/email delivery adapters, hardened media/photo auth, automatic move-out revocation hooks, and fuller auth-boundary coverage."
+        "Barry Bot: Elon validated the tenant mobile slice with successful Prisma client generation, prisma db push, and next build. Remaining gaps called out explicitly: returning login UI, real SMS/email delivery adapters, hardened media/photo auth, automatic move-out revocation hooks, and fuller auth-boundary coverage.",
+        "Barry Bot: PM app hardening update — server actions now require landlord session checks and scope mutations by property.ownerId, operator mobile-identity actions verify org ownership, tenant media is served through a session-protected /api/tenant/media/[id] route, landlord media now has a matching protected route, photos are stored under uploads/requests instead of /public, request detail photo rendering now goes through authorized media endpoints, and middleware explicitly allows /mobile/* so tenant portal traffic is not redirected into landlord auth.",
+        "Barry Bot: This clears three meaningful blockers: unauthenticated or cross-org request-detail mutations, direct/public photo exposure after upload, and tenant portal breakage caused by landlord-first middleware behavior."
       ]
     },
     {
