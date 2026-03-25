@@ -7,13 +7,6 @@ import type {
   StatusEvent,
   Unit,
 } from '@/lib/types'
-import {
-  properties as seedProperties,
-  units as seedUnits,
-  requests as seedRequests,
-  requestComments as seedComments,
-  statusEvents as seedEvents,
-} from '@/lib/seed-data'
 import { prisma } from '@/lib/prisma'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
@@ -39,18 +32,6 @@ export interface RequestDetailData {
   comments: RequestComment[]
   events: StatusEvent[]
   photos: MaintenancePhoto[]
-}
-
-function attachSeedContext(request: MaintenanceRequest): DashboardRequestRow {
-  const property = seedProperties.find((p) => p.id === request.propertyId)
-  const unit = seedUnits.find((u) => u.id === request.unitId)
-
-  return {
-    ...request,
-    propertyName: property?.name ?? 'Unknown property',
-    propertyAddress: property?.address ?? 'Unknown address',
-    unitLabel: unit?.label ?? 'Unknown unit',
-  }
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -140,7 +121,10 @@ export async function getProperties(userId?: string): Promise<Property[]> {
     })
     return dbProperties.map(mapProperty)
   } catch {
-    return userId ? [] : seedProperties
+    // DB unavailable: never fall back to seed data — seed properties belong to no real owner.
+    // The public /submit form calls this without a userId; returning [] is safe and prevents
+    // seed data from appearing as real properties on that form.
+    return []
   }
 }
 
@@ -152,7 +136,8 @@ export async function getAllUnits(userId?: string): Promise<Unit[]> {
     })
     return dbUnits.map(mapUnit)
   } catch {
-    return userId ? [] : seedUnits
+    // DB unavailable: never fall back to seed data (see getProperties comment above).
+    return []
   }
 }
 
@@ -173,13 +158,10 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
       requests: dbProperty.requests.map(mapRequestRow),
     }
   } catch {
-    const property = seedProperties.find((p) => p.id === propertyId)
-    if (!property) return null
-    return {
-      property,
-      units: seedUnits.filter((u) => u.propertyId === propertyId),
-      requests: seedRequests.filter((r) => r.propertyId === propertyId).map(attachSeedContext),
-    }
+    // DB unavailable: return null rather than falling back to unscoped seed data.
+    // Seed data has no real ownerId, so serving it here would bypass owner-filtering
+    // and could expose demo records to an authenticated user who does not own them.
+    return null
   }
 }
 
@@ -222,14 +204,9 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       photos: dbRequest.photos.map(mapPhoto),
     }
   } catch {
-    const request = seedRequests.find((r) => r.id === requestId)
-    if (!request) return null
-    return {
-      request: attachSeedContext(request),
-      comments: seedComments.filter((c) => c.requestId === requestId),
-      events: seedEvents.filter((e) => e.requestId === requestId),
-      photos: [],
-    }
+    // DB unavailable: return null rather than falling back to unscoped seed data.
+    // See getPropertyDetailData for rationale.
+    return null
   }
 }
 
@@ -379,17 +356,8 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
       closedCount: requests.filter((r) => r.status === 'done').length,
     }
   } catch {
-    const unit = seedUnits.find((u) => u.id === unitId)
-    if (!unit) return null
-    const property = seedProperties.find((p) => p.id === unit.propertyId)
-    if (!property) return null
-    const requests = seedRequests.filter((r) => r.unitId === unitId).map(attachSeedContext)
-    return {
-      unit,
-      property,
-      requests,
-      openCount: requests.filter((r) => r.status !== 'done').length,
-      closedCount: requests.filter((r) => r.status === 'done').length,
-    }
+    // DB unavailable: return null rather than falling back to unscoped seed data.
+    // See getPropertyDetailData for rationale.
+    return null
   }
 }
