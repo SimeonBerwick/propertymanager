@@ -8,7 +8,7 @@ import { scaffoldTenant } from '@/test/helpers'
 vi.mock('@/lib/tenant-delivery', () => ({
   getTenantDeliveryAdapter: vi.fn().mockReturnValue({
     sendOtp: vi.fn().mockResolvedValue(undefined),
-    sendInviteLink: vi.fn().mockResolvedValue(undefined),
+    sendInviteLink: vi.fn().mockResolvedValue({ delivered: true }),
   }),
 }))
 

@@ -27,7 +27,7 @@ import { createHash, randomBytes } from 'node:crypto'
 vi.mock('@/lib/tenant-delivery', () => ({
   getTenantDeliveryAdapter: () => ({
     sendOtp: vi.fn().mockResolvedValue(undefined),
-    sendInviteLink: vi.fn().mockResolvedValue(undefined),
+    sendInviteLink: vi.fn().mockResolvedValue({ delivered: true }),
   }),
 }))
 

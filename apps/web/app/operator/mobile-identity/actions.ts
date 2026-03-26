@@ -3,14 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { createTenantInvite, revokeAllInvitesAndSessionsForIdentity } from '@/lib/tenant-invite-lib'
+import { createTenantInvite } from '@/lib/tenant-invite-lib'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
-import { normalizePhoneToE164 } from '@/lib/phone'
+import { normalizePhoneToE164, type CountryCode } from '@/lib/phone'
 
 export type MobileIdentityState = {
   error: string | null
   inviteLink?: string
   success?: boolean
+  /** Set when the invite was created but the delivery transport reported a failure. */
+  deliveryWarning?: string
 }
 
 function getString(formData: FormData, key: string) {
@@ -18,8 +20,8 @@ function getString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function normalizePhone(raw: string): string {
-  return normalizePhoneToE164(raw) ?? ''
+function normalizePhone(raw: string, region?: string): string {
+  return normalizePhoneToE164(raw, (region as CountryCode) || 'US') ?? ''
 }
 
 export async function setupMobileIdentityAction(
@@ -31,7 +33,8 @@ export async function setupMobileIdentityAction(
 
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')
-  const phone = normalizePhone(getString(formData, 'phoneE164'))
+  const phoneRegion = getString(formData, 'phoneRegion') || 'US'
+  const phone = normalizePhone(getString(formData, 'phoneE164'), phoneRegion)
   const email = getString(formData, 'email').toLowerCase() || null
 
   if (!unitId || !tenantName || !phone) {
@@ -113,7 +116,7 @@ export async function sendMobileInviteAction(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     const inviteLink = `${appUrl}/mobile/auth/accept/${invite.rawToken}`
 
-    await getTenantDeliveryAdapter().sendInviteLink({
+    const delivery = await getTenantDeliveryAdapter().sendInviteLink({
       to: invite.sentTo,
       channel: 'email',
       inviteLink,
@@ -121,7 +124,14 @@ export async function sendMobileInviteAction(
     })
 
     revalidatePath('/units')
-    return { error: null, success: true, inviteLink }
+    return {
+      error: null,
+      success: true,
+      inviteLink,
+      ...(!delivery.delivered && {
+        deliveryWarning: `Invite link created but could not be delivered to ${invite.sentTo}. Copy the link above and send it manually.`,
+      }),
+    }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not send mobile invite.' }
   }
@@ -144,10 +154,19 @@ export async function deactivateMobileIdentityAction(
     return { error: 'Tenant identity not found.' }
   }
 
-  await revokeAllInvitesAndSessionsForIdentity(tenantIdentityId)
-  await prisma.tenantIdentity.update({
-    where: { id: tenantIdentityId },
-    data: { status: 'inactive' },
+  await prisma.$transaction(async (tx) => {
+    await tx.tenantInvite.updateMany({
+      where: { tenantIdentityId, status: 'pending' },
+      data: { status: 'revoked', revokedAt: new Date() },
+    })
+    await tx.tenantSession.updateMany({
+      where: { tenantIdentityId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
+    await tx.tenantIdentity.update({
+      where: { id: tenantIdentityId },
+      data: { status: 'inactive' },
+    })
   })
 
   revalidatePath('/units')

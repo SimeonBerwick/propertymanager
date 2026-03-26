@@ -10,6 +10,7 @@ import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options
 import { getLandlordEmail } from '@/lib/auth-config'
 import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
 import { getLandlordBySlug } from '@/lib/data'
+import { validateImageMagicBytes, readImageHeader } from '@/lib/image-validation'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -119,6 +120,11 @@ export async function submitMaintenanceRequest(
 
     if (file.size > MAX_PHOTO_SIZE_BYTES) {
       return { error: 'Each photo must be 5 MB or smaller.' }
+    }
+
+    const header = await readImageHeader(file)
+    if (!validateImageMagicBytes(header)) {
+      return { error: 'Photos must be valid image files.' }
     }
   }
 

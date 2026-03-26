@@ -101,11 +101,14 @@ function resolveTransport(): SmsTransport {
 /**
  * Dispatch an SMS. Never throws — transport failures are caught and logged
  * so callers don't need try/catch around SMS calls.
+ * Returns { ok: false } when the transport fails so callers can surface a warning.
  */
-export async function sendSms(msg: SmsMessage): Promise<void> {
+export async function sendSms(msg: SmsMessage): Promise<{ ok: boolean }> {
   try {
     await resolveTransport().send(msg)
+    return { ok: true }
   } catch (err) {
     console.error('[SMS] Transport error — message was not delivered:', err)
+    return { ok: false }
   }
 }

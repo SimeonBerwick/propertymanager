@@ -58,6 +58,11 @@ export function MobileIdentityPanel({ unitId, tenantName, tenantEmail, tenantIde
           Invite link: <a href={inviteState.inviteLink}>{inviteState.inviteLink}</a>
         </div>
       )}
+      {inviteState.deliveryWarning && (
+        <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
+          {inviteState.deliveryWarning}
+        </div>
+      )}
 
       <form action={setupAction} className="stack">
         <input type="hidden" name="unitId" value={unitId} />
@@ -66,8 +71,25 @@ export function MobileIdentityPanel({ unitId, tenantName, tenantEmail, tenantIde
           <input className="input" type="text" name="tenantName" defaultValue={tenantIdentity?.tenantName ?? tenantName ?? ''} required />
         </label>
         <label className="field">
-          <span className="field-label">Phone (E.164 preferred)</span>
-          <input className="input" type="text" name="phoneE164" defaultValue={tenantIdentity?.phoneE164 ?? ''} placeholder="+16025551212" required />
+          <span className="field-label">Phone number</span>
+          <div className="row" style={{ gap: 8, alignItems: 'stretch' }}>
+            <select className="input" name="phoneRegion" defaultValue="US" style={{ width: 'auto', flexShrink: 0 }} aria-label="Phone region">
+              <option value="US">US (+1)</option>
+              <option value="CA">CA (+1)</option>
+              <option value="GB">GB (+44)</option>
+              <option value="AU">AU (+61)</option>
+              <option value="MX">MX (+52)</option>
+              <option value="DE">DE (+49)</option>
+              <option value="FR">FR (+33)</option>
+              <option value="IN">IN (+91)</option>
+              <option value="NZ">NZ (+64)</option>
+              <option value="ZA">ZA (+27)</option>
+            </select>
+            <input className="input" type="text" name="phoneE164" defaultValue={tenantIdentity?.phoneE164 ?? ''} placeholder="+16025551212 or local format" required style={{ flex: 1 }} />
+          </div>
+          <span className="field-hint" style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+            Use E.164 (+16025551212) for any region, or local format with the correct region selected.
+          </span>
         </label>
         <label className="field">
           <span className="field-label">Email</span>

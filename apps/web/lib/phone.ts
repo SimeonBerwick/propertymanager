@@ -10,6 +10,8 @@
  */
 import { parsePhoneNumber, isValidPhoneNumber, type CountryCode } from 'libphonenumber-js'
 
+export type { CountryCode }
+
 /**
  * Normalize a user-entered phone string to E.164 (e.g. "+16025551212").
  * Returns null if the input cannot be parsed as a valid phone number.

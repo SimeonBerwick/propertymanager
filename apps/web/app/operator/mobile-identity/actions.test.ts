@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import {
   setupMobileIdentityAction,
   sendMobileInviteAction,
@@ -13,7 +14,7 @@ vi.mock('@/lib/landlord-session')
 vi.mock('@/lib/tenant-delivery', () => ({
   getTenantDeliveryAdapter: vi.fn().mockReturnValue({
     sendOtp: vi.fn().mockResolvedValue(undefined),
-    sendInviteLink: vi.fn().mockResolvedValue(undefined),
+    sendInviteLink: vi.fn().mockResolvedValue({ delivered: true }),
   }),
 }))
 
@@ -114,6 +115,34 @@ describe('setupMobileIdentityAction', () => {
     expect(updatedUnit?.tenantName).toBe('Bob')
     expect(updatedUnit?.tenantEmail).toBe('bob@test.com')
   })
+
+  test('normalizes local-format UK number when phoneRegion=GB is provided', async () => {
+    const { user, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+
+    const result = await setupMobileIdentityAction(
+      PREV,
+      formData({ unitId: unit.id, tenantName: 'Charlie', phoneE164: '07911 123456', phoneRegion: 'GB' }),
+    )
+    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+
+    const identity = await prisma.tenantIdentity.findFirst({ where: { unitId: unit.id } })
+    // libphonenumber-js normalizes UK 07911 123456 → +447911123456
+    expect(identity?.phoneE164).toBe('+447911123456')
+  })
+
+  test('rejects a local-format number when the wrong region is specified', async () => {
+    const { user, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+
+    // UK local number submitted with default US region — should fail normalization
+    const result = await setupMobileIdentityAction(
+      PREV,
+      formData({ unitId: unit.id, tenantName: 'Dave', phoneE164: '07911 123456', phoneRegion: 'US' }),
+    )
+    expect(result.error).toMatch(/required/i)
+  })
 })
 
 describe('sendMobileInviteAction', () => {
@@ -175,6 +204,27 @@ describe('sendMobileInviteAction', () => {
     expect(result.error).toBeNull()
     expect(result.success).toBe(true)
     expect(result.inviteLink).toMatch(/\/mobile\/auth\/accept\//)
+    expect(result.deliveryWarning).toBeUndefined()
+  })
+
+  test('returns deliveryWarning when transport reports delivery failure', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const identity = await createActiveTenantIdentity(user.id, property.id, unit.id, {
+      email: 'tenant@example.com',
+    })
+
+    vi.mocked(getTenantDeliveryAdapter).mockReturnValueOnce({
+      sendOtp: vi.fn().mockResolvedValue(undefined),
+      sendInviteLink: vi.fn().mockResolvedValue({ delivered: false }),
+    })
+
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const result = await sendMobileInviteAction(PREV, formData({ tenantIdentityId: identity.id }))
+
+    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+    expect(result.inviteLink).toMatch(/\/mobile\/auth\/accept\//)
+    expect(result.deliveryWarning).toMatch(/could not be delivered/i)
   })
 })
 
