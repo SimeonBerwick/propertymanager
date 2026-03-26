@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
-import { revokeAllSessionsForIdentity } from '@/lib/tenant-mobile-session'
 
 const INVITE_TTL_DAYS = 7
 
@@ -139,7 +138,9 @@ export async function revokeAllInvitesAndSessionsForIdentity(tenantIdentityId: s
       where: { tenantIdentityId, status: 'pending' },
       data: { status: 'revoked', revokedAt: new Date() },
     })
+    await tx.tenantSession.updateMany({
+      where: { tenantIdentityId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
   })
-
-  await revokeAllSessionsForIdentity(tenantIdentityId)
 }

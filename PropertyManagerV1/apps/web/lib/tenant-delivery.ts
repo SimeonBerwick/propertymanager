@@ -3,7 +3,7 @@ import { sendSms } from '@/lib/sms'
 
 export interface TenantDeliveryAdapter {
   sendOtp(input: { to: string; channel: 'sms' | 'email'; code: string; tenantName: string }): Promise<void>
-  sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }): Promise<void>
+  sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }>
 }
 
 class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
@@ -32,9 +32,9 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
     }
   }
 
-  async sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }) {
+  async sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }> {
     if (input.channel === 'sms') {
-      await sendSms({
+      const result = await sendSms({
         to: input.to,
         body: [
           `Hi ${input.tenantName}, use this secure link to access the tenant portal:`,
@@ -43,8 +43,9 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
           `If you did not expect this invite, ignore this message.`,
         ].join('\n'),
       })
+      return { delivered: result.ok }
     } else {
-      await sendNotification({
+      const result = await sendNotification({
         to: input.to,
         subject: 'Your tenant portal invite link',
         text: [
@@ -56,6 +57,7 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
           `If you did not expect this invite, ignore this message.`,
         ].join('\n'),
       })
+      return { delivered: result.ok }
     }
   }
 }

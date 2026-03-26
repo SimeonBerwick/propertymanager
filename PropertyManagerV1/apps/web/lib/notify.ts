@@ -54,16 +54,19 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
 /**
  * Dispatch a notification. Never throws — transport failures are caught and
  * logged so callers don't need try/catch around notification calls.
+ * Returns { ok: false } when the transport fails so callers can surface a warning.
  */
-export async function sendNotification(msg: NotificationMessage): Promise<void> {
+export async function sendNotification(msg: NotificationMessage): Promise<{ ok: boolean }> {
   try {
     if (process.env.NOTIFY_TRANSPORT === 'smtp') {
       await sendViaSmtp(msg)
     } else {
       sendViaLog(msg)
     }
+    return { ok: true }
   } catch (err) {
     console.error('[NOTIFY] Transport error — notification was not delivered:', err)
+    return { ok: false }
   }
 }
 
