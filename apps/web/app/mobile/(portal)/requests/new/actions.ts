@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { validateImageMagicBytes, readImageHeader } from '@/lib/image-validation'
 
 const MAX_PHOTO_COUNT = 5
 const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
@@ -79,6 +80,10 @@ export async function submitTenantMobileRequestAction(
     }
     if (file.size > MAX_PHOTO_SIZE_BYTES) {
       return { error: 'Each photo must be 5 MB or smaller.' }
+    }
+    const header = await readImageHeader(file)
+    if (!validateImageMagicBytes(header)) {
+      return { error: 'Photos must be valid image files.' }
     }
   }
 
