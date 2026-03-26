@@ -358,6 +358,10 @@
           {
             "text": "Barry Bot: updated Mission Control after Jeff's second QA pass. PM is now pass with conditions, not 'not good yet.' The earlier upload and hardcoded-US phone defects are now meaningfully fixed and backed by tests, and the invite UI honestly states manual delivery semantics instead of implying automatic sends. Remaining caution is narrower: phone validation is still structurally region-aware rather than deeply semantic, and upload validation is still signature-based rather than full decode.",
             "ts": 1774321980000
+          },
+          {
+            "text": "Barry Bot: updated Mission Control again after the latest hardening pass. PM now appears good, not just good-with-conditions. Phone handling moved to libphonenumber-js/min-backed region-aware validation with wrong-region rejection, upload verification gained tail-marker checks on top of magic bytes, and the relevant phone/attachment/auth suites all still pass. Remaining caveat is now precision-level only: no live carrier verification for phone numbers and no full decode-level image parsing.",
+            "ts": 1774322760000
           }
         ]
       },
