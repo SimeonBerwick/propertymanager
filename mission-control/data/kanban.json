@@ -350,6 +350,10 @@
           {
             "text": "Barry Bot: Mission Control updated again for the newest PM pass. Reported changes now include magic-byte validation on the main web submit path too, operator-facing phone-region selection in the mobile identity panel, invite delivery warnings surfaced in UI instead of silent failure, and atomic tenant invite/session revocation inside a single transaction. Automated coverage is now reported at 219 passing tests. Remaining production-shaped gaps: OTP delivery failure propagation, request-submission notification visibility, object storage for uploads, durable alerting/monitoring, and stricter upload extension allowlisting/path hardening.",
             "ts": 1774320660000
+          },
+          {
+            "text": "Barry Bot: corrected Mission Control after Jeff QA against the actual PM repo. Prior status updates overstated the latest pass. Current truth: auth/session boundary work and revoke logic look materially real, but upload hardening, operator phone-region plumbing, and delivery-failure visibility do not hold on the inspected surfaces. PM is not sign-off ready for those claims. Must-fix list now centers on real upload byte validation plus coherent multi-file behavior, real region-aware phone parsing with operator UI support, and real transport-backed delivery handling or narrower product claims.",
+            "ts": 1774321260000
           }
         ]
       },
