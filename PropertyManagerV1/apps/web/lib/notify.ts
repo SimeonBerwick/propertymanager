@@ -16,6 +16,9 @@ export interface NotificationMessage {
   to: string
   subject: string
   text: string
+  /** Optional HTML body. When present, email clients that support HTML will
+   *  render it; clients that don't fall back to `text`. */
+  html?: string
 }
 
 // ── Transports ────────────────────────────────────────────────────────────────
@@ -42,6 +45,7 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
     to: msg.to,
     subject: msg.subject,
     text: msg.text,
+    ...(msg.html ? { html: msg.html } : {}),
   })
 }
 
@@ -61,6 +65,53 @@ export async function sendNotification(msg: NotificationMessage): Promise<void> 
   } catch (err) {
     console.error('[NOTIFY] Transport error — notification was not delivered:', err)
   }
+}
+
+// ── HTML helpers ──────────────────────────────────────────────────────────────
+
+/** Escape user-supplied strings for safe HTML embedding. */
+function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Wrap content in a minimal responsive email shell.
+ * Uses only inline styles — no external CSS, no JavaScript.
+ */
+function htmlEmail(body: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:6px;overflow:hidden;max-width:600px;width:100%">
+        <tr><td style="background:#1a56db;padding:16px 24px">
+          <span style="color:#ffffff;font-size:18px;font-weight:bold">Property Manager</span>
+        </td></tr>
+        <tr><td style="padding:24px;color:#111827;font-size:15px;line-height:1.6">
+          ${body}
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:12px 24px;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb">
+          This is an automated message — please do not reply directly to this email.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+/** Render a two-column details table row. */
+function dtRow(label: string, value: string): string {
+  return `<tr>
+    <td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap;vertical-align:top">${esc(label)}</td>
+    <td style="padding:4px 0;color:#111827">${esc(value)}</td>
+  </tr>`
 }
 
 // ── Message builders ──────────────────────────────────────────────────────────
@@ -98,6 +149,18 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       ``,
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
     ].join('\n'),
+    html: htmlEmail(`
+      <p>Hi ${esc(p.tenantName)},</p>
+      <p>We received your maintenance request and it&rsquo;s in our queue.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Category', p.category)}
+        ${dtRow('Urgency', p.urgency)}
+      </table>
+      <p>We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
+    `),
   }
 
   const landlordMsg: NotificationMessage = {
@@ -117,6 +180,20 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `Description:`,
       p.description,
     ].join('\n'),
+    html: htmlEmail(`
+      <p>A new maintenance request was submitted.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+        ${dtRow('Category', p.category)}
+        ${dtRow('Urgency', p.urgency)}
+        ${dtRow('Tenant', `${p.tenantName} <${p.tenantEmail}>`)}
+      </table>
+      <p style="font-weight:bold">Description</p>
+      <p style="white-space:pre-wrap;background:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px;border-radius:0 4px 4px 0">${esc(p.description)}</p>
+    `),
   }
 
   return [tenantMsg, landlordMsg]
@@ -145,6 +222,10 @@ const STATUS_LABELS: Record<RequestStatus, string> = {
  * Only call when tenantEmail is known.
  */
 export function buildStatusChangedMessage(p: StatusChangedParams): NotificationMessage {
+  const closingText = p.toStatus === 'done'
+    ? 'The work is complete. Please reply if you have any concerns.'
+    : "We'll keep you updated as the work progresses."
+
   return {
     to: p.tenantEmail,
     subject: `Update on your maintenance request — ${p.title}`,
@@ -158,9 +239,18 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
       `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
       `  New status   : ${STATUS_LABELS[p.toStatus]}`,
       ``,
-      p.toStatus === 'done'
-        ? 'The work is complete. Please reply if you have any concerns.'
-        : 'We\'ll keep you updated as the work progresses.',
+      closingText,
     ].join('\n'),
+    html: htmlEmail(`
+      <p>Hi ${esc(p.tenantName)},</p>
+      <p>Your maintenance request has been updated.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('New status', STATUS_LABELS[p.toStatus])}
+      </table>
+      <p>${esc(closingText)}</p>
+    `),
   }
 }
