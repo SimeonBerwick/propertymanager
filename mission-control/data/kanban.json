@@ -346,6 +346,10 @@
           {
             "text": "Barry Bot: Mission Control updated for the latest PM hardening pass. Reported changes include broader international phone support with region-aware normalization, upload magic-byte validation for JPEG/PNG/GIF/WebP instead of MIME-only trust, HTML notification email templates with plain-text fallback, and automated coverage expanded to 210 passing tests. Remaining recommended next gaps: mirror magic-byte validation on the web upload path, add operator-facing region selection for phone input, and expose notification delivery failures instead of swallowing them.",
             "ts": 1774319880000
+          },
+          {
+            "text": "Barry Bot: Mission Control updated again for the newest PM pass. Reported changes now include magic-byte validation on the main web submit path too, operator-facing phone-region selection in the mobile identity panel, invite delivery warnings surfaced in UI instead of silent failure, and atomic tenant invite/session revocation inside a single transaction. Automated coverage is now reported at 219 passing tests. Remaining production-shaped gaps: OTP delivery failure propagation, request-submission notification visibility, object storage for uploads, durable alerting/monitoring, and stricter upload extension allowlisting/path hardening.",
+            "ts": 1774320660000
           }
         ]
       },
