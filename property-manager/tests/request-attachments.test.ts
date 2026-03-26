@@ -1,75 +1,100 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { after, before } from 'node:test';
-import { mkdir, rm, readdir } from 'node:fs/promises';
+import { after } from 'node:test';
+import { rm, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { persistTenantPhotos, persistVendorBidPdfs, hasMagicBytes } from '../lib/request-attachments';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-/** Build a minimal valid JPEG buffer (SOI marker + APP0 header start). */
+/**
+ * Build a minimal valid JPEG: SOI marker at head, EOI marker at tail.
+ * Both are required by the two-layer header+trailer check.
+ */
 function makeJpegBytes(size = 64): Buffer {
   const buf = Buffer.alloc(size, 0x00);
-  buf[0] = 0xff;
-  buf[1] = 0xd8;
-  buf[2] = 0xff;
-  buf[3] = 0xe0; // APP0
+  buf[0] = 0xff; buf[1] = 0xd8; buf[2] = 0xff; buf[3] = 0xe0; // SOI + APP0
+  buf[size - 2] = 0xff; buf[size - 1] = 0xd9; // EOI
   return buf;
 }
 
-/** Build a minimal valid PNG buffer. */
+/** Build a JPEG with only the SOI header — no EOI trailer. */
+function makeJpegBytesNoEoi(size = 64): Buffer {
+  const buf = Buffer.alloc(size, 0x00);
+  buf[0] = 0xff; buf[1] = 0xd8; buf[2] = 0xff; buf[3] = 0xe0;
+  return buf;
+}
+
+/**
+ * Build a minimal valid PNG: 8-byte signature at head, IEND chunk at tail.
+ * IEND = 4 bytes zero length + 4 bytes "IEND" + 4 bytes CRC.
+ */
 function makePngBytes(size = 64): Buffer {
   const buf = Buffer.alloc(size, 0x00);
-  buf[0] = 0x89;
-  buf[1] = 0x50; // P
-  buf[2] = 0x4e; // N
-  buf[3] = 0x47; // G
-  buf[4] = 0x0d;
-  buf[5] = 0x0a;
-  buf[6] = 0x1a;
-  buf[7] = 0x0a;
+  buf[0] = 0x89; buf[1] = 0x50; buf[2] = 0x4e; buf[3] = 0x47;
+  buf[4] = 0x0d; buf[5] = 0x0a; buf[6] = 0x1a; buf[7] = 0x0a;
+  const iend = [0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82];
+  const offset = size - 12;
+  iend.forEach((b, i) => { buf[offset + i] = b; });
   return buf;
 }
 
-/** Build a minimal valid WebP buffer. */
+/** Build a PNG with only the signature header — no IEND chunk. */
+function makePngBytesNoIend(size = 64): Buffer {
+  const buf = Buffer.alloc(size, 0x00);
+  buf[0] = 0x89; buf[1] = 0x50; buf[2] = 0x4e; buf[3] = 0x47;
+  buf[4] = 0x0d; buf[5] = 0x0a; buf[6] = 0x1a; buf[7] = 0x0a;
+  return buf;
+}
+
+/** Build a minimal valid WebP: RIFF header + WEBP marker. */
 function makeWebpBytes(size = 32): Buffer {
   const buf = Buffer.alloc(size, 0x00);
-  buf[0] = 0x52; // R
-  buf[1] = 0x49; // I
-  buf[2] = 0x46; // F
-  buf[3] = 0x46; // F
-  // bytes 4–7: file size (irrelevant for magic)
-  buf[8] = 0x57; // W
-  buf[9] = 0x45; // E
-  buf[10] = 0x42; // B
-  buf[11] = 0x50; // P
+  buf[0] = 0x52; buf[1] = 0x49; buf[2] = 0x46; buf[3] = 0x46; // RIFF
+  buf[8] = 0x57; buf[9] = 0x45; buf[10] = 0x42; buf[11] = 0x50; // WEBP
   return buf;
 }
 
-/** Build a minimal valid GIF89a buffer. */
+/**
+ * Build a minimal valid GIF89a: GIF header at head, GIF trailer (0x3B) at tail.
+ */
 function makeGifBytes(size = 32): Buffer {
   const buf = Buffer.alloc(size, 0x00);
-  buf[0] = 0x47; // G
-  buf[1] = 0x49; // I
-  buf[2] = 0x46; // F
-  buf[3] = 0x38; // 8
-  buf[4] = 0x39; // 9
-  buf[5] = 0x61; // a
+  buf[0] = 0x47; buf[1] = 0x49; buf[2] = 0x46; buf[3] = 0x38;
+  buf[4] = 0x39; buf[5] = 0x61; // GIF89a
+  buf[size - 1] = 0x3b; // GIF trailer
   return buf;
 }
 
-/** Build a minimal valid PDF buffer. */
+/** Build a GIF with only the header — no trailer byte. */
+function makeGifBytesNoTrailer(size = 32): Buffer {
+  const buf = Buffer.alloc(size, 0x00);
+  buf[0] = 0x47; buf[1] = 0x49; buf[2] = 0x46; buf[3] = 0x38;
+  buf[4] = 0x39; buf[5] = 0x61;
+  return buf;
+}
+
+/**
+ * Build a minimal valid PDF: %PDF header at head, %%EOF marker near tail.
+ */
 function makePdfBytes(size = 64): Buffer {
-  const buf = Buffer.alloc(size, 0x20);
-  buf[0] = 0x25; // %
-  buf[1] = 0x50; // P
-  buf[2] = 0x44; // D
-  buf[3] = 0x46; // F
+  const buf = Buffer.alloc(size, 0x20); // space-padded
+  buf[0] = 0x25; buf[1] = 0x50; buf[2] = 0x44; buf[3] = 0x46; // %PDF
+  // %%EOF in the last 32 bytes (the tail window)
+  const eof = Buffer.from('%%EOF');
+  eof.copy(buf, size - eof.length);
   return buf;
 }
 
-/** Build bytes that look like plain text — no valid magic header for any image type. */
+/** Build a PDF with only the header — no %%EOF marker. */
+function makePdfBytesNoEof(size = 64): Buffer {
+  const buf = Buffer.alloc(size, 0x20);
+  buf[0] = 0x25; buf[1] = 0x50; buf[2] = 0x44; buf[3] = 0x46;
+  return buf;
+}
+
+/** Build bytes that look like plain text — no valid magic header for any type. */
 function makeJunkBytes(size = 64): Buffer {
   return Buffer.from('This is not an image file at all.\n'.repeat(3).slice(0, size));
 }
@@ -78,9 +103,9 @@ function makeFile(bytes: Buffer, name: string, type: string): File {
   return new File([bytes], name, { type });
 }
 
-// ── hasMagicBytes unit tests ─────────────────────────────────────────────────
+// ── hasMagicBytes unit tests — header checks ──────────────────────────────────
 
-test('hasMagicBytes: accepts valid JPEG', async () => {
+test('hasMagicBytes: accepts valid JPEG (SOI header + EOI trailer)', async () => {
   const file = makeFile(makeJpegBytes(), 'photo.jpg', 'image/jpeg');
   assert.ok(await hasMagicBytes(file));
 });
@@ -90,7 +115,7 @@ test('hasMagicBytes: rejects junk bytes declared as JPEG', async () => {
   assert.ok(!(await hasMagicBytes(file)));
 });
 
-test('hasMagicBytes: accepts valid PNG', async () => {
+test('hasMagicBytes: accepts valid PNG (signature + IEND chunk)', async () => {
   const file = makeFile(makePngBytes(), 'photo.png', 'image/png');
   assert.ok(await hasMagicBytes(file));
 });
@@ -100,23 +125,45 @@ test('hasMagicBytes: rejects JPEG bytes declared as PNG', async () => {
   assert.ok(!(await hasMagicBytes(file)));
 });
 
-test('hasMagicBytes: accepts valid WebP', async () => {
+test('hasMagicBytes: accepts valid WebP (RIFF + WEBP marker)', async () => {
   const file = makeFile(makeWebpBytes(), 'photo.webp', 'image/webp');
   assert.ok(await hasMagicBytes(file));
 });
 
-test('hasMagicBytes: accepts valid GIF', async () => {
+test('hasMagicBytes: accepts valid GIF (GIF89a header + trailer byte)', async () => {
   const file = makeFile(makeGifBytes(), 'photo.gif', 'image/gif');
   assert.ok(await hasMagicBytes(file));
 });
 
-test('hasMagicBytes: accepts valid PDF', async () => {
+test('hasMagicBytes: accepts valid PDF (%PDF header + %%EOF marker)', async () => {
   const file = makeFile(makePdfBytes(), 'doc.pdf', 'application/pdf');
   assert.ok(await hasMagicBytes(file));
 });
 
 test('hasMagicBytes: rejects junk bytes declared as PDF', async () => {
   const file = makeFile(makeJunkBytes(), 'bad.pdf', 'application/pdf');
+  assert.ok(!(await hasMagicBytes(file)));
+});
+
+// ── hasMagicBytes unit tests — tail/end-marker checks ────────────────────────
+
+test('hasMagicBytes: rejects JPEG with correct header but missing EOI trailer', async () => {
+  const file = makeFile(makeJpegBytesNoEoi(), 'truncated.jpg', 'image/jpeg');
+  assert.ok(!(await hasMagicBytes(file)));
+});
+
+test('hasMagicBytes: rejects PNG with correct signature but missing IEND chunk', async () => {
+  const file = makeFile(makePngBytesNoIend(), 'truncated.png', 'image/png');
+  assert.ok(!(await hasMagicBytes(file)));
+});
+
+test('hasMagicBytes: rejects GIF with correct header but missing trailer byte', async () => {
+  const file = makeFile(makeGifBytesNoTrailer(), 'truncated.gif', 'image/gif');
+  assert.ok(!(await hasMagicBytes(file)));
+});
+
+test('hasMagicBytes: rejects PDF with correct header but missing %%EOF marker', async () => {
+  const file = makeFile(makePdfBytesNoEof(), 'truncated.pdf', 'application/pdf');
   assert.ok(!(await hasMagicBytes(file)));
 });
 
@@ -187,8 +234,12 @@ test('persistTenantPhotos: rejects a file that exceeds the size limit before tou
   const requestId = `test-${randomUUID()}`;
   testRequestIds.push(requestId);
 
-  // Build a valid JPEG header but pad it to just over 5 MB
-  const oversized = Buffer.concat([makeJpegBytes(), Buffer.alloc(5 * 1024 * 1024 + 1)]);
+  // Build a valid JPEG header+trailer but pad it to just over 5 MB
+  const base = makeJpegBytes(64);
+  const oversized = Buffer.concat([base, Buffer.alloc(5 * 1024 * 1024 + 1)]);
+  // Re-write EOI at the actual end of the oversized buffer
+  oversized[oversized.length - 2] = 0xff;
+  oversized[oversized.length - 1] = 0xd9;
   const file = makeFile(oversized, 'big.jpg', 'image/jpeg');
 
   await assert.rejects(

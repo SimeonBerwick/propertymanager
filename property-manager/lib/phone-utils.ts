@@ -1,15 +1,25 @@
 /**
  * Phone number utilities for operator-side mobile identity setup.
  *
- * We store numbers in E.164 format (+<country><subscriber>).
- * The operator can enter numbers in two ways:
- *   - Full E.164 directly (starts with '+') — used as-is after validation.
- *   - Local format with an explicit region code selected from a dropdown —
- *     non-digit characters are stripped and the region code is prepended.
+ * Numbers are stored in E.164 format (+<country><subscriber>).
  *
- * We do NOT silently assume a region for bare numeric input; the operator
- * must select one.
+ * `parseAndValidatePhone` uses libphonenumber-js for region-aware validation:
+ *   - Local input (no '+' prefix) is validated against the selected region.
+ *     A number entered under the wrong region (e.g. a UK local number with +1)
+ *     is rejected with a specific error message.
+ *   - Full E.164 input (starts with '+') is validated for global structural
+ *     correctness; the selected region is ignored.
+ *
+ * Limits (documented):
+ *   - +1 maps to NANP (US/CA/territories). Any number valid under NANP passes
+ *     when +1 is selected; we cannot distinguish US from CA from the digits alone.
+ *   - We use libphonenumber-js 'min' metadata, which validates number length and
+ *     national structure but does NOT verify the number is currently assigned by
+ *     a carrier.
  */
+
+import { parsePhoneNumberWithError } from 'libphonenumber-js/min';
+import type { CountryCode } from 'libphonenumber-js/min';
 
 export const SUPPORTED_REGIONS = [
   { code: '+1', label: 'US / Canada (+1)' },
@@ -31,20 +41,74 @@ export const SUPPORTED_REGIONS = [
 export type RegionCode = (typeof SUPPORTED_REGIONS)[number]['code'];
 
 /**
- * Convert operator form input into E.164.
- *
- * @param raw     Raw phone field value from the form.
- * @param region  Region dial code (e.g. '+1') selected by the operator.
- *                Only used when `raw` does not already start with '+'.
+ * Map from dial code to ISO 3166-1 alpha-2 country code for libphonenumber-js.
+ * For multi-country dial codes (+1 = NANP), a representative country is used;
+ * the library validates the national number format correctly for all members.
  */
-export function parsePhoneInput(raw: string, region: string): string {
+const DIAL_CODE_TO_COUNTRY: Record<string, CountryCode> = {
+  '+1': 'US',
+  '+44': 'GB',
+  '+61': 'AU',
+  '+52': 'MX',
+  '+64': 'NZ',
+  '+49': 'DE',
+  '+33': 'FR',
+  '+34': 'ES',
+  '+39': 'IT',
+  '+81': 'JP',
+  '+82': 'KR',
+  '+86': 'CN',
+  '+91': 'IN',
+  '+55': 'BR',
+};
+
+/**
+ * Parse and validate the operator's phone input, returning an E.164 string.
+ * Throws with a human-readable message if the number is invalid or doesn't
+ * match the selected region.
+ *
+ * @param raw    Raw phone field value from the form.
+ * @param region Dial code selected by the operator (e.g. '+44').
+ *               Ignored when `raw` starts with '+'.
+ */
+export function parseAndValidatePhone(raw: string, region: string): string {
   const trimmed = raw.trim();
+
   if (trimmed.startsWith('+')) {
-    // Operator typed E.164 directly — honour it, just strip stray spaces/dashes.
-    return '+' + trimmed.slice(1).replace(/\D/g, '');
+    // Operator supplied a full international number — validate globally.
+    let parsed;
+    try {
+      parsed = parsePhoneNumberWithError(trimmed);
+    } catch {
+      throw new Error('Enter a valid international phone number (e.g. +15550001234).');
+    }
+    if (!parsed.isValid()) {
+      throw new Error('Enter a valid international phone number (e.g. +15550001234).');
+    }
+    return parsed.format('E.164');
   }
-  const digits = trimmed.replace(/\D/g, '');
-  return `${region}${digits}`;
+
+  // Local format — validate against the selected region.
+  const country = DIAL_CODE_TO_COUNTRY[region];
+  if (!country) {
+    throw new Error('Select a valid country code from the list.');
+  }
+
+  const label = SUPPORTED_REGIONS.find((r) => r.code === region)?.label ?? region;
+  const regionError = `The number you entered is not valid for ${label}. Check the digits or select the correct country.`;
+
+  let parsed;
+  try {
+    parsed = parsePhoneNumberWithError(trimmed, country);
+  } catch {
+    throw new Error(regionError);
+  }
+
+  if (!parsed.isValid()) {
+    throw new Error(regionError);
+  }
+
+  return parsed.format('E.164');
 }
 
 /** E.164 structural check: + followed by 10–15 digits. */

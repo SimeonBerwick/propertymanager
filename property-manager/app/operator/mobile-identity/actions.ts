@@ -6,7 +6,7 @@ import { requireOperatorSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { createTenantMobileInvite } from '@/lib/tenant-invite-lib';
 import { revokeAllInvitesAndSessionsForIdentity } from '@/lib/tenant-invite-lib';
-import { parsePhoneInput, isValidE164 } from '@/lib/phone-utils';
+import { parseAndValidatePhone } from '@/lib/phone-utils';
 
 function getString(formData: FormData, key: string) {
   const v = formData.get(key);
@@ -35,12 +35,7 @@ export async function setupMobileIdentityAction(formData: FormData) {
     if (!tenantId) throw new Error('Tenant ID is required.');
     if (!phoneRaw) throw new Error('Phone number is required.');
 
-    const phoneE164 = parsePhoneInput(phoneRaw, region);
-    if (!isValidE164(phoneE164)) {
-      throw new Error(
-        'Enter a valid phone number. For local numbers, select the correct country code.',
-      );
-    }
+    const phoneE164 = parseAndValidatePhone(phoneRaw, region);
 
     // Look up tenant scoped to this org
     const tenant = await prisma.tenant.findFirst({
