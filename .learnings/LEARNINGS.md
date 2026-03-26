@@ -12,7 +12,7 @@ Do not update Mission Control from reported implementation summaries alone when 
 I updated Mission Control multiple times based on reported PM app changes (upload hardening, phone-region support, delivery-failure visibility) without re-checking the actual code paths in `/home/simeo/.openclaw/workspace/property-manager`. Jeff QA against the real repo showed those claims did not hold on the inspected surfaces: upload validation still trusted MIME/size only in `lib/request-attachments.ts`, operator mobile setup still hardcoded `+1` normalization in `app/operator/mobile-identity/actions.ts`, the UI lacked a region selector in `app/operator/units/[id]/page.tsx`, and the invite flow remained manual-link based rather than implementing meaningful delivery-failure handling. This created false confidence in Mission Control.
 
 ### Suggested Action
-Before changing Mission Control status for implementation claims, verify the actual repo surface first: inspect the relevant files, run the relevant tests, and word updates as either verified repo truth or unverified reported work. Prefer explicit uncertainty over optimistic restatement.
+Before changing Mission Control status for implementation claims, verify the actual repo surface first: inspect the relevant files, run the relevant tests, and word updates as either verified repo truth or unverified reported work. Prefer explicit uncertainty over optimistic restatement. Also: when a later QA pass overturns an earlier one, update status to match the newest verified evidence rather than anchoring on the prior correction.
 
 ### Metadata
 - Source: user_feedback

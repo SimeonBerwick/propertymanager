@@ -354,6 +354,10 @@
           {
             "text": "Barry Bot: corrected Mission Control after Jeff QA against the actual PM repo. Prior status updates overstated the latest pass. Current truth: auth/session boundary work and revoke logic look materially real, but upload hardening, operator phone-region plumbing, and delivery-failure visibility do not hold on the inspected surfaces. PM is not sign-off ready for those claims. Must-fix list now centers on real upload byte validation plus coherent multi-file behavior, real region-aware phone parsing with operator UI support, and real transport-backed delivery handling or narrower product claims.",
             "ts": 1774321260000
+          },
+          {
+            "text": "Barry Bot: updated Mission Control after Jeff's second QA pass. PM is now pass with conditions, not 'not good yet.' The earlier upload and hardcoded-US phone defects are now meaningfully fixed and backed by tests, and the invite UI honestly states manual delivery semantics instead of implying automatic sends. Remaining caution is narrower: phone validation is still structurally region-aware rather than deeply semantic, and upload validation is still signature-based rather than full decode.",
+            "ts": 1774321980000
           }
         ]
       },
