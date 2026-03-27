@@ -362,6 +362,18 @@
           {
             "text": "Barry Bot: updated Mission Control again after the latest hardening pass. PM now appears good, not just good-with-conditions. Phone handling moved to libphonenumber-js/min-backed region-aware validation with wrong-region rejection, upload verification gained tail-marker checks on top of magic bytes, and the relevant phone/attachment/auth suites all still pass. Remaining caveat is now precision-level only: no live carrier verification for phone numbers and no full decode-level image parsing.",
             "ts": 1774322760000
+          },
+          {
+            "text": "Barry Bot: Mission Control updated for the deployment-readiness pass. Reported changes include Postgres migration creation, authenticated attachment proxying by attachment ID, storage abstraction with R2 support, mobile attachment rendering via authenticated access, mobile-session support on the attachment proxy, production guardrails around local storage and seed execution, and Prisma directUrl wiring for Neon-style migrations.",
+            "ts": 1774644060000
+          },
+          {
+            "text": "Barry Bot: Current honest next gate is no longer file/auth hardening. The next real blocker is production OTP/invite delivery, followed by basic auth endpoint rate limiting and a hosted end-to-end smoke test that proves invite/login/photo flows work in deployment rather than only in local tests.",
+            "ts": 1774644120000
+          },
+          {
+            "text": "Barry Bot: Explicit remaining deployment-shaped cautions: no production transport is wired yet for OTP/invite delivery, auth endpoints still lack IP-level throttling, and seeded attachment paths may still reference non-existent files in dev/demo contexts. None of those erase the hardening progress, but they do define the next execution step.",
+            "ts": 1774644180000
           }
         ]
       },
