@@ -97,7 +97,7 @@ export default async function TenantRequestStatusPage({
               ) : (
                 <div className="grid gap-3">
                   {request.attachments.map((attachment) => {
-                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+                    const attachmentUrl = getAttachmentUrl(attachment.id);
 
                     return (
                       <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 no-underline">

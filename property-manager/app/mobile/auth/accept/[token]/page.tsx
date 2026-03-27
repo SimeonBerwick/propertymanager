@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { validateTenantInviteToken } from '@/lib/tenant-invite-lib';
-import { createOtpChallenge } from '@/lib/tenant-otp-lib';
+import { createOtpChallenge, checkOtpCreationRateLimit } from '@/lib/tenant-otp-lib';
+import { deliverOtp } from '@/lib/otp-transport';
 import { prisma } from '@/lib/prisma';
 
 interface Props {
@@ -39,6 +40,17 @@ export default async function AcceptInvitePage({ params }: Props) {
     redirect(`/mobile/auth?error=${encodeURIComponent('No contact address on file. Contact your property manager.')}` as never);
   }
 
+  // Rate-limit: if a valid challenge was created within the last 60 seconds, reuse it
+  // (prevents invite-link spam from invalidating in-flight OTPs)
+  const rateCheck = await checkOtpCreationRateLimit(result.tenantIdentityId);
+  if (rateCheck.limited) {
+    const params_ = new URLSearchParams({
+      challengeId: rateCheck.existingChallengeId,
+      inviteId: result.inviteId,
+    });
+    redirect(`/mobile/auth/otp?${params_.toString()}` as never);
+  }
+
   const otp = await createOtpChallenge(
     result.tenantIdentityId,
     result.orgId,
@@ -47,8 +59,18 @@ export default async function AcceptInvitePage({ params }: Props) {
     destination,
   );
 
-  // rawCode: in production this would be dispatched via SMS/email. For dev we
-  // pass it through the redirect so it can be shown on the OTP page.
+  // Deliver the OTP out-of-band via SMS or email.
+  // In dev, transport no-ops when env vars are absent and the code is shown in-browser.
+  // In production, throws if provider env vars are not configured.
+  try {
+    await deliverOtp(channel, destination, otp.rawCode);
+  } catch (err) {
+    console.error('[accept] OTP delivery failed:', err);
+    redirect(`/mobile/auth?error=${encodeURIComponent('Could not send verification code. Please try again in a moment or contact your property manager.')}` as never);
+  }
+
+  // In dev, pass rawCode through URL so it can be displayed on the OTP page.
+  // This branch is unreachable in production because NODE_ENV=production.
   const devCode = process.env.NODE_ENV !== 'production' ? otp.rawCode : undefined;
 
   const params_ = new URLSearchParams({

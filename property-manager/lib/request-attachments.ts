@@ -1,9 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { UserRole } from '@prisma/client';
-
-const uploadRoot = path.join(process.cwd(), 'public', 'uploads', 'requests');
+import { storagePut, buildStorageKey } from '@/lib/storage';
 
 type PersistedAttachment = {
   uploaderRole: UserRole;
@@ -150,23 +147,16 @@ async function persistFiles(
     if (!(await hasMagicBytes(file))) throw new Error(invalidContentMessage);
   }
 
-  const requestDir = path.join(uploadRoot, requestId);
-  await mkdir(requestDir, { recursive: true });
-
   const attachments: PersistedAttachment[] = [];
 
   for (const file of files) {
     const extension = getFileExtension(file);
-    const filename = `${randomUUID()}.${extension}`;
-    const outputPath = path.join(requestDir, filename);
+    const uuid = randomUUID();
+    const key = buildStorageKey(requestId, uuid, extension);
     const bytes = Buffer.from(await file.arrayBuffer());
-    await writeFile(outputPath, bytes);
+    await storagePut(key, bytes, file.type);
 
-    attachments.push({
-      uploaderRole,
-      storagePath: `/uploads/requests/${requestId}/${filename}`,
-      mimeType: file.type,
-    });
+    attachments.push({ uploaderRole, storagePath: key, mimeType: file.type });
   }
 
   return attachments;

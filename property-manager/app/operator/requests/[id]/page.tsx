@@ -153,7 +153,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             <PageSection title="Attachments" description="Stored attachment references loaded from Prisma.">
               <div className="space-y-2 text-sm text-slate-700">
                 {request.attachments.length === 0 ? <p>No attachments on this request yet.</p> : request.attachments.map((attachment) => {
-                  const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+                  const attachmentUrl = getAttachmentUrl(attachment.id);
                   const label = attachment.mimeType === 'application/pdf' ? 'PDF bid' : 'Attachment';
                   return (
                     <p key={attachment.id}>

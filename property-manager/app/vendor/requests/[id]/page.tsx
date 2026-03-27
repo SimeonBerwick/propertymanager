@@ -190,7 +190,7 @@ export default async function VendorRequestDetailPage({
               ) : (
                 <div className="space-y-2 text-sm text-slate-700">
                   {bidAttachments.map((attachment) => {
-                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+                    const attachmentUrl = getAttachmentUrl(attachment.id);
                     return (
                       <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block rounded-lg border border-slate-200 px-3 py-2 text-brand-700 underline">
                         Open PDF bid uploaded {formatDateTime(attachment.createdAt)}
@@ -217,7 +217,7 @@ export default async function VendorRequestDetailPage({
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {photoAttachments.map((attachment) => {
-                    const attachmentUrl = getAttachmentUrl(attachment.storagePath);
+                    const attachmentUrl = getAttachmentUrl(attachment.id);
 
                     return (
                       <a

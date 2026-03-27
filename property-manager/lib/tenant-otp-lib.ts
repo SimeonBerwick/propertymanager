@@ -14,6 +14,7 @@ import type { TenantOtpChannel, TenantOtpPurpose } from '@prisma/client';
 const OTP_TTL_MS = 1000 * 60 * 10; // 10 minutes
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 1000 * 60 * 15; // 15-minute lockout after max attempts
+const CREATION_COOLDOWN_MS = 60 * 1000; // 60-second cooldown between challenge creations per identity
 
 function generateOtpCode(): string {
   // Uniform 6-digit code via rejection sampling on random bytes
@@ -49,6 +50,33 @@ function maskEmail(email: string): string {
 export function maskDestination(destination: string, channel: TenantOtpChannel): string {
   if (channel === 'EMAIL') return maskEmail(destination);
   return maskPhone(destination);
+}
+
+export type OtpCreationRateLimitResult =
+  | { limited: false }
+  | { limited: true; existingChallengeId: string };
+
+/**
+ * Check whether a new OTP challenge can be created for this identity.
+ * Returns limited=true with the existing challengeId if one was created
+ * within the cooldown window and is still active.
+ */
+export async function checkOtpCreationRateLimit(
+  tenantIdentityId: string,
+): Promise<OtpCreationRateLimitResult> {
+  const cooldownCutoff = new Date(Date.now() - CREATION_COOLDOWN_MS);
+  const recent = await prisma.tenantOtpChallenge.findFirst({
+    where: {
+      tenantIdentityId,
+      verifiedAt: null,
+      expiresAt: { gt: new Date() },
+      createdAt: { gt: cooldownCutoff },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  });
+  if (recent) return { limited: true, existingChallengeId: recent.id };
+  return { limited: false };
 }
 
 export type CreateOtpResult = {

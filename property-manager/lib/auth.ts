@@ -33,8 +33,21 @@ type SessionDecodeResult =
   | { ok: true; session: SessionData }
   | { ok: false; reason: 'invalid' | 'expired' };
 
+const DEMO_SECRETS = new Set([
+  'property-manager-demo-secret-change-me',
+  'change-this-demo-secret-before-sharing',
+]);
+
 function getSessionSecret() {
-  return process.env.AUTH_SECRET || 'property-manager-demo-secret-change-me';
+  const secret = process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret || DEMO_SECRETS.has(secret) || secret.length < 32) {
+      throw new Error(
+        'AUTH_SECRET is required in production. Set a random string of at least 32 characters.',
+      );
+    }
+  }
+  return secret || 'property-manager-demo-secret-change-me';
 }
 
 function toBase64Url(value: string) {
