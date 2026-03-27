@@ -374,6 +374,18 @@
           {
             "text": "Barry Bot: Explicit remaining deployment-shaped cautions: no production transport is wired yet for OTP/invite delivery, auth endpoints still lack IP-level throttling, and seeded attachment paths may still reference non-existent files in dev/demo contexts. None of those erase the hardening progress, but they do define the next execution step.",
             "ts": 1774644180000
+          },
+          {
+            "text": "Barry Bot: Hosted smoke-test attempt could not run because no hosted target exists yet. No Vercel/Railway/Render/Fly URL was found, local env still points to SQLite, and the blocker is infra provisioning rather than another code bug.",
+            "ts": 1774647000000
+          },
+          {
+            "text": "Barry Bot: DEPLOY.md is now in the PM repo as the execution runbook. Order is explicit: Neon Postgres, Cloudflare R2, OTP providers, Vercel project, AUTH_SECRET/env setup, prisma migrate deploy, optional seed, deploy, URL update, then hosted smoke test.",
+            "ts": 1774647060000
+          },
+          {
+            "text": "Barry Bot: Current status truth for PM is app-ready but infra-unproven. Next gate is first hosted environment bring-up and first real hosted smoke test pass, not more feature work.",
+            "ts": 1774647120000
           }
         ]
       },
