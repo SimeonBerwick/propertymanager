@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Route } from 'next';
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session';
+import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { prisma } from '@/lib/prisma';
 import { EventVisibility, RequestStatus } from '@prisma/client';
 
@@ -98,6 +100,32 @@ export default async function MobileRequestDetailPage({ params }: Props) {
           <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{request.description}</p>
         </div>
       </div>
+
+      {request.attachments.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-slate-700">Photos</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {request.attachments.map((att) => (
+              <a
+                key={att.id}
+                href={getAttachmentUrl(att.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-slate-200"
+              >
+                <Image
+                  src={getAttachmentUrl(att.id)}
+                  alt="Request photo"
+                  width={400}
+                  height={300}
+                  className="h-32 w-full object-cover"
+                  unoptimized
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {request.events.length > 0 && (
         <div className="space-y-2">

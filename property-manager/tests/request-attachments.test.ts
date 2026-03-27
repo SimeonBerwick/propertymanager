@@ -100,7 +100,7 @@ function makeJunkBytes(size = 64): Buffer {
 }
 
 function makeFile(bytes: Buffer, name: string, type: string): File {
-  return new File([bytes], name, { type });
+  return new File([new Uint8Array(bytes)], name, { type });
 }
 
 // ── hasMagicBytes unit tests — header checks ──────────────────────────────────
