@@ -4,6 +4,16 @@ import { hashPassword } from '../lib/passwords';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Production guard: refuse to seed unless SEED_ALLOWED=true is explicitly set.
+  // This prevents accidental destruction of production data.
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_ALLOWED !== 'true') {
+    console.error(
+      'SEED BLOCKED: NODE_ENV=production. ' +
+      'Set SEED_ALLOWED=true to override (DANGER: this wipes all data).',
+    );
+    process.exit(1);
+  }
+
   await prisma.invite.deleteMany();
   await prisma.attachment.deleteMany();
   await prisma.requestEvent.deleteMany();

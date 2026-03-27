@@ -3,8 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is required when DATABASE_URL uses Neon's pgbouncer pooler
+  // (?pgbouncer=true). Set DATABASE_DIRECT_URL to the non-pooled connection
+  // string so that `prisma migrate deploy` bypasses the pooler.
+  // For local dev or non-pooled setups, set it to the same value as DATABASE_URL.
+  directUrl = env("DATABASE_DIRECT_URL")
 }
 
 enum UserRole {
@@ -82,14 +87,18 @@ enum VendorPricingType {
 }
 
 model Organization {
-  id         String     @id @default(cuid())
-  name       String
-  createdAt  DateTime   @default(now())
-  users      AppUser[]
-  regions    Region[]
-  properties Property[]
-  vendors    Vendor[]
-  invites    Invite[]
+  id                 String               @id @default(cuid())
+  name               String
+  createdAt          DateTime             @default(now())
+  users              AppUser[]
+  regions            Region[]
+  properties         Property[]
+  vendors            Vendor[]
+  invites            Invite[]
+  tenantIdentities   TenantIdentity[]
+  tenantInvites      TenantInvite[]
+  tenantOtpChallenges TenantOtpChallenge[]
+  tenantSessions     TenantSession[]
 
   @@index([createdAt])
 }
@@ -110,70 +119,74 @@ model Region {
 }
 
 model AppUser {
-  id             String         @id @default(cuid())
-  organizationId String
-  email          String         @unique
-  passwordHash   String
-  name           String
-  role           UserRole
-  createdAt      DateTime       @default(now())
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requestEvents  RequestEvent[]
-  invitesCreated Invite[]
+  id                    String         @id @default(cuid())
+  organizationId        String
+  email                 String         @unique
+  passwordHash          String
+  name                  String
+  role                  UserRole
+  createdAt             DateTime       @default(now())
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestEvents         RequestEvent[]
+  invitesCreated        Invite[]
+  tenantInvitesCreated  TenantInvite[]
 
   @@index([organizationId, role])
 }
 
 model Property {
-  id             String               @id @default(cuid())
-  organizationId String
-  regionId       String?
-  name           String
-  addressLine1   String
-  addressLine2   String?
-  city           String
-  state          String
-  postalCode     String
-  notes          String?
-  createdAt      DateTime             @default(now())
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  region         Region?              @relation(fields: [regionId], references: [id], onDelete: SetNull)
-  units          Unit[]
-  requests       MaintenanceRequest[]
-  invites        Invite[]
+  id               String               @id @default(cuid())
+  organizationId   String
+  regionId         String?
+  name             String
+  addressLine1     String
+  addressLine2     String?
+  city             String
+  state            String
+  postalCode       String
+  notes            String?
+  createdAt        DateTime             @default(now())
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  region           Region?              @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  units            Unit[]
+  requests         MaintenanceRequest[]
+  invites          Invite[]
+  tenantIdentities TenantIdentity[]
 
   @@index([organizationId, regionId, createdAt])
 }
 
 model Unit {
-  id              String               @id @default(cuid())
-  propertyId      String
-  label           String
-  bedroomCount    Int?
-  bathroomCount   Float?
-  occupancyStatus String?
-  createdAt       DateTime             @default(now())
-  property        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  tenants         Tenant[]
-  requests        MaintenanceRequest[]
-  invites         Invite[]
+  id               String               @id @default(cuid())
+  propertyId       String
+  label            String
+  bedroomCount     Int?
+  bathroomCount    Float?
+  occupancyStatus  String?
+  createdAt        DateTime             @default(now())
+  property         Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenants          Tenant[]
+  requests         MaintenanceRequest[]
+  invites          Invite[]
+  tenantIdentities TenantIdentity[]
 
   @@unique([propertyId, label])
   @@index([propertyId, createdAt])
 }
 
 model Tenant {
-  id           String               @id @default(cuid())
-  unitId       String
-  name         String
-  email        String?              @unique
-  passwordHash String?
-  phone        String?
-  status       TenantStatus         @default(ACTIVE)
-  createdAt    DateTime             @default(now())
-  unit         Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  requests     MaintenanceRequest[]
-  invites      Invite[]
+  id             String               @id @default(cuid())
+  unitId         String
+  name           String
+  email          String?              @unique
+  passwordHash   String?
+  phone          String?
+  status         TenantStatus         @default(ACTIVE)
+  createdAt      DateTime             @default(now())
+  unit           Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  requests       MaintenanceRequest[]
+  invites        Invite[]
+  tenantIdentity TenantIdentity?
 
   @@index([unitId, status])
 }
@@ -287,4 +300,134 @@ model Invite {
   @@index([tenantId, status])
   @@index([vendorId, status])
   @@index([expiresAt])
+}
+
+// ─── Tenant Mobile Access ────────────────────────────────────────────────────
+
+enum TenantIdentityStatus {
+  PENDING_INVITE
+  ACTIVE
+  INACTIVE
+  MOVED_OUT
+}
+
+enum TenantInviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum TenantInviteSentVia {
+  SMS
+  EMAIL
+  MANUAL
+}
+
+enum TenantOtpPurpose {
+  INVITE_LOGIN
+  RETURNING_LOGIN
+}
+
+enum TenantOtpChannel {
+  SMS
+  EMAIL
+}
+
+model TenantIdentity {
+  id              String               @id @default(cuid())
+  orgId           String
+  tenantId        String               @unique
+  propertyId      String
+  unitId          String
+  phoneE164       String
+  emailNormalized String?
+  status          TenantIdentityStatus @default(PENDING_INVITE)
+  verifiedAt      DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  organization    Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property        Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit            Unit                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  invites         TenantInvite[]
+  otpChallenges   TenantOtpChallenge[]
+  sessions        TenantSession[]
+
+  @@index([orgId, status])
+  @@index([phoneE164])
+  @@index([emailNormalized])
+}
+
+model TenantInvite {
+  id               String             @id @default(cuid())
+  orgId            String
+  tenantIdentityId String
+  tenantId         String
+  propertyId       String
+  unitId           String
+  tokenHash        String             @unique
+  status           TenantInviteStatus @default(PENDING)
+  expiresAt        DateTime
+  sentVia          TenantInviteSentVia
+  sentTo           String
+  createdByUserId  String
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization     Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tenantIdentity   TenantIdentity     @relation(fields: [tenantIdentityId], references: [id], onDelete: Cascade)
+  createdByUser    AppUser            @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status])
+  @@index([tenantIdentityId, status])
+  @@index([expiresAt])
+}
+
+model TenantOtpChallenge {
+  id                String           @id @default(cuid())
+  orgId             String
+  tenantIdentityId  String
+  purpose           TenantOtpPurpose
+  channel           TenantOtpChannel
+  destinationMasked String
+  codeHash          String
+  expiresAt         DateTime
+  attemptCount      Int              @default(0)
+  maxAttempts       Int              @default(5)
+  lockedUntil       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime         @default(now())
+
+  organization      Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tenantIdentity    TenantIdentity   @relation(fields: [tenantIdentityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantIdentityId, createdAt])
+  @@index([expiresAt])
+}
+
+model TenantSession {
+  id                String         @id @default(cuid())
+  orgId             String
+  tenantIdentityId  String
+  tenantId          String
+  propertyId        String
+  unitId            String
+  sessionSecretHash String         @unique
+  issuedAt          DateTime       @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  lastSeenAt        DateTime?
+  ipHash            String?
+  userAgent         String?
+
+  organization      Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tenantIdentity    TenantIdentity @relation(fields: [tenantIdentityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantIdentityId, revokedAt, expiresAt])
+  @@index([orgId])
 }
