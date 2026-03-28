@@ -3,7 +3,7 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "pre-test-fix-list",
+      "status": "ready-for-controlled-test",
       "owner": "Elon",
       "summary": "Maintenance command center for small landlords: intake, dispatch, updates, and issue history.",
       "stages": {
@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Do not run the test yet. The core paths are real, but the launch gate must be visually red until the pre-test fix list is verified: workflow integrity, role/org boundaries, tenant/vendor usability, attachment reliability, data integrity, and deployment-smoke confidence. The honest status is not 'everything ready to go'; it is 'close, but tighten before test.'",
-      "nextStep": "Use Mission Control as the pre-test punch list: verify the full tenant → operator → handyman/vendor loop, close any permission/org-scoping leaks, confirm mobile and attachment behavior, standardize status language, and only then run the first controlled test.",
+      "reviewGate": "Jeff-style pre-test audit now reports no RED blockers. Three YELLOW issues were identified and fixed: comment author attribution, status-event actor attribution, and stale status-select reset behavior. Honest state: ready for a controlled test, not blanket production-ready. Keep caveats visible rather than pretending they do not exist.",
+      "nextStep": "Run the first controlled test and watch the real path closely: tenant submits, operator triages, handyman/vendor updates, status flows back, attachments render, and history stays trustworthy. Treat remaining caveats as known follow-up work, not hidden truth.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
