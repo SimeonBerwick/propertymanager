@@ -41,7 +41,7 @@ export async function updateStatusFormAction(
         include: { property: true, unit: true },
       })
       await tx.statusEvent.create({
-        data: { requestId, fromStatus, toStatus },
+        data: { requestId, fromStatus, toStatus, actorUserId: session.userId },
       })
 
       tenantEmail = updated.submittedByEmail ?? undefined
@@ -124,7 +124,7 @@ export async function addCommentFormAction(
 
   try {
     await prisma.requestComment.create({
-      data: { requestId, body, visibility },
+      data: { requestId, body, visibility, authorUserId: session.userId },
     })
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
