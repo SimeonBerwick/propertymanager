@@ -3,7 +3,7 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "beta-candidate",
+      "status": "pre-test-fix-list",
       "owner": "Elon",
       "summary": "Maintenance command center for small landlords: intake, dispatch, updates, and issue history.",
       "stages": {
@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Property Manager is now app-ready enough for first deployment execution, but still infra-unproven. The code-side hardening path now reportedly covers PostgreSQL migration readiness, directUrl wiring for Neon-style migrations, authenticated attachment access across web and mobile, OTP delivery plumbing, and production guards around weak storage/seed paths. The current real gate is standing up the first hosted environment and proving the runbook works end to end. Until a real deploy exists and passes smoke test, PM should be described as deployment-ready candidate, not hosted-ready reality.",
-      "nextStep": "Execute infra bring-up in dependency order: provision Neon Postgres, Cloudflare R2, and OTP providers; create the Vercel project; set the full env set from DEPLOY.md; run prisma migrate deploy; deploy; then run the first hosted smoke test covering operator login, invite/OTP delivery, mobile access, request photo upload, authenticated attachment access by role, and unauthenticated rejection.",
+      "reviewGate": "Do not run the test yet. The core paths are real, but the launch gate must be visually red until the pre-test fix list is verified: workflow integrity, role/org boundaries, tenant/vendor usability, attachment reliability, data integrity, and deployment-smoke confidence. The honest status is not 'everything ready to go'; it is 'close, but tighten before test.'",
+      "nextStep": "Use Mission Control as the pre-test punch list: verify the full tenant → operator → handyman/vendor loop, close any permission/org-scoping leaks, confirm mobile and attachment behavior, standardize status language, and only then run the first controlled test.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
