@@ -38,7 +38,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor }: P
         <h3 style={{ marginTop: 4, marginBottom: 0 }}>Update status</h3>
       </div>
 
-      <form action={statusAction} className="stack" style={{ gap: 8 }}>
+      <form key={currentStatus} action={statusAction} className="stack" style={{ gap: 8 }}>
         <input type="hidden" name="requestId" value={requestId} />
         <input type="hidden" name="fromStatus" value={currentStatus} />
         <div className="row" style={{ gap: 8, alignItems: 'center' }}>
