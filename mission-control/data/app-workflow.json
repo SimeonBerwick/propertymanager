@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Jeff-style pre-test audit now reports no RED blockers. Three YELLOW issues were identified and fixed: comment author attribution, status-event actor attribution, and stale status-select reset behavior. Honest state: ready for a controlled test, not blanket production-ready. Keep caveats visible rather than pretending they do not exist.",
-      "nextStep": "Run the first controlled test and watch the real path closely: tenant submits, operator triages, handyman/vendor updates, status flows back, attachments render, and history stays trustworthy. Treat remaining caveats as known follow-up work, not hidden truth.",
+      "reviewGate": "Repo/setup truth is materially cleaner now. The fake SQLite-backed local-dev story was removed, docs/env/test setup are consistently PostgreSQL-first, and the auth-boundary integration test now uses a dedicated Postgres test DB instead of pretending SQLite works for that path. Honest state: app path is cleaner and ready for local smoke bring-up, but host readiness still depends on a real reachable Postgres server plus valid .env wiring.",
+      "nextStep": "Complete local smoke bring-up against a real Postgres instance: create .env from .env.example, wire DATABASE_URL/DATABASE_DIRECT_URL plus dedicated TEST_DATABASE_URL vars, run npm install, npm run db:setup, npm run validate, npm run dev, then manually verify operator, tenant, and vendor flows in browser.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -66,7 +66,9 @@
         "Barry Bot: Explicit remaining deployment-shaped cautions: no production transport is wired yet for OTP/invite delivery, auth endpoints still lack IP-level throttling, and seeded attachment paths may still reference non-existent files in dev/demo contexts. None of those erase the hardening progress, but they do define the next execution step.",
         "Barry Bot: Hosted smoke-test attempt could not run because no hosted target exists yet. No Vercel/Railway/Render/Fly URL was found, .env still points to local SQLite, and the gap is infra provisioning rather than another code defect.",
         "Barry Bot: DEPLOY.md now exists in the PM repo as the concrete bring-up runbook. It sets dependency order explicitly: Neon, R2, OTP providers, Vercel project, env setup, prisma migrate deploy, optional seed, deploy, URL update, then smoke test.",
-        "Barry Bot: Mission Control status truth is now sharper: PM is app-ready but infra-unproven. Next gate is not more product coding; it is first hosted environment bring-up followed by the first real hosted smoke test."
+        "Barry Bot: Mission Control status truth is now sharper: PM is app-ready but infra-unproven. Next gate is not more product coding; it is first hosted environment bring-up followed by the first real hosted smoke test.",
+        "Barry Bot: Latest setup/readiness fix landed in commit 9e3afcd ('fix property-manager local setup and test readiness'). It removed the false SQLite local-dev story, made docs/env/test flow PostgreSQL-first, added clearer bring-up/validation scripts, and pointed the auth-boundary integration test at a dedicated Postgres test DB.",
+        "Barry Bot: Current honest blocker before smoke testing is host reality, not repo ambiguity: the machine needs a reachable Postgres server, real dev/test databases, and valid .env credentials. Once that exists, the next gate is simple local browser smoke testing rather than more storytelling about setup."
       ]
     },
     {
