@@ -16,20 +16,40 @@ Baseline reference: `9e3afcd`
 
 ---
 
+## Stop rules
+
+If any of these fail, stop and mark the run failed:
+- [ ] `.env` missing or invalid
+- [ ] Postgres connection fails
+- [ ] `npm run db:setup` fails
+- [ ] Seeded accounts missing
+- [ ] App does not boot
+- [ ] Login fails for any seeded role
+
+Do not declare a soft pass if one of the stop rules fails.
+
+---
+
 ## 1) Environment setup
 
 ### Required env file
 
+Pass only if all are true:
 - [ ] `.env` exists in repo root
 - [ ] `.env` was created from `.env.example`
-- [ ] `DATABASE_URL` is set to a real local Postgres DB
+- [ ] `DATABASE_URL` is set to a real local Postgres dev DB
 - [ ] `DATABASE_DIRECT_URL` is set
 
 ### Optional auth/integration test env
 
+Only required if `npm run test:authz` will be run:
 - [ ] `TEST_DATABASE_URL` is set to a separate disposable Postgres DB
 - [ ] `TEST_DATABASE_DIRECT_URL` is set
 - [ ] Test DB is not the same DB as dev/app DB
+
+### Fail conditions
+- [ ] Any required env var is missing
+- [ ] Test DB points at the same DB as the dev/app DB
 
 ### Notes / exact values used
 
@@ -54,7 +74,7 @@ Suggested names:
 
 Checks:
 - [ ] Dev/app Postgres database created
-- [ ] Test Postgres database created separately
+- [ ] Test Postgres database created separately if needed
 - [ ] Test DB does not point at dev DB
 
 Notes:
@@ -73,30 +93,65 @@ npm run db:setup
 npm run validate
 ```
 
-### Pass/fail checks
+### A. Install
 
-#### npm install
+Pass only if:
 - [ ] `npm install` completed successfully
 - [ ] No blocker-level install error occurred
 
-Exact output / errors:
-```text
-```
-
-#### db setup
-- [ ] `npm run db:setup` completed successfully
-- [ ] Migrations completed
-- [ ] Seed completed
-- [ ] No Postgres connection error
-- [ ] No schema drift / migration failure
+Fail if:
+- [ ] Any install error blocks bring-up
 
 Exact output / errors:
 ```text
 ```
 
-#### validate
-- [ ] `npm run validate` exited 0
+### B. Database init
+
+Run:
+
+```bash
+npm run db:setup
+```
+
+Pass only if all are true:
+- [ ] Prisma client generates
+- [ ] Schema push succeeds
+- [ ] Seed completes
+- [ ] Demo credentials are printed
+
+Fail if any are true:
+- [ ] Postgres connection error
+- [ ] Prisma push error
+- [ ] Seed error
+- [ ] No seeded credential output
+
+Expected seeded credentials:
+- Operator: `olivia@example.com / operator123`
+- Tenant: `tina@example.com / tenant123`
+- Vendor: `dispatch@aceplumbing.test / vendor123`
+
+Exact output / errors:
+```text
+```
+
+### C. Validation
+
+Run:
+
+```bash
+npm run validate
+```
+
+Pass only if:
+- [ ] Exit code is `0`
 - [ ] No blocker-level validation error occurred
+
+Fail if any typecheck, lint, invite, attachment, or phone test fails.
+
+Important:
+- `npm run validate` does **not** prove auth boundaries are good.
+- Auth boundary coverage lives in `npm run test:authz` and requires a separate Postgres test DB.
 
 Exact output / errors:
 ```text
@@ -112,14 +167,18 @@ Run:
 npm run dev
 ```
 
-### Pass/fail checks
-
+Pass only if all are true:
 - [ ] Dev server starts successfully
 - [ ] Local app URL is shown clearly in terminal output
 - [ ] App loads in browser
 - [ ] No immediate crash, blank screen, or fatal startup error
-- [ ] Browser console has no obvious blocker-level errors on first load
-- [ ] Server logs have no obvious blocker-level errors on first load
+- [ ] Browser console has no blocker-level errors on first load
+- [ ] Server logs have no blocker-level errors on first load
+
+Expected local URL by default:
+- likely `http://localhost:3000`
+
+If it differs, record the exact URL.
 
 Actual local URL used:
 ```text
@@ -134,13 +193,13 @@ Startup / runtime errors:
 ## 5) Seeded smoke-test accounts
 
 Expected seeded accounts:
-
 - Operator: `olivia@example.com / operator123`
 - Tenant: `tina@example.com / tenant123`
 - Vendor: `dispatch@aceplumbing.test / vendor123`
 
 ### Seed account verification
 
+Pass only if all are true:
 - [ ] Operator account exists and can attempt login
 - [ ] Tenant account exists and can attempt login
 - [ ] Vendor account exists and can attempt login
@@ -156,30 +215,72 @@ Notes:
 ## 6) Role login checks
 
 ### Operator login
-- [ ] Operator login succeeds
-- [ ] Operator lands on expected authenticated area
-- [ ] No auth loop / redirect loop
-- [ ] No crash after login
+Use:
+- `olivia@example.com / operator123`
+
+Pass only if:
+- [ ] Login succeeds
+- [ ] Authenticated operator area loads
+- [ ] No redirect loop
+- [ ] No fatal UI error
+
+Fail if:
+- [ ] Login rejected
+- [ ] Session loops
+- [ ] Lands on unauthenticated page
+- [ ] Page crashes
+
+Expected authenticated area / route reached:
+```text
+```
 
 Notes / errors:
 ```text
 ```
 
 ### Tenant login
-- [ ] Tenant login succeeds
-- [ ] Tenant lands on expected authenticated area
-- [ ] No auth loop / redirect loop
-- [ ] No crash after login
+Use:
+- `tina@example.com / tenant123`
+
+Pass only if:
+- [ ] Login succeeds
+- [ ] Tenant-facing area loads
+- [ ] No redirect loop
+- [ ] No fatal UI error
+
+Fail if:
+- [ ] Login rejected
+- [ ] Session loops
+- [ ] Lands on unauthenticated page
+- [ ] Page crashes
+
+Expected authenticated area / route reached:
+```text
+```
 
 Notes / errors:
 ```text
 ```
 
 ### Vendor login
-- [ ] Vendor login succeeds
-- [ ] Vendor lands on expected authenticated area
-- [ ] No auth loop / redirect loop
-- [ ] No crash after login
+Use:
+- `dispatch@aceplumbing.test / vendor123`
+
+Pass only if:
+- [ ] Login succeeds
+- [ ] Vendor-facing queue/detail area loads
+- [ ] No redirect loop
+- [ ] No fatal UI error
+
+Fail if:
+- [ ] Login rejected
+- [ ] Session loops
+- [ ] Lands on unauthenticated page
+- [ ] Page crashes
+
+Expected authenticated area / route reached:
+```text
+```
 
 Notes / errors:
 ```text
@@ -191,19 +292,21 @@ Notes / errors:
 
 ## Operator flow
 
-Minimum pass bar:
-- [ ] Dashboard loads
-- [ ] No obvious broken blank states
-- [ ] Can view properties
-- [ ] Can view units
-- [ ] Can view work orders / maintenance items
-- [ ] Can view tenants
-- [ ] Can view vendors
-- [ ] Operator-only actions are visible where expected
+Pass only if operator can:
+- [ ] View dashboard
+- [ ] View properties
+- [ ] View units
+- [ ] View work orders / maintenance requests
+- [ ] View tenants
+- [ ] View vendors
 
-If maintenance/work-order creation exists in the current build:
-- [ ] Operator can create a maintenance/work-order item successfully
-- [ ] Created item persists after refresh
+Fail if:
+- [ ] Any listed core section crashes
+- [ ] List pages are blank due to obvious load failure
+- [ ] Critical operator section is inaccessible
+
+Conditional pass:
+- [ ] If request creation UI exists, create one and confirm it persists after refresh
 
 What happened:
 ```text
@@ -211,14 +314,19 @@ What happened:
 
 ## Tenant flow
 
-Minimum pass bar:
-- [ ] Tenant can access tenant-facing dashboard/page
-- [ ] Tenant can submit a maintenance request
-- [ ] Submitted request appears in tenant-visible status/history
-- [ ] Request survives refresh
+Pass only if tenant can:
+- [ ] Access tenant request area
+- [ ] Submit a maintenance request
+- [ ] See the submitted request in status/history
+- [ ] Refresh and still see it
 
-If photo upload is enabled in the current build:
-- [ ] Tenant can attach/upload photo successfully
+Conditional pass:
+- [ ] If photo upload is exposed in UI, upload works and persists
+
+Fail if:
+- [ ] Submission appears to succeed but request is missing after refresh
+- [ ] Tenant can see another tenant’s request
+- [ ] Tenant can reach operator area directly
 
 What happened:
 ```text
@@ -226,12 +334,17 @@ What happened:
 
 ## Vendor flow
 
-Minimum pass bar:
-- [ ] Vendor can access vendor-facing queue/list
-- [ ] Vendor can open assigned item detail
-- [ ] Vendor can update status if supported
-- [ ] Vendor can add notes if supported
-- [ ] Updates persist after refresh
+Pass only if vendor can:
+- [ ] Access assigned queue/list
+- [ ] Open assigned request detail
+- [ ] Update status if supported
+- [ ] Add notes if supported
+- [ ] Refresh and still see the changes
+
+Fail if:
+- [ ] Vendor sees unassigned or unrelated work
+- [ ] Vendor can access operator admin area
+- [ ] Updates appear to save but disappear
 
 What happened:
 ```text
@@ -243,24 +356,39 @@ What happened:
 
 This is the part people hand-wave. Do not hand-wave it.
 
-### Operator boundaries
-- [ ] Operator can access operator/admin areas expected for that role
+### Tenant boundary
+Attempt:
+- [ ] Direct navigation to operator/admin page
+- [ ] Direct navigation to another tenant request if discoverable
 
-### Tenant boundaries
-- [ ] Tenant cannot access operator/admin pages
-- [ ] Tenant only sees their own relevant requests/data
-- [ ] Tenant direct URL guess to protected operator page redirects or denies cleanly
+Pass only if:
+- [ ] Tenant is redirected or denied from operator pages
+- [ ] Tenant sees only their own relevant requests/data
 
-### Vendor boundaries
-- [ ] Vendor cannot access operator admin areas
-- [ ] Vendor only sees assigned/vendor-facing items
-- [ ] Vendor cannot see unrelated org or tenant data
-- [ ] Vendor direct URL guess to protected page redirects or denies cleanly
+### Vendor boundary
+Attempt:
+- [ ] Direct navigation to operator/admin page
+- [ ] Access to unrelated or unassigned request
 
-### Cross-role checks
-- [ ] Data created by one role appears only where intended
-- [ ] No obvious org-scope leak
-- [ ] No obvious authz failure
+Pass only if:
+- [ ] Vendor is redirected or denied from operator admin areas
+- [ ] Vendor sees only assigned/vendor-facing items
+
+### Operator org boundary
+Pass only if:
+- [ ] Operator can access expected operator resources
+- [ ] No obvious cross-org leakage appears in visible data or direct-object pages
+
+### Attachment visibility
+Pass only if:
+- [ ] Tenant-visible request evidence is limited appropriately
+- [ ] Vendor/private PDF-style material is not exposed to tenant view
+- [ ] Operator/vendor views still show what they are supposed to see
+
+### Internal notes visibility
+Pass only if:
+- [ ] Operator can see internal note/history intended for operator use
+- [ ] Tenant and vendor cannot see internal-only notes
 
 Exact boundary failures:
 ```text
@@ -278,11 +406,16 @@ Run:
 npm run test:authz
 ```
 
-Pass/fail checks:
+Pass only if:
 - [ ] Test used dedicated Postgres test DB
 - [ ] Test did not point at dev DB
 - [ ] No SQLite assumption appears
 - [ ] `npm run test:authz` exited cleanly
+
+Fail if:
+- [ ] Test DB equals dev DB
+- [ ] Auth test mutates the wrong database
+- [ ] Test fails due to setup or boundary behavior
 
 Exact output / errors:
 ```text
