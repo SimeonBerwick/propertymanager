@@ -1,6 +1,6 @@
 # Property Manager V1
 
-Initial Sprint 1 scaffold for a maintenance-focused property management app.
+Maintenance-focused property management app built with Next.js, Prisma, and PostgreSQL.
 
 ## What is included
 - Next.js App Router + TypeScript + Tailwind scaffold
@@ -28,36 +28,38 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 
 ## Assumptions
 - V1 remains maintenance-only and intentionally avoids broader property-management scope.
-- The long-term target database is PostgreSQL per spec, but this scaffold uses SQLite locally so the repo can boot quickly and seed without external infrastructure.
-- File uploads are represented in schema and placeholders only; object storage wiring is deferred to the next implementation slice.
-- Auth is now materially stronger than the original role picker, but it is still app-local auth rather than production-grade IAM / MFA / invite management.
+- Local development and production both use **PostgreSQL**. This repo is no longer SQLite-backed.
+- File uploads are represented in schema and local-storage helpers; object-storage wiring is deferred to the next implementation slice.
+- Auth is materially stronger than the original role picker, but it is still app-local auth rather than production-grade IAM / MFA / invite management.
 
 ## Local setup
 1. Copy env example:
    ```bash
    cp .env.example .env
    ```
-2. Install dependencies:
+2. Create a local PostgreSQL database (example names):
+   - `property_manager`
+   - `property_manager_test` (optional, only for integration auth tests)
+3. Update `.env` with working local values:
+   ```env
+   DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/property_manager"
+   DATABASE_DIRECT_URL="postgresql://USER:PASSWORD@localhost:5432/property_manager"
+   AUTH_SECRET="replace-with-a-long-random-string"
+   NEXT_PUBLIC_APP_URL="http://localhost:3000"
+   ```
+4. Install dependencies:
    ```bash
    npm install
    ```
-3. Generate the Prisma client:
+5. Generate Prisma client, push schema, and seed starter data:
    ```bash
-   npx prisma generate
+   npm run db:setup
    ```
-4. Create the local database and apply schema:
+6. Run static validation before opening the UI:
    ```bash
-   npx prisma db push
+   npm run validate
    ```
-5. Seed starter data:
-   ```bash
-   npm run prisma:seed
-   ```
-6. Set an auth secret in `.env` (required for signed session cookies):
-   ```bash
-   AUTH_SECRET="replace-with-a-long-random-string"
-   ```
-7. Run the app:
+7. Start the app:
    ```bash
    npm run dev
    ```
@@ -67,13 +69,39 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Tenant: `tina@example.com` / `tenant123`
 - Vendor: `dispatch@aceplumbing.test` / `vendor123`
 
-## Auth boundary regression tests
-- Run `npm run test:authz` to boot the built app against a disposable SQLite database and verify:
-  - tampered cookie rejection
-  - expired session redirect handling
-  - tenant direct-object access denial
-  - vendor unassigned-request denial
-  - internal-note non-leakage to tenant/vendor surfaces
+## Validation commands
+### Fast local validation
+Runs typecheck, lint, invite tests, attachment tests, and phone parsing tests:
+```bash
+npm run validate
+```
+
+### Full test pass
+Includes the auth-boundary integration test:
+```bash
+npm test
+```
+
+### Auth-boundary integration test requirements
+`npm run test:authz` builds the app, starts the production server, and exercises signed-session boundary checks against a **dedicated PostgreSQL test database**.
+
+Set these env vars before running it:
+```bash
+export TEST_DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/property_manager_test"
+export TEST_DATABASE_DIRECT_URL="postgresql://USER:PASSWORD@localhost:5432/property_manager_test"
+npm run test:authz
+```
+
+Why separate DB vars? Because the test suite wipes and recreates data. Do **not** point it at your normal local development database.
+
+## Recommended pre-test checklist
+Before manual UI testing, make sure this sequence is green:
+1. `.env` exists and points to a real local PostgreSQL database
+2. `npm run db:setup`
+3. `npm run validate`
+4. `npm run dev`
+5. Sign in with the seeded operator / tenant / vendor credentials
+6. Verify protected-route redirects and basic request visibility
 
 ## Suggested next build steps
 - Build `/join` invite acceptance UX and attach accepted users to the existing tenant/vendor records
@@ -81,7 +109,7 @@ Initial Sprint 1 scaffold for a maintenance-focused property management app.
 - Extend org scoping beyond the current operator hardening slice into memberships, invite flows, vendor region coverage, and eventually row-level posture suitable for PostgreSQL
 - Add deeper cross-account leakage tests for manipulated list queries and cross-org write attempts
 - Expand vendor updates into richer completion / parts / invoice-ready workflow if V1 needs it
-- Replace local SQLite with PostgreSQL when deployment path is chosen
+- Add production-ready object storage wiring (R2/S3) before serious shared testing
 - Move session storage, password reset, and audit logging to a fuller auth subsystem before production use
 
 ## QA handoff reminder

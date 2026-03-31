@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID, createHmac } from 'node:crypto';
 import { once } from 'node:events';
-import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
 import { after, before, test } from 'node:test';
@@ -10,8 +9,10 @@ import { PrismaClient, EventVisibility, RequestEventType, TenantStatus, UserRole
 import { hashPassword } from '../lib/passwords';
 
 const repoRoot = path.resolve(__dirname, '..');
-const testDbRelativePath = './prisma/auth-boundary-test.db';
-const testDbPath = path.join(repoRoot, 'prisma', 'auth-boundary-test.db');
+const testDbUrl = process.env.TEST_DATABASE_URL;
+const testDbDirectUrl = process.env.TEST_DATABASE_DIRECT_URL ?? testDbUrl;
+const integrationSkipReason =
+  'Set TEST_DATABASE_URL (and optionally TEST_DATABASE_DIRECT_URL) to a dedicated PostgreSQL test database before running test:authz.';
 const authSecret = 'auth-boundary-test-secret';
 let port = 3305;
 let baseUrl = `http://127.0.0.1:${port}`;
@@ -24,7 +25,6 @@ let seededRequestId = '';
 let otherTenantRequestId = '';
 let unassignedVendorRequestId = '';
 let tenantId = '';
-let otherTenantId = '';
 let vendorId = '';
 let operatorId = '';
 let foreignOperatorId = '';
@@ -44,11 +44,16 @@ function createSessionCookie(session: Record<string, string | number | undefined
 }
 
 async function run(command: string, args: string[], extraEnv: Record<string, string> = {}) {
+  if (!testDbUrl) {
+    throw new Error(integrationSkipReason);
+  }
+
   const child = spawn(command, args, {
     cwd: repoRoot,
     env: {
       ...process.env,
-      DATABASE_URL: `file:${testDbRelativePath}`,
+      DATABASE_URL: testDbUrl,
+      DATABASE_DIRECT_URL: testDbDirectUrl,
       AUTH_SECRET: authSecret,
       ...extraEnv,
     },
@@ -113,17 +118,25 @@ async function waitForServerReady() {
 }
 
 before(async () => {
+  if (!testDbUrl) {
+    return;
+  }
+
   port = await getAvailablePort();
   baseUrl = `http://127.0.0.1:${port}`;
   serverStartupLogs.length = 0;
 
-  await rm(testDbPath, { force: true });
-  await mkdir(path.dirname(testDbPath), { recursive: true });
   await run('npm', ['run', 'build']);
-  await run('npx', ['prisma', 'db', 'push', '--skip-generate']);
+  await run('npm', ['run', 'prisma:db:push', '--', '--skip-generate']);
   await run('npm', ['run', 'prisma:seed']);
 
-  prisma = new PrismaClient({ datasources: { db: { url: `file:${testDbRelativePath}` } } });
+  prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: testDbUrl,
+      },
+    },
+  });
 
   const [seededRequest, seededTenant, seededVendor, seededUnit, seededOperator] = await Promise.all([
     prisma.maintenanceRequest.findFirstOrThrow({ orderBy: { createdAt: 'asc' } }),
@@ -149,7 +162,6 @@ before(async () => {
       passwordHash: otherTenantPasswordHash,
     },
   });
-  otherTenantId = otherTenant.id;
 
   const otherTenantRequest = await prisma.maintenanceRequest.create({
     data: {
@@ -275,7 +287,8 @@ before(async () => {
     cwd: repoRoot,
     env: {
       ...process.env,
-      DATABASE_URL: `file:${testDbRelativePath}`,
+      DATABASE_URL: testDbUrl,
+      DATABASE_DIRECT_URL: testDbDirectUrl,
       AUTH_SECRET: authSecret,
       PORT: String(port),
     },
@@ -325,11 +338,18 @@ after(async () => {
   if (prisma) {
     await prisma.$disconnect();
   }
-
-  await rm(testDbPath, { force: true });
 });
 
-test('rejects a tampered session cookie with an auth redirect', async () => {
+function integrationTest(name: string, fn: () => Promise<void>) {
+  if (testDbUrl) {
+    test(name, fn);
+    return;
+  }
+
+  test(name, { skip: integrationSkipReason }, fn);
+}
+
+integrationTest('rejects a tampered session cookie with an auth redirect', async () => {
   const validCookie = createSessionCookie({
     role: 'tenant',
     tenantId,
@@ -348,7 +368,7 @@ test('rejects a tampered session cookie with an auth redirect', async () => {
   assert.match(response.headers.get('location') || '', /\/auth\?error=Your%20session%20was%20invalid/);
 });
 
-test('redirects expired sessions back to sign-in with an expiry message', async () => {
+integrationTest('redirects expired sessions back to sign-in with an expiry message', async () => {
   const expiredCookie = createSessionCookie({
     role: 'tenant',
     tenantId,
@@ -366,7 +386,7 @@ test('redirects expired sessions back to sign-in with an expiry message', async 
   assert.match(response.headers.get('location') || '', /\/auth\?error=Your%20session%20expired/);
 });
 
-test('denies tenant direct-object access to another tenant request', async () => {
+integrationTest('denies tenant direct-object access to another tenant request', async () => {
   const tenantCookie = createSessionCookie({
     role: 'tenant',
     tenantId,
@@ -383,7 +403,7 @@ test('denies tenant direct-object access to another tenant request', async () =>
   assert.equal(response.status, 404);
 });
 
-test('denies vendor direct-object access to unassigned work', async () => {
+integrationTest('denies vendor direct-object access to unassigned work', async () => {
   const vendorCookie = createSessionCookie({
     role: 'vendor',
     vendorId,
@@ -400,7 +420,7 @@ test('denies vendor direct-object access to unassigned work', async () => {
   assert.equal(response.status, 404);
 });
 
-test('operator org scoping blocks foreign-org direct-object access', async () => {
+integrationTest('operator org scoping blocks foreign-org direct-object access', async () => {
   const operatorCookie = createSessionCookie({
     role: 'operator',
     userId: operatorId,
@@ -441,7 +461,7 @@ test('operator org scoping blocks foreign-org direct-object access', async () =>
   assert.equal(reverseLeakResponse.status, 404);
 });
 
-test('keeps internal notes off tenant and vendor pages while preserving operator visibility', async () => {
+integrationTest('keeps internal notes off tenant and vendor pages while preserving operator visibility', async () => {
   const operatorCookie = createSessionCookie({
     role: 'operator',
     userId: operatorId,
@@ -494,7 +514,7 @@ test('keeps internal notes off tenant and vendor pages while preserving operator
   assert.doesNotMatch(vendorHtml, /Internal note: do not leak this note to tenant or vendor portals\./);
 });
 
-test('tenant query hides vendor PDF bids while operator and vendor pages still show them', async () => {
+integrationTest('tenant query hides vendor PDF bids while operator and vendor pages still show them', async () => {
   const operatorCookie = createSessionCookie({
     role: 'operator',
     userId: operatorId,
