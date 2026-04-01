@@ -1,26 +1,50 @@
-# Realtor Aid
+# Realtor Aid v1
 
-AI-assisted virtual staging for residential listing photos.
+Realtor Aid v1 is a minimal lead-ops CRM slice for real estate agents.
 
-## Product goal
-Help realtors turn empty or near-empty listing photos into believable, photorealistic staged images fast enough to support actual listing workflows.
+## What this build includes
+- dashboard queues: New / Due Today / Overdue / Stale
+- lead list
+- lead detail view
+- quick add lead
+- activity logging
+- follow-up scheduling
+- seeded demo data
+- simple lead stage updates
 
-## V1 truth
-This is not general interior design software.
-This is a constrained listing-photo staging workflow for real estate.
+## Stack
+- Next.js 14
+- React 18
+- TypeScript
+- server actions + in-memory demo store
 
-## Initial scope
-- interior rooms only
-- empty or near-empty rooms only
-- living rooms and bedrooms first
-- 3 style presets
-- 3-4 staged variants per photo
-- export-ready final image with disclosure-ready workflow
+## Why this shape
+This is the narrowest real v1 that proves workflow truth first:
+1. capture a lead fast
+2. see what needs attention now
+3. open a record
+4. log what happened
+5. set the next follow-up
 
-## Primary user
-- realtors
-- listing coordinators
-- small brokerages
+No fake enterprise scaffolding. No premature auth, queueing, or database complexity.
 
-## Current execution status
-Build planning active. MVP architecture, milestone tracker, and first implementation slices defined.
+## Run locally
+```bash
+cd RealtorAid
+npm install
+npm run dev
+```
+Then open `http://localhost:3000`.
+
+## Build checks
+```bash
+npm run typecheck
+npm run build
+```
+
+## Demo behavior
+Data is seeded in `lib/seed.ts` and stored in an in-memory server store in `lib/store.ts`.
+That means data resets when the server restarts.
+
+## Next obvious step
+Replace the in-memory store with Postgres + Prisma, then add auth and multi-user ownership.
