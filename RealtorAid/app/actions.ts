@@ -19,7 +19,7 @@ export async function createLead(_state: { error?: string }, formData: FormData)
     return { error: "Missing required fields." };
   }
 
-  const lead = addLead({ name, email, phone, source, location, budget, tags, notes });
+  const lead = await addLead({ name, email, phone, source, location, budget, tags, notes });
   revalidatePath("/");
   revalidatePath("/leads");
   redirect(`/leads/${lead.id}`);
@@ -29,7 +29,7 @@ export async function createActivity(leadId: string, _state: { error?: string },
   const type = String(formData.get("type") || "call") as ActivityType;
   const summary = String(formData.get("summary") || "").trim();
   if (!summary) return { error: "Activity summary is required." };
-  const lead = addActivity(leadId, { type, summary });
+  const lead = await addActivity(leadId, { type, summary });
   if (!lead) return { error: "Lead not found." };
   revalidatePath("/");
   revalidatePath("/leads");
@@ -40,7 +40,7 @@ export async function createActivity(leadId: string, _state: { error?: string },
 export async function setFollowUp(leadId: string, _state: { error?: string }, formData: FormData) {
   const nextFollowUpAt = String(formData.get("nextFollowUpAt") || "");
   if (!nextFollowUpAt) return { error: "Follow-up time is required." };
-  const lead = scheduleFollowUp(leadId, new Date(nextFollowUpAt).toISOString());
+  const lead = await scheduleFollowUp(leadId, new Date(nextFollowUpAt).toISOString());
   if (!lead) return { error: "Lead not found." };
   revalidatePath("/");
   revalidatePath("/leads");
@@ -50,7 +50,7 @@ export async function setFollowUp(leadId: string, _state: { error?: string }, fo
 
 export async function setLeadStage(leadId: string, formData: FormData) {
   const stage = String(formData.get("stage") || "new") as LeadStatus;
-  updateLeadStage(leadId, stage);
+  await updateLeadStage(leadId, stage);
   revalidatePath("/");
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);

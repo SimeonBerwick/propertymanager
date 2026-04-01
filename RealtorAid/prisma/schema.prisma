@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  owner
+  agent
+  admin
+}
+
+enum LeadStage {
+  new
+  active
+  nurture
+  under_contract
+  closed
+}
+
+enum ActivityType {
+  call
+  text
+  email
+  note
+  showing
+  meeting
+}
+
+enum TaskStatus {
+  pending
+  completed
+  canceled
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  leads Lead[]
+}
+
+model User {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  name           String
+  role           UserRole     @default(agent)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownedLeads    Lead[]       @relation("LeadOwner")
+  activities    Activity[]
+  followUpTasks FollowUpTask[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+}
+
+model Lead {
+  id             String       @id @default(cuid())
+  organizationId String
+  ownerUserId    String?
+  name           String
+  email          String
+  phone          String
+  stage          LeadStage    @default(new)
+  source         String
+  location       String
+  budget         String
+  notes          String       @default("")
+  tags           String[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastContactAt  DateTime
+  nextFollowUpAt DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User?          @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  activities   Activity[]
+  followUpTasks FollowUpTask[]
+
+  @@index([organizationId])
+  @@index([ownerUserId])
+  @@index([stage])
+  @@index([nextFollowUpAt])
+}
+
+model Activity {
+  id         String       @id @default(cuid())
+  leadId      String
+  userId      String?
+  type        ActivityType
+  summary     String
+  occurredAt  DateTime
+  createdAt   DateTime     @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, occurredAt])
+  @@index([userId])
+}
+
+model FollowUpTask {
+  id          String      @id @default(cuid())
+  leadId       String
+  userId       String?
+  title        String
+  dueAt        DateTime
+  status       TaskStatus  @default(pending)
+  completedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, dueAt])
+  @@index([userId, status])
+}

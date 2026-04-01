@@ -15,8 +15,19 @@ export interface Activity {
   occurredAt: string;
 }
 
+export interface FollowUpTask {
+  id: string;
+  title: string;
+  dueAt: string;
+  status: "pending" | "completed" | "canceled";
+  completedAt: string | null;
+}
+
 export interface Lead {
   id: string;
+  organizationId: string;
+  ownerUserId: string | null;
+  ownerName: string | null;
   name: string;
   email: string;
   phone: string;
@@ -27,7 +38,16 @@ export interface Lead {
   tags: string[];
   notes: string;
   createdAt: string;
+  updatedAt: string;
   lastContactAt: string;
   nextFollowUpAt: string | null;
   activities: Activity[];
+  followUpTasks: FollowUpTask[];
+}
+
+export interface DashboardQueues {
+  newLeads: Lead[];
+  dueToday: Lead[];
+  overdue: Lead[];
+  stale: Lead[];
 }

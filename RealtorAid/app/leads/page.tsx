@@ -2,8 +2,10 @@ import Link from "next/link";
 import { listLeads } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
-export default function LeadsPage() {
-  const leads = listLeads();
+export const dynamic = "force-dynamic";
+
+export default async function LeadsPage() {
+  const leads = await listLeads();
 
   return (
     <div className="page">

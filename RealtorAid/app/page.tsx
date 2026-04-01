@@ -2,9 +2,11 @@ import Link from "next/link";
 import { DashboardQueue } from "@/components/dashboard-queue";
 import { getDashboardQueues, listLeads } from "@/lib/store";
 
-export default function DashboardPage() {
-  const leads = listLeads();
-  const queues = getDashboardQueues();
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const leads = await listLeads();
+  const queues = await getDashboardQueues();
 
   return (
     <div className="page">
