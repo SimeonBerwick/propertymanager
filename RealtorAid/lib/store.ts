@@ -3,6 +3,11 @@ import { seedLeadInputs, seedOrganization, seedUser } from "@/lib/seed";
 import { ActivityType, DashboardQueues, Lead, LeadStatus } from "@/lib/types";
 import { startOfDay } from "@/lib/utils";
 
+export type AuthContext = {
+  userId: string;
+  organizationId: string;
+};
+
 const DEFAULT_ORG_SLUG = seedOrganization.slug;
 
 function dbStageToApp(stage: string): LeadStatus {
@@ -77,7 +82,9 @@ async function getDefaultContext() {
     include: { users: true },
   });
 
-  const owner = organization.users[0] ?? (await prisma.user.findFirstOrThrow({ where: { organizationId: organization.id } }));
+  const owner =
+    organization.users[0] ??
+    (await prisma.user.findFirstOrThrow({ where: { organizationId: organization.id } }));
   return { organization, owner };
 }
 
@@ -127,12 +134,11 @@ export async function ensureSeedData() {
   }
 }
 
-async function getLeadRecords() {
+async function getLeadRecords(context: AuthContext) {
   await ensureSeedData();
-  const { organization } = await getDefaultContext();
 
   return prisma.lead.findMany({
-    where: { organizationId: organization.id },
+    where: { organizationId: context.organizationId },
     include: {
       owner: true,
       activities: true,
@@ -142,16 +148,15 @@ async function getLeadRecords() {
   });
 }
 
-export async function listLeads() {
-  const leads = await getLeadRecords();
+export async function listLeads(context: AuthContext) {
+  const leads = await getLeadRecords(context);
   return leads.map(mapLead);
 }
 
-export async function getLead(id: string) {
+export async function getLead(id: string, context: AuthContext) {
   await ensureSeedData();
-  const { organization } = await getDefaultContext();
   const lead = await prisma.lead.findFirst({
-    where: { id, organizationId: organization.id },
+    where: { id, organizationId: context.organizationId },
     include: {
       owner: true,
       activities: true,
@@ -162,23 +167,25 @@ export async function getLead(id: string) {
   return lead ? mapLead(lead) : null;
 }
 
-export async function addLead(input: {
-  name: string;
-  email: string;
-  phone: string;
-  source: string;
-  location: string;
-  budget: string;
-  tags: string[];
-  notes: string;
-}) {
-  const { organization, owner } = await getDefaultContext();
+export async function addLead(
+  context: AuthContext,
+  input: {
+    name: string;
+    email: string;
+    phone: string;
+    source: string;
+    location: string;
+    budget: string;
+    tags: string[];
+    notes: string;
+  },
+) {
   const now = new Date();
 
   const lead = await prisma.lead.create({
     data: {
-      organizationId: organization.id,
-      ownerUserId: owner.id,
+      organizationId: context.organizationId,
+      ownerUserId: context.userId,
       name: input.name,
       email: input.email,
       phone: input.phone,
@@ -190,7 +197,7 @@ export async function addLead(input: {
       lastContactAt: now,
       activities: {
         create: {
-          userId: owner.id,
+          userId: context.userId,
           type: "note",
           summary: "Lead created.",
           occurredAt: now,
@@ -207,15 +214,19 @@ export async function addLead(input: {
   return mapLead(lead);
 }
 
-export async function addActivity(leadId: string, input: { type: ActivityType; summary: string; occurredAt?: string }) {
-  const lead = await getLead(leadId);
+export async function addActivity(
+  leadId: string,
+  context: AuthContext,
+  input: { type: ActivityType; summary: string; occurredAt?: string },
+) {
+  const lead = await getLead(leadId, context);
   if (!lead) return null;
 
   const when = input.occurredAt ? new Date(input.occurredAt) : new Date();
   const activity = await prisma.activity.create({
     data: {
       leadId,
-      userId: lead.ownerUserId ?? undefined,
+      userId: context.userId,
       type: input.type,
       summary: input.summary,
       occurredAt: when,
@@ -233,8 +244,8 @@ export async function addActivity(leadId: string, input: { type: ActivityType; s
   return activity;
 }
 
-export async function scheduleFollowUp(leadId: string, nextFollowUpAt: string) {
-  const lead = await getLead(leadId);
+export async function scheduleFollowUp(leadId: string, context: AuthContext, nextFollowUpAt: string) {
+  const lead = await getLead(leadId, context);
   if (!lead) return null;
 
   const dueAt = new Date(nextFollowUpAt);
@@ -260,17 +271,20 @@ export async function scheduleFollowUp(leadId: string, nextFollowUpAt: string) {
     await prisma.followUpTask.create({
       data: {
         leadId,
-        userId: lead.ownerUserId ?? undefined,
+        userId: context.userId,
         title: `Follow up with ${lead.name}`,
         dueAt,
       },
     });
   }
 
-  return getLead(leadId);
+  return getLead(leadId, context);
 }
 
-export async function updateLeadStage(leadId: string, stage: LeadStatus) {
+export async function updateLeadStage(leadId: string, context: AuthContext, stage: LeadStatus) {
+  const existing = await getLead(leadId, context);
+  if (!existing) return null;
+
   await prisma.lead.update({
     where: { id: leadId },
     data: {
@@ -278,11 +292,11 @@ export async function updateLeadStage(leadId: string, stage: LeadStatus) {
     },
   });
 
-  return getLead(leadId);
+  return getLead(leadId, context);
 }
 
-export async function getDashboardQueues(now = new Date()): Promise<DashboardQueues> {
-  const leads = await listLeads();
+export async function getDashboardQueues(context: AuthContext, now = new Date()): Promise<DashboardQueues> {
+  const leads = await listLeads(context);
   const today = startOfDay(now);
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);

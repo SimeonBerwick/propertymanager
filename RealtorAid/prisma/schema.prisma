@@ -52,6 +52,7 @@ model User {
   organizationId String
   email          String
   name           String
+  passwordHash   String?
   role           UserRole     @default(agent)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -62,6 +63,7 @@ model User {
   followUpTasks FollowUpTask[]
 
   @@unique([organizationId, email])
+  @@unique([email])
   @@index([organizationId])
 }
 
