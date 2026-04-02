@@ -1,8 +1,12 @@
+import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import { ErrorBanner, Field, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { requestCategoryOptions, requestUrgencyOptions } from '@/lib/operator-crud';
 import { requireTenantSession } from '@/lib/auth';
+import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
+import { getRequestStatusLabel } from '@/lib/request-lifecycle';
+import { getRecentTenantRequests } from '@/lib/tenant-requests';
 import { submitTenantRequest } from './actions';
 
 export default async function TenantSubmitPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
@@ -10,6 +14,7 @@ export default async function TenantSubmitPage({ searchParams }: { searchParams?
     requireTenantSession(),
     searchParams ? searchParams : Promise.resolve(undefined),
   ]);
+  const recentRequests = await getRecentTenantRequests(session.tenantId);
 
   return (
     <AppShell>
@@ -74,6 +79,30 @@ export default async function TenantSubmitPage({ searchParams }: { searchParams?
           </ul>
           <div className="mt-4 text-sm text-slate-600">
             Seed data includes at least one tenant-visible request already, and new submissions land directly on their own status page.
+          </div>
+        </PageSection>
+
+        <PageSection title="Your recent requests" description="Use these links to review what you have already submitted.">
+          <div className="space-y-3">
+            {recentRequests.length === 0 ? (
+              <p className="text-sm text-slate-600">No tenant-visible requests yet.</p>
+            ) : (
+              recentRequests.map((request) => (
+                <Link key={request.id} href={`/tenant/request/${request.id}`} className="block rounded-lg border border-slate-200 bg-white p-4 hover:border-brand-300">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">{request.title}</p>
+                      <p className="text-sm text-slate-600">{request.property.name} · Unit {request.unit.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">Submitted {formatDateTime(request.createdAt)}</p>
+                    </div>
+                    <div className="flex gap-2 text-xs font-medium">
+                      <span className={`rounded-full px-3 py-1 ${getStatusClasses(request.status)}`}>{getRequestStatusLabel(request.status)}</span>
+                      <span className={`rounded-full px-3 py-1 ${getUrgencyClasses(request.urgency)}`}>{request.urgency.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </PageSection>
       </div>

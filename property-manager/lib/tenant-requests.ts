@@ -15,6 +15,21 @@ export async function getTenantPortalData() {
   });
 }
 
+export async function getRecentTenantRequests(tenantId: string) {
+  return prisma.maintenanceRequest.findMany({
+    where: {
+      tenantId,
+      isTenantVisible: true,
+    },
+    orderBy: [{ createdAt: 'desc' }],
+    take: 5,
+    include: {
+      property: true,
+      unit: true,
+    },
+  });
+}
+
 export async function createTenantRequest(tenantId: string, formData: FormData) {
   const title = getString(formData, 'title');
   const description = getString(formData, 'description');

@@ -1,5 +1,6 @@
 'use server';
 
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createTenantRequest } from '@/lib/tenant-requests';
@@ -21,6 +22,9 @@ export async function submitTenantRequest(formData: FormData) {
     revalidatePath(`/tenant/request/${request.id}`);
     redirect(`/tenant/request/${request.id}?submitted=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(`/tenant/submit?error=${encodeURIComponent(getErrorMessage(error))}`);
   }
 }
