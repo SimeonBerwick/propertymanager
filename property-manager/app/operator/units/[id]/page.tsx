@@ -23,6 +23,7 @@ export default async function UnitDetailPage({
     mobileSetup?: string;
     mobileInviteLink?: string;
     mobileInviteExpires?: string;
+    mobileInviteDelivery?: string;
   }>;
 }) {
   const session = await requireOperatorSession();
@@ -162,11 +163,14 @@ export default async function UnitDetailPage({
               )}
               {resolvedSearchParams.mobileInviteLink && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                  <p className="font-medium">Invite link generated — copy and share this with {activeTenant.name} manually</p>
+                  <p className="font-medium">Mobile access link generated</p>
+                  <p className="mt-1 text-xs text-emerald-800">
+                    Delivery status: {resolvedSearchParams.mobileInviteDelivery === 'manual-generated' ? 'generated only — manual delivery required' : 'generated'}
+                  </p>
                   <p className="mt-2 break-all font-mono text-xs">{resolvedSearchParams.mobileInviteLink}</p>
                   <p className="mt-2 text-xs text-emerald-700">
                     Expires {resolvedSearchParams.mobileInviteExpires ? new Date(resolvedSearchParams.mobileInviteExpires).toLocaleString() : 'in 7 days'}.
-                    This link can only be used once. No SMS or email was sent — you must deliver it.
+                    This link can only be used once. No SMS or email was sent automatically — copy it and deliver it yourself.
                   </p>
                 </div>
               )}

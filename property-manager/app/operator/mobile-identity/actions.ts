@@ -110,7 +110,7 @@ export async function sendMobileInviteAction(formData: FormData) {
 
     revalidatePath(returnTo);
     redirect(
-      `${returnTo}?mobileInviteLink=${encodeURIComponent(inviteLink)}&mobileInviteExpires=${encodeURIComponent(expiresAt.toISOString())}` as never,
+      `${returnTo}?mobileInviteLink=${encodeURIComponent(inviteLink)}&mobileInviteExpires=${encodeURIComponent(expiresAt.toISOString())}&mobileInviteDelivery=manual-generated` as never,
     );
   } catch (error) {
     redirect(`${returnTo}?error=${encodeURIComponent(getErrorMessage(error))}` as never);
