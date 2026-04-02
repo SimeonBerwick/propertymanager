@@ -59,11 +59,16 @@ export default async function AcceptInvitePage({ params }: Props) {
     destination,
   );
 
+  let deliveryStatus = channel === 'SMS' ? 'sms-sent' : 'email-sent';
+
   // Deliver the OTP out-of-band via SMS or email.
   // In dev, transport no-ops when env vars are absent and the code is shown in-browser.
   // In production, throws if provider env vars are not configured.
   try {
     await deliverOtp(channel, destination, otp.rawCode);
+    if (process.env.NODE_ENV !== 'production') {
+      deliveryStatus = channel === 'SMS' ? 'sms-dev' : 'email-dev';
+    }
   } catch (err) {
     console.error('[accept] OTP delivery failed:', err);
     redirect(`/mobile/auth?error=${encodeURIComponent('Could not send verification code. Please try again in a moment or contact your property manager.')}` as never);
@@ -76,6 +81,9 @@ export default async function AcceptInvitePage({ params }: Props) {
   const params_ = new URLSearchParams({
     challengeId: otp.challengeId,
     inviteId: result.inviteId,
+    channel,
+    masked: otp.destinationMasked,
+    delivery: deliveryStatus,
   });
   if (devCode) params_.set('_devCode', devCode);
 

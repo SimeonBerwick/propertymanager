@@ -5,12 +5,15 @@ interface Props {
     challengeId?: string;
     inviteId?: string;
     error?: string;
+    channel?: string;
+    masked?: string;
+    delivery?: string;
     _devCode?: string;
   }>;
 }
 
 export default async function OtpPage({ searchParams }: Props) {
-  const { challengeId, inviteId, error, _devCode } = await searchParams;
+  const { challengeId, inviteId, error, channel, masked, delivery, _devCode } = await searchParams;
 
   if (!challengeId) {
     return (
@@ -28,7 +31,11 @@ export default async function OtpPage({ searchParams }: Props) {
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-slate-900">Enter your code</h1>
           <p className="text-sm text-slate-600">
-            We sent a 6-digit verification code to your registered contact. Enter it below to continue.
+            {delivery === 'sms-sent' && masked ? `We sent a 6-digit verification code by text message to ${masked}. Enter it below to continue.` : null}
+            {delivery === 'email-sent' && masked ? `We sent a 6-digit verification code by email to ${masked}. Enter it below to continue.` : null}
+            {delivery === 'sms-dev' && masked ? `A text-message verification flow was generated for ${masked}. Enter the 6-digit code below to continue.` : null}
+            {delivery === 'email-dev' && masked ? `An email verification flow was generated for ${masked}. Enter the 6-digit code below to continue.` : null}
+            {!delivery ? 'Enter the 6-digit verification code below to continue.' : null}
           </p>
         </div>
 
@@ -40,7 +47,7 @@ export default async function OtpPage({ searchParams }: Props) {
 
         {_devCode && process.env.NODE_ENV !== 'production' && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <span className="font-medium">Dev mode:</span> code is <span className="font-mono font-bold">{_devCode}</span>
+            <span className="font-medium">Dev mode:</span> live delivery is not confirmed here. Use code <span className="font-mono font-bold">{_devCode}</span> to continue.
           </div>
         )}
 
