@@ -20,6 +20,10 @@
           {
             "text": "Elon: concrete vendor-hardening list for PM V1 — (1) operator vendor directory page, (2) create-vendor form, (3) vendor import flow with CSV-first mapping, (4) preferred-vendor selector on relevant operator dispatch surfaces, (5) service-area configuration capped at 10 areas, (6) vendor assignment per area, (7) preferred vendor per area, (8) validation preventing inactive/deleted vendors from remaining preferred, (9) edit/view UX that makes area coverage obvious, and (10) import/export compatibility so vendor records are not trapped in-app.",
             "ts": 1774661580000
+          },
+          {
+            "text": "Elon: next vendor-routing truth gap — each vendor needs capability tags, not just one trade string. Keep trade for headline identity, but add multi-tag skills such as general, plumbing, electrical, painting, HVAC, appliance, handyman, etc. Operator should be able to assign multiple skills per vendor and use those tags for cleaner dispatch filtering later.",
+            "ts": 1774662480000
           }
         ]
       },
