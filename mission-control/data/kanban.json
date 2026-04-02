@@ -179,6 +179,25 @@
           }
         ]
       }
+    ,
+      {
+        "id": "task-1774663500000",
+        "title": "Property Manager hosted validation gate",
+        "description": "Prove PM in a real environment: real Postgres, real deploy target, real auth flows, real media/storage behavior, and real notification truth. Convert all failures into a short must-fix list before companion packaging or Outlook work.",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Elon: this is the next real gate. Hosted truth matters more than more feature talk. Pass criteria: deployed target live, migrations apply cleanly, operator/tenant/vendor flows work, uploads/media survive real hosting, and notification behavior is verified honestly.",
+            "ts": 1774663500000
+          },
+          {
+            "text": "Elon: execution order remains enforced here too — stabilize core through hosted validation first, then companion packaging, then Outlook integration.",
+            "ts": 1774663560000
+          }
+        ]
+      }
     ],
     "inProgress": [
       {
