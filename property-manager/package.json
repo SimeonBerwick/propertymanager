@@ -8,17 +8,18 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:invites && npm run test:attachments && npm run test:phone && npm run test:authz",
+    "test": "npm run test:invites && npm run test:attachments && npm run test:phone && npm run test:vendor && npm run test:authz",
     "test:authz": "node --import tsx --test tests/auth-boundaries.test.ts",
     "test:invites": "node --import tsx --test tests/invites.test.ts",
     "test:attachments": "node --import tsx --test tests/request-attachments.test.ts",
     "test:phone": "node --import tsx --test tests/phone-parsing.test.ts",
+    "test:vendor": "node --import tsx --test tests/vendor-management.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:db:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
     "db:setup": "npm run prisma:generate && npm run prisma:db:push && npm run prisma:seed",
-    "validate": "npm run typecheck && npm run lint && npm run test:invites && npm run test:attachments && npm run test:phone"
+    "validate": "npm run typecheck && npm run lint && npm run test:invites && npm run test:attachments && npm run test:phone && npm run test:vendor"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1019.0",

@@ -12,6 +12,7 @@ import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLa
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { addInternalNote, dispatchRequest, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
+import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireOperatorSession();
@@ -30,7 +31,11 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
         },
       },
     }),
-    prisma.vendor.findMany({ where: { organizationId: session.organizationId }, orderBy: [{ trade: 'asc' }, { name: 'asc' }] }),
+    prisma.vendor.findMany({
+      where: { organizationId: session.organizationId },
+      orderBy: [{ trade: 'asc' }, { name: 'asc' }],
+      include: { serviceAreaAssignments: true },
+    }),
   ]);
 
   if (!request) notFound();
@@ -38,6 +43,18 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   const statusAction = updateRequestStatus.bind(null, request.id);
   const noteAction = addInternalNote.bind(null, request.id);
   const dispatchAction = dispatchRequest.bind(null, request.id);
+  const regionId = request.property.regionId;
+  const region = regionId
+    ? await prisma.region.findFirst({
+        where: { id: regionId, organizationId: session.organizationId },
+        include: { preferredVendor: true },
+      })
+    : null;
+  const eligibleDispatchVendors = vendors.filter((vendor) => {
+    if (!isVendorEligibleForPreferredSelection(vendor)) return false;
+    if (!regionId) return true;
+    return vendor.serviceAreaAssignments.some((assignment) => assignment.regionId === regionId);
+  });
 
   return (
     <AppShell>
@@ -117,16 +134,27 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             </PageSection>
 
             <PageSection title="Dispatch" description="Assign the vendor, set the next visit, and push a vendor-visible work order note.">
+              {region ? (
+                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  Service area: <strong>{region.name}</strong> · Preferred vendor: <strong>{region.preferredVendor?.name || 'None set'}</strong>
+                </div>
+              ) : null}
               <form action={dispatchAction} className="space-y-3">
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Assigned vendor</span>
                   <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
                     <option value="">Unassigned</option>
-                    {vendors.map((vendor) => (
-                      <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
+                    {eligibleDispatchVendors.map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}{region?.preferredVendorId === vendor.id ? ' · preferred' : ''}</option>
                     ))}
                   </select>
                 </label>
+                {region?.preferredVendorId ? <input type="hidden" name="preferredVendorId" value={region.preferredVendorId} /> : null}
+                {region?.preferredVendorId && request.assignedVendorId !== region.preferredVendorId ? (
+                  <button className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900" type="submit" name="assignedVendorId" value={region.preferredVendorId}>
+                    Use preferred vendor for {region.name}
+                  </button>
+                ) : null}
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Scheduled visit</span>
                   <input name="scheduledFor" type="datetime-local" defaultValue={request.scheduledFor ? new Date(request.scheduledFor.getTime() - request.scheduledFor.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" />

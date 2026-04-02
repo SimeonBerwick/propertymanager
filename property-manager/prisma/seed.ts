@@ -53,6 +53,16 @@ async function main() {
             phone: '555-2222',
             email: 'dispatch@aceplumbing.test',
             passwordHash: vendorPasswordHash,
+            isActive: true,
+            isAvailable: true,
+          },
+          {
+            name: 'Desert Electric',
+            trade: 'Electrical',
+            phone: '555-3030',
+            email: 'dispatch@desertelectric.test',
+            isActive: true,
+            isAvailable: true,
           },
         ],
       },
@@ -63,7 +73,7 @@ async function main() {
     },
   });
 
-  const [phoenixMetro] = await Promise.all([
+  const [phoenixMetro, westValley] = await Promise.all([
     prisma.region.create({
       data: {
         organizationId: organization.id,
@@ -81,6 +91,23 @@ async function main() {
       },
     }),
   ]);
+
+  await prisma.vendor.update({
+    where: { id: organization.vendors[0].id },
+    data: {
+      serviceAreaAssignments: {
+        create: [
+          { regionId: phoenixMetro.id },
+          { regionId: westValley.id },
+        ],
+      },
+    },
+  });
+
+  await prisma.region.update({
+    where: { id: phoenixMetro.id },
+    data: { preferredVendorId: organization.vendors[0].id },
+  });
 
   const property = await prisma.property.create({
     data: {
@@ -121,6 +148,18 @@ async function main() {
   const tenant = unit.tenants[0];
   const operator = organization.users.find((user) => user.role === UserRole.OPERATOR)!;
   const vendor = organization.vendors[0];
+
+  await prisma.vendorRegionAssignment.createMany({
+    data: [
+      { vendorId: organization.vendors[0].id, regionId: phoenixMetro.id },
+      { vendorId: organization.vendors[1].id, regionId: phoenixMetro.id },
+    ],
+  });
+
+  await prisma.region.update({
+    where: { id: phoenixMetro.id },
+    data: { preferredVendorId: organization.vendors[0].id },
+  });
 
   const request = await prisma.maintenanceRequest.create({
     data: {
@@ -189,6 +228,7 @@ async function main() {
   console.log('  Operator: olivia@example.com / operator123');
   console.log('  Tenant:   tina@example.com / tenant123');
   console.log('  Vendor:   dispatch@aceplumbing.test / vendor123');
+  console.log('  Vendor 2: dispatch@desertelectric.test / no password seeded');
 }
 
 main()

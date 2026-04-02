@@ -49,6 +49,7 @@ function parseOptionalFloat(value: string, label: string) {
 export function parseRegionInput(formData: FormData, organizationId: string): Prisma.RegionUncheckedCreateInput {
   const name = getString(formData, 'name');
   const slugInput = getOptionalString(formData, 'slug');
+  const preferredVendorId = getOptionalString(formData, 'preferredVendorId');
 
   if (!organizationId) throw new Error('Organization is required.');
   if (!name) throw new Error('Region name is required.');
@@ -68,6 +69,7 @@ export function parseRegionInput(formData: FormData, organizationId: string): Pr
     name,
     slug,
     notes: getOptionalString(formData, 'notes'),
+    preferredVendorId,
   };
 }
 

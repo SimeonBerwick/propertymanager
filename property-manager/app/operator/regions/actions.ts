@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { parseRegionInput } from '@/lib/operator-crud';
 import { requireOperatorSession } from '@/lib/auth';
 import { getOperatorRegionWhere } from '@/lib/operator-scope';
+import { MAX_SERVICE_AREAS_PER_ORG, isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -19,7 +20,22 @@ function getErrorMessage(error: unknown) {
 export async function createRegion(formData: FormData) {
   try {
     const session = await requireOperatorSession();
-    const data = parseRegionInput(formData, session.organizationId);
+    const [existingCount, data] = await Promise.all([
+      prisma.region.count({ where: { organizationId: session.organizationId } }),
+      Promise.resolve(parseRegionInput(formData, session.organizationId)),
+    ]);
+
+    if (existingCount >= MAX_SERVICE_AREAS_PER_ORG) {
+      throw new Error(`V1 supports up to ${MAX_SERVICE_AREAS_PER_ORG} service areas per organization.`);
+    }
+
+    if (data.preferredVendorId) {
+      const vendor = await prisma.vendor.findFirst({ where: { id: data.preferredVendorId, organizationId: session.organizationId } });
+      if (!vendor || !isVendorEligibleForPreferredSelection(vendor)) {
+        throw new Error('Preferred vendor must be active, available, and not deleted.');
+      }
+    }
+
     const region = await prisma.region.create({ data });
 
     revalidatePath('/operator');
@@ -35,6 +51,13 @@ export async function updateRegion(regionId: string, formData: FormData) {
   try {
     const session = await requireOperatorSession();
     const data = parseRegionInput(formData, session.organizationId);
+
+    if (data.preferredVendorId) {
+      const vendor = await prisma.vendor.findFirst({ where: { id: data.preferredVendorId, organizationId: session.organizationId } });
+      if (!vendor || !isVendorEligibleForPreferredSelection(vendor)) {
+        throw new Error('Preferred vendor must be active, available, and not deleted.');
+      }
+    }
 
     const result = await prisma.region.updateMany({
       where: getOperatorRegionWhere(session.organizationId, regionId),

@@ -104,18 +104,22 @@ model Organization {
 }
 
 model Region {
-  id             String       @id @default(cuid())
-  organizationId String
-  name           String
-  slug           String?
-  notes          String?
-  createdAt      DateTime     @default(now())
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  properties     Property[]
+  id                String               @id @default(cuid())
+  organizationId    String
+  name              String
+  slug              String?
+  notes             String?
+  preferredVendorId String?
+  createdAt         DateTime             @default(now())
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  properties        Property[]
+  preferredVendor   Vendor?              @relation("PreferredVendorRegions", fields: [preferredVendorId], references: [id], onDelete: SetNull)
+  vendorAssignments VendorRegionAssignment[]
 
   @@unique([organizationId, name])
   @@unique([organizationId, slug])
   @@index([organizationId, createdAt])
+  @@index([preferredVendorId])
 }
 
 model AppUser {
@@ -192,20 +196,38 @@ model Tenant {
 }
 
 model Vendor {
-  id             String               @id @default(cuid())
-  organizationId String
-  name           String
-  trade          String
-  phone          String?
-  email          String?              @unique
-  passwordHash   String?
-  notes          String?
-  createdAt      DateTime             @default(now())
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requests       MaintenanceRequest[]
-  invites        Invite[]
+  id                      String                   @id @default(cuid())
+  organizationId          String
+  name                    String
+  trade                   String
+  phone                   String?
+  email                   String?                  @unique
+  passwordHash            String?
+  notes                   String?
+  isActive                Boolean                  @default(true)
+  isAvailable             Boolean                  @default(true)
+  deletedAt               DateTime?
+  createdAt               DateTime                 @default(now())
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requests                MaintenanceRequest[]
+  invites                 Invite[]
+  serviceAreaAssignments  VendorRegionAssignment[]
+  preferredForRegions     Region[]                 @relation("PreferredVendorRegions")
 
   @@index([organizationId, trade])
+  @@index([organizationId, isActive, isAvailable, deletedAt])
+}
+
+model VendorRegionAssignment {
+  id        String   @id @default(cuid())
+  vendorId  String
+  regionId  String
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, regionId])
+  @@index([regionId, createdAt])
 }
 
 model MaintenanceRequest {

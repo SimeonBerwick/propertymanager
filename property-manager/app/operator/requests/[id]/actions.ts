@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { canTransition } from '@/lib/request-lifecycle';
 import { requireOperatorSession } from '@/lib/auth';
 import { getOperatorRequestWhere, getOperatorVendorWhere } from '@/lib/operator-scope';
+import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -92,7 +93,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
 
   const request = await prisma.maintenanceRequest.findFirst({
     where: getOperatorRequestWhere(session.organizationId, requestId),
-    include: { assignedVendor: true },
+    include: { assignedVendor: true, property: true },
   });
 
   if (!request) {
@@ -100,11 +101,30 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
   }
 
   const nextVendor = assignedVendorId
-    ? await prisma.vendor.findFirst({ where: getOperatorVendorWhere(session.organizationId, assignedVendorId) })
+    ? await prisma.vendor.findFirst({
+        where: getOperatorVendorWhere(session.organizationId, assignedVendorId),
+        include: { serviceAreaAssignments: true },
+      })
+    : null;
+
+  const region = request.property.regionId
+    ? await prisma.region.findFirst({
+        where: { id: request.property.regionId, organizationId: session.organizationId },
+        include: { preferredVendor: true },
+      })
     : null;
 
   if (assignedVendorId && !nextVendor) {
     redirect(`/operator/requests/${requestId}`);
+  }
+
+  if (nextVendor) {
+    if (!isVendorEligibleForPreferredSelection(nextVendor)) {
+      redirect(`/operator/requests/${requestId}`);
+    }
+    if (region && !nextVendor.serviceAreaAssignments.some((assignment) => assignment.regionId === region.id)) {
+      redirect(`/operator/requests/${requestId}`);
+    }
   }
 
   const scheduledFor = scheduledForInput ? new Date(scheduledForInput) : null;
@@ -181,6 +201,7 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
   revalidatePath('/operator/requests');
   revalidatePath(`/operator/requests/${requestId}`);
   revalidatePath('/operator/vendors');
+  revalidatePath('/operator/regions');
   revalidatePath('/vendor/queue');
   revalidatePath(`/vendor/requests/${requestId}`);
   revalidatePath(`/operator/properties/${updated.propertyId}`);
