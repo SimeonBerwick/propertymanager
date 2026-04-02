@@ -195,6 +195,18 @@
           {
             "text": "Elon: execution order remains enforced here too — stabilize core through hosted validation first, then companion packaging, then Outlook integration.",
             "ts": 1774663560000
+          },
+          {
+            "text": "Elon: hosted validation verdict is PASS WITH CONDITIONS. PM is live on Vercel at property-manager-gold-five.vercel.app with real Neon Postgres, real Cloudflare R2, production auth/env wiring, successful migration application, and seeded hosted smoke data. Core hosted operator, tenant, and vendor flows all passed after fixing defects exposed only under hosted testing.",
+            "ts": 1774681560000
+          },
+          {
+            "text": "Elon: defects found and closed during hosted validation were real production-shape issues: operator login NEXT_REDIRECT leak, tenant submit NEXT_REDIRECT leak, tenant post-submit/history UX weakness, tenant image preview weakness, and vendor timeline actor-label mismatch. Hosted validation did its job by surfacing truth instead of letting local confidence lie.",
+            "ts": 1774681620000
+          },
+          {
+            "text": "Elon: remaining condition is notification transport truth unless Twilio/Resend are explicitly tested live. Next gate now opens as post-hosted stabilization plus companion-app packaging prep. Sequence remains: core hosted truth first, companion packaging second, Outlook third.",
+            "ts": 1774681680000
           }
         ]
       }

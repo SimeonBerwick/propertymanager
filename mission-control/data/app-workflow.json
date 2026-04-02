@@ -3,7 +3,7 @@
     {
       "id": "app-property-manager-v1",
       "name": "Property Manager V1",
-      "status": "ready-for-controlled-test",
+      "status": "hosted-core-validated",
       "owner": "Elon",
       "summary": "Maintenance command center for small landlords: intake, dispatch, updates, and issue history.",
       "stages": {
@@ -14,8 +14,8 @@
         "windowsApproval": "not-started",
         "landed": "not-started"
       },
-      "reviewGate": "Repo/setup truth is materially cleaner now. The fake SQLite-backed local-dev story was removed, docs/env/test setup are consistently PostgreSQL-first, and the auth-boundary integration test now uses a dedicated Postgres test DB instead of pretending SQLite works for that path. Honest state: app path is cleaner and ready for local smoke bring-up, but host readiness still depends on a real reachable Postgres server plus valid .env wiring.",
-      "nextStep": "Run the hosted validation gate: provision real Postgres + storage + deploy target, execute operator/tenant/vendor auth and workflow smoke tests in production-like hosting, verify upload/media behavior and notification truth, then turn any failures into a short must-fix list before companion-app packaging or Outlook work.",
+      "reviewGate": "Hosted validation is now materially complete. PM is live on Vercel with real Neon Postgres, real Cloudflare R2 storage, production auth secret, production app URL, successful Prisma migration application, and seeded smoke data. Operator, tenant, and vendor hosted flows all passed after fixing real production-shape defects found during the gate: operator login NEXT_REDIRECT leak, tenant submit NEXT_REDIRECT leak, weak tenant post-submit/history UX, weak tenant image preview UX, and vendor timeline actor-label mismatch.",
+      "nextStep": "Write the hosted evidence note into Mission Control and open the next gate as post-hosted stabilization plus companion-app packaging prep. Keep sequence intact: core hosted truth is now materially proven, so next is packaging/positioning prep and any remaining production-grade hardening like notification transport truth and auth rate limiting before Outlook work.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -75,7 +75,9 @@
         "Elon: product direction should now explicitly separate the PM full app from the free companion apps. One backend, role-scoped clients: operator/property-manager gets the full app, renter/tenant gets a free companion app, vendor gets a free companion app, and all three sync against the same system of record rather than splitting into disconnected products.",
         "Elon: Outlook/Microsoft 365 integration belongs on the operator/full-app side first. Start with operator mailbox connect and maintenance-email sync/ingest, then optionally create requests from synced email. Do not pretend v1 needs a full multi-role email client.",
         "Elon: execution order must stay anchored in the workflow board — stabilize core first, companion packaging second, Outlook third. If that order blurs, the build will drift into platform theater before the maintenance engine is truly solid.",
-        "Elon: immediate next gate is hosted validation against real infrastructure — real DB, real deploy target, real auth, real media/storage, and real notification truth. No more pretending local/dev pass equals production truth."
+        "Elon: immediate next gate is hosted validation against real infrastructure — real DB, real deploy target, real auth, real media/storage, and real notification truth. No more pretending local/dev pass equals production truth.",
+        "Elon: hosted validation verdict is PASS WITH CONDITIONS. PM is now live at https://property-manager-gold-five.vercel.app on real Neon Postgres + Cloudflare R2. Hosted validation exposed and then closed real production-shape defects: operator login redirect leak, tenant submit redirect leak, tenant post-submit/history weakness, tenant image preview weakness, and vendor timeline actor-label mismatch. Core hosted multi-role workflow is now materially real; remaining condition is separate notification transport truth unless Twilio/Resend are explicitly tested live.",
+        "Elon: next gate opens now as post-hosted stabilization plus companion-app packaging prep. Sequence remains enforced: core hosted truth first, companion packaging second, Outlook third."
       ]
     },
     {
