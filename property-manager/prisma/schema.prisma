@@ -87,18 +87,19 @@ enum VendorPricingType {
 }
 
 model Organization {
-  id                 String               @id @default(cuid())
-  name               String
-  createdAt          DateTime             @default(now())
-  users              AppUser[]
-  regions            Region[]
-  properties         Property[]
-  vendors            Vendor[]
-  invites            Invite[]
-  tenantIdentities   TenantIdentity[]
-  tenantInvites      TenantInvite[]
+  id                  String               @id @default(cuid())
+  name                String
+  createdAt           DateTime             @default(now())
+  users               AppUser[]
+  regions             Region[]
+  properties          Property[]
+  vendors             Vendor[]
+  vendorSkillTags     VendorSkillTag[]
+  invites             Invite[]
+  tenantIdentities    TenantIdentity[]
+  tenantInvites       TenantInvite[]
   tenantOtpChallenges TenantOtpChallenge[]
-  tenantSessions     TenantSession[]
+  tenantSessions      TenantSession[]
 
   @@index([createdAt])
 }
@@ -212,10 +213,36 @@ model Vendor {
   requests                MaintenanceRequest[]
   invites                 Invite[]
   serviceAreaAssignments  VendorRegionAssignment[]
+  skillAssignments        VendorSkillAssignment[]
   preferredForRegions     Region[]                 @relation("PreferredVendorRegions")
 
   @@index([organizationId, trade])
   @@index([organizationId, isActive, isAvailable, deletedAt])
+}
+
+model VendorSkillTag {
+  id             String                  @id @default(cuid())
+  organizationId String
+  slug           String
+  label          String
+  createdAt      DateTime                @default(now())
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignments    VendorSkillAssignment[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, label])
+}
+
+model VendorSkillAssignment {
+  id         String         @id @default(cuid())
+  vendorId   String
+  skillTagId String
+  createdAt  DateTime       @default(now())
+  vendor     Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  skillTag   VendorSkillTag @relation(fields: [skillTagId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, skillTagId])
+  @@index([skillTagId, createdAt])
 }
 
 model VendorRegionAssignment {

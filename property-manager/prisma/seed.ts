@@ -92,6 +92,18 @@ async function main() {
     }),
   ]);
 
+  const [plumbingSkill, electricalSkill, generalSkill] = await Promise.all([
+    prisma.vendorSkillTag.create({
+      data: { organizationId: organization.id, slug: 'plumbing', label: 'Plumbing' },
+    }),
+    prisma.vendorSkillTag.create({
+      data: { organizationId: organization.id, slug: 'electrical', label: 'Electrical' },
+    }),
+    prisma.vendorSkillTag.create({
+      data: { organizationId: organization.id, slug: 'general', label: 'General' },
+    }),
+  ]);
+
   await prisma.vendor.update({
     where: { id: organization.vendors[0].id },
     data: {
@@ -99,6 +111,12 @@ async function main() {
         create: [
           { regionId: phoenixMetro.id },
           { regionId: westValley.id },
+        ],
+      },
+      skillAssignments: {
+        create: [
+          { skillTagId: plumbingSkill.id },
+          { skillTagId: generalSkill.id },
         ],
       },
     },
@@ -149,11 +167,19 @@ async function main() {
   const operator = organization.users.find((user) => user.role === UserRole.OPERATOR)!;
   const vendor = organization.vendors[0];
 
-  await prisma.vendorRegionAssignment.createMany({
-    data: [
-      { vendorId: organization.vendors[0].id, regionId: phoenixMetro.id },
-      { vendorId: organization.vendors[1].id, regionId: phoenixMetro.id },
-    ],
+  await prisma.vendor.update({
+    where: { id: organization.vendors[1].id },
+    data: {
+      serviceAreaAssignments: {
+        create: [{ regionId: phoenixMetro.id }],
+      },
+      skillAssignments: {
+        create: [
+          { skillTagId: electricalSkill.id },
+          { skillTagId: generalSkill.id },
+        ],
+      },
+    },
   });
 
   await prisma.region.update({

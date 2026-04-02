@@ -4,13 +4,15 @@ import {
   buildVendorPreferredVendorCleanup,
   getPreferredVendorIdOrNull,
   isVendorEligibleForPreferredSelection,
+  normalizeVendorSkillTag,
   parseVendorImportCsv,
+  parseVendorSkillTags,
 } from '../lib/vendor-management';
 
-test('parseVendorImportCsv parses csv-first imports with service areas and booleans', () => {
+test('parseVendorImportCsv parses csv-first imports with service areas skills and booleans', () => {
   const rows = parseVendorImportCsv([
-    'name,trade,email,phone,notes,serviceAreas,isActive,isAvailable',
-    'Ace Plumbing,Plumbing,dispatch@ace.test,555-1111,Fast response,Phoenix Metro|West Valley,true,false',
+    'name,trade,email,phone,notes,serviceAreas,skills,isActive,isAvailable',
+    'Ace Plumbing,Plumbing,dispatch@ace.test,555-1111,Fast response,Phoenix Metro|West Valley,Plumbing|General,true,false',
   ].join('\n'));
 
   assert.equal(rows.length, 1);
@@ -21,9 +23,26 @@ test('parseVendorImportCsv parses csv-first imports with service areas and boole
     phone: '555-1111',
     notes: 'Fast response',
     serviceAreaNames: ['Phoenix Metro', 'West Valley'],
+    skillTags: ['Plumbing', 'General'],
     isActive: true,
     isAvailable: false,
   });
+});
+
+
+test('normalizeVendorSkillTag creates stable labels and slugs', () => {
+  assert.deepEqual(normalizeVendorSkillTag(' minor plumbing '), {
+    slug: 'minor-plumbing',
+    label: 'Minor Plumbing',
+  });
+});
+
+test('parseVendorSkillTags dedupes and normalizes mixed delimiters', () => {
+  assert.deepEqual(parseVendorSkillTags('general| plumbing;General ; electrical').map((tag) => tag.label), [
+    'General',
+    'Plumbing',
+    'Electrical',
+  ]);
 });
 
 test('isVendorEligibleForPreferredSelection rejects inactive, unavailable, or deleted vendors', () => {

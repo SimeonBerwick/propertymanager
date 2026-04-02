@@ -9,6 +9,7 @@ export type ParsedVendorImportRow = {
   phone: string | null;
   notes: string | null;
   serviceAreaNames: string[];
+  skillTags: string[];
   isActive: boolean;
   isAvailable: boolean;
 };
@@ -24,6 +25,43 @@ function parseBooleanCell(value: string, defaultValue: boolean) {
   if (['1', 'true', 'yes', 'y', 'active', 'available'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'n', 'inactive', 'unavailable'].includes(normalized)) return false;
   throw new Error(`Invalid boolean value "${value}". Use true/false, yes/no, or 1/0.`);
+}
+
+function splitDelimitedList(value: string) {
+  return value
+    .split(/[|;]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function normalizeVendorSkillTag(value: string) {
+  const label = value
+    .trim()
+    .replace(/\s+/g, ' ');
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+
+  if (!slug) return null;
+
+  return {
+    slug,
+    label: label
+      .split(' ')
+      .map((part) => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+      .join(' '),
+  };
+}
+
+export function parseVendorSkillTags(raw: string) {
+  const tags = splitDelimitedList(raw)
+    .map(normalizeVendorSkillTag)
+    .filter((value): value is NonNullable<typeof value> => value !== null);
+
+  const deduped = new Map(tags.map((tag) => [tag.slug, tag]));
+  return [...deduped.values()];
 }
 
 function splitCsvLine(line: string) {
@@ -90,10 +128,9 @@ export function parseVendorImportCsv(csvText: string): ParsedVendorImportRow[] {
       email: normalizeCell(get('email'))?.toLowerCase() ?? null,
       phone: normalizeCell(get('phone')),
       notes: normalizeCell(get('notes')),
-      serviceAreaNames: (normalizeCell(get('serviceareas')) ?? normalizeCell(get('service_areas')) ?? normalizeCell(get('areas')) ?? '')
-        .split('|')
-        .map((value) => value.trim())
-        .filter(Boolean),
+      serviceAreaNames: splitDelimitedList(normalizeCell(get('serviceareas')) ?? normalizeCell(get('service_areas')) ?? normalizeCell(get('areas')) ?? ''),
+      skillTags: parseVendorSkillTags(normalizeCell(get('skills')) ?? normalizeCell(get('skilltags')) ?? normalizeCell(get('skill_tags')) ?? '')
+        .map((tag) => tag.label),
       isActive: parseBooleanCell(get('isactive') || get('active'), true),
       isAvailable: parseBooleanCell(get('isavailable') || get('available'), true),
     };

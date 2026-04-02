@@ -9,6 +9,7 @@ import {
   buildVendorPreferredVendorCleanup,
   isVendorEligibleForPreferredSelection,
   parseVendorImportCsv,
+  parseVendorSkillTags,
 } from '@/lib/vendor-management';
 
 function getString(formData: FormData, key: string) {
@@ -45,6 +46,29 @@ function revalidateVendorPaths() {
   revalidatePath('/operator/requests');
 }
 
+type VendorSkillTagTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function upsertSkillTags(tx: VendorSkillTagTx, organizationId: string, rawSkillTags: string[]) {
+  const normalized = rawSkillTags
+    .flatMap((value) => parseVendorSkillTags(value))
+    .filter((value, index, array) => array.findIndex((candidate) => candidate.slug === value.slug) === index);
+
+  if (normalized.length === 0) return [] as Array<{ id: string; slug: string; label: string }>;
+
+  for (const tag of normalized) {
+    await tx.vendorSkillTag.upsert({
+      where: { organizationId_slug: { organizationId, slug: tag.slug } },
+      update: { label: tag.label },
+      create: { organizationId, slug: tag.slug, label: tag.label },
+    });
+  }
+
+  return tx.vendorSkillTag.findMany({
+    where: { organizationId, slug: { in: normalized.map((tag) => tag.slug) } },
+    select: { id: true, slug: true, label: true },
+  });
+}
+
 export async function createVendor(formData: FormData) {
   try {
     const session = await requireOperatorSession();
@@ -57,6 +81,7 @@ export async function createVendor(formData: FormData) {
     const preferredRegionIds = new Set(
       formData.getAll('preferredRegionIds').filter((value): value is string => typeof value === 'string' && value.trim().length > 0),
     );
+    const skillTags = parseVendorSkillTags(getString(formData, 'skillTags'));
 
     const allowedRegions = await prisma.region.findMany({
       where: { organizationId: session.organizationId, id: { in: selectedRegionIds } },
@@ -66,20 +91,31 @@ export async function createVendor(formData: FormData) {
       throw new Error('One or more selected service areas are invalid for this organization.');
     }
 
-    const vendor = await prisma.vendor.create({
-      data: {
-        organizationId: session.organizationId,
-        name,
-        trade,
-        email: getOptionalString(formData, 'email')?.toLowerCase() ?? null,
-        phone: getOptionalString(formData, 'phone'),
-        notes: getOptionalString(formData, 'notes'),
-        isActive: getBoolean(formData, 'isActive', true),
-        isAvailable: getBoolean(formData, 'isAvailable', true),
-        serviceAreaAssignments: selectedRegionIds.length
-          ? { create: selectedRegionIds.map((regionId) => ({ regionId })) }
-          : undefined,
-      },
+    const vendor = await prisma.$transaction(async (tx) => {
+      const created = await tx.vendor.create({
+        data: {
+          organizationId: session.organizationId,
+          name,
+          trade,
+          email: getOptionalString(formData, 'email')?.toLowerCase() ?? null,
+          phone: getOptionalString(formData, 'phone'),
+          notes: getOptionalString(formData, 'notes'),
+          isActive: getBoolean(formData, 'isActive', true),
+          isAvailable: getBoolean(formData, 'isAvailable', true),
+          serviceAreaAssignments: selectedRegionIds.length
+            ? { create: selectedRegionIds.map((regionId) => ({ regionId })) }
+            : undefined,
+        },
+      });
+
+      const tags = await upsertSkillTags(tx, session.organizationId, skillTags.map((tag) => tag.label));
+      if (tags.length > 0) {
+        await tx.vendorSkillAssignment.createMany({
+          data: tags.map((tag) => ({ vendorId: created.id, skillTagId: tag.id })),
+        });
+      }
+
+      return created;
     });
 
     if (isVendorEligibleForPreferredSelection(vendor) && preferredRegionIds.size > 0) {
@@ -147,6 +183,7 @@ export async function importVendors(formData: FormData) {
         });
 
         await tx.vendorRegionAssignment.deleteMany({ where: { vendorId: vendor.id } });
+        await tx.vendorSkillAssignment.deleteMany({ where: { vendorId: vendor.id } });
         const regionIds = row.serviceAreaNames.map((name) => {
           const region = regionByName.get(name.toLowerCase());
           if (!region) {
@@ -154,8 +191,12 @@ export async function importVendors(formData: FormData) {
           }
           return region.id;
         });
+        const skillTags = await upsertSkillTags(tx, session.organizationId, row.skillTags);
         if (regionIds.length > 0) {
           await tx.vendorRegionAssignment.createMany({ data: regionIds.map((regionId) => ({ vendorId: vendor.id, regionId })) });
+        }
+        if (skillTags.length > 0) {
+          await tx.vendorSkillAssignment.createMany({ data: skillTags.map((tag) => ({ vendorId: vendor.id, skillTagId: tag.id })) });
         }
       });
     }
@@ -216,6 +257,7 @@ export async function saveVendorAssignments(formData: FormData) {
     const preferredRegionIds = new Set(
       formData.getAll('preferredRegionIds').filter((value): value is string => typeof value === 'string' && value.trim().length > 0),
     );
+    const skillTags = parseVendorSkillTags(getString(formData, 'skillTags'));
 
     const allowedRegions = await prisma.region.findMany({
       where: { organizationId: session.organizationId, id: { in: selectedRegionIds } },
@@ -229,6 +271,12 @@ export async function saveVendorAssignments(formData: FormData) {
       await tx.vendorRegionAssignment.deleteMany({ where: { vendorId: vendor.id } });
       if (selectedRegionIds.length > 0) {
         await tx.vendorRegionAssignment.createMany({ data: selectedRegionIds.map((regionId) => ({ vendorId: vendor.id, regionId })) });
+      }
+
+      await tx.vendorSkillAssignment.deleteMany({ where: { vendorId: vendor.id } });
+      const tags = await upsertSkillTags(tx, session.organizationId, skillTags.map((tag) => tag.label));
+      if (tags.length > 0) {
+        await tx.vendorSkillAssignment.createMany({ data: tags.map((tag) => ({ vendorId: vendor.id, skillTagId: tag.id })) });
       }
 
       const currentPreferredRegions = await tx.region.findMany({

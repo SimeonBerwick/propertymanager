@@ -22,6 +22,7 @@ export default async function VendorsPage({
       include: {
         _count: { select: { requests: true } },
         serviceAreaAssignments: { include: { region: true }, orderBy: { region: { name: 'asc' } } },
+        skillAssignments: { include: { skillTag: true }, orderBy: { skillTag: { label: 'asc' } } },
         preferredForRegions: { orderBy: { name: 'asc' } },
       },
     }),
@@ -58,6 +59,9 @@ export default async function VendorsPage({
                         <p className="mt-1 text-xs text-slate-500">{vendor.email || 'No email saved'} · {vendor.phone || 'No phone'} · Added {formatDate(vendor.createdAt)} · {vendor._count.requests} assigned requests</p>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{getVendorStatusLabel(vendor)}</span>
+                          {vendor.skillAssignments.map((assignment) => (
+                            <span key={assignment.id} className="rounded-full bg-blue-100 px-3 py-1 text-blue-800">{assignment.skillTag.label}</span>
+                          ))}
                           {vendor.preferredForRegions.map((region) => (
                             <span key={region.id} className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">Preferred for {region.name}</span>
                           ))}
@@ -89,9 +93,18 @@ export default async function VendorsPage({
                     <form action={saveVendorAssignments} className="mt-4 space-y-3">
                       <input type="hidden" name="vendorId" value={vendor.id} />
                       <div>
-                        <p className="text-sm font-medium text-slate-900">Service areas</p>
-                        <p className="text-xs text-slate-500">Assign where this vendor can work. Preferred can only be set on assigned areas.</p>
+                        <p className="text-sm font-medium text-slate-900">Service areas and skills</p>
+                        <p className="text-xs text-slate-500">Assign where this vendor can work. Preferred can only be set on assigned areas. Skills are multi-tag capabilities like plumbing, electrical, painting, or general.</p>
                       </div>
+                      <label className="block text-sm text-slate-700">
+                        <span className="mb-1 block font-medium">Skill tags</span>
+                        <input
+                          name="skillTags"
+                          defaultValue={vendor.skillAssignments.map((assignment) => assignment.skillTag.label).join(', ')}
+                          className="w-full rounded-md border border-slate-300 px-3 py-2"
+                          placeholder="General, Plumbing, Electrical"
+                        />
+                      </label>
                       <div className="grid gap-2 md:grid-cols-2">
                         {regions.map((region) => (
                           <label key={region.id} className="rounded-md border border-slate-200 p-3 text-sm text-slate-700">
@@ -136,6 +149,7 @@ export default async function VendorsPage({
                   <label className="block text-sm text-slate-700"><span className="mb-1 block font-medium">Phone</span><input className="w-full rounded-md border border-slate-300 px-3 py-2" name="phone" /></label>
                 </div>
                 <label className="block text-sm text-slate-700"><span className="mb-1 block font-medium">Notes</span><textarea className="w-full rounded-md border border-slate-300 px-3 py-2" name="notes" rows={4} /></label>
+                <label className="block text-sm text-slate-700"><span className="mb-1 block font-medium">Skill tags</span><input className="w-full rounded-md border border-slate-300 px-3 py-2" name="skillTags" placeholder="General, Plumbing, Electrical, Painting" /></label>
                 <div className="grid gap-2 md:grid-cols-2">
                   {regions.map((region) => (
                     <label key={region.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-sm text-slate-700">
@@ -152,15 +166,15 @@ export default async function VendorsPage({
               </form>
             </PageSection>
 
-            <PageSection title="Import vendors" description="CSV-first V1 import. Header: name,trade,email,phone,notes,serviceAreas,isActive,isAvailable">
+            <PageSection title="Import vendors" description="CSV-first V1 import. Header: name,trade,email,phone,notes,serviceAreas,skills,isActive,isAvailable">
               <form action={importVendors} className="space-y-3">
                 <textarea
                   name="csv"
                   rows={12}
                   className="w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs"
-                  defaultValue={'name,trade,email,phone,notes,serviceAreas,isActive,isAvailable\nDesert Electric,Electrical,dispatch@desertelectric.test,555-3030,After-hours capable,Phoenix Metro|West Valley,true,true'}
+                  defaultValue={'name,trade,email,phone,notes,serviceAreas,skills,isActive,isAvailable\nDesert Electric,Electrical,dispatch@desertelectric.test,555-3030,After-hours capable,Phoenix Metro|West Valley,Electrical|General,true,true'}
                 />
-                <p className="text-xs text-slate-500">Use | between service areas. Imported service area names must already exist in this org.</p>
+                <p className="text-xs text-slate-500">Use | between service areas and skill tags. Imported service area names must already exist in this org.</p>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Import CSV</button>
               </form>
             </PageSection>
