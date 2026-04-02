@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import Link from 'next/link';
@@ -32,7 +31,7 @@ export default async function TenantRequestStatusPage({
       <div className="space-y-6">
         {resolvedSearchParams?.submitted === '1' ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Request submitted. This page is now protected by your signed tenant session instead of bare request ID access.
+            Request submitted successfully. You can return to this page anytime while signed in to check status and updates.
           </div>
         ) : null}
 
@@ -100,9 +99,9 @@ export default async function TenantRequestStatusPage({
                     const attachmentUrl = getAttachmentUrl(attachment.id);
 
                     return (
-                      <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 no-underline">
-                        <Image src={attachmentUrl} alt="Request attachment" width={800} height={320} className="h-40 w-full object-cover" />
-                        <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">Open full image</div>
+                      <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 no-underline bg-slate-50">
+                        <img src={attachmentUrl} alt="Request attachment" className="h-40 w-full object-cover" loading="lazy" />
+                        <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">Tap or click to open full image</div>
                       </a>
                     );
                   })}
