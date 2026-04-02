@@ -213,6 +213,28 @@
     ],
     "inProgress": [
       {
+        "id": "task-1774682400000",
+        "title": "Property Manager post-hosted stabilization + companion packaging prep",
+        "description": "Use the hosted validation evidence to drive the next gate: close remaining production-grade reliability gaps, define the operator full app vs tenant/vendor free companion packaging layer, and prepare the installable/mobile-first framing without jumping into Outlook work yet.",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Elon: next gate starts now. Core hosted truth is materially proven, so the right move is not more random feature work. It is a focused transition into post-hosted stabilization plus companion-app packaging prep.",
+            "ts": 1774682400000
+          },
+          {
+            "text": "Elon: concrete scope for this gate — (1) keep production-grade hardening honest where still unproven, especially notification transport truth and auth rate limiting, (2) sharpen role-specific app framing so operator is clearly the full app while tenant/vendor are clearly free companion surfaces, (3) prepare installable/PWA/mobile-first shell work without forking the backend into separate products.",
+            "ts": 1774682460000
+          },
+          {
+            "text": "Elon: do not let this drift into Outlook work early. Sequencing remains enforced: core hosted truth first, companion packaging second, Outlook third.",
+            "ts": 1774682520000
+          }
+        ]
+      },
+      {
         "id": "task-1773254257803",
         "title": "Realtor Aid",
         "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
