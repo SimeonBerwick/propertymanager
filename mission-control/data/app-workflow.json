@@ -68,7 +68,8 @@
         "Barry Bot: DEPLOY.md now exists in the PM repo as the concrete bring-up runbook. It sets dependency order explicitly: Neon, R2, OTP providers, Vercel project, env setup, prisma migrate deploy, optional seed, deploy, URL update, then smoke test.",
         "Barry Bot: Mission Control status truth is now sharper: PM is app-ready but infra-unproven. Next gate is not more product coding; it is first hosted environment bring-up followed by the first real hosted smoke test.",
         "Barry Bot: Latest setup/readiness fix landed in commit 9e3afcd ('fix property-manager local setup and test readiness'). It removed the false SQLite local-dev story, made docs/env/test flow PostgreSQL-first, added clearer bring-up/validation scripts, and pointed the auth-boundary integration test at a dedicated Postgres test DB.",
-        "Barry Bot: Current honest blocker before smoke testing is host reality, not repo ambiguity: the machine needs a reachable Postgres server, real dev/test databases, and valid .env credentials. Once that exists, the next gate is simple local browser smoke testing rather than more storytelling about setup."
+        "Barry Bot: Current honest blocker before smoke testing is host reality, not repo ambiguity: the machine needs a reachable Postgres server, real dev/test databases, and valid .env credentials. Once that exists, the next gate is simple local browser smoke testing rather than more storytelling about setup.",
+        "Barry Bot: New product requirement added to Mission Control for the next PM hardening slice: vendor management needs a real create/import surface, preferred-vendor selection, and up to 10 service areas with area-specific vendor and preferred-vendor mapping."
       ]
     },
     {

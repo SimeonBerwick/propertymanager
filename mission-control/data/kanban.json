@@ -2,6 +2,24 @@
   "columns": {
     "backlog": [
       {
+        "id": "task-1774661160000",
+        "title": "Property Manager V1 vendor hardening",
+        "description": "Harden the vendor management model and operator controls: add vendor create/import flows, preferred-vendor selection, and support up to 10 service areas with area-specific vendor and preferred-vendor assignment.",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Barry Bot: scope broken into concrete requirements for PM V1 vendor hardening. Required slices: (1) operator vendor directory page with create vendor flow, (2) vendor import flow for setup/migration, ideally CSV-first, (3) preferred vendor selector usable at the property/unit/request triage layer, (4) service-area model supporting up to 10 areas per operator/org, (5) vendor-to-area assignment so different vendors can serve different areas, (6) preferred vendor per area so dispatch defaults are local rather than global, (7) operator UX to view/edit area coverage and preferred vendor rules clearly, (8) validation/guardrails so deleted or inactive vendors do not remain selected as preferred, and (9) import/export compatibility so vendor records and area assignments are not trapped in-app.",
+            "ts": 1774661160000
+          },
+          {
+            "text": "Barry Bot: implementation shape should stay v1-practical, not enterprise theater. Favor one clean vendor management surface plus a simple area configuration model over heavyweight marketplace or routing complexity.",
+            "ts": 1774661160001
+          }
+        ]
+      },
+      {
         "id": "task-1773251865400",
         "title": "Finding app ideas",
         "description": "Find successful apps in Windows Store that do not exist in Apple Store.",
@@ -143,6 +161,24 @@
       }
     ],
     "inProgress": [
+      {
+        "id": "task-1773254257803",
+        "title": "Realtor Aid",
+        "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
+        "priority": "high",
+        "owner": "Elon",
+        "roleLens": "Elon",
+        "notes": [
+          {
+            "text": "Barry Bot: elevated as a top active app track after Elon said this should be pursued now as the main realtor build.",
+            "ts": 1773266900000
+          },
+          {
+            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
+            "ts": 1773264200000
+          }
+        ]
+      },
       {
         "id": "task-1773266190597",
         "title": "Property Manager",
@@ -386,24 +422,6 @@
           {
             "text": "Barry Bot: Current status truth for PM is app-ready but infra-unproven. Next gate is first hosted environment bring-up and first real hosted smoke test pass, not more feature work.",
             "ts": 1774647120000
-          }
-        ]
-      },
-      {
-        "id": "task-1773254257803",
-        "title": "Realtor Aid",
-        "description": "Build an app for realtors that adds photo realistic staging items into listing photos for a home being listed for sale",
-        "priority": "high",
-        "owner": "Elon",
-        "roleLens": "Elon",
-        "notes": [
-          {
-            "text": "Barry Bot: elevated as a top active app track after Elon said this should be pursued now as the main realtor build.",
-            "ts": 1773266900000
-          },
-          {
-            "text": "Barry Bot: activated this task while the clipboard app is paused. Elon has been asked for feasibility, fastest MVP architecture, biggest risks, first prototype slice, and whether it is worth pursuing now.",
-            "ts": 1773264200000
           }
         ]
       }
