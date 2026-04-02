@@ -32,6 +32,10 @@
           {
             "text": "Elon: Outlook integration should be planned as an operator/full-app feature first: Microsoft account connect, maintenance-email sync/ingest, and eventual request creation from email. Keep it out of tenant/vendor free-app scope initially.",
             "ts": 1774663140000
+          },
+          {
+            "text": "Elon: execution order must be explicit on the core workflow board — stabilize PM core first, package tenant/vendor companion apps second, and only then build Outlook integration. That sequencing prevents build drift into platform/integration theater before the maintenance engine is genuinely solid.",
+            "ts": 1774663320000
           }
         ]
       },

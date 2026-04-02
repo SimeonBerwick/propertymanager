@@ -15,7 +15,7 @@
         "landed": "not-started"
       },
       "reviewGate": "Repo/setup truth is materially cleaner now. The fake SQLite-backed local-dev story was removed, docs/env/test setup are consistently PostgreSQL-first, and the auth-boundary integration test now uses a dedicated Postgres test DB instead of pretending SQLite works for that path. Honest state: app path is cleaner and ready for local smoke bring-up, but host readiness still depends on a real reachable Postgres server plus valid .env wiring.",
-      "nextStep": "Complete local smoke bring-up against a real Postgres instance: create .env from .env.example, wire DATABASE_URL/DATABASE_DIRECT_URL plus dedicated TEST_DATABASE_URL vars, run npm install, npm run db:setup, npm run validate, npm run dev, then manually verify operator, tenant, and vendor flows in browser.",
+      "nextStep": "Execution order is now explicit: (1) stabilize PM core and prove hosted/workflow truth first, (2) package tenant/vendor as polished free companion apps on the same backend second, and only then (3) build operator-side Outlook/Microsoft 365 integration.",
       "notes": [
         "Mario: the right wedge is a maintenance command center, not an all-in-one property management suite.",
         "Barry Bot: Core multi-role workflow is live: operator flows, tenant submission/timeline/photos, vendor dispatch/queue/detail, and credential-based auth are in place.",
@@ -73,7 +73,8 @@
         "Elon: vendor hardening should be broken into concrete V1 requirements: operator vendor directory page, create-vendor flow, CSV-first import path, preferred-vendor selector in dispatch/triage surfaces, service-area model capped at 10 areas, vendor-to-area assignment, preferred vendor per area, and guardrails for inactive/deleted vendors so defaults do not silently rot.",
         "Elon: next refinement on vendor truth — trade alone is too weak. Vendor records should also support multi-tag capability/skill labeling so a vendor can be tagged as general plus specific capabilities like plumbing, electrical, painting, HVAC, appliance, handyman, etc. That creates a real routing layer instead of pretending one trade string captures dispatch reality.",
         "Elon: product direction should now explicitly separate the PM full app from the free companion apps. One backend, role-scoped clients: operator/property-manager gets the full app, renter/tenant gets a free companion app, vendor gets a free companion app, and all three sync against the same system of record rather than splitting into disconnected products.",
-        "Elon: Outlook/Microsoft 365 integration belongs on the operator/full-app side first. Start with operator mailbox connect and maintenance-email sync/ingest, then optionally create requests from synced email. Do not pretend v1 needs a full multi-role email client."
+        "Elon: Outlook/Microsoft 365 integration belongs on the operator/full-app side first. Start with operator mailbox connect and maintenance-email sync/ingest, then optionally create requests from synced email. Do not pretend v1 needs a full multi-role email client.",
+        "Elon: execution order must stay anchored in the workflow board — stabilize core first, companion packaging second, Outlook third. If that order blurs, the build will drift into platform theater before the maintenance engine is truly solid."
       ]
     },
     {
