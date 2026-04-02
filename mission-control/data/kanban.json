@@ -24,6 +24,14 @@
           {
             "text": "Elon: next vendor-routing truth gap — each vendor needs capability tags, not just one trade string. Keep trade for headline identity, but add multi-tag skills such as general, plumbing, electrical, painting, HVAC, appliance, handyman, etc. Operator should be able to assign multiple skills per vendor and use those tags for cleaner dispatch filtering later.",
             "ts": 1774662480000
+          },
+          {
+            "text": "Elon: PM product direction now needs explicit platform framing — one backend with three role-scoped clients. Full app for the property manager/operator, free companion app for renter/tenant, free companion app for vendor. Same system of record, not three disconnected products.",
+            "ts": 1774663080000
+          },
+          {
+            "text": "Elon: Outlook integration should be planned as an operator/full-app feature first: Microsoft account connect, maintenance-email sync/ingest, and eventual request creation from email. Keep it out of tenant/vendor free-app scope initially.",
+            "ts": 1774663140000
           }
         ]
       },
