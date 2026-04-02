@@ -231,6 +231,14 @@
           {
             "text": "Elon: do not let this drift into Outlook work early. Sequencing remains enforced: core hosted truth first, companion packaging second, Outlook third.",
             "ts": 1774682520000
+          },
+          {
+            "text": "Elon: first task inside this gate is now active — notification transport truth. First implementation slice is already validated: mobile invite accept → OTP flow now propagates explicit delivery-state semantics into the UX instead of overclaiming that a code was simply 'sent', and the operator mobile invite surface now explicitly labels generated-manual delivery state rather than implying transport happened.",
+            "ts": 1774686120000
+          },
+          {
+            "text": "Elon: next immediate task after this validated slice is auth endpoint rate limiting / abuse resistance, followed by broader packaging prep for the tenant/vendor free companion surfaces.",
+            "ts": 1774686180000
           }
         ]
       },
