@@ -20,6 +20,11 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unable to sign in.';
 }
 
+function buildAuthRedirectMessage(message: string, kind: 'error' | 'throttled' = 'error') {
+  const params = new URLSearchParams({ [kind]: message });
+  return `/auth?${params.toString()}`;
+}
+
 export async function login(formData: FormData) {
   const role = getString(formData, 'role') as AppRole;
   const email = getString(formData, 'email');
@@ -40,13 +45,13 @@ export async function login(formData: FormData) {
 
     const decision = await enforceRateLimit(rateLimit);
     if (!decision.ok) {
-      redirect(`/auth?error=${encodeURIComponent('Too many sign-in attempts. Please wait a few minutes and try again.')}`);
+      redirect(buildAuthRedirectMessage('Too many sign-in attempts. Please wait a few minutes and try again.', 'throttled') as never);
     }
 
     await signInWithPassword(role, email, password);
     await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
 
-    if (role === 'operator') redirect('/operator');
+    if (role === 'operator') redirect('/operator?login=success');
     if (role === 'tenant') redirect('/tenant/submit');
     redirect('/vendor/queue');
   } catch (error) {
@@ -64,7 +69,7 @@ export async function login(formData: FormData) {
       });
     }
 
-    redirect(`/auth?error=${encodeURIComponent(getErrorMessage(error))}`);
+    redirect(buildAuthRedirectMessage(getErrorMessage(error)) as never);
   }
 }
 

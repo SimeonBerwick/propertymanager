@@ -1,5 +1,5 @@
 import { AppShell } from '@/components/app-shell';
-import { ErrorBanner, Field, Input } from '@/components/operator-form-ui';
+import { Field, Input } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { login } from './actions';
 
@@ -30,8 +30,10 @@ const loginCards = [
   },
 ] as const;
 
-export default async function AuthPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
+export default async function AuthPage({ searchParams }: { searchParams?: Promise<{ error?: string; throttled?: string; login?: string }> }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const bannerMessage = resolvedSearchParams?.throttled ?? resolvedSearchParams?.error;
+  const bannerTone = resolvedSearchParams?.throttled ? 'amber' : 'red';
 
   return (
     <AppShell>
@@ -40,7 +42,23 @@ export default async function AuthPage({ searchParams }: { searchParams?: Promis
           title="Sign in"
           description="Property Manager now uses credential-based sign-in backed by seeded account records and signed sessions instead of a pure role picker."
         >
-          <ErrorBanner message={resolvedSearchParams?.error} />
+          {bannerMessage ? (
+            <div
+              className={`rounded-lg border px-4 py-3 text-sm ${
+                bannerTone === 'amber'
+                  ? 'border-amber-200 bg-amber-50 text-amber-800'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}
+              data-testid={resolvedSearchParams?.throttled ? 'auth-throttle-banner' : 'auth-error-banner'}
+            >
+              {bannerMessage}
+            </div>
+          ) : null}
+          {resolvedSearchParams?.login === 'success' ? (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" data-testid="auth-success-banner">
+              Sign-in succeeded. Redirecting into the operator dashboard.
+            </div>
+          ) : null}
           <div className="grid gap-6 lg:grid-cols-3">
             {loginCards.map((card) => (
               <form key={card.role} action={login} className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">

@@ -77,9 +77,20 @@ npm run validate
 ```
 
 ### Full test pass
-Includes the auth-boundary integration test:
+Includes auth runtime tests plus the auth-boundary integration test:
 ```bash
 npm test
+```
+
+### Auth runtime abuse-resistance tests
+Runs directly against a dedicated local SQLite runtime test DB so auth lockout/reset behavior is reproducible without requiring a separate PostgreSQL harness:
+```bash
+npm run test:auth-runtime
+```
+
+Optional override if you want a different disposable DB path:
+```bash
+AUTH_RUNTIME_TEST_DATABASE_URL="file:./prisma/prisma/auth-runtime-test.db" npm run test:auth-runtime
 ```
 
 ### Auth-boundary integration test requirements
@@ -102,6 +113,7 @@ Before manual UI testing, make sure this sequence is green:
 4. `npm run dev`
 5. Sign in with the seeded operator / tenant / vendor credentials
 6. Verify protected-route redirects and basic request visibility
+7. Verify `/mobile/auth` loads unauthenticated without redirect looping and that valid operator login lands on `/operator`
 
 ## Suggested next build steps
 - Build `/join` invite acceptance UX and attach accepted users to the existing tenant/vendor records
