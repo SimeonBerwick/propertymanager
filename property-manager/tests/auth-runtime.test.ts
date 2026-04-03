@@ -278,7 +278,7 @@ runtimeTest('invite accept invalid token throttles on attempt 6 while valid invi
   assert.match(otp.rawCode, /^\d{6}$/);
 });
 
-runtimeTest('otp lockout, successful verification after cooldown-path issuance, and invite reuse all fail closed correctly', async () => {
+runtimeTest('otp lockout, successful verification after cooldown-path issuance, OTP verify endpoint bucket throttling, and invite reuse all fail closed correctly', async () => {
   await resetDb();
   const { tenantInvite, tenantOtp, rateLimit } = await loadModules();
   const { organization, operator, property, unit, tenant } = await seedBase();
@@ -348,6 +348,30 @@ runtimeTest('otp lockout, successful verification after cooldown-path issuance, 
   const secondOtp = await tenantOtp.createOtpChallenge(identity.id, organization.id, TenantOtpPurpose.INVITE_LOGIN, TenantOtpChannel.SMS, '+15550101');
   const verified = await tenantOtp.verifyOtpChallenge(secondOtp.challengeId, secondOtp.rawCode);
   assert.deepEqual(verified, { ok: true });
+
+  const otpVerifyScope = 'mobile-otp-verify';
+  const otpVerifyBucket = rateLimit.buildRateLimitBucket([secondOtp.challengeId]);
+
+  for (let i = 0; i < 10; i += 1) {
+    await rateLimit.recordRateLimitFailure({
+      scope: otpVerifyScope,
+      bucket: otpVerifyBucket,
+      maxAttempts: 10,
+      windowMs: 1000 * 60 * 15,
+      blockMs: 1000 * 60 * 15,
+    });
+  }
+
+  const verifyBlocked = await rateLimit.enforceRateLimit({
+    scope: otpVerifyScope,
+    bucket: otpVerifyBucket,
+    maxAttempts: 10,
+    windowMs: 1000 * 60 * 15,
+    blockMs: 1000 * 60 * 15,
+  });
+  assert.equal(verifyBlocked.ok, false);
+
+  await rateLimit.clearRateLimitFailures(otpVerifyScope, otpVerifyBucket);
 
   await tenantInvite.consumeTenantInvite(invite.inviteId);
   const reusedInvite = await tenantInvite.validateTenantInviteToken(invite.rawToken);

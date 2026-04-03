@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import path from 'node:path';
 import net from 'node:net';
 import { after, before, test } from 'node:test';
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { PrismaClient, EventVisibility, RequestEventType, TenantStatus, UserRole } from '@prisma/client';
 import { hashPassword } from '../lib/passwords';
 
@@ -48,10 +48,9 @@ async function run(command: string, args: string[], extraEnv: Record<string, str
     throw new Error(integrationSkipReason);
   }
 
-  const childEnv = { ...process.env };
-  delete childEnv.NODE_ENV;
+  const childEnv = { ...process.env, NODE_ENV: undefined } as unknown as NodeJS.ProcessEnv;
 
-  const child = spawn(command, args, {
+  const options: SpawnOptions = {
     cwd: repoRoot,
     env: {
       ...childEnv,
@@ -65,14 +64,16 @@ async function run(command: string, args: string[], extraEnv: Record<string, str
       ...extraEnv,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  };
+
+  const child = spawn(command, args, options);
 
   let stderr = '';
   let stdout = '';
-  child.stdout.on('data', (chunk) => {
+  child.stdout?.on('data', (chunk: Buffer | string) => {
     stdout += chunk.toString();
   });
-  child.stderr.on('data', (chunk) => {
+  child.stderr?.on('data', (chunk: Buffer | string) => {
     stderr += chunk.toString();
   });
 
@@ -290,10 +291,9 @@ before(async () => {
   });
   foreignRequestId = foreignRequest.id;
 
-  const serverEnv = { ...process.env };
-  delete serverEnv.NODE_ENV;
+  const serverEnv = { ...process.env, NODE_ENV: undefined } as unknown as NodeJS.ProcessEnv;
 
-  server = spawn('npm', ['run', 'start', '--', '-p', String(port)], {
+  const serverOptions: SpawnOptions = {
     cwd: repoRoot,
     env: {
       ...serverEnv,
@@ -307,12 +307,14 @@ before(async () => {
       ENV_FILE: '/dev/null',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  };
 
-  server?.stdout?.on('data', (chunk) => {
+  server = spawn('npm', ['run', 'start', '--', '-p', String(port)], serverOptions);
+
+  server?.stdout?.on('data', (chunk: Buffer | string) => {
     serverStartupLogs.push(chunk.toString());
   });
-  server?.stderr?.on('data', (chunk) => {
+  server?.stderr?.on('data', (chunk: Buffer | string) => {
     serverStartupLogs.push(chunk.toString());
   });
 

@@ -5,10 +5,26 @@ import { verifyOtpChallenge } from '@/lib/tenant-otp-lib';
 import { consumeTenantInvite } from '@/lib/tenant-invite-lib';
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session';
 import { prisma } from '@/lib/prisma';
+import {
+  buildRateLimitBucket,
+  clearRateLimitFailures,
+  enforceRateLimit,
+  recordRateLimitFailure,
+} from '@/lib/auth-rate-limit';
 
 function getString(formData: FormData, key: string) {
   const v = formData.get(key);
   return typeof v === 'string' ? v.trim() : '';
+}
+
+function getOtpVerifyRateLimit(challengeId: string) {
+  return {
+    scope: 'mobile-otp-verify',
+    bucket: buildRateLimitBucket([challengeId]),
+    maxAttempts: 10,
+    windowMs: 1000 * 60 * 15,
+    blockMs: 1000 * 60 * 15,
+  };
 }
 
 export async function submitOtp(formData: FormData) {
@@ -18,6 +34,12 @@ export async function submitOtp(formData: FormData) {
 
   if (!challengeId || !inviteId || rawCode.length !== 6) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&inviteId=${encodeURIComponent(inviteId)}&error=${encodeURIComponent('Enter the 6-digit code.')}` as never);
+  }
+
+  const rateLimit = getOtpVerifyRateLimit(challengeId);
+  const decision = await enforceRateLimit(rateLimit);
+  if (!decision.ok) {
+    redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&inviteId=${encodeURIComponent(inviteId)}&error=${encodeURIComponent('Too many verification attempts. Please wait a few minutes and try again.')}` as never);
   }
 
   const result = await verifyOtpChallenge(challengeId, rawCode);
@@ -34,10 +56,10 @@ export async function submitOtp(formData: FormData) {
     } else {
       msg = 'This code is no longer valid.';
     }
+    await recordRateLimitFailure(rateLimit);
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&inviteId=${encodeURIComponent(inviteId)}&error=${encodeURIComponent(msg)}` as never);
   }
 
-  // OTP verified — consume the invite
   const invite = await prisma.tenantInvite.findUnique({
     where: { id: inviteId },
     select: { tenantIdentityId: true, orgId: true, tenantId: true, propertyId: true, unitId: true, status: true },
@@ -49,13 +71,11 @@ export async function submitOtp(formData: FormData) {
 
   await consumeTenantInvite(inviteId);
 
-  // Activate the TenantIdentity if it was still PENDING_INVITE
   await prisma.tenantIdentity.updateMany({
     where: { id: invite.tenantIdentityId, status: 'PENDING_INVITE' },
     data: { status: 'ACTIVE', verifiedAt: new Date(), lastLoginAt: new Date() },
   });
 
-  // Create DB-backed session
   await createTenantMobileSession(
     invite.tenantIdentityId,
     invite.orgId,
@@ -63,6 +83,8 @@ export async function submitOtp(formData: FormData) {
     invite.propertyId,
     invite.unitId,
   );
+
+  await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
 
   redirect('/mobile' as never);
 }
@@ -73,6 +95,12 @@ export async function submitReturningOtp(formData: FormData) {
 
   if (!challengeId || rawCode.length !== 6) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&error=${encodeURIComponent('Enter the 6-digit code.')}` as never);
+  }
+
+  const rateLimit = getOtpVerifyRateLimit(challengeId);
+  const decision = await enforceRateLimit(rateLimit);
+  if (!decision.ok) {
+    redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&error=${encodeURIComponent('Too many verification attempts. Please wait a few minutes and try again.')}` as never);
   }
 
   const result = await verifyOtpChallenge(challengeId, rawCode);
@@ -89,10 +117,10 @@ export async function submitReturningOtp(formData: FormData) {
     } else {
       msg = 'This code is no longer valid.';
     }
+    await recordRateLimitFailure(rateLimit);
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&error=${encodeURIComponent(msg)}` as never);
   }
 
-  // Retrieve identity from challenge
   const challenge = await prisma.tenantOtpChallenge.findUnique({
     where: { id: challengeId },
     select: { tenantIdentityId: true, orgId: true },
@@ -110,7 +138,6 @@ export async function submitReturningOtp(formData: FormData) {
     redirect(`/mobile/auth?error=${encodeURIComponent('Your account is no longer active.')}` as never);
   }
 
-  // Update lastLoginAt
   await prisma.tenantIdentity.update({
     where: { id: identity.id },
     data: { lastLoginAt: new Date() },
@@ -123,6 +150,8 @@ export async function submitReturningOtp(formData: FormData) {
     identity.propertyId,
     identity.unitId,
   );
+
+  await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
 
   redirect('/mobile' as never);
 }
