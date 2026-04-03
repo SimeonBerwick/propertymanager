@@ -103,13 +103,27 @@ Preferred order:
 2. lightweight wrapper only if install/distribution needs exceed PWA constraints
 3. do not fork backend/auth logic for packaging
 
+Implemented now:
+- manifest route
+- root metadata for install surfaces
+- app icon route
+- apple icon route
+- theme/background color definition
+
 ### Required packaging assets/work
-- app name / short name
-- theme color / background color
-- icon set for install surfaces
-- manifest definition
-- installability review on iPhone/Android browsers
-- link-opening review from SMS/email invite flows
+- [x] app name / short name
+- [x] theme color / background color
+- [x] icon set for install surfaces
+- [x] manifest definition
+- [ ] installability review on iPhone/Android browsers
+- [ ] link-opening review from SMS/email invite flows
+
+## Invite/open-link packaging review notes
+- Invite links should continue to target `/mobile/auth/accept/[token]` directly.
+- The installed surface should not introduce a second auth entry contract.
+- Success path after invite/OTP should still land in `/mobile`.
+- Returning OTP flow should continue to use `/mobile/auth/otp` as the continuation route.
+- Packaging validation still required on real SMS/email-originated open-link behavior from iPhone/Android.
 
 ## Non-blocking later work
 - Push notification polish
