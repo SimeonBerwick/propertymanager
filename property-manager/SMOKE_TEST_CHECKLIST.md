@@ -478,6 +478,7 @@ Mark all that apply:
 
 ### Ship-readiness judgment
 - [ ] Good enough for broader QA
+- [ ] Good enough to continue companion-app packaging prep
 - [ ] Not good yet
 
 ### One-paragraph blunt summary
@@ -504,3 +505,4 @@ Mark all that apply:
 - [ ] No obvious auth boundary break
 - [ ] `npm run test:auth-runtime` passed against disposable Postgres test DB
 - [ ] `npm run test:authz` passed against disposable Postgres test DB
+- [ ] Tenant mobile shell/auth entry/request-create surfaces feel app-ready enough to keep packaging prep moving

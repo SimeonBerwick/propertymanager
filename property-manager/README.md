@@ -138,11 +138,24 @@ Before manual UI testing, make sure this sequence is green:
 6. Verify protected-route redirects and basic request visibility
 7. Verify `/mobile/auth` loads unauthenticated without redirect looping and that valid operator login lands on `/operator`
 
+## Current mission-control lane
+The active product lane is now **companion-app packaging prep**.
+
+What is already verified:
+- notification transport truth
+- auth abuse resistance
+- auth/session/object boundaries
+
+What is now in progress:
+- tenant-facing mobile shell polish
+- companion-app-oriented auth entry UX
+- tenant request experience polish for packaging readiness
+
 ## Suggested next build steps
-- Build `/join` invite acceptance UX and attach accepted users to the existing tenant/vendor records
+- Tighten tenant request detail and timeline presentation into the same app-ready visual system
+- Review invite/open-link/deep-link behavior before packaging/wrapper work
+- Define the installability/PWA-wrapper path and required branding/assets
 - Add invite revocation/status management UI instead of one-shot creation only
-- Extend org scoping beyond the current operator hardening slice into memberships, invite flows, vendor region coverage, and eventually row-level posture suitable for PostgreSQL
-- Add deeper cross-account leakage tests for manipulated list queries and cross-org write attempts
 - Expand vendor updates into richer completion / parts / invoice-ready workflow if V1 needs it
 - Add production-ready object storage wiring (R2/S3) before serious shared testing
 - Move session storage, password reset, and audit logging to a fuller auth subsystem before production use

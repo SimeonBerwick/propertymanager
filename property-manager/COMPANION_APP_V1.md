@@ -14,6 +14,20 @@ As of 2026-04-03, the auth gate is green:
 
 That means packaging prep can proceed without pretending the trust layer is still unfinished.
 
+## Mission control status
+Current lane: **companion-app packaging prep in progress**
+
+Completed in this lane already:
+- app-oriented tenant auth landing
+- app-oriented tenant mobile shell
+- app-oriented request list/dashboard
+- app-oriented new-request flow
+
+Next active slices:
+1. tighten tenant request detail into the same app-quality system
+2. review invite/deep-link/open-link behavior for package readiness
+3. define installability/PWA-wrapper path and required assets
+
 ## V1 ship scope
 
 ### Included
@@ -51,23 +65,23 @@ That means packaging prep can proceed without pretending the trust layer is stil
 - [ ] Expired/tampered sessions recover cleanly
 
 ### Tenant request experience
-- [ ] Request list is readable on phone
+- [x] Request list is readable on phone
 - [ ] Request detail is readable on phone
-- [ ] New request flow is usable on phone
+- [x] New request flow is usable on phone
 - [ ] Tenant-visible timeline is understandable
 - [ ] Error states are explicit and non-ambiguous
 
 ### Packaging prep
-- [ ] Mobile shell/header is app-ready and not obviously web-admin styled
-- [ ] Auth entry screens read like a tenant app, not an internal tool
+- [x] Mobile shell/header is app-ready and not obviously web-admin styled
+- [x] Auth entry screens read like a tenant app, not an internal tool
 - [ ] Deep-link/open-link behavior is reviewed for invite/auth entry
-- [ ] Attachment access uses app-controlled routes
+- [x] Attachment access uses app-controlled routes
 - [ ] Basic installability/PWA wrapper path is defined
 
-## First implementation slice
-1. Tighten the tenant mobile shell so it feels like a tenant product surface.
-2. Add a dedicated mobile landing/auth entry presentation that is app-oriented.
-3. Keep operator/vendor complexity out of this shell.
+## Current implementation slice
+1. Tighten tenant request detail into the same product language as the shell/dashboard.
+2. Keep operator/vendor complexity out of the companion-app shell.
+3. Review invite/open-link/deep-link behavior before any wrapper/store work.
 4. Preserve the validated route and auth boundaries while improving packaging readiness.
 
 ## Non-blocking later work
