@@ -19,17 +19,16 @@ const statusLabel: Record<RequestStatus, string> = {
 };
 
 const statusColor: Record<RequestStatus, string> = {
-  NEW: 'bg-blue-100 text-blue-700',
-  SCHEDULED: 'bg-amber-100 text-amber-700',
-  IN_PROGRESS: 'bg-purple-100 text-purple-700',
-  DONE: 'bg-green-100 text-green-700',
+  NEW: 'bg-blue-500/15 text-blue-200 border-blue-400/20',
+  SCHEDULED: 'bg-amber-500/15 text-amber-100 border-amber-400/20',
+  IN_PROGRESS: 'bg-violet-500/15 text-violet-100 border-violet-400/20',
+  DONE: 'bg-emerald-500/15 text-emerald-100 border-emerald-400/20',
 };
 
 export default async function MobileRequestDetailPage({ params }: Props) {
   const session = await requireTenantMobileSession();
   const { id } = await params;
 
-  // Scope enforced from session — tenantId and unitId derived server-side only
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
       id,
@@ -53,65 +52,75 @@ export default async function MobileRequestDetailPage({ params }: Props) {
   if (!request) notFound();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href={'/mobile' as Route} className="text-xs text-slate-500 hover:text-slate-700">
+    <div className="space-y-5 text-white">
+      <div className="space-y-2">
+        <Link href={'/mobile' as Route} className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
           &larr; Back to requests
         </Link>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-base font-semibold text-slate-900">{request.title}</h2>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[request.status]}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Request detail</p>
+            <h2 className="text-2xl font-semibold text-white">{request.title}</h2>
+          </div>
+          <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${statusColor[request.status]}`}>
             {statusLabel[request.status]}
           </span>
         </div>
-
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <div>
-            <dt className="text-xs text-slate-500">Category</dt>
-            <dd className="text-slate-800">{request.category}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Urgency</dt>
-            <dd className="text-slate-800">{request.urgency}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Submitted</dt>
-            <dd className="text-slate-800">{new Date(request.createdAt).toLocaleDateString()}</dd>
-          </div>
-          {request.scheduledFor && (
-            <div>
-              <dt className="text-xs text-slate-500">Scheduled visit</dt>
-              <dd className="text-slate-800">{new Date(request.scheduledFor).toLocaleDateString()}</dd>
-            </div>
-          )}
-          {request.assignedVendor && (
-            <div className="col-span-2">
-              <dt className="text-xs text-slate-500">Service provider</dt>
-              <dd className="text-slate-800">{request.assignedVendor.name} ({request.assignedVendor.trade})</dd>
-            </div>
-          )}
-        </dl>
-
-        <div>
-          <p className="text-xs text-slate-500">Description</p>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{request.description}</p>
-        </div>
       </div>
 
-      {request.attachments.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-slate-700">Photos</h3>
-          <div className="grid grid-cols-2 gap-2">
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Summary</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{request.description}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Category</p>
+              <p className="mt-1 text-sm font-medium text-white">{request.category}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Urgency</p>
+              <p className="mt-1 text-sm font-medium text-white">{request.urgency}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Submitted</p>
+              <p className="mt-1 text-sm font-medium text-white">{new Date(request.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Scheduled</p>
+              <p className="mt-1 text-sm font-medium text-white">
+                {request.scheduledFor ? new Date(request.scheduledFor).toLocaleDateString() : 'Not scheduled yet'}
+              </p>
+            </div>
+          </div>
+
+          {request.assignedVendor ? (
+            <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200/80">Assigned service provider</p>
+              <p className="mt-2 text-sm font-medium text-cyan-50">
+                {request.assignedVendor.name} · {request.assignedVendor.trade}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {request.attachments.length > 0 ? (
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">Photos</h3>
+            <p className="mt-1 text-sm text-slate-300">Photos you shared with your property team for this request.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {request.attachments.map((att) => (
               <a
                 key={att.id}
                 href={getAttachmentUrl(att.id)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block overflow-hidden rounded-lg border border-slate-200"
+                className="block overflow-hidden rounded-2xl border border-white/10 bg-white/5"
               >
                 <Image
                   src={getAttachmentUrl(att.id)}
@@ -124,25 +133,28 @@ export default async function MobileRequestDetailPage({ params }: Props) {
               </a>
             ))}
           </div>
-        </div>
-      )}
+        </section>
+      ) : null}
 
-      {request.events.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-slate-700">Updates</h3>
-          <ul className="space-y-2">
+      {request.events.length > 0 ? (
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">Updates</h3>
+            <p className="mt-1 text-sm text-slate-300">Only updates intended for the tenant app appear here.</p>
+          </div>
+          <ul className="space-y-3">
             {request.events.map((event) => (
-              <li key={event.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                <p className="text-sm text-slate-700">{event.body}</p>
-                <p className="mt-1 text-xs text-slate-400">
+              <li key={event.id} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm leading-6 text-slate-200">{event.body}</p>
+                <p className="mt-3 text-xs uppercase tracking-[0.14em] text-slate-500">
                   {event.actorName ? `${event.actorName} · ` : ''}
                   {new Date(event.createdAt).toLocaleString()}
                 </p>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        </section>
+      ) : null}
     </div>
   );
 }

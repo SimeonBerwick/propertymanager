@@ -84,6 +84,33 @@ Next active slices:
 3. Review invite/open-link/deep-link behavior before any wrapper/store work.
 4. Preserve the validated route and auth boundaries while improving packaging readiness.
 
+## Deep-link and packaging readiness
+
+### Invite/open-link contract
+The package/wrapper should treat the following as the canonical entry flow:
+- `/mobile/auth/accept/[token]` → first-time invite entry
+- `/mobile/auth/otp?...` → one-time verification continuation
+- `/mobile` → authenticated tenant landing
+
+Rules:
+- invite links should open directly into the tenant auth flow
+- expired/invalid invites must fail clearly and recover toward requesting a new invite
+- authenticated mobile sessions should land in `/mobile`, not bounce through generic auth UI
+
+### Wrapper/PWA path
+Preferred order:
+1. PWA/installability pass over the existing mobile web surface
+2. lightweight wrapper only if install/distribution needs exceed PWA constraints
+3. do not fork backend/auth logic for packaging
+
+### Required packaging assets/work
+- app name / short name
+- theme color / background color
+- icon set for install surfaces
+- manifest definition
+- installability review on iPhone/Android browsers
+- link-opening review from SMS/email invite flows
+
 ## Non-blocking later work
 - Push notification polish
 - Better branding/app icon/splash handling
