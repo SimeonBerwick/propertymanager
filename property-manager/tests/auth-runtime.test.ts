@@ -11,7 +11,14 @@ const skipReason = 'Set TEST_DATABASE_URL (and optionally TEST_DATABASE_DIRECT_U
 
 process.env.AUTH_SECRET = process.env.AUTH_SECRET ?? 'auth-runtime-test-secret-auth-runtime-test';
 process.env.NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-Reflect.set(process.env, 'NODE_ENV', 'test');
+Reflect.set(process.env, 'NODE_ENV', process.env.NODE_ENV || 'development');
+
+if (runtimeDbUrl) {
+  process.env.DATABASE_URL = runtimeDbUrl;
+  process.env.DATABASE_DIRECT_URL = runtimeDbDirectUrl ?? runtimeDbUrl;
+  process.env.TEST_DATABASE_URL = runtimeDbUrl;
+  process.env.TEST_DATABASE_DIRECT_URL = runtimeDbDirectUrl ?? runtimeDbUrl;
+}
 
 const prisma = runtimeDbUrl
   ? new PrismaClient({
@@ -21,13 +28,28 @@ const prisma = runtimeDbUrl
     })
   : (undefined as unknown as PrismaClient);
 
+let cachedModules:
+  | {
+      auth: typeof import('../lib/auth');
+      rateLimit: typeof import('../lib/auth-rate-limit');
+      tenantInvite: typeof import('../lib/tenant-invite-lib');
+      tenantOtp: typeof import('../lib/tenant-otp-lib');
+    }
+  | undefined;
+
 async function loadModules() {
-  return {
+  if (cachedModules) {
+    return cachedModules;
+  }
+
+  cachedModules = {
     auth: await import('../lib/auth'),
     rateLimit: await import('../lib/auth-rate-limit'),
     tenantInvite: await import('../lib/tenant-invite-lib'),
     tenantOtp: await import('../lib/tenant-otp-lib'),
   };
+
+  return cachedModules;
 }
 
 async function resetDb() {
@@ -124,6 +146,11 @@ before(async () => {
       ...process.env,
       DATABASE_URL: runtimeDbUrl,
       DATABASE_DIRECT_URL: runtimeDbDirectUrl,
+      TEST_DATABASE_URL: runtimeDbUrl,
+      TEST_DATABASE_DIRECT_URL: runtimeDbDirectUrl ?? runtimeDbUrl,
+      DOTENV_CONFIG_PATH: '/dev/null',
+      ENV_FILE: '/dev/null',
+      NODE_ENV: 'development',
     },
   });
 
@@ -182,8 +209,9 @@ runtimeTest('password login throttles on attempt 6 and clears bucket after succe
   });
   assert.equal(blocked.ok, false);
 
+  const session = await auth.verifyPasswordCredentials(role, email, 'operator123');
+  assert.equal(session.role, 'operator');
   await rateLimit.clearRateLimitFailures(scope, bucket);
-  await auth.signInWithPassword(role, email, 'operator123');
 
   const cleared = await prisma.authRateLimit.findUnique({ where: { scope_bucket: { scope, bucket } } });
   assert.equal(cleared, null);

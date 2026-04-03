@@ -94,7 +94,7 @@ async function getCookieStore() {
   return cookies();
 }
 
-async function setSession(session: SessionData) {
+export async function setSession(session: SessionData) {
   const cookieStore = await getCookieStore();
   cookieStore.set(SESSION_COOKIE, encodeSession(session), {
     httpOnly: true,
@@ -170,7 +170,7 @@ export async function getSession() {
   return normalizedSession;
 }
 
-export async function signInWithPassword(role: AppRole, email: string, password: string) {
+export async function verifyPasswordCredentials(role: AppRole, email: string, password: string): Promise<SessionData> {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) throw new Error('Email is required.');
   if (!password) throw new Error('Password is required.');
@@ -185,16 +185,14 @@ export async function signInWithPassword(role: AppRole, email: string, password:
       throw new Error('Invalid operator credentials.');
     }
 
-    await setSession({
+    return {
       role: 'operator',
       userId: user.id,
       organizationId: user.organizationId,
       displayName: user.name,
       email: user.email,
       expiresAt: Date.now() + SESSION_TTL_MS,
-    });
-
-    return;
+    };
   }
 
   if (role === 'tenant') {
@@ -207,15 +205,13 @@ export async function signInWithPassword(role: AppRole, email: string, password:
       throw new Error('Invalid tenant credentials.');
     }
 
-    await setSession({
+    return {
       role: 'tenant',
       tenantId: tenant.id,
       displayName: tenant.name,
       email: tenant.email ?? undefined,
       expiresAt: Date.now() + SESSION_TTL_MS,
-    });
-
-    return;
+    };
   }
 
   const vendor = await prisma.vendor.findFirst({
@@ -227,13 +223,18 @@ export async function signInWithPassword(role: AppRole, email: string, password:
     throw new Error('Invalid vendor credentials.');
   }
 
-  await setSession({
+  return {
     role: 'vendor',
     vendorId: vendor.id,
     displayName: vendor.name,
     email: vendor.email ?? undefined,
     expiresAt: Date.now() + SESSION_TTL_MS,
-  });
+  };
+}
+
+export async function signInWithPassword(role: AppRole, email: string, password: string) {
+  const session = await verifyPasswordCredentials(role, email, password);
+  await setSession(session);
 }
 
 function buildAuthRedirect(reason: 'signin' | 'expired' | 'invalid') {
