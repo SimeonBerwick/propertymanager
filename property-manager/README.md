@@ -79,19 +79,42 @@ npm run validate
 ### Full test pass
 Includes auth runtime tests plus the auth-boundary integration test:
 ```bash
+TEST_DATABASE_URL="postgresql://...pooled-or-runtime..." \
+TEST_DATABASE_DIRECT_URL="postgresql://...direct..." \
 npm test
 ```
 
-### Auth runtime abuse-resistance tests
-Runs directly against a dedicated local SQLite runtime test DB so auth lockout/reset behavior is reproducible without requiring a separate PostgreSQL harness:
+### Auth boundary integration tests
+Runs a production build/start cycle and verifies:
+- tampered session rejection
+- expired session redirects
+- tenant/vendor/operator object scoping
+- internal note visibility boundaries
+- tenant-hidden / operator-visible / vendor-visible vendor bid PDFs via the attachment API route
+
 ```bash
+TEST_DATABASE_URL="postgresql://...pooled-or-runtime..." \
+TEST_DATABASE_DIRECT_URL="postgresql://...direct..." \
+npm run test:authz
+```
+
+### Auth runtime abuse-resistance tests
+Runs against a dedicated disposable PostgreSQL database and is the canonical sign-off path for auth abuse-resistance behavior:
+```bash
+TEST_DATABASE_URL="postgresql://...pooled-or-runtime..." \
+TEST_DATABASE_DIRECT_URL="postgresql://...direct..." \
 npm run test:auth-runtime
 ```
 
-Optional override if you want a different disposable DB path:
-```bash
-AUTH_RUNTIME_TEST_DATABASE_URL="file:./prisma/prisma/auth-runtime-test.db" npm run test:auth-runtime
-```
+What this proves in runtime:
+- bad password throttling
+- success-path rate-limit reset
+- invalid invite throttling
+- valid invite behavior after bad hits on another token bucket
+- OTP lockout
+- OTP success after cooldown-path issuance
+- invite reuse fail-closed
+- OTP reuse fail-closed
 
 ### Auth-boundary integration test requirements
 `npm run test:authz` builds the app, starts the production server, and exercises signed-session boundary checks against a **dedicated PostgreSQL test database**.

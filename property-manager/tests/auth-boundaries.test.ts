@@ -13,7 +13,7 @@ const testDbUrl = process.env.TEST_DATABASE_URL;
 const testDbDirectUrl = process.env.TEST_DATABASE_DIRECT_URL ?? testDbUrl;
 const integrationSkipReason =
   'Set TEST_DATABASE_URL (and optionally TEST_DATABASE_DIRECT_URL) to a dedicated PostgreSQL test database before running test:authz.';
-const authSecret = 'auth-boundary-test-secret';
+const authSecret = 'auth-boundary-test-secret-long-enough-2026';
 let port = 3305;
 let baseUrl = `http://127.0.0.1:${port}`;
 const sessionCookieName = 'pm_session';
@@ -48,10 +48,13 @@ async function run(command: string, args: string[], extraEnv: Record<string, str
     throw new Error(integrationSkipReason);
   }
 
+  const childEnv = { ...process.env };
+  delete childEnv.NODE_ENV;
+
   const child = spawn(command, args, {
     cwd: repoRoot,
     env: {
-      ...process.env,
+      ...childEnv,
       DATABASE_URL: testDbUrl,
       DATABASE_DIRECT_URL: testDbDirectUrl,
       TEST_DATABASE_URL: testDbUrl,
@@ -287,10 +290,13 @@ before(async () => {
   });
   foreignRequestId = foreignRequest.id;
 
+  const serverEnv = { ...process.env };
+  delete serverEnv.NODE_ENV;
+
   server = spawn('npm', ['run', 'start', '--', '-p', String(port)], {
     cwd: repoRoot,
     env: {
-      ...process.env,
+      ...serverEnv,
       DATABASE_URL: testDbUrl,
       DATABASE_DIRECT_URL: testDbDirectUrl,
       TEST_DATABASE_URL: testDbUrl,
@@ -566,9 +572,9 @@ integrationTest('tenant query hides vendor PDF bids while operator and vendor pa
   assert.equal(vendorResponse.status, 200);
 
   assert.match(operatorHtml, /PDF bid/);
-  assert.match(operatorHtml, new RegExp(seededPdfAttachmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(operatorHtml, /\/api\/attachments\/[a-z0-9]+/i);
   assert.match(vendorHtml, /Open PDF bid uploaded/);
-  assert.match(vendorHtml, new RegExp(seededPdfAttachmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(vendorHtml, /\/api\/attachments\/[a-z0-9]+/i);
 
   const tenantAttachmentPaths = tenantRequest.attachments.map((attachment) => attachment.storagePath);
 

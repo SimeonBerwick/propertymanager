@@ -42,10 +42,11 @@ Pass only if all are true:
 
 ### Optional auth/integration test env
 
-Only required if `npm run test:authz` will be run:
+Required for auth sign-off (`npm run test:auth-runtime` and `npm run test:authz`):
 - [ ] `TEST_DATABASE_URL` is set to a separate disposable Postgres DB
 - [ ] `TEST_DATABASE_DIRECT_URL` is set
 - [ ] Test DB is not the same DB as dev/app DB
+- [ ] Prefer pooled/runtime URL for `TEST_DATABASE_URL` and direct/non-pooled URL for `TEST_DATABASE_DIRECT_URL`
 
 ### Fail conditions
 - [ ] Any required env var is missing
@@ -151,7 +152,7 @@ Fail if any typecheck, lint, invite, attachment, or phone test fails.
 
 Important:
 - `npm run validate` does **not** prove auth boundaries are good.
-- Auth boundary coverage lives in `npm run test:authz` and requires a separate Postgres test DB.
+- Auth sign-off coverage lives in `npm run test:auth-runtime` plus `npm run test:authz` and requires a separate Postgres test DB.
 
 Exact output / errors:
 ```text
@@ -384,6 +385,7 @@ Pass only if:
 - [ ] Tenant-visible request evidence is limited appropriately
 - [ ] Vendor/private PDF-style material is not exposed to tenant view
 - [ ] Operator/vendor views still show what they are supposed to see
+- [ ] Operator/vendor attachment access is routed through `/api/attachments/:id` rather than relying on raw storage paths in rendered HTML
 
 ### Internal notes visibility
 Pass only if:
@@ -396,26 +398,34 @@ Exact boundary failures:
 
 ---
 
-## 9) Optional auth/integration test
+## 9) Auth sign-off gate
 
 Only run this if test DB vars are set correctly.
 
 Run:
 
 ```bash
+TEST_DATABASE_URL="postgresql://...pooled-or-runtime..." \
+TEST_DATABASE_DIRECT_URL="postgresql://...direct..." \
+npm run test:auth-runtime
+
+TEST_DATABASE_URL="postgresql://...pooled-or-runtime..." \
+TEST_DATABASE_DIRECT_URL="postgresql://...direct..." \
 npm run test:authz
 ```
 
 Pass only if:
-- [ ] Test used dedicated Postgres test DB
-- [ ] Test did not point at dev DB
+- [ ] Tests used a dedicated Postgres test DB
+- [ ] Tests did not point at dev DB
 - [ ] No SQLite assumption appears
+- [ ] `npm run test:auth-runtime` exited cleanly
 - [ ] `npm run test:authz` exited cleanly
 
 Fail if:
 - [ ] Test DB equals dev DB
-- [ ] Auth test mutates the wrong database
-- [ ] Test fails due to setup or boundary behavior
+- [ ] Auth tests mutate the wrong database
+- [ ] Runtime auth abuse-resistance fails
+- [ ] Boundary/session/object-scope tests fail
 
 Exact output / errors:
 ```text
@@ -492,3 +502,5 @@ Mark all that apply:
 - [ ] Tenant request flow works
 - [ ] Vendor queue/detail works
 - [ ] No obvious auth boundary break
+- [ ] `npm run test:auth-runtime` passed against disposable Postgres test DB
+- [ ] `npm run test:authz` passed against disposable Postgres test DB
