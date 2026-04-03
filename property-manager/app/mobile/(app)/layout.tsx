@@ -18,31 +18,47 @@ export default async function MobileAppLayout({ children }: { children: ReactNod
   });
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Portal</p>
-            <p className="text-sm font-medium text-slate-800">
-              {tenant?.name ?? 'Tenant'} &middot; {unit?.property.name ?? ''} #{unit?.label ?? ''}
-            </p>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+        <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/95 px-4 pb-4 pt-5 backdrop-blur">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Tenant app</p>
+                <h1 className="text-lg font-semibold text-white">{tenant?.name ?? 'Tenant'}</h1>
+                <p className="text-sm text-slate-300">
+                  {unit?.property.name ?? 'Property'} {unit?.label ? `· Unit ${unit.label}` : ''}
+                </p>
+              </div>
+              <form action={mobileSignOut}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
+
+            <nav className="grid grid-cols-2 gap-2">
+              <Link
+                href={'/mobile' as Route}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white"
+              >
+                My requests
+              </Link>
+              <Link
+                href={'/mobile/requests/new' as Route}
+                className="rounded-2xl border border-cyan-400/20 bg-cyan-500/15 px-4 py-3 text-sm font-medium text-cyan-100"
+              >
+                Report an issue
+              </Link>
+            </nav>
           </div>
-          <nav className="flex items-center gap-4 text-sm">
-            <Link href={'/mobile' as Route} className="text-slate-600 hover:text-slate-900">
-              My requests
-            </Link>
-            <Link href={'/mobile/requests/new' as Route} className="text-slate-600 hover:text-slate-900">
-              New request
-            </Link>
-            <form action={mobileSignOut}>
-              <button type="submit" className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700">
-                Sign out
-              </button>
-            </form>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-lg px-4 py-8">{children}</main>
+        </header>
+
+        <main className="flex-1 px-4 py-5">{children}</main>
+      </div>
     </div>
   );
 }
