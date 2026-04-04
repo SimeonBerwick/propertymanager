@@ -3,6 +3,7 @@ import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { buildTenantRequestOwnershipWhere } from '@/lib/tenant-portal-data'
+import { currencyLabel, languageLabel } from '@/lib/types'
 
 export default async function TenantMobileDashboardPage() {
   const session = await requireTenantMobileSession()
@@ -41,7 +42,9 @@ export default async function TenantMobileDashboardPage() {
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
-                <div className="muted">{request.category} · {request.urgency} urgency</div>
+                <div className="muted">
+                  {request.category} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
+                </div>
               </div>
               <div className="muted">{request.status.replace('_', ' ')}</div>
             </div>
