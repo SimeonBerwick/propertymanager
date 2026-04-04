@@ -37,10 +37,25 @@ export interface MaintenanceRequest {
   category: string
   urgency: Urgency
   status: RequestStatus
+  assignedVendorId?: string
   assignedVendorName?: string
   assignedVendorEmail?: string
   assignedVendorPhone?: string
+  slaBucket?: string
+  triageTags: string[]
   createdAt: string
+}
+
+export interface Vendor {
+  id: string
+  orgId?: string
+  name: string
+  email?: string
+  phone?: string
+  categories: string[]
+  supportedLanguages: LanguageOption[]
+  supportedCurrencies: CurrencyOption[]
+  isActive: boolean
 }
 
 export interface RequestComment {

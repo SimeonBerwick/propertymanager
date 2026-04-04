@@ -14,6 +14,22 @@ import { validateImageMagicBytes, readImageHeader } from '@/lib/image-validation
 
 export type SubmitRequestState = { error: string | null }
 
+function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
+  const triageTags: string[] = []
+  let slaBucket = 'standard'
+
+  if (preferredLanguage !== 'english') {
+    triageTags.push(`language:${preferredLanguage}`)
+    slaBucket = 'priority'
+  }
+
+  if (preferredCurrency !== 'usd') {
+    triageTags.push(`currency:${preferredCurrency}`)
+  }
+
+  return { triageTags, slaBucket }
+}
+
 const MAX_PHOTO_COUNT = 5
 const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
 const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
@@ -174,6 +190,8 @@ export async function submitMaintenanceRequest(
   }
 
   let createdRequestId: string
+  const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
+  const triageTagsCsv = triageTags.join(',')
 
   try {
     const request = await prisma.$transaction(async (tx) => {
@@ -185,6 +203,8 @@ export async function submitMaintenanceRequest(
           submittedByEmail: tenantEmail,
           preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
           preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
+          slaBucket,
+          triageTagsCsv,
           title,
           description,
           category,

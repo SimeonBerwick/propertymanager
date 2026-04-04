@@ -1,4 +1,4 @@
-import type { MaintenanceRequest, Property, RequestComment, StatusEvent, Unit } from '@/lib/types'
+import type { MaintenanceRequest, Property, RequestComment, StatusEvent, Unit, Vendor } from '@/lib/types'
 
 export const properties: Property[] = [
   { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', unitCount: 2 },
@@ -100,6 +100,42 @@ export const requests: MaintenanceRequest[] = [
     urgency: 'low',
     status: 'new',
     createdAt: '2026-03-20T11:45:00Z',
+  },
+]
+
+export const vendors: Vendor[] = [
+  {
+    id: 'vendor-1',
+    orgId: 'seed-org',
+    name: 'Southwest Plumbing',
+    email: 'dispatch@southwestplumbing.example.com',
+    phone: '623-555-0144',
+    categories: ['Plumbing'],
+    supportedLanguages: ['english', 'spanish'],
+    supportedCurrencies: ['usd', 'peso'],
+    isActive: true,
+  },
+  {
+    id: 'vendor-2',
+    orgId: 'seed-org',
+    name: 'Desert Air Service',
+    email: 'dispatch@desertair.example.com',
+    phone: '602-555-0112',
+    categories: ['HVAC'],
+    supportedLanguages: ['english', 'spanish'],
+    supportedCurrencies: ['usd', 'peso'],
+    isActive: true,
+  },
+  {
+    id: 'vendor-3',
+    orgId: 'seed-org',
+    name: 'Mesa Repair Co.',
+    email: 'service@mesarepair.example.com',
+    phone: '480-555-0177',
+    categories: ['Exterior'],
+    supportedLanguages: ['english', 'french'],
+    supportedCurrencies: ['usd', 'pound', 'euro'],
+    isActive: true,
   },
 ]
 
