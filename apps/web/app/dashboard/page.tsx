@@ -5,10 +5,23 @@ import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ currency?: string; language?: string }>
+}) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
   const data = await getDashboardData(session.userId)
+  const params = searchParams ? await searchParams : undefined
+  const selectedCurrency = params?.currency ?? 'all'
+  const selectedLanguage = params?.language ?? 'all'
+
+  const filteredRequests = data.requestRows.filter((request) => {
+    const currencyMatch = selectedCurrency === 'all' || request.preferredCurrency === selectedCurrency
+    const languageMatch = selectedLanguage === 'all' || request.preferredLanguage === selectedLanguage
+    return currencyMatch && languageMatch
+  })
 
   return (
     <div className="stack">
@@ -46,6 +59,30 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        <form method="get" className="row" style={{ gap: 12, alignItems: 'flex-end', marginBottom: 16 }}>
+          <label className="field" style={{ minWidth: 180 }}>
+            <span className="field-label">Currency</span>
+            <select className="input" name="currency" defaultValue={selectedCurrency}>
+              <option value="all">All currencies</option>
+              <option value="usd">US Dollar</option>
+              <option value="peso">Peso</option>
+              <option value="pound">Pound</option>
+              <option value="euro">Euro</option>
+            </select>
+          </label>
+          <label className="field" style={{ minWidth: 180 }}>
+            <span className="field-label">Language</span>
+            <select className="input" name="language" defaultValue={selectedLanguage}>
+              <option value="all">All languages</option>
+              <option value="english">English</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+            </select>
+          </label>
+          <button type="submit" className="button">Apply filters</button>
+          <Link href="/dashboard" className="button">Clear</Link>
+        </form>
+
         <table className="table">
           <thead>
             <tr>
@@ -57,13 +94,13 @@ export default async function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {data.requestRows.length === 0 ? (
+            {filteredRequests.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted)' }}>
-                  No maintenance requests yet. Use the tenant issue form to submit the first one.
+                  No maintenance requests match the current filters.
                 </td>
               </tr>
-            ) : data.requestRows.map((request) => (
+            ) : filteredRequests.map((request) => (
               <tr key={request.id}>
                 <td>
                   <Link href={`/requests/${request.id}`}>
