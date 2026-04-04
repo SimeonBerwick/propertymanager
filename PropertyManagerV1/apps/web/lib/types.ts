@@ -60,3 +60,24 @@ export interface StatusEvent {
   actorName: string
   createdAt: string
 }
+
+const CURRENCY_LABELS: Record<CurrencyOption, string> = {
+  usd: 'US Dollar',
+  peso: 'Peso',
+  pound: 'Pound',
+  euro: 'Euro',
+}
+
+const LANGUAGE_LABELS: Record<LanguageOption, string> = {
+  english: 'English',
+  spanish: 'Spanish',
+  french: 'French',
+}
+
+export function currencyLabel(value: CurrencyOption): string {
+  return CURRENCY_LABELS[value]
+}
+
+export function languageLabel(value: LanguageOption): string {
+  return LANGUAGE_LABELS[value]
+}

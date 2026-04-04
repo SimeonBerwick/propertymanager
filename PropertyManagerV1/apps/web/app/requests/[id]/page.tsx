@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { currencyLabel, languageLabel } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
@@ -68,7 +69,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <div>
             <strong>Preferences</strong>
             <p className="muted" style={{ marginBottom: 0 }}>
-              {data.request.preferredCurrency} · {data.request.preferredLanguage}
+              {currencyLabel(data.request.preferredCurrency)} · {languageLabel(data.request.preferredLanguage)}
             </p>
           </div>
 

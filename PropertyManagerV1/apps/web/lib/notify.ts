@@ -10,7 +10,7 @@
  * propagate back to the caller so a failed email never breaks a user action.
  */
 
-import type { RequestStatus } from '@/lib/types'
+import { currencyLabel, languageLabel, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
   to: string
@@ -151,8 +151,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
-      `  Currency     : ${p.preferredCurrency}`,
-      `  Language     : ${p.preferredLanguage}`,
+      `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}`,
+      `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}`,
       ``,
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
     ].join('\n'),
@@ -165,8 +165,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
-        ${dtRow('Currency', p.preferredCurrency)}
-        ${dtRow('Language', p.preferredLanguage)}
+        ${dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro'))}
+        ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
       </table>
       <p>We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
     `),
@@ -184,8 +184,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
-      `  Currency     : ${p.preferredCurrency}`,
-      `  Language     : ${p.preferredLanguage}`,
+      `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}`,
+      `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}`,
       `  Tenant       : ${p.tenantName} <${p.tenantEmail}>`,
       ``,
       `Description:`,
@@ -200,8 +200,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', p.unitLabel)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
-        ${dtRow('Currency', p.preferredCurrency)}
-        ${dtRow('Language', p.preferredLanguage)}
+        ${dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro'))}
+        ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
         ${dtRow('Tenant', `${p.tenantName} <${p.tenantEmail}>`)}
       </table>
       <p style="font-weight:bold">Description</p>
