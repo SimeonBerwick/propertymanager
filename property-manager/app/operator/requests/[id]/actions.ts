@@ -1,6 +1,6 @@
 'use server';
 
-import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole } from '@prisma/client';
+import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole, VendorResponseStatus } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
@@ -120,6 +120,92 @@ export async function addInternalNote(requestId: string, formData: FormData) {
 
   revalidatePath('/operator/requests');
   revalidatePath(`/operator/requests/${requestId}`);
+}
+
+export async function respondToVendorOffer(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
+  const action = getString(formData, 'vendorOfferAction');
+  const body = getString(formData, 'body');
+  const reassignedVendorId = getString(formData, 'reassignedVendorId');
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    include: { property: true, assignedVendor: true },
+  });
+
+  if (!request || !request.assignedVendorId) {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  if (!body) {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  if (action !== 'send_back' && action !== 'send_to_another_vendor') {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  let nextAssignedVendorId = request.assignedVendorId;
+  let nextVendorResponseStatus = request.vendorResponseStatus;
+  const events: Array<{
+    type: RequestEventType;
+    actorRole: UserRole;
+    actorName: string;
+    body: string;
+    visibility: EventVisibility;
+  }> = [];
+
+  if (action === 'send_back') {
+    nextVendorResponseStatus = VendorResponseStatus.PENDING;
+    events.push({
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.OPERATOR,
+      actorName: session.displayName,
+      body: `Vendor offer rejected. Sent back to vendor with required changes: ${body}`,
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
+  if (action === 'send_to_another_vendor') {
+    if (!reassignedVendorId) {
+      redirect(`/operator/requests/${requestId}`);
+    }
+
+    const nextVendor = await prisma.vendor.findFirst({
+      where: getOperatorVendorWhere(session.organizationId, reassignedVendorId),
+    });
+
+    if (!nextVendor) {
+      redirect(`/operator/requests/${requestId}`);
+    }
+
+    nextAssignedVendorId = nextVendor.id;
+    nextVendorResponseStatus = VendorResponseStatus.PENDING;
+
+    events.push({
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.OPERATOR,
+      actorName: session.displayName,
+      body: `Vendor offer rejected. Reassigned from ${request.assignedVendor?.name || 'current vendor'} to ${nextVendor.name}. Reason: ${body}`,
+      visibility: EventVisibility.ALL,
+    });
+  }
+
+  await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      assignedVendorId: nextAssignedVendorId,
+      vendorResponseStatus: nextVendorResponseStatus,
+      events: events.length > 0 ? { create: events } : undefined,
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/vendor/queue');
+  revalidatePath(`/vendor/requests/${requestId}`);
+  redirect(`/operator/requests/${requestId}`);
 }
 
 export async function dispatchRequest(requestId: string, formData: FormData) {

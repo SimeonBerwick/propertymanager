@@ -10,7 +10,7 @@ import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/opera
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST_STATUSES } from '@/lib/request-lifecycle';
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
-import { addInternalNote, dispatchRequest, updatePaymentStatus, updateRequestStatus } from './actions';
+import { addInternalNote, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
 import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
@@ -57,6 +57,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   const paymentAction = updatePaymentStatus.bind(null, request.id);
   const noteAction = addInternalNote.bind(null, request.id);
   const dispatchAction = dispatchRequest.bind(null, request.id);
+  const vendorOfferAction = respondToVendorOffer.bind(null, request.id);
   const regionId = request.property.regionId;
   const region = regionId
     ? await prisma.region.findFirst({
@@ -95,12 +96,19 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               <p><strong>Vendor response:</strong> {getVendorResponseLabel(request.vendorResponseStatus)}</p>
               <p><strong>Planned start:</strong> {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p><strong>Expected completion:</strong> {formatDateTime(request.vendorExpectedCompletionDate)}</p>
-              <p><strong>Pricing:</strong> {getVendorPricingTypeLabel(request.vendorPricingType)}{request.vendorPriceCents != null ? ` · ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
               <p><strong>Payment status:</strong> {getPaymentStatusLabel(request.paymentStatus)}</p>
-              <p><strong>Final bill:</strong> {request.vendorFinalBillCents != null ? formatCurrencyFromCents(request.vendorFinalBillCents) : 'Not submitted'}</p>
-              <p><strong>Tax:</strong> {request.vendorFinalTaxCents != null ? formatCurrencyFromCents(request.vendorFinalTaxCents) : 'Not submitted'}</p>
-              <p><strong>Additional costs:</strong> {request.vendorAdditionalCostsCents != null ? formatCurrencyFromCents(request.vendorAdditionalCostsCents) : 'Not submitted'}</p>
-              <p><strong>Additional tax:</strong> {request.vendorAdditionalTaxCents != null ? formatCurrencyFromCents(request.vendorAdditionalTaxCents) : 'Not submitted'}</p>
+            </div>
+
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Billing summary</p>
+              <div className="mt-2 space-y-1">
+                <p><strong>Quoted pricing:</strong> {getVendorPricingTypeLabel(request.vendorPricingType)}{request.vendorPriceCents != null ? ` · ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
+                <p><strong>Final bill:</strong> {request.vendorFinalBillCents != null ? formatCurrencyFromCents(request.vendorFinalBillCents) : 'Not submitted'}</p>
+                <p><strong>Tax:</strong> {request.vendorFinalTaxCents != null ? formatCurrencyFromCents(request.vendorFinalTaxCents) : 'Not submitted'}</p>
+                <p><strong>Additional costs:</strong> {request.vendorAdditionalCostsCents != null ? formatCurrencyFromCents(request.vendorAdditionalCostsCents) : 'Not submitted'}</p>
+                <p><strong>Additional tax:</strong> {request.vendorAdditionalTaxCents != null ? formatCurrencyFromCents(request.vendorAdditionalTaxCents) : 'Not submitted'}</p>
+                <p><strong>Total commercial exposure:</strong> {formatCurrencyFromCents((request.vendorFinalBillCents ?? 0) + (request.vendorFinalTaxCents ?? 0) + (request.vendorAdditionalCostsCents ?? 0) + (request.vendorAdditionalTaxCents ?? 0))}</p>
+              </div>
             </div>
           </div>
         </PageSection>
@@ -163,6 +171,32 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </select>
                 </label>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update payment status</button>
+              </form>
+            </PageSection>
+
+            <PageSection title="Vendor offer response" description="Reject a vendor offer and either reassign the ticket or send it back with what must change for approval.">
+              <form action={vendorOfferAction} className="space-y-3">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Response path</span>
+                  <select name="vendorOfferAction" defaultValue="send_back" className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    <option value="send_back">Reject and send back to current vendor</option>
+                    <option value="send_to_another_vendor">Reject and send to another vendor</option>
+                  </select>
+                </label>
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">If reassigning, choose vendor</span>
+                  <select name="reassignedVendorId" defaultValue="" className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    <option value="">Select vendor</option>
+                    {eligibleDispatchVendors.map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Required note</span>
+                  <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why the offer is rejected or what the vendor must change for approval." />
+                </label>
+                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Send vendor response</button>
               </form>
             </PageSection>
 
