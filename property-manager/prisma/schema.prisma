@@ -94,6 +94,14 @@ enum PaymentStatus {
   PAID_IN_FULL
 }
 
+enum VendorOfferStatus {
+  NONE
+  PENDING_REVIEW
+  REVISION_REQUESTED
+  ACCEPTED
+  REJECTED
+}
+
 model Organization {
   id                  String               @id @default(cuid())
   name                String
@@ -285,6 +293,7 @@ model MaintenanceRequest {
   vendorExpectedCompletionDate DateTime?
   vendorPricingType           VendorPricingType    @default(NONE)
   vendorPriceCents            Int?
+  vendorOfferStatus           VendorOfferStatus    @default(NONE)
   paymentStatus               PaymentStatus        @default(UNPAID)
   vendorFinalBillCents        Int?
   vendorFinalTaxCents         Int?

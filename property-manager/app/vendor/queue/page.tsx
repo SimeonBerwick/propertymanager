@@ -5,6 +5,7 @@ import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/opera
 import { getRequestStatusLabel } from '@/lib/request-lifecycle';
 import { getVendorPortalData, getVendorQueue } from '@/lib/vendor-requests';
 import { requireVendorSession } from '@/lib/auth';
+import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 
 export default async function VendorQueuePage() {
   const session = await requireVendorSession();
@@ -54,6 +55,7 @@ export default async function VendorQueuePage() {
                       <div className="flex flex-wrap gap-2 text-xs font-medium">
                         <span className={`rounded-full px-3 py-1 ${getStatusClasses(request.status)}`}>{getRequestStatusLabel(request.status)}</span>
                         <span className={`rounded-full px-3 py-1 ${getUrgencyClasses(request.urgency)}`}>{request.urgency.replace('_', ' ')}</span>
+                        <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">{getVendorOfferStatusLabel(request.vendorOfferStatus)}</span>
                       </div>
                     </div>
                   </Link>

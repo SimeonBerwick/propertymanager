@@ -12,6 +12,7 @@ import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getVendorPortalData, getVendorVisibleRequest } from '@/lib/vendor-requests';
 import { requireVendorSession } from '@/lib/auth';
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
+import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 import { getDisplayLanguage, getLocalizedDateTime, getRequestCopy } from '@/lib/request-display';
 import { submitVendorUpdate } from './actions';
 
@@ -67,6 +68,7 @@ export default async function VendorRequestDetailPage({
               <span className={`rounded-full px-3 py-1 ${getUrgencyClasses(request.urgency)}`}>{request.urgency.replace('_', ' ')}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{request.category}</span>
               <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-800">Vendor response: {getVendorResponseLabel(request.vendorResponseStatus)}</span>
+              <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">Offer: {getVendorOfferStatusLabel(request.vendorOfferStatus)}</span>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <p>Vendor: {request.assignedVendor?.name || 'Unassigned'}</p>

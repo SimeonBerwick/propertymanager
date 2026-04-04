@@ -6,6 +6,7 @@ import {
   RequestEventType,
   RequestStatus,
   UserRole,
+  VendorOfferStatus,
   VendorPricingType,
   VendorResponseStatus,
 } from '@prisma/client';
@@ -168,6 +169,13 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     redirect(`/vendor/requests/${requestId}?error=Enter%20the%20final%20bill%20before%20marking%20the%20job%20complete.`);
   }
 
+  const offerSubmitted = pricingType !== VendorPricingType.NONE
+    || vendorPriceCents != null
+    || vendorFinalBillCents != null
+    || vendorAdditionalCostsCents != null;
+
+  const nextOfferStatus = offerSubmitted ? VendorOfferStatus.PENDING_REVIEW : VendorOfferStatus.NONE;
+
   const nothingChanged =
     !body &&
     request.status === status &&
@@ -180,6 +188,7 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     request.vendorFinalTaxCents === vendorFinalTaxCents &&
     request.vendorAdditionalCostsCents === vendorAdditionalCostsCents &&
     request.vendorAdditionalTaxCents === vendorAdditionalTaxCents &&
+    request.vendorOfferStatus === nextOfferStatus &&
     bidFiles.length === 0;
 
   if (nothingChanged) {
@@ -311,6 +320,7 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
       vendorExpectedCompletionDate: expectedCompletionDate,
       vendorPricingType: pricingType,
       vendorPriceCents,
+      vendorOfferStatus: nextOfferStatus,
       vendorFinalBillCents,
       vendorFinalTaxCents,
       vendorAdditionalCostsCents,

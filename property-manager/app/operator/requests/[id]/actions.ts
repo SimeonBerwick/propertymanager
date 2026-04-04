@@ -1,6 +1,6 @@
 'use server';
 
-import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole, VendorResponseStatus } from '@prisma/client';
+import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole, VendorOfferStatus, VendorResponseStatus } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
@@ -196,6 +196,7 @@ export async function respondToVendorOffer(requestId: string, formData: FormData
     data: {
       assignedVendorId: nextAssignedVendorId,
       vendorResponseStatus: nextVendorResponseStatus,
+      vendorOfferStatus: action === 'send_back' ? VendorOfferStatus.REVISION_REQUESTED : VendorOfferStatus.REJECTED,
       events: events.length > 0 ? { create: events } : undefined,
     },
   });

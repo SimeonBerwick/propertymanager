@@ -9,6 +9,7 @@ import { requireOperatorSession } from '@/lib/auth';
 import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/operator-data';
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST_STATUSES } from '@/lib/request-lifecycle';
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
+import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { addInternalNote, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
@@ -94,6 +95,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             <p className="text-xs text-slate-500">Tenant visible: {request.isTenantVisible ? 'yes' : 'no'} · Vendor visible: {request.isVendorVisible ? 'yes' : 'no'}</p>
             <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-slate-700">
               <p><strong>Vendor response:</strong> {getVendorResponseLabel(request.vendorResponseStatus)}</p>
+              <p><strong>Offer status:</strong> {getVendorOfferStatusLabel(request.vendorOfferStatus)}</p>
               <p><strong>Planned start:</strong> {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p><strong>Expected completion:</strong> {formatDateTime(request.vendorExpectedCompletionDate)}</p>
               <p><strong>Payment status:</strong> {getPaymentStatusLabel(request.paymentStatus)}</p>
