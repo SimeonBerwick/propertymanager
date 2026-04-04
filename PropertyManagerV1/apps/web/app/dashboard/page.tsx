@@ -60,7 +60,7 @@ export default async function DashboardPage({
         <div className="card">
           <div className="kicker">Language queue</div>
           <h3 style={{ margin: '4px 0' }}>{nonEnglishOpen.length}</h3>
-          <div className="muted">Open requests needing Spanish or French handling</div>
+          <div className="muted">Open requests with non-English language preferences</div>
         </div>
         <div className="card">
           <div className="kicker">Currency queue</div>
