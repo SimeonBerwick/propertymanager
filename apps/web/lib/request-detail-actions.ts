@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
+import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 
 export type RequestActionState = { error: string | null; success?: boolean }
 
@@ -164,6 +165,8 @@ export async function updateVendorFormAction(
     }
 
     if (vendorName && vendorEmail) {
+      const dispatchLink = vendorId ? await createVendorDispatchLink(requestId, vendorId).catch(() => null) : null
+      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
       notificationPayload = {
         requestId,
         title: updated.title,
@@ -177,6 +180,7 @@ export async function updateVendorFormAction(
         category: updated.category,
         preferredCurrency: updated.preferredCurrency,
         preferredLanguage: updated.preferredLanguage,
+        responseLink: dispatchLink ? `${appUrl}/vendor/respond/${dispatchLink.rawToken}` : undefined,
       }
     }
 

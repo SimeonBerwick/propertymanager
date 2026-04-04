@@ -151,6 +151,7 @@ model MaintenanceRequest {
   comments          RequestComment[]
   events            StatusEvent[]
   dispatchHistory   VendorDispatchEvent[]
+  dispatchLinks     VendorDispatchLink[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
@@ -171,6 +172,7 @@ model Vendor {
 
   assignedRequests      MaintenanceRequest[]
   dispatchEvents        VendorDispatchEvent[]
+  dispatchLinks         VendorDispatchLink[]
 
   @@index([orgId, isActive])
 }
@@ -191,6 +193,22 @@ model VendorDispatchEvent {
   actorUser         User?              @relation(fields: [actorUserId], references: [id])
 
   @@index([requestId, createdAt])
+}
+
+model VendorDispatchLink {
+  id          String        @id @default(cuid())
+  requestId   String
+  vendorId    String
+  tokenHash   String        @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  request     MaintenanceRequest @relation(fields: [requestId], references: [id])
+  vendor      Vendor             @relation(fields: [vendorId], references: [id])
+
+  @@index([requestId, vendorId])
 }
 
 model MaintenancePhoto {

@@ -281,6 +281,7 @@ export interface VendorAssignedParams {
   category: string
   preferredCurrency?: string
   preferredLanguage?: string
+  responseLink?: string
 }
 
 export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
@@ -302,7 +303,7 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
       p.preferredLanguage ? `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}` : '',
       p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')}` : '',
       ``,
-      `Please contact the operator to confirm scheduling and next steps.`,
+      p.responseLink ? `Respond here: ${p.responseLink}` : 'Please contact the operator to confirm scheduling and next steps.',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
       <p>Hi ${esc(p.vendorName)},</p>
@@ -318,7 +319,7 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${p.preferredLanguage ? dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')) : ''}
         ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')) : ''}
       </table>
-      <p>Please contact the operator to confirm scheduling and next steps.</p>
+      <p>${p.responseLink ? `Respond here: <a href="${esc(p.responseLink)}">${esc(p.responseLink)}</a>` : 'Please contact the operator to confirm scheduling and next steps.'}</p>
     `),
   }
 }
