@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getReportData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
+import { currencyLabel, languageLabel } from '@/lib/types'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -97,6 +98,7 @@ export default async function ReportsPage() {
                 <th>Request</th>
                 <th>Property · Unit</th>
                 <th>Category</th>
+                <th>Preferences</th>
                 <th>Urgency</th>
                 <th>Age</th>
                 <th>Status</th>
@@ -112,6 +114,7 @@ export default async function ReportsPage() {
                   </td>
                   <td className="muted">{r.propertyName} · {r.unitLabel}</td>
                   <td className="muted">{r.category}</td>
+                  <td className="muted">{currencyLabel(r.preferredCurrency)} · {languageLabel(r.preferredLanguage)}</td>
                   <td className="muted">{r.urgency}</td>
                   <td>
                     <span className={ageBadgeClass(r.ageDays)}>
