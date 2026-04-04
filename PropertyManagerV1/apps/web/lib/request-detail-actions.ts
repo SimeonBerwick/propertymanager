@@ -98,14 +98,27 @@ export async function updateVendorFormAction(
   if (!session) return { error: 'Not authenticated.' }
 
   const requestId = formData.get('requestId') as string
-  const vendorName = ((formData.get('vendorName') as string) ?? '').trim()
-  const vendorEmail = ((formData.get('vendorEmail') as string) ?? '').trim().toLowerCase()
-  const vendorPhone = ((formData.get('vendorPhone') as string) ?? '').trim()
+  const vendorId = ((formData.get('vendorId') as string) ?? '').trim()
+  let vendorName = ((formData.get('vendorName') as string) ?? '').trim()
+  let vendorEmail = ((formData.get('vendorEmail') as string) ?? '').trim().toLowerCase()
+  let vendorPhone = ((formData.get('vendorPhone') as string) ?? '').trim()
 
   if (vendorName.length > 120) return { error: 'Vendor name must be 120 characters or fewer.' }
   if (vendorEmail.length > 254) return { error: 'Vendor email must be 254 characters or fewer.' }
   if (vendorPhone.length > 40) return { error: 'Vendor phone must be 40 characters or fewer.' }
   if (vendorEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendorEmail)) return { error: 'Vendor email is invalid.' }
+
+  if (vendorId) {
+    const selectedVendor = await prisma.vendor.findFirst({
+      where: { id: vendorId, orgId: session.userId, isActive: true },
+    }).catch(() => null)
+
+    if (!selectedVendor) return { error: 'Recommended vendor not found.' }
+
+    vendorName = selectedVendor.name
+    vendorEmail = selectedVendor.email ?? ''
+    vendorPhone = selectedVendor.phone ?? ''
+  }
 
   let notificationPayload:
     | {
@@ -128,6 +141,7 @@ export async function updateVendorFormAction(
     const updated = await prisma.maintenanceRequest.update({
       where: { id: requestId, property: { ownerId: session.userId } },
       data: {
+        assignedVendorId: vendorId || null,
         assignedVendorName: vendorName || null,
         assignedVendorEmail: vendorEmail || null,
         assignedVendorPhone: vendorPhone || null,
