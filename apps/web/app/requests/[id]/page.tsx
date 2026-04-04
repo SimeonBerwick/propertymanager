@@ -66,8 +66,27 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </div>
 
           <div>
+            <strong>Preferences</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              {data.request.preferredCurrency} · {data.request.preferredLanguage}
+            </p>
+          </div>
+
+          <div>
             <strong>Assigned vendor</strong>
-            <p className="muted" style={{ marginBottom: 0 }}>{data.request.assignedVendorName ?? 'Unassigned'}</p>
+            {data.request.assignedVendorName ? (
+              <div className="muted" style={{ marginBottom: 0 }}>
+                <div>{data.request.assignedVendorName}</div>
+                {data.request.assignedVendorEmail ? (
+                  <div><a href={`mailto:${data.request.assignedVendorEmail}`}>{data.request.assignedVendorEmail}</a></div>
+                ) : null}
+                {data.request.assignedVendorPhone ? (
+                  <div><a href={`tel:${data.request.assignedVendorPhone}`}>{data.request.assignedVendorPhone}</a></div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="muted" style={{ marginBottom: 0 }}>Unassigned</p>
+            )}
           </div>
 
           <div>
@@ -81,6 +100,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             requestId={data.request.id}
             currentStatus={data.request.status}
             currentVendor={data.request.assignedVendorName}
+            currentVendorEmail={data.request.assignedVendorEmail}
+            currentVendorPhone={data.request.assignedVendorPhone}
           />
         </section>
       </div>

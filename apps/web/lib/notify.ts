@@ -130,6 +130,8 @@ export interface NewRequestParams {
   urgency: string
   category: string
   description: string
+  preferredCurrency: string
+  preferredLanguage: string
 }
 
 /**
@@ -149,6 +151,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
+      `  Currency     : ${p.preferredCurrency}`,
+      `  Language     : ${p.preferredLanguage}`,
       ``,
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
     ].join('\n'),
@@ -161,6 +165,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
+        ${dtRow('Currency', p.preferredCurrency)}
+        ${dtRow('Language', p.preferredLanguage)}
       </table>
       <p>We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
     `),
@@ -178,6 +184,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
+      `  Currency     : ${p.preferredCurrency}`,
+      `  Language     : ${p.preferredLanguage}`,
       `  Tenant       : ${p.tenantName} <${p.tenantEmail}>`,
       ``,
       `Description:`,
@@ -192,6 +200,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', p.unitLabel)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
+        ${dtRow('Currency', p.preferredCurrency)}
+        ${dtRow('Language', p.preferredLanguage)}
         ${dtRow('Tenant', `${p.tenantName} <${p.tenantEmail}>`)}
       </table>
       <p style="font-weight:bold">Description</p>
@@ -254,6 +264,55 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
         ${dtRow('New status', STATUS_LABELS[p.toStatus])}
       </table>
       <p>${esc(closingText)}</p>
+    `),
+  }
+}
+
+export interface VendorAssignedParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  vendorName: string
+  vendorEmail: string
+  tenantName?: string
+  tenantEmail?: string
+  urgency: string
+  category: string
+}
+
+export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
+  return {
+    to: p.vendorEmail,
+    subject: `New maintenance assignment — ${p.title}`,
+    text: [
+      `Hi ${p.vendorName},`,
+      ``,
+      `You have been assigned a maintenance request.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Property     : ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel}`,
+      `  Category     : ${p.category}`,
+      `  Urgency      : ${p.urgency}`,
+      p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')}` : '',
+      ``,
+      `Please contact the operator to confirm scheduling and next steps.`,
+    ].filter(Boolean).join('\n'),
+    html: htmlEmail(`
+      <p>Hi ${esc(p.vendorName)},</p>
+      <p>You have been assigned a maintenance request.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+        ${dtRow('Category', p.category)}
+        ${dtRow('Urgency', p.urgency)}
+        ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')) : ''}
+      </table>
+      <p>Please contact the operator to confirm scheduling and next steps.</p>
     `),
   }
 }

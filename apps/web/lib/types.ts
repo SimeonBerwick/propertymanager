@@ -1,5 +1,7 @@
 export type RequestStatus = 'new' | 'scheduled' | 'in_progress' | 'done'
 export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
+export type CurrencyOption = 'usd' | 'peso' | 'pound' | 'euro'
+export type LanguageOption = 'english' | 'spanish' | 'french'
 
 export interface Property {
   id: string
@@ -28,12 +30,16 @@ export interface MaintenanceRequest {
   unitId: string
   submittedByName?: string
   submittedByEmail?: string
+  preferredCurrency: CurrencyOption
+  preferredLanguage: LanguageOption
   title: string
   description: string
   category: string
   urgency: Urgency
   status: RequestStatus
   assignedVendorName?: string
+  assignedVendorEmail?: string
+  assignedVendorPhone?: string
   createdAt: string
 }
 
