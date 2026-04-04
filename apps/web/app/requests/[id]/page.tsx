@@ -33,6 +33,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     notFound()
   }
 
+  const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
+  const vendorPhotos = data.photos.filter((photo) => photo.source === 'vendor')
+
   return (
     <div className="grid cols-2">
       <div className="stack">
@@ -137,11 +140,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         <div className="card stack">
           <div>
             <div className="kicker">Photos</div>
-            <h3 style={{ marginTop: 4 }}>Uploaded issue photos</h3>
+            <h3 style={{ marginTop: 4 }}>Issue intake photos</h3>
           </div>
-          {data.photos.length ? (
+          {issuePhotos.length ? (
             <div className="photo-grid">
-              {data.photos.map((photo) => (
+              {issuePhotos.map((photo) => (
                 <a key={photo.id} href={`/api/landlord/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/api/landlord/media/${photo.id}`} alt="Maintenance issue photo" className="photo-image" />
@@ -149,7 +152,26 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               ))}
             </div>
           ) : (
-            <div className="muted">No photos uploaded.</div>
+            <div className="muted">No issue intake photos uploaded.</div>
+          )}
+        </div>
+
+        <div className="card stack">
+          <div>
+            <div className="kicker">Vendor evidence</div>
+            <h3 style={{ marginTop: 4 }}>Field photos from vendor updates</h3>
+          </div>
+          {vendorPhotos.length ? (
+            <div className="photo-grid">
+              {vendorPhotos.map((photo) => (
+                <a key={photo.id} href={`/api/landlord/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/landlord/media/${photo.id}`} alt="Vendor dispatch photo" className="photo-image" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="muted">No vendor evidence photos yet.</div>
           )}
         </div>
 

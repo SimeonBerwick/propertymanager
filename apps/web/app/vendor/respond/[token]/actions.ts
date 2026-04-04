@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/vendor-dispatch-link'
+import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import type { DispatchStatus } from '@/lib/types'
 
 export type VendorResponseState = { error: string | null }
@@ -18,6 +19,7 @@ export async function submitVendorResponse(
   const note = String(formData.get('note') ?? '').trim()
   const scheduledStartRaw = String(formData.get('scheduledStart') ?? '').trim()
   const scheduledEndRaw = String(formData.get('scheduledEnd') ?? '').trim()
+  const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
 
   if (!VALID_STATUSES.includes(dispatchStatus)) {
     return { error: 'Invalid response status.' }
@@ -28,6 +30,9 @@ export async function submitVendorResponse(
     return { error: 'This vendor response link is invalid or expired.' }
   }
 
+  const photoError = await validatePhotoFiles(photoFiles)
+  if (photoError) return { error: photoError }
+
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
   const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
 
@@ -35,25 +40,46 @@ export async function submitVendorResponse(
   if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Invalid scheduled end.' }
   if (scheduledStart && scheduledEnd && scheduledEnd < scheduledStart) return { error: 'Scheduled end must be after start.' }
 
-  await prisma.maintenanceRequest.update({
-    where: { id: validation.requestId },
-    data: {
-      dispatchStatus,
-      vendorScheduledStart: scheduledStart,
-      vendorScheduledEnd: scheduledEnd,
-    },
-  })
+  const savedPhotoPaths = await savePhotos(photoFiles)
 
-  await prisma.vendorDispatchEvent.create({
-    data: {
-      requestId: validation.requestId,
-      vendorId: validation.vendorId,
-      status: dispatchStatus,
-      note: note || null,
-      scheduledStart,
-      scheduledEnd,
-    },
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.maintenanceRequest.update({
+        where: { id: validation.requestId },
+        data: {
+          dispatchStatus,
+          vendorScheduledStart: scheduledStart,
+          vendorScheduledEnd: scheduledEnd,
+        },
+      })
+
+      const dispatchEvent = await tx.vendorDispatchEvent.create({
+        data: {
+          requestId: validation.requestId,
+          vendorId: validation.vendorId,
+          status: dispatchStatus,
+          note: note || null,
+          scheduledStart,
+          scheduledEnd,
+        },
+      })
+
+      if (savedPhotoPaths.length) {
+        await tx.maintenancePhoto.createMany({
+          data: savedPhotoPaths.map((imageUrl) => ({
+            requestId: validation.requestId,
+            dispatchEventId: dispatchEvent.id,
+            imageUrl,
+            source: 'vendor',
+            sourceLabel: validation.vendorName,
+          })),
+        })
+      }
+    })
+  } catch {
+    await cleanupPhotos(savedPhotoPaths)
+    return { error: 'Could not save vendor response.' }
+  }
 
   await markVendorDispatchLinkUsed(validation.linkId)
 

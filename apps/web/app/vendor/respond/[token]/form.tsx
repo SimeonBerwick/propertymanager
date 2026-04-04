@@ -40,6 +40,11 @@ export function VendorResponseForm({ token }: { token: string }) {
         <textarea className="input" name="note" rows={4} placeholder="Optional note for scheduling or completion details" />
       </label>
 
+      <label className="field">
+        <span className="field-label">Photos</span>
+        <input className="input" type="file" name="photos" accept="image/*" multiple />
+      </label>
+
       <button type="submit" className="button primary" disabled={pending}>
         {pending ? 'Submitting…' : 'Send response'}
       </button>

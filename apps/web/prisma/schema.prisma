@@ -72,6 +72,12 @@ enum DispatchStatus {
   completed
 }
 
+enum PhotoSource {
+  tenant
+  landlord
+  vendor
+}
+
 model User {
   id                String               @id @default(cuid())
   email             String               @unique
@@ -191,6 +197,7 @@ model VendorDispatchEvent {
   request           MaintenanceRequest @relation(fields: [requestId], references: [id])
   vendor            Vendor?            @relation(fields: [vendorId], references: [id])
   actorUser         User?              @relation(fields: [actorUserId], references: [id])
+  photos            MaintenancePhoto[]
 
   @@index([requestId, createdAt])
 }
@@ -212,12 +219,16 @@ model VendorDispatchLink {
 }
 
 model MaintenancePhoto {
-  id        String   @id @default(cuid())
-  requestId String
-  imageUrl  String
-  createdAt DateTime @default(now())
+  id                   String               @id @default(cuid())
+  requestId            String
+  dispatchEventId      String?
+  imageUrl             String
+  source               PhotoSource          @default(tenant)
+  sourceLabel          String?
+  createdAt            DateTime             @default(now())
 
-  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  request              MaintenanceRequest   @relation(fields: [requestId], references: [id])
+  dispatchEvent        VendorDispatchEvent? @relation(fields: [dispatchEventId], references: [id])
 }
 
 model RequestComment {

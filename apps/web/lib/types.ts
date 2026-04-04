@@ -3,6 +3,7 @@ export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
 export type CurrencyOption = 'usd' | 'peso' | 'pound' | 'euro'
 export type LanguageOption = 'english' | 'spanish' | 'french'
 export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed'
+export type PhotoSource = 'tenant' | 'landlord' | 'vendor'
 
 export interface Property {
   id: string
@@ -22,6 +23,9 @@ export interface Unit {
 export interface MaintenancePhoto {
   id: string
   imageUrl: string
+  source: PhotoSource
+  sourceLabel?: string
+  dispatchEventId?: string
   createdAt: string
 }
 
