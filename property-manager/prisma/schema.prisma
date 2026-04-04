@@ -279,6 +279,8 @@ model MaintenanceRequest {
   vendorExpectedCompletionDate DateTime?
   vendorPricingType           VendorPricingType    @default(NONE)
   vendorPriceCents            Int?
+  vendorFinalBillCents        Int?
+  vendorFinalTaxCents         Int?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
   closedAt                    DateTime?

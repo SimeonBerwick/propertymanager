@@ -76,6 +76,8 @@ export default async function VendorRequestDetailPage({
               <p>Planned start: {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p>Expected completion: {formatDateTime(request.vendorExpectedCompletionDate)}</p>
               <p>Pricing: {getVendorPricingTypeLabel(request.vendorPricingType)} {request.vendorPriceCents != null ? `· ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
+              <p>Final bill: {request.vendorFinalBillCents != null ? formatCurrencyFromCents(request.vendorFinalBillCents) : 'Not submitted'}</p>
+              <p>Tax: {request.vendorFinalTaxCents != null ? formatCurrencyFromCents(request.vendorFinalTaxCents) : 'Not submitted'}</p>
               <p>Bid PDFs: {bidAttachments.length}</p>
             </div>
           </div>
@@ -164,6 +166,19 @@ export default async function VendorRequestDetailPage({
                   <label className="block text-sm text-slate-700">
                     <span className="mb-1 block font-medium">Price (USD)</span>
                     <input name="vendorPrice" type="text" inputMode="decimal" defaultValue={request.vendorPriceCents != null ? (request.vendorPriceCents / 100).toFixed(2) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="125.00" />
+                  </label>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Final bill (USD)</span>
+                    <input name="vendorFinalBill" type="text" inputMode="decimal" defaultValue={request.vendorFinalBillCents != null ? (request.vendorFinalBillCents / 100).toFixed(2) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="250.00" />
+                    <span className="mt-1 block text-xs text-slate-500">Required when marking the job complete.</span>
+                  </label>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Tax (USD)</span>
+                    <input name="vendorFinalTax" type="text" inputMode="decimal" defaultValue={request.vendorFinalTaxCents != null ? (request.vendorFinalTaxCents / 100).toFixed(2) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="20.00" />
+                    <span className="mt-1 block text-xs text-slate-500">Optional tax amount on the final bill.</span>
                   </label>
                 </div>
 

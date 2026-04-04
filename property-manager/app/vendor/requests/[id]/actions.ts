@@ -66,6 +66,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   const expectedCompletionValue = getString(formData, 'vendorExpectedCompletionDate');
   const pricingTypeValue = getString(formData, 'vendorPricingType');
   const priceValue = getString(formData, 'vendorPrice');
+  const finalBillValue = getString(formData, 'vendorFinalBill');
+  const finalTaxValue = getString(formData, 'vendorFinalTax');
   const bidFiles = formData
     .getAll('bidPdf')
     .filter((value): value is File => value instanceof File && value.size > 0);
@@ -97,12 +99,26 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20price%20using%20numbers%20only.`);
   }
 
+  const vendorFinalBillCents = parsePriceCents(finalBillValue);
+  if (vendorFinalBillCents === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20final%20bill%20using%20numbers%20only.`);
+  }
+
+  const vendorFinalTaxCents = parsePriceCents(finalTaxValue);
+  if (vendorFinalTaxCents === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20tax%20amount%20using%20numbers%20only.`);
+  }
+
   const pricingType = pricingTypeValue as VendorPricingType;
   if (pricingType === VendorPricingType.NONE && vendorPriceCents !== null) {
     redirect(`/vendor/requests/${requestId}?error=Clear%20the%20price%20or%20choose%20a%20pricing%20type.`);
   }
   if (pricingType !== VendorPricingType.NONE && vendorPriceCents === null) {
     redirect(`/vendor/requests/${requestId}?error=Enter%20a%20price%20for%20the%20selected%20pricing%20type.`);
+  }
+
+  if (vendorFinalTaxCents != null && vendorFinalBillCents == null) {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20final%20bill%20before%20adding%20tax.`);
   }
 
   const request = await prisma.maintenanceRequest.findFirst({
@@ -126,6 +142,11 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   }
 
   const responseStatus = responseStatusValue as VendorResponseStatus;
+
+  if (status === RequestStatus.DONE && vendorFinalBillCents == null) {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20the%20final%20bill%20before%20marking%20the%20job%20complete.`);
+  }
+
   const nothingChanged =
     !body &&
     request.status === status &&
@@ -134,6 +155,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     String(request.vendorExpectedCompletionDate ?? '') === String(expectedCompletionDate ?? '') &&
     request.vendorPricingType === pricingType &&
     request.vendorPriceCents === vendorPriceCents &&
+    request.vendorFinalBillCents === vendorFinalBillCents &&
+    request.vendorFinalTaxCents === vendorFinalTaxCents &&
     bidFiles.length === 0;
 
   if (nothingChanged) {
@@ -210,6 +233,18 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     });
   }
 
+  if (request.vendorFinalBillCents !== vendorFinalBillCents || request.vendorFinalTaxCents !== vendorFinalTaxCents) {
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: vendorFinalBillCents == null
+        ? 'Vendor cleared final billing details.'
+        : `Vendor recorded final bill: $${(vendorFinalBillCents / 100).toFixed(2)}${vendorFinalTaxCents != null ? ` with tax $${(vendorFinalTaxCents / 100).toFixed(2)}` : ''}.`,
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
   if (body) {
     events.push({
       type: RequestEventType.TENANT_UPDATE,
@@ -241,6 +276,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
       vendorExpectedCompletionDate: expectedCompletionDate,
       vendorPricingType: pricingType,
       vendorPriceCents,
+      vendorFinalBillCents,
+      vendorFinalTaxCents,
       attachments: bidAttachments.length > 0
         ? {
             create: bidAttachments,

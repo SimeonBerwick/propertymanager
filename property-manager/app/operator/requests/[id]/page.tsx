@@ -82,6 +82,8 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               <p><strong>Planned start:</strong> {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p><strong>Expected completion:</strong> {formatDateTime(request.vendorExpectedCompletionDate)}</p>
               <p><strong>Pricing:</strong> {getVendorPricingTypeLabel(request.vendorPricingType)}{request.vendorPriceCents != null ? ` · ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
+              <p><strong>Final bill:</strong> {request.vendorFinalBillCents != null ? formatCurrencyFromCents(request.vendorFinalBillCents) : 'Not submitted'}</p>
+              <p><strong>Tax:</strong> {request.vendorFinalTaxCents != null ? formatCurrencyFromCents(request.vendorFinalTaxCents) : 'Not submitted'}</p>
             </div>
           </div>
         </PageSection>
@@ -103,7 +105,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                 <div key={event.id} className="rounded-lg border border-slate-200 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="font-medium text-slate-900">{getRequestEventTypeLabel(event.type)}</p>
+                      <p className="font-medium text-slate-900">{getRequestEventTypeLabel(event.type, event.actorRole)}</p>
                       <p className="text-xs text-slate-500">{event.actorName || event.actorRole} · {formatDateTime(event.createdAt)}</p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${event.visibility === EventVisibility.INTERNAL ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-800'}`}>
