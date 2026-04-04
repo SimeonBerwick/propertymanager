@@ -23,6 +23,14 @@ export default async function DashboardPage({
     return currencyMatch && languageMatch
   })
 
+  const nonEnglishOpen = data.requestRows.filter(
+    (request) => request.status !== 'done' && request.preferredLanguage !== 'english',
+  )
+
+  const nonUsdOpen = data.requestRows.filter(
+    (request) => request.status !== 'done' && request.preferredCurrency !== 'usd',
+  )
+
   return (
     <div className="stack">
       <section className="grid cols-4">
@@ -45,6 +53,19 @@ export default async function DashboardPage({
           <div className="kicker">Done</div>
           <h2>{data.statusCounts.done}</h2>
           <div className="muted">Closed out</div>
+        </div>
+      </section>
+
+      <section className="grid cols-2">
+        <div className="card">
+          <div className="kicker">Language queue</div>
+          <h3 style={{ margin: '4px 0' }}>{nonEnglishOpen.length}</h3>
+          <div className="muted">Open requests needing Spanish or French handling</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Currency queue</div>
+          <h3 style={{ margin: '4px 0' }}>{nonUsdOpen.length}</h3>
+          <div className="muted">Open requests using Peso, Pound, or Euro</div>
         </div>
       </section>
 

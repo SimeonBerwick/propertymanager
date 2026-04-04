@@ -279,6 +279,8 @@ export interface VendorAssignedParams {
   tenantEmail?: string
   urgency: string
   category: string
+  preferredCurrency?: string
+  preferredLanguage?: string
 }
 
 export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
@@ -296,6 +298,8 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
       `  Unit         : ${p.unitLabel}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
+      p.preferredCurrency ? `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}` : '',
+      p.preferredLanguage ? `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}` : '',
       p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')}` : '',
       ``,
       `Please contact the operator to confirm scheduling and next steps.`,
@@ -310,6 +314,8 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${dtRow('Unit', p.unitLabel)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
+        ${p.preferredCurrency ? dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')) : ''}
+        ${p.preferredLanguage ? dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')) : ''}
         ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')) : ''}
       </table>
       <p>Please contact the operator to confirm scheduling and next steps.</p>
