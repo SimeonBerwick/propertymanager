@@ -17,18 +17,16 @@ export type MobileRequestState = { error: string | null }
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
-  let slaBucket = 'standard'
 
   if (preferredLanguage !== 'english') {
     triageTags.push(`language:${preferredLanguage}`)
-    slaBucket = 'priority'
   }
 
   if (preferredCurrency !== 'usd') {
     triageTags.push(`currency:${preferredCurrency}`)
   }
 
-  return { triageTags, slaBucket }
+  return { triageTags, slaBucket: 'standard' }
 }
 
 function getString(formData: FormData, key: string) {

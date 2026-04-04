@@ -105,7 +105,7 @@ async function main() {
       ...(req.preferredCurrency !== 'usd' ? [`currency:${req.preferredCurrency}`] : []),
     ]
     const triageTagsCsv = triageTags.join(',')
-    const slaBucket = req.preferredLanguage !== 'english' ? 'priority' : 'standard'
+    const slaBucket = 'standard'
 
     await prisma.maintenanceRequest.upsert({
       where: { id: req.id },
