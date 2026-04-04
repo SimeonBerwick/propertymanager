@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { StatusBadge } from '@/components/status-badge'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { currencyLabel, languageLabel } from '@/lib/types'
 
 export default async function DashboardPage() {
   const session = await getLandlordSession()
@@ -67,7 +68,9 @@ export default async function DashboardPage() {
                 <td>
                   <Link href={`/requests/${request.id}`}>
                     <div style={{ fontWeight: 600 }}>{request.title}</div>
-                    <div className="muted">{request.unitLabel} · {request.urgency} urgency</div>
+                    <div className="muted">
+                      {request.unitLabel} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
+                    </div>
                   </Link>
                 </td>
                 <td>
