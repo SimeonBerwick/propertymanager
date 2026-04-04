@@ -101,13 +101,31 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign vendor</h3>
+        {recommendedVendors.length ? (
+          <form action={vendorAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
+            <input type="hidden" name="requestId" value={requestId} />
+            <label className="field">
+              <span className="field-label">Assign from recommended vendors</span>
+              <select className="input" name="vendorId" defaultValue="">
+                <option value="">Select a recommended vendor</option>
+                {recommendedVendors.map((vendor) => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.name}
+                    {vendor.email ? ` · ${vendor.email}` : ''}
+                    {vendor.phone ? ` · ${vendor.phone}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {vendorState.error && <div className="notice error">{vendorState.error}</div>}
+            {vendorState.success && <div className="notice success">Recommended vendor assigned.</div>}
+            <button type="submit" className="button primary" disabled={vendorPending}>
+              {vendorPending ? 'Assigning…' : 'Assign recommended vendor'}
+            </button>
+          </form>
+        ) : null}
         <form action={vendorAction} className="stack" style={{ gap: 8 }}>
           <input type="hidden" name="requestId" value={requestId} />
-          {recommendedVendors.length ? (
-            <div className="muted" style={{ fontSize: 13 }}>
-              Best matches: {recommendedVendors.map((vendor) => vendor.name).join(', ')}
-            </div>
-          ) : null}
           <label className="field">
             <span className="field-label">Vendor name</span>
             <input
@@ -142,7 +160,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
             />
           </label>
           {vendorState.error && <div className="notice error">{vendorState.error}</div>}
-          {vendorState.success && <div className="notice success">Vendor contact saved. Assignment email includes tenant preference context when an address is present.</div>}
+          {vendorState.success && <div className="notice success">Manual vendor details saved. Assignment email includes tenant preference context when an address is present.</div>}
           <button type="submit" className="button" disabled={vendorPending}>
             {vendorPending ? 'Saving…' : 'Save vendor'}
           </button>
