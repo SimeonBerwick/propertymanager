@@ -50,8 +50,10 @@ const vendorResponseStatuses = new Set<VendorResponseStatus>([
 
 const vendorPricingTypes = new Set<VendorPricingType>([
   VendorPricingType.NONE,
-  VendorPricingType.FULL_BID,
-  VendorPricingType.INITIAL_SERVICE_FEE,
+  VendorPricingType.ESTIMATE,
+  VendorPricingType.SERVICE_CALL_ONLY,
+  VendorPricingType.FIRM_BID,
+  VendorPricingType.LABOR_ONLY_COST,
 ]);
 
 export async function submitVendorUpdate(requestId: string, formData: FormData) {
@@ -188,7 +190,15 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   }
 
   if (request.vendorPricingType !== pricingType || request.vendorPriceCents !== vendorPriceCents) {
-    const pricingLabel = pricingType === VendorPricingType.FULL_BID ? 'full bid' : pricingType === VendorPricingType.INITIAL_SERVICE_FEE ? 'initial service fee' : 'pricing';
+    const pricingLabel = pricingType === VendorPricingType.ESTIMATE
+      ? 'estimate'
+      : pricingType === VendorPricingType.SERVICE_CALL_ONLY
+        ? 'service call only'
+        : pricingType === VendorPricingType.FIRM_BID
+          ? 'firm bid'
+          : pricingType === VendorPricingType.LABOR_ONLY_COST
+            ? 'labor only cost'
+            : 'pricing';
     events.push({
       type: RequestEventType.TENANT_UPDATE,
       actorRole: UserRole.VENDOR,

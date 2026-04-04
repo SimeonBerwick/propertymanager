@@ -156,7 +156,7 @@ export default async function ReportingPage() {
             <StatCard label="Repeat issue units" value={String(repeatIssueUnits)} hint={`Units with 2+ requests in the last ${RECENT_ISSUE_WINDOW_DAYS} days`} />
             <StatCard label="Awaiting vendor response" value={String(pendingVendorResponseCount)} hint="Assigned vendor jobs still waiting on accept/decline" />
             <StatCard label="Vendor declines logged" value={String(declinedVendorCount)} hint="Requests where the assigned vendor declined the job" />
-            <StatCard label="Priced vendor jobs" value={String(pricedRequestCount)} hint="Requests with a submitted full bid or service fee" />
+            <StatCard label="Priced vendor jobs" value={String(pricedRequestCount)} hint="Requests with a submitted estimate, service-call-only price, labor-only cost, or firm bid" />
           </div>
         </PageSection>
 

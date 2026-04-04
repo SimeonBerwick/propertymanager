@@ -203,7 +203,7 @@ async function main() {
       vendorResponseStatus: VendorResponseStatus.ACCEPTED,
       vendorPlannedStartDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
       vendorExpectedCompletionDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
-      vendorPricingType: VendorPricingType.INITIAL_SERVICE_FEE,
+      vendorPricingType: VendorPricingType.SERVICE_CALL_ONLY,
       vendorPriceCents: 12500,
       events: {
         create: [

@@ -15,10 +15,14 @@ export function getVendorPricingTypeLabel(type: VendorPricingType) {
   switch (type) {
     case VendorPricingType.NONE:
       return 'No pricing submitted';
-    case VendorPricingType.FULL_BID:
-      return 'Full bid';
-    case VendorPricingType.INITIAL_SERVICE_FEE:
-      return 'Initial service fee';
+    case VendorPricingType.ESTIMATE:
+      return 'Estimate';
+    case VendorPricingType.SERVICE_CALL_ONLY:
+      return 'Service call only';
+    case VendorPricingType.FIRM_BID:
+      return 'Firm bid';
+    case VendorPricingType.LABOR_ONLY_COST:
+      return 'Labor only cost';
   }
 }
 

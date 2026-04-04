@@ -17,7 +17,13 @@ import { submitVendorUpdate } from './actions';
 
 const vendorStatusOptions = ['SCHEDULED', 'IN_PROGRESS', 'DONE'] as const;
 const vendorResponseOptions = [VendorResponseStatus.PENDING, VendorResponseStatus.ACCEPTED, VendorResponseStatus.DECLINED] as const;
-const vendorPricingOptions = [VendorPricingType.NONE, VendorPricingType.FULL_BID, VendorPricingType.INITIAL_SERVICE_FEE] as const;
+const vendorPricingOptions = [
+  VendorPricingType.NONE,
+  VendorPricingType.ESTIMATE,
+  VendorPricingType.SERVICE_CALL_ONLY,
+  VendorPricingType.FIRM_BID,
+  VendorPricingType.LABOR_ONLY_COST,
+] as const;
 
 export default async function VendorRequestDetailPage({
   params,
@@ -93,7 +99,7 @@ export default async function VendorRequestDetailPage({
               ) : (
                 request.events.map((event) => (
                   <div key={event.id} className="rounded-lg border border-slate-200 p-4">
-                    <p className="font-medium text-slate-900">{getRequestEventTypeLabel(event.type)}</p>
+                    <p className="font-medium text-slate-900">{getRequestEventTypeLabel(event.type, event.actorRole)}</p>
                     <p className="text-xs text-slate-500">{event.actorName || event.actorRole} · {formatDateTime(event.createdAt)}</p>
                     <p className="mt-3 text-sm text-slate-700">{event.body}</p>
                   </div>
@@ -103,7 +109,7 @@ export default async function VendorRequestDetailPage({
           </PageSection>
 
           <div className="space-y-6">
-            <PageSection title="Vendor update" description="Assigned vendors can now respond to the ticket, provide dates, submit pricing, and attach a PDF bid.">
+            <PageSection title="Vendor update" description="Assigned vendors can now respond to the ticket, provide dates, submit commercial pricing, and attach a PDF bid.">
               <form action={vendorUpdateAction} className="space-y-3">
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Job status</span>
@@ -164,7 +170,7 @@ export default async function VendorRequestDetailPage({
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Upload PDF bid</span>
                   <input name="bidPdf" type="file" accept="application/pdf" className="w-full rounded-md border border-slate-300 px-3 py-2" />
-                  <span className="mt-1 block text-xs text-slate-500">Attach a PDF bid or service-fee sheet directly to this ticket.</span>
+                  <span className="mt-1 block text-xs text-slate-500">Attach a PDF estimate, service-call sheet, labor-only quote, or firm bid directly to this ticket.</span>
                 </label>
 
                 <label className="block text-sm text-slate-700">
