@@ -9,6 +9,7 @@ const statusLabel: Record<RequestStatus, string> = {
   SCHEDULED: 'Scheduled',
   IN_PROGRESS: 'In progress',
   DONE: 'Done',
+  CANCELED: 'Canceled',
 };
 
 const statusColor: Record<RequestStatus, string> = {
@@ -16,6 +17,7 @@ const statusColor: Record<RequestStatus, string> = {
   SCHEDULED: 'bg-amber-100 text-amber-700',
   IN_PROGRESS: 'bg-purple-100 text-purple-700',
   DONE: 'bg-green-100 text-green-700',
+  CANCELED: 'bg-rose-100 text-rose-700',
 };
 
 export default async function MobileDashboardPage() {

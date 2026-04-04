@@ -11,7 +11,7 @@ import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
-import { acceptVendorOffer, addInternalNote, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
+import { acceptVendorOffer, addInternalNote, cancelRequest, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
 import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
@@ -60,6 +60,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   const dispatchAction = dispatchRequest.bind(null, request.id);
   const vendorOfferAction = respondToVendorOffer.bind(null, request.id);
   const acceptOfferAction = acceptVendorOffer.bind(null, request.id);
+  const cancelAction = cancelRequest.bind(null, request.id);
   const regionId = request.property.regionId;
   const region = regionId
     ? await prisma.region.findFirst({
@@ -246,6 +247,16 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   Share this request with the assigned vendor portal
                 </label>
                 <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Save dispatch</button>
+              </form>
+            </PageSection>
+
+            <PageSection title="Cancel ticket" description="Cancel bogus or invalid renter requests so they stop flowing as active work.">
+              <form action={cancelAction} className="space-y-3">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Cancellation reason</span>
+                  <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why this renter request is being canceled." />
+                </label>
+                <button className="rounded-md bg-rose-700 px-4 py-2 text-sm text-white" type="submit">Cancel ticket</button>
               </form>
             </PageSection>
 

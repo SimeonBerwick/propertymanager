@@ -1,6 +1,6 @@
 import { DisplayLanguage, getCompletedStages, getRequestCopy, getTicketStage, TicketStageKey } from '@/lib/request-display';
 
-const orderedStages: TicketStageKey[] = ['CREATED', 'WITH_PROPERTY_MANAGER', 'WITH_VENDOR', 'COMPLETED'];
+const orderedStages: TicketStageKey[] = ['CREATED', 'WITH_PROPERTY_MANAGER', 'WITH_VENDOR', 'COMPLETED', 'CANCELED'];
 
 export function TicketProgress({
   language,

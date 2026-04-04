@@ -41,7 +41,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
     where: { id: requestId },
     data: {
       status,
-      closedAt: status === RequestStatus.DONE ? new Date() : null,
+      closedAt: status === RequestStatus.DONE || status === RequestStatus.CANCELED ? new Date() : null,
       events: {
         create: {
           type: RequestEventType.STATUS_CHANGED,
@@ -61,6 +61,42 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   revalidatePath(`/operator/properties/${updated.propertyId}`);
   revalidatePath('/operator/units');
   revalidatePath(`/operator/units/${updated.unitId}`);
+  revalidatePath(`/tenant/request/${requestId}`);
+}
+
+export async function cancelRequest(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
+  const body = getString(formData, 'body');
+  if (!body) return;
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    select: { id: true, propertyId: true, unitId: true, status: true },
+  });
+  if (!request || request.status === RequestStatus.CANCELED) return;
+
+  await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      status: RequestStatus.CANCELED,
+      closedAt: new Date(),
+      events: {
+        create: {
+          type: RequestEventType.STATUS_CHANGED,
+          actorRole: UserRole.OPERATOR,
+          actorName: session.displayName,
+          body: `Request canceled by operator. Reason: ${body}`,
+          visibility: EventVisibility.ALL,
+        },
+      },
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/vendor/queue');
+  revalidatePath(`/vendor/requests/${requestId}`);
   revalidatePath(`/tenant/request/${requestId}`);
 }
 

@@ -1,7 +1,7 @@
 import { RequestStatus, VendorResponseStatus } from '@prisma/client';
 
 export type DisplayLanguage = 'en' | 'es';
-export type TicketStageKey = 'CREATED' | 'WITH_PROPERTY_MANAGER' | 'WITH_VENDOR' | 'COMPLETED';
+export type TicketStageKey = 'CREATED' | 'WITH_PROPERTY_MANAGER' | 'WITH_VENDOR' | 'COMPLETED' | 'CANCELED';
 
 const copy = {
   en: {
@@ -17,12 +17,14 @@ const copy = {
       WITH_PROPERTY_MANAGER: 'With Property Manager',
       WITH_VENDOR: 'With Vendor',
       COMPLETED: 'Completed',
+      CANCELED: 'Canceled',
     },
     stageDescriptions: {
       CREATED: 'The request has been submitted and recorded.',
       WITH_PROPERTY_MANAGER: 'The property team is reviewing, triaging, or scheduling the work.',
       WITH_VENDOR: 'A vendor is actively assigned, scheduling, or completing the work.',
       COMPLETED: 'The work has been marked complete.',
+      CANCELED: 'The request was canceled and will not move forward.',
     },
   },
   es: {
@@ -38,12 +40,14 @@ const copy = {
       WITH_PROPERTY_MANAGER: 'Con administración',
       WITH_VENDOR: 'Con proveedor',
       COMPLETED: 'Completado',
+      CANCELED: 'Cancelado',
     },
     stageDescriptions: {
       CREATED: 'La solicitud fue enviada y registrada.',
       WITH_PROPERTY_MANAGER: 'El equipo de administración está revisando, clasificando o programando el trabajo.',
       WITH_VENDOR: 'Un proveedor ya está asignado, programando o realizando el trabajo.',
       COMPLETED: 'El trabajo fue marcado como completado.',
+      CANCELED: 'La solicitud fue cancelada y no seguirá adelante.',
     },
   },
 } as const;
@@ -76,6 +80,10 @@ export function getTicketStage(input: {
     return 'COMPLETED';
   }
 
+  if (input.status === RequestStatus.CANCELED) {
+    return 'CANCELED';
+  }
+
   if (
     input.assignedVendorId ||
     input.status === RequestStatus.IN_PROGRESS ||
@@ -92,6 +100,6 @@ export function getTicketStage(input: {
 }
 
 export function getCompletedStages(stage: TicketStageKey): TicketStageKey[] {
-  const order: TicketStageKey[] = ['CREATED', 'WITH_PROPERTY_MANAGER', 'WITH_VENDOR', 'COMPLETED'];
+  const order: TicketStageKey[] = ['CREATED', 'WITH_PROPERTY_MANAGER', 'WITH_VENDOR', 'COMPLETED', 'CANCELED'];
   return order.slice(0, order.indexOf(stage) + 1);
 }

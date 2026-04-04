@@ -57,6 +57,7 @@ enum RequestStatus {
   SCHEDULED
   IN_PROGRESS
   DONE
+  CANCELED
 }
 
 enum RequestEventType {

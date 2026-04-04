@@ -44,5 +44,7 @@ export function getStatusClasses(status: RequestStatus): string {
       return 'bg-sky-100 text-sky-800';
     case RequestStatus.DONE:
       return 'bg-emerald-100 text-emerald-800';
+    case RequestStatus.CANCELED:
+      return 'bg-rose-100 text-rose-800';
   }
 }

@@ -1,17 +1,19 @@
-import { RequestEventType, RequestStatus } from '@prisma/client';
+import { RequestEventType, UserRole, RequestStatus } from '@prisma/client';
 
 export const REQUEST_STATUSES = [
   RequestStatus.NEW,
   RequestStatus.SCHEDULED,
   RequestStatus.IN_PROGRESS,
   RequestStatus.DONE,
+  RequestStatus.CANCELED,
 ] as const;
 
 export const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
-  [RequestStatus.NEW]: [RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS, RequestStatus.DONE],
-  [RequestStatus.SCHEDULED]: [RequestStatus.IN_PROGRESS, RequestStatus.DONE],
-  [RequestStatus.IN_PROGRESS]: [RequestStatus.SCHEDULED, RequestStatus.DONE],
+  [RequestStatus.NEW]: [RequestStatus.SCHEDULED, RequestStatus.IN_PROGRESS, RequestStatus.DONE, RequestStatus.CANCELED],
+  [RequestStatus.SCHEDULED]: [RequestStatus.IN_PROGRESS, RequestStatus.DONE, RequestStatus.CANCELED],
+  [RequestStatus.IN_PROGRESS]: [RequestStatus.SCHEDULED, RequestStatus.DONE, RequestStatus.CANCELED],
   [RequestStatus.DONE]: [],
+  [RequestStatus.CANCELED]: [],
 };
 
 export const REQUEST_EVENT_TYPES = [
@@ -36,10 +38,12 @@ export function getRequestStatusLabel(status: RequestStatus): string {
       return 'In Progress';
     case RequestStatus.DONE:
       return 'Done';
+    case RequestStatus.CANCELED:
+      return 'Canceled';
   }
 }
 
-export function getRequestEventTypeLabel(type: RequestEventType): string {
+export function getRequestEventTypeLabel(type: RequestEventType, actorRole?: UserRole | null): string {
   switch (type) {
     case RequestEventType.STATUS_CHANGED:
       return 'Status changed';
@@ -50,6 +54,8 @@ export function getRequestEventTypeLabel(type: RequestEventType): string {
     case RequestEventType.SCHEDULE_SET:
       return 'Schedule set';
     case RequestEventType.TENANT_UPDATE:
+      if (actorRole === UserRole.VENDOR) return 'Vendor update';
+      if (actorRole === UserRole.OPERATOR) return 'Operator update';
       return 'Tenant update';
   }
 }

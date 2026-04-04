@@ -9,6 +9,7 @@ const statusLabel: Record<RequestStatus, string> = {
   SCHEDULED: 'Scheduled',
   IN_PROGRESS: 'In progress',
   DONE: 'Done',
+  CANCELED: 'Canceled',
 };
 
 const statusColor: Record<RequestStatus, string> = {
@@ -16,6 +17,7 @@ const statusColor: Record<RequestStatus, string> = {
   SCHEDULED: 'bg-amber-500/15 text-amber-100 border-amber-400/20',
   IN_PROGRESS: 'bg-violet-500/15 text-violet-100 border-violet-400/20',
   DONE: 'bg-emerald-500/15 text-emerald-100 border-emerald-400/20',
+  CANCELED: 'bg-rose-500/15 text-rose-100 border-rose-400/20',
 };
 
 export default async function MobileDashboardPage() {
@@ -44,7 +46,7 @@ export default async function MobileDashboardPage() {
     },
   });
 
-  const openCount = requests.filter((request) => request.status !== 'DONE').length;
+  const openCount = requests.filter((request) => request.status !== 'DONE' && request.status !== 'CANCELED').length;
 
   return (
     <div className="space-y-5">
