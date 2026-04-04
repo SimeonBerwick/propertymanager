@@ -39,6 +39,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
 
   const nextStatuses = STATUS_OPTIONS.filter((s) => s !== currentStatus)
+  const bestMatch = recommendedVendors[0]
 
   return (
     <div className="stack">
@@ -102,27 +103,38 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign vendor</h3>
         {recommendedVendors.length ? (
-          <form action={vendorAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
-            <input type="hidden" name="requestId" value={requestId} />
-            <label className="field">
-              <span className="field-label">Assign from recommended vendors</span>
-              <select className="input" name="vendorId" defaultValue="">
-                <option value="">Select a recommended vendor</option>
-                {recommendedVendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.name}
-                    {vendor.email ? ` · ${vendor.email}` : ''}
-                    {vendor.phone ? ` · ${vendor.phone}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {vendorState.error && <div className="notice error">{vendorState.error}</div>}
-            {vendorState.success && <div className="notice success">Recommended vendor assigned.</div>}
-            <button type="submit" className="button primary" disabled={vendorPending}>
-              {vendorPending ? 'Assigning…' : 'Assign recommended vendor'}
-            </button>
-          </form>
+          <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
+            {bestMatch ? (
+              <form action={vendorAction}>
+                <input type="hidden" name="requestId" value={requestId} />
+                <input type="hidden" name="vendorId" value={bestMatch.id} />
+                <button type="submit" className="button primary" disabled={vendorPending}>
+                  {vendorPending ? 'Assigning…' : `Assign best match: ${bestMatch.name}`}
+                </button>
+              </form>
+            ) : null}
+            <form action={vendorAction} className="stack" style={{ gap: 8 }}>
+              <input type="hidden" name="requestId" value={requestId} />
+              <label className="field">
+                <span className="field-label">Assign from recommended vendors</span>
+                <select className="input" name="vendorId" defaultValue="">
+                  <option value="">Select a recommended vendor</option>
+                  {recommendedVendors.map((vendor) => (
+                    <option key={vendor.id} value={vendor.id}>
+                      {vendor.name}
+                      {vendor.email ? ` · ${vendor.email}` : ''}
+                      {vendor.phone ? ` · ${vendor.phone}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {vendorState.error && <div className="notice error">{vendorState.error}</div>}
+              {vendorState.success && <div className="notice success">Recommended vendor assigned.</div>}
+              <button type="submit" className="button" disabled={vendorPending}>
+                {vendorPending ? 'Assigning…' : 'Assign selected recommended vendor'}
+              </button>
+            </form>
+          </div>
         ) : null}
         <form action={vendorAction} className="stack" style={{ gap: 8 }}>
           <input type="hidden" name="requestId" value={requestId} />
