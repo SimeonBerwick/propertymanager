@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <header className="header">
             <div>
               <div className="kicker">Property Manager V1</div>
-              <h1 style={{ margin: '4px 0 0' }}>Maintenance Command Center</h1>
+              <h1 style={{ margin: '4px 0 0' }}>Maintenance Mission Control</h1>
             </div>
             {session.isLoggedIn && (
               <nav className="nav">

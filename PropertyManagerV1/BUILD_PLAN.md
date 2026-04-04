@@ -1,57 +1,93 @@
 # Property Manager V1 - Build Plan
 
-## 1. Target platform / stack
+## 1. Current platform / stack truth
 - Frontend: Next.js + TypeScript
-- Backend: Next.js route handlers or NestJS later if needed
-- Database: SQLite (via Prisma)
+- Backend: Next.js server actions + route handlers
+- Database: SQLite via Prisma
 - ORM: Prisma
-- Auth: Clerk or Supabase Auth
-- File storage: S3 / R2 for issue photos
-- Notifications: email first, SMS later
-- Hosting: Vercel (SQLite via embedded file; swap to Turso/Neon if distributed hosting is needed later)
+- Auth: custom landlord session + tenant mobile session flow
+- File storage: local file-backed uploads for issue photos in current build
+- Notifications: provider-agnostic notification layer, email/log transport first
+- Hosting reality: local/dev-first SQLite app today; move to a networked DB later if multi-node deployment matters
 
-## 2. MVP architecture
+## 2. Mission control surfaces
 
-### Frontend surfaces
-- landlord dashboard
-- property/unit management
-- tenant issue submission page
-- maintenance request detail page
-- reporting page
+### Landlord mission control
+- dashboard inbox with request filters for language and currency
+- queue cards for non-English and non-USD requests
+- request detail page with status, comments, photos, preferences, triage tags, and vendor assignment
+- property detail history
+- unit detail history
+- reports page with aging and repeat-issue visibility
+- vendor directory with in-app create/edit capability management
 
-### Core backend modules
-- auth and roles
-- property/unit service
-- maintenance request service
-- photo upload service
-- comments / communication trail service
-- vendor assignment service
-- reporting queries
-- audit/event logging
+### Tenant-facing surfaces
+- public maintenance submission form
+- tenant mobile portal dashboard
+- tenant mobile request detail and status trail
 
-### Core workflows
-1. tenant submits issue
-2. landlord sees request in inbox
-3. landlord updates status / assigns vendor
-4. tenant receives update trail
-5. landlord reviews property/unit maintenance history
+## 3. Current workflow
 
-## 3. Initial data model
+### Request intake workflow
+1. tenant submits a maintenance request from public submit or tenant mobile portal
+2. request stores preferred language and preferred currency
+3. system derives triage tags from those preferences
+4. request lands in landlord dashboard inbox and queue views
+
+### Landlord operating workflow
+1. landlord reviews inbox / request detail
+2. landlord sees handling preferences and recommended vendors
+3. landlord can assign:
+   - one-click best-match vendor
+   - selected recommended vendor
+   - manual vendor details
+4. vendor assignment notification includes tenant preference context
+5. landlord updates status and adds internal or tenant-visible comments
+6. tenant sees updates in the portal trail
+
+### Vendor management workflow
+1. landlord opens vendor directory
+2. creates or edits vendor records in-app
+3. defines vendor capability set:
+   - categories
+   - supported languages
+   - supported currencies
+   - active/inactive state
+4. recommendation engine uses that capability data for request matching
+
+## 4. Current data model truth
 - User
 - Property
 - Unit
 - MaintenanceRequest
 - MaintenancePhoto
 - RequestComment
-- VendorAssignment
 - StatusEvent
+- TenantIdentity
+- TenantInvite
+- TenantOtpChallenge
+- TenantSession
+- Vendor
 
-## 4. Risks
-- role/permission complexity creeping in too early
-- overbuilding toward a full PMS
-- notification reliability
-- messy request states if model is too loose
-- landlord UX becoming cluttered
+## 5. Important product rules
+- preferred language is handling context, not urgency
+- preferred currency is handling/billing context, not urgency
+- SLA should be explicit policy, not inferred from language alone
+- vendor recommendation should assist assignment, not hide manual override
+- SQLite constraints matter: primitive list fields are stored via CSV-backed columns where needed in this build
 
-## 5. Success metric for first build
-Jeff should be able to create properties/units, submit a maintenance request, track it through statuses, assign a vendor, and review the request history without confusion.
+## 6. Near-term risks
+- landlord request panel can get cluttered as more controls are added
+- CSV-backed capability storage is workable now but not ideal long-term
+- local file upload/storage is not durable enough for serious production deployment
+- notification transport is still simple and may need stronger delivery guarantees
+- recommendation logic is heuristic, not capacity-aware or schedule-aware
+
+## 7. Next build targets
+- add explicit SLA policy model instead of defaulting everything to standard
+- improve vendor recommendation with availability / category normalization / performance history
+- add vendor deletion/deactivation safeguards and assignment history
+- move media + database architecture to production-safe infrastructure when deployment scope expands
+
+## 8. Success metric for this version
+A landlord should be able to create properties and units, accept tenant maintenance requests, see communication preferences, assign a best-fit vendor directly from the request panel, manage vendor capabilities in-app, and track the request to completion without ambiguity.
