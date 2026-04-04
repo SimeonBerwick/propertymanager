@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
+import { currencyLabel, languageLabel } from '@/lib/types'
 
 const STATUS_LABELS: Record<string, string> = {
   new: 'New',
@@ -26,7 +27,9 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div className="kicker">Request detail</div>
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
         </div>
-        <div className="muted">{request.category} · {request.urgency} urgency · {STATUS_LABELS[request.status] ?? request.status}</div>
+        <div className="muted">
+          {request.category} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)} · {STATUS_LABELS[request.status] ?? request.status}
+        </div>
         <div>{request.description}</div>
       </section>
 

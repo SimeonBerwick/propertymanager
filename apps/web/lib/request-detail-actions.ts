@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
-import type { RequestStatus } from '@/lib/types'
-import { sendNotification, buildStatusChangedMessage } from '@/lib/notify'
+import type { CurrencyOption, LanguageOption, RequestStatus } from '@/lib/types'
+import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
 
 export type RequestActionState = { error: string | null; success?: boolean }
 
@@ -85,18 +85,100 @@ export async function updateVendorFormAction(
 
   const requestId = formData.get('requestId') as string
   const vendorName = ((formData.get('vendorName') as string) ?? '').trim()
+  const vendorEmail = ((formData.get('vendorEmail') as string) ?? '').trim().toLowerCase()
+  const vendorPhone = ((formData.get('vendorPhone') as string) ?? '').trim()
 
   if (vendorName.length > 120) return { error: 'Vendor name must be 120 characters or fewer.' }
+  if (vendorEmail.length > 254) return { error: 'Vendor email must be 254 characters or fewer.' }
+  if (vendorPhone.length > 40) return { error: 'Vendor phone must be 40 characters or fewer.' }
+  if (vendorEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendorEmail)) return { error: 'Vendor email is invalid.' }
+
+  let notificationPayload:
+    | {
+        requestId: string
+        title: string
+        propertyName: string
+        unitLabel: string
+        vendorName: string
+        vendorEmail: string
+        tenantName?: string
+        tenantEmail?: string
+        urgency: string
+        category: string
+      }
+    | undefined
+
+  try {
+    const updated = await prisma.maintenanceRequest.update({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      data: {
+        assignedVendorName: vendorName || null,
+        assignedVendorEmail: vendorEmail || null,
+        assignedVendorPhone: vendorPhone || null,
+      },
+      include: { property: true, unit: true },
+    })
+
+    if (vendorName && vendorEmail) {
+      notificationPayload = {
+        requestId,
+        title: updated.title,
+        propertyName: updated.property.name,
+        unitLabel: updated.unit.label,
+        vendorName,
+        vendorEmail,
+        tenantName: updated.submittedByName ?? undefined,
+        tenantEmail: updated.submittedByEmail ?? undefined,
+        urgency: updated.urgency,
+        category: updated.category,
+      }
+    }
+
+    revalidatePath(`/requests/${requestId}`)
+  } catch {
+    return { error: 'Could not update vendor. Database may not be connected.' }
+  }
+
+  if (notificationPayload) {
+    await sendNotification(buildVendorAssignedMessage(notificationPayload))
+  }
+
+  return { error: null, success: true }
+}
+
+export async function updatePreferencesFormAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = formData.get('requestId') as string
+  const preferredCurrency = ((formData.get('preferredCurrency') as string) ?? '').trim() as CurrencyOption
+  const preferredLanguage = ((formData.get('preferredLanguage') as string) ?? '').trim() as LanguageOption
+
+  if (!['usd', 'peso', 'pound', 'euro'].includes(preferredCurrency)) {
+    return { error: 'Invalid currency.' }
+  }
+
+  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) {
+    return { error: 'Invalid language.' }
+  }
 
   try {
     await prisma.maintenanceRequest.update({
       where: { id: requestId, property: { ownerId: session.userId } },
-      data: { assignedVendorName: vendorName || null },
+      data: {
+        preferredCurrency,
+        preferredLanguage,
+      },
     })
+
     revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
     return { error: null, success: true }
   } catch {
-    return { error: 'Could not update vendor. Database may not be connected.' }
+    return { error: 'Could not update preferences. Database may not be connected.' }
   }
 }
 

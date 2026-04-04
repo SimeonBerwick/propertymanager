@@ -103,6 +103,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             currentVendor={data.request.assignedVendorName}
             currentVendorEmail={data.request.assignedVendorEmail}
             currentVendorPhone={data.request.assignedVendorPhone}
+            currentCurrency={data.request.preferredCurrency}
+            currentLanguage={data.request.preferredLanguage}
           />
         </section>
       </div>

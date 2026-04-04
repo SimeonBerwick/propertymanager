@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { currencyLabel, languageLabel } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -75,7 +76,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <Link key={request.id} href={`/requests/${request.id}`} className="row" style={{ alignItems: 'flex-start' }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
-                <div className="muted">{request.unitLabel} · {request.category}</div>
+                <div className="muted">
+                  {request.unitLabel} · {request.category} · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
+                </div>
               </div>
               <StatusBadge status={request.status} />
             </Link>

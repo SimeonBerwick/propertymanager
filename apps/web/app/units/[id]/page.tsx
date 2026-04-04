@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { currencyLabel, languageLabel } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
@@ -96,6 +97,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
               <tr>
                 <th>Request</th>
                 <th>Category</th>
+                <th>Preferences</th>
                 <th>Urgency</th>
                 <th>Age</th>
                 <th>Status</th>
@@ -115,6 +117,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
                       </div>
                     </td>
                     <td className="muted">{r.category}</td>
+                    <td className="muted">{currencyLabel(r.preferredCurrency)} · {languageLabel(r.preferredLanguage)}</td>
                     <td className="muted">{r.urgency}</td>
                     <td>
                       {r.status !== 'done' ? (
