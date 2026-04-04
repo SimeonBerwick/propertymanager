@@ -105,6 +105,8 @@ export async function updateVendorFormAction(
         tenantEmail?: string
         urgency: string
         category: string
+        preferredCurrency?: string
+        preferredLanguage?: string
       }
     | undefined
 
@@ -131,6 +133,8 @@ export async function updateVendorFormAction(
         tenantEmail: updated.submittedByEmail ?? undefined,
         urgency: updated.urgency,
         category: updated.category,
+        preferredCurrency: updated.preferredCurrency,
+        preferredLanguage: updated.preferredLanguage,
       }
     }
 

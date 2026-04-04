@@ -130,7 +130,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
             />
           </label>
           {vendorState.error && <div className="notice error">{vendorState.error}</div>}
-          {vendorState.success && <div className="notice success">Vendor contact saved. Email dispatch sent when an address is present.</div>}
+          {vendorState.success && <div className="notice success">Vendor contact saved. Assignment email includes tenant preference context when an address is present.</div>}
           <button type="submit" className="button" disabled={vendorPending}>
             {vendorPending ? 'Saving…' : 'Save vendor'}
           </button>
