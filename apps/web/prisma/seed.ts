@@ -11,6 +11,7 @@ import {
   requests as seedRequests,
   requestComments as seedComments,
   statusEvents as seedEvents,
+  vendors as seedVendors,
 } from '../lib/seed-data'
 import { getLandlordEmail, getLandlordSlug, getDevFallbackPassword, assertProductionAuthEnv } from '../lib/auth-config'
 import { hashPassword } from '../lib/password'
@@ -70,8 +71,41 @@ async function main() {
     })
   }
 
+  for (const vendor of seedVendors) {
+    await prisma.vendor.upsert({
+      where: { id: vendor.id },
+      update: {
+        orgId: landlord.id,
+        name: vendor.name,
+        email: vendor.email,
+        phone: vendor.phone,
+        categoriesCsv: vendor.categories.join(','),
+        supportedLanguagesCsv: vendor.supportedLanguages.join(','),
+        supportedCurrenciesCsv: vendor.supportedCurrencies.join(','),
+        isActive: vendor.isActive,
+      },
+      create: {
+        id: vendor.id,
+        orgId: landlord.id,
+        name: vendor.name,
+        email: vendor.email,
+        phone: vendor.phone,
+        categoriesCsv: vendor.categories.join(','),
+        supportedLanguagesCsv: vendor.supportedLanguages.join(','),
+        supportedCurrenciesCsv: vendor.supportedCurrencies.join(','),
+        isActive: vendor.isActive,
+      },
+    })
+  }
+
   for (const req of seedRequests) {
     const unit = seedUnits.find((candidate) => candidate.id === req.unitId)
+    const triageTags = [
+      ...(req.preferredLanguage !== 'english' ? [`language:${req.preferredLanguage}`] : []),
+      ...(req.preferredCurrency !== 'usd' ? [`currency:${req.preferredCurrency}`] : []),
+    ]
+    const triageTagsCsv = triageTags.join(',')
+    const slaBucket = req.preferredLanguage !== 'english' ? 'priority' : 'standard'
 
     await prisma.maintenanceRequest.upsert({
       where: { id: req.id },
@@ -82,6 +116,8 @@ async function main() {
         submittedByEmail: req.submittedByEmail ?? unit?.tenantEmail,
         preferredCurrency: req.preferredCurrency,
         preferredLanguage: req.preferredLanguage,
+        slaBucket,
+        triageTagsCsv,
         title: req.title,
         description: req.description,
         category: req.category,
@@ -100,6 +136,8 @@ async function main() {
         submittedByEmail: req.submittedByEmail ?? unit?.tenantEmail,
         preferredCurrency: req.preferredCurrency,
         preferredLanguage: req.preferredLanguage,
+        slaBucket,
+        triageTagsCsv,
         title: req.title,
         description: req.description,
         category: req.category,

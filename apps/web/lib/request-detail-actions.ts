@@ -10,6 +10,22 @@ export type RequestActionState = { error: string | null; success?: boolean }
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 
+function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
+  const triageTags: string[] = []
+  let slaBucket = 'standard'
+
+  if (preferredLanguage !== 'english') {
+    triageTags.push(`language:${preferredLanguage}`)
+    slaBucket = 'priority'
+  }
+
+  if (preferredCurrency !== 'usd') {
+    triageTags.push(`currency:${preferredCurrency}`)
+  }
+
+  return { triageTags, slaBucket }
+}
+
 export async function updateStatusFormAction(
   _prev: RequestActionState,
   formData: FormData,
@@ -169,12 +185,17 @@ export async function updatePreferencesFormAction(
     return { error: 'Invalid language.' }
   }
 
+  const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
+  const triageTagsCsv = triageTags.join(',')
+
   try {
     await prisma.maintenanceRequest.update({
       where: { id: requestId, property: { ownerId: session.userId } },
       data: {
         preferredCurrency,
         preferredLanguage,
+        triageTagsCsv,
+        slaBucket,
       },
     })
 

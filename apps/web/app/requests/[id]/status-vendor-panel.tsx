@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { CurrencyOption, LanguageOption, RequestStatus } from '@/lib/types'
+import type { CurrencyOption, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import {
   updatePreferencesFormAction,
@@ -28,9 +28,12 @@ interface Props {
   currentVendorPhone?: string
   currentCurrency: CurrencyOption
   currentLanguage: LanguageOption
+  currentSlaBucket?: string
+  currentTriageTags?: string[]
+  recommendedVendors: Vendor[]
 }
 
-export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage }: Props) {
+export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
@@ -42,6 +45,10 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
       <div>
         <div className="kicker">Landlord actions</div>
         <h3 style={{ marginTop: 4, marginBottom: 0 }}>Update status</h3>
+        <div className="muted" style={{ marginTop: 4 }}>
+          SLA: {currentSlaBucket ?? 'standard'}
+          {currentTriageTags?.length ? ` · ${currentTriageTags.join(', ')}` : ''}
+        </div>
       </div>
 
       <form key={currentStatus} action={statusAction} className="stack" style={{ gap: 8 }}>
@@ -96,6 +103,11 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign vendor</h3>
         <form action={vendorAction} className="stack" style={{ gap: 8 }}>
           <input type="hidden" name="requestId" value={requestId} />
+          {recommendedVendors.length ? (
+            <div className="muted" style={{ fontSize: 13 }}>
+              Best matches: {recommendedVendors.map((vendor) => vendor.name).join(', ')}
+            </div>
+          ) : null}
           <label className="field">
             <span className="field-label">Vendor name</span>
             <input

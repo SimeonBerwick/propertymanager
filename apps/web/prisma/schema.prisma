@@ -119,9 +119,12 @@ model MaintenanceRequest {
   category            String
   urgency             Urgency
   status              RequestStatus    @default(new)
+  assignedVendorId    String?
   assignedVendorName  String?
   assignedVendorEmail String?
   assignedVendorPhone String?
+  slaBucket           String?          @default("standard")
+  triageTagsCsv       String?          @default("")
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   closedAt            DateTime?
@@ -130,12 +133,31 @@ model MaintenanceRequest {
   unit            Unit               @relation(fields: [unitId], references: [id])
   tenantIdentity  TenantIdentity?    @relation(fields: [tenantIdentityId], references: [id])
   submittedByUser User?              @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
+  assignedVendor  Vendor?            @relation(fields: [assignedVendorId], references: [id])
   photos          MaintenancePhoto[]
   comments        RequestComment[]
   events          StatusEvent[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model Vendor {
+  id                  String           @id @default(cuid())
+  orgId               String?
+  name                String
+  email               String?
+  phone               String?
+  categoriesCsv       String?          @default("")
+  supportedLanguagesCsv String?        @default("")
+  supportedCurrenciesCsv String?       @default("")
+  isActive            Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  assignedRequests    MaintenanceRequest[]
+
+  @@index([orgId, isActive])
 }
 
 model MaintenancePhoto {

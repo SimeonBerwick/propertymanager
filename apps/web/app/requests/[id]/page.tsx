@@ -71,6 +71,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <p className="muted" style={{ marginBottom: 0 }}>
               {currencyLabel(data.request.preferredCurrency)} · {languageLabel(data.request.preferredLanguage)}
             </p>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              SLA: {data.request.slaBucket ?? 'standard'}
+              {data.request.triageTags.length ? ` · Tags: ${data.request.triageTags.join(', ')}` : ''}
+            </p>
           </div>
 
           <div>
@@ -97,6 +101,13 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </section>
 
         <section className="card stack">
+          {data.recommendedVendors.length ? (
+            <div className="notice success">
+              Recommended vendors: {data.recommendedVendors.map((vendor) => vendor.name).join(', ')}
+            </div>
+          ) : (
+            <div className="muted">No strong vendor match yet for this request profile.</div>
+          )}
           <StatusVendorPanel
             requestId={data.request.id}
             currentStatus={data.request.status}
@@ -105,6 +116,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             currentVendorPhone={data.request.assignedVendorPhone}
             currentCurrency={data.request.preferredCurrency}
             currentLanguage={data.request.preferredLanguage}
+            recommendedVendors={data.recommendedVendors}
+            currentSlaBucket={data.request.slaBucket}
+            currentTriageTags={data.request.triageTags}
           />
         </section>
       </div>

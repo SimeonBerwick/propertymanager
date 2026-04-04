@@ -6,6 +6,7 @@ import type {
   RequestStatus,
   StatusEvent,
   Unit,
+  Vendor,
 } from '@/lib/types'
 import { prisma } from '@/lib/prisma'
 
@@ -19,6 +20,11 @@ export interface DashboardData {
   properties: Property[]
   requestRows: DashboardRequestRow[]
   statusCounts: Record<RequestStatus, number>
+  queueCounts: {
+    nonEnglishOpen: number
+    nonUsdOpen: number
+    priorityOpen: number
+  }
 }
 
 export interface PropertyDetailData {
@@ -32,6 +38,7 @@ export interface RequestDetailData {
   comments: RequestComment[]
   events: StatusEvent[]
   photos: MaintenancePhoto[]
+  recommendedVendors: Vendor[]
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -67,9 +74,12 @@ function mapRequestRow(r: any): DashboardRequestRow {
     category: r.category,
     urgency: r.urgency as MaintenanceRequest['urgency'],
     status: r.status as MaintenanceRequest['status'],
+    assignedVendorId: r.assignedVendorId ?? undefined,
     assignedVendorName: r.assignedVendorName ?? undefined,
     assignedVendorEmail: r.assignedVendorEmail ?? undefined,
     assignedVendorPhone: r.assignedVendorPhone ?? undefined,
+    slaBucket: r.slaBucket ?? undefined,
+    triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
     propertyName: r.property?.name ?? 'Unknown property',
     propertyAddress: r.property?.address ?? 'Unknown address',
@@ -95,6 +105,43 @@ function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, numbe
   }
 }
 
+function queueCounts(rows: DashboardRequestRow[]) {
+  const openRows = rows.filter((r) => r.status !== 'done')
+  return {
+    nonEnglishOpen: openRows.filter((r) => r.preferredLanguage !== 'english').length,
+    nonUsdOpen: openRows.filter((r) => r.preferredCurrency !== 'usd').length,
+    priorityOpen: openRows.filter((r) => r.slaBucket === 'priority').length,
+  }
+}
+
+function csvToList(value: unknown): string[] {
+  return typeof value === 'string'
+    ? value.split(',').map((item) => item.trim()).filter(Boolean)
+    : []
+}
+
+function mapVendor(v: any): Vendor {
+  return {
+    id: v.id,
+    orgId: v.orgId ?? undefined,
+    name: v.name,
+    email: v.email ?? undefined,
+    phone: v.phone ?? undefined,
+    categories: csvToList(v.categoriesCsv),
+    supportedLanguages: csvToList(v.supportedLanguagesCsv) as Vendor['supportedLanguages'],
+    supportedCurrencies: csvToList(v.supportedCurrenciesCsv) as Vendor['supportedCurrencies'],
+    isActive: Boolean(v.isActive),
+  }
+}
+
+function vendorMatchScore(request: DashboardRequestRow, vendor: Vendor): number {
+  let score = 0
+  if (vendor.categories.includes(request.category)) score += 3
+  if (vendor.supportedLanguages.includes(request.preferredLanguage)) score += 3
+  if (vendor.supportedCurrencies.includes(request.preferredCurrency)) score += 2
+  return score
+}
+
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
     const [dbProperties, dbRequests] = await Promise.all([
@@ -109,10 +156,15 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       }),
     ])
     const requestRows = dbRequests.map(mapRequestRow)
-    return { properties: dbProperties.map(mapProperty), requestRows, statusCounts: countStatuses(requestRows) }
+    return {
+      properties: dbProperties.map(mapProperty),
+      requestRows,
+      statusCounts: countStatuses(requestRows),
+      queueCounts: queueCounts(requestRows),
+    }
   } catch {
     // DB unavailable: return empty data rather than exposing unscoped seed data
-    return { properties: [], requestRows: [], statusCounts: countStatuses([]) }
+    return { properties: [], requestRows: [], statusCounts: countStatuses([]), queueCounts: queueCounts([]) }
   }
 }
 
@@ -215,11 +267,27 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       createdAt: e.createdAt.toISOString(),
     }))
 
+    const request = mapRequestRow(dbRequest)
+
+    const vendorRows = await prisma.vendor.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    })
+
+    const recommendedVendors = vendorRows
+      .map(mapVendor)
+      .map((vendor) => ({ vendor, score: vendorMatchScore(request, vendor) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score || a.vendor.name.localeCompare(b.vendor.name))
+      .slice(0, 5)
+      .map(({ vendor }) => vendor)
+
     return {
-      request: mapRequestRow(dbRequest),
+      request,
       comments,
       events,
       photos: dbRequest.photos.map(mapPhoto),
+      recommendedVendors,
     }
   } catch {
     // DB unavailable: return null rather than falling back to unscoped seed data.

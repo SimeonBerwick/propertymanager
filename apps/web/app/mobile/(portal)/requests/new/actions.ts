@@ -15,6 +15,22 @@ const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
 
 export type MobileRequestState = { error: string | null }
 
+function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
+  const triageTags: string[] = []
+  let slaBucket = 'standard'
+
+  if (preferredLanguage !== 'english') {
+    triageTags.push(`language:${preferredLanguage}`)
+    slaBucket = 'priority'
+  }
+
+  if (preferredCurrency !== 'usd') {
+    triageTags.push(`currency:${preferredCurrency}`)
+  }
+
+  return { triageTags, slaBucket }
+}
+
 function getString(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''
@@ -98,6 +114,8 @@ export async function submitTenantMobileRequestAction(
   }
 
   const photoPaths = await savePhotos(photoFiles)
+  const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
+  const triageTagsCsv = triageTags.join(',')
 
   const request = await prisma.maintenanceRequest.create({
     data: {
@@ -109,6 +127,8 @@ export async function submitTenantMobileRequestAction(
       submittedByEmail: session.email ?? undefined,
       preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
       preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
+      slaBucket,
+      triageTagsCsv,
       title,
       description,
       category,
