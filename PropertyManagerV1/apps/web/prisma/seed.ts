@@ -100,12 +100,22 @@ async function main() {
 
   for (const req of seedRequests) {
     const unit = seedUnits.find((candidate) => candidate.id === req.unitId)
+    const vendor = seedVendors.find((candidate) => candidate.name === req.assignedVendorName)
     const triageTags = [
       ...(req.preferredLanguage !== 'english' ? [`language:${req.preferredLanguage}`] : []),
       ...(req.preferredCurrency !== 'usd' ? [`currency:${req.preferredCurrency}`] : []),
     ]
     const triageTagsCsv = triageTags.join(',')
     const slaBucket = 'standard'
+    const dispatchStatus = req.status === 'done'
+      ? 'completed'
+      : req.status === 'scheduled'
+        ? 'scheduled'
+        : req.assignedVendorName
+          ? 'accepted'
+          : null
+    const vendorScheduledStart = req.id === 'req-1002' ? new Date('2026-03-13T16:00:00Z') : null
+    const vendorScheduledEnd = req.id === 'req-1002' ? new Date('2026-03-13T18:00:00Z') : null
 
     await prisma.maintenanceRequest.upsert({
       where: { id: req.id },
@@ -123,9 +133,13 @@ async function main() {
         category: req.category,
         urgency: req.urgency as 'low' | 'medium' | 'high' | 'urgent',
         status: req.status as 'new' | 'scheduled' | 'in_progress' | 'done',
+        assignedVendorId: vendor?.id,
         assignedVendorName: req.assignedVendorName,
         assignedVendorEmail: req.assignedVendorEmail,
         assignedVendorPhone: req.assignedVendorPhone,
+        dispatchStatus: dispatchStatus as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed' | null,
+        vendorScheduledStart,
+        vendorScheduledEnd,
         createdAt: new Date(req.createdAt),
       },
       create: {
@@ -143,9 +157,13 @@ async function main() {
         category: req.category,
         urgency: req.urgency as 'low' | 'medium' | 'high' | 'urgent',
         status: req.status as 'new' | 'scheduled' | 'in_progress' | 'done',
+        assignedVendorId: vendor?.id,
         assignedVendorName: req.assignedVendorName,
         assignedVendorEmail: req.assignedVendorEmail,
         assignedVendorPhone: req.assignedVendorPhone,
+        dispatchStatus: dispatchStatus as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed' | null,
+        vendorScheduledStart,
+        vendorScheduledEnd,
         createdAt: new Date(req.createdAt),
       },
     })
@@ -170,6 +188,70 @@ async function main() {
         visibility: comment.visibility,
         authorUserId,
         createdAt: new Date(comment.createdAt),
+      },
+    })
+  }
+
+  const dispatchEvents = [
+    {
+      id: 'dispatch-1',
+      requestId: 'req-1002',
+      vendorId: 'vendor-2',
+      status: 'assigned',
+      note: 'Assigned to Desert Air Service.',
+      createdAt: new Date('2026-03-10T20:05:00Z'),
+    },
+    {
+      id: 'dispatch-2',
+      requestId: 'req-1002',
+      vendorId: 'vendor-2',
+      status: 'scheduled',
+      note: 'Confirmed for Thursday between 9 and 11 AM.',
+      scheduledStart: new Date('2026-03-13T16:00:00Z'),
+      scheduledEnd: new Date('2026-03-13T18:00:00Z'),
+      createdAt: new Date('2026-03-10T20:20:00Z'),
+    },
+    {
+      id: 'dispatch-3',
+      requestId: 'req-1003',
+      vendorId: 'vendor-3',
+      status: 'completed',
+      note: 'Gate latch replaced and tested.',
+      createdAt: new Date('2026-03-10T16:00:00Z'),
+    },
+    {
+      id: 'dispatch-4',
+      requestId: 'req-1004',
+      vendorId: 'vendor-1',
+      status: 'accepted',
+      note: 'Southwest Plumbing accepted the job and is in progress.',
+      createdAt: new Date('2026-03-16T10:30:00Z'),
+    },
+  ]
+
+  for (const dispatch of dispatchEvents) {
+    await prisma.vendorDispatchEvent.upsert({
+      where: { id: dispatch.id },
+      update: {
+        requestId: dispatch.requestId,
+        vendorId: dispatch.vendorId,
+        actorUserId: landlord.id,
+        status: dispatch.status as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed',
+        note: dispatch.note,
+        scheduledStart: dispatch.scheduledStart ?? null,
+        scheduledEnd: dispatch.scheduledEnd ?? null,
+        createdAt: dispatch.createdAt,
+      },
+      create: {
+        id: dispatch.id,
+        requestId: dispatch.requestId,
+        vendorId: dispatch.vendorId,
+        actorUserId: landlord.id,
+        status: dispatch.status as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed',
+        note: dispatch.note,
+        scheduledStart: dispatch.scheduledStart ?? null,
+        scheduledEnd: dispatch.scheduledEnd ?? null,
+        createdAt: dispatch.createdAt,
       },
     })
   }

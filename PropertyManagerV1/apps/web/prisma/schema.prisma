@@ -63,6 +63,15 @@ enum TenantEventVisibility {
   tenant_visible
 }
 
+enum DispatchStatus {
+  assigned
+  contacted
+  accepted
+  declined
+  scheduled
+  completed
+}
+
 model User {
   id                String               @id @default(cuid())
   email             String               @unique
@@ -75,6 +84,7 @@ model User {
   comments          RequestComment[]
   submittedRequests MaintenanceRequest[] @relation("SubmittedRequests")
   statusEvents      StatusEvent[]        @relation("StatusActor")
+  dispatchEvents    VendorDispatchEvent[]
 }
 
 model Property {
@@ -104,60 +114,83 @@ model Unit {
 }
 
 model MaintenanceRequest {
-  id                  String           @id @default(cuid())
-  propertyId          String
-  unitId              String
-  orgId               String?
-  tenantIdentityId    String?
-  submittedByUserId   String?
-  submittedByName     String?
-  submittedByEmail    String?
-  preferredCurrency   CurrencyOption   @default(usd)
-  preferredLanguage   LanguageOption   @default(english)
-  title               String
-  description         String
-  category            String
-  urgency             Urgency
-  status              RequestStatus    @default(new)
-  assignedVendorId    String?
-  assignedVendorName  String?
-  assignedVendorEmail String?
-  assignedVendorPhone String?
-  slaBucket           String?          @default("standard")
-  triageTagsCsv       String?          @default("")
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  closedAt            DateTime?
+  id                    String             @id @default(cuid())
+  propertyId            String
+  unitId                String
+  orgId                 String?
+  tenantIdentityId      String?
+  submittedByUserId     String?
+  submittedByName       String?
+  submittedByEmail      String?
+  preferredCurrency     CurrencyOption     @default(usd)
+  preferredLanguage     LanguageOption     @default(english)
+  title                 String
+  description           String
+  category              String
+  urgency               Urgency
+  status                RequestStatus      @default(new)
+  assignedVendorId      String?
+  assignedVendorName    String?
+  assignedVendorEmail   String?
+  assignedVendorPhone   String?
+  dispatchStatus        DispatchStatus?
+  vendorScheduledStart  DateTime?
+  vendorScheduledEnd    DateTime?
+  slaBucket             String?            @default("standard")
+  triageTagsCsv         String?            @default("")
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  closedAt              DateTime?
 
-  property        Property           @relation(fields: [propertyId], references: [id])
-  unit            Unit               @relation(fields: [unitId], references: [id])
-  tenantIdentity  TenantIdentity?    @relation(fields: [tenantIdentityId], references: [id])
-  submittedByUser User?              @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
-  assignedVendor  Vendor?            @relation(fields: [assignedVendorId], references: [id])
-  photos          MaintenancePhoto[]
-  comments        RequestComment[]
-  events          StatusEvent[]
+  property          Property             @relation(fields: [propertyId], references: [id])
+  unit              Unit                 @relation(fields: [unitId], references: [id])
+  tenantIdentity    TenantIdentity?      @relation(fields: [tenantIdentityId], references: [id])
+  submittedByUser   User?                @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
+  assignedVendor    Vendor?              @relation(fields: [assignedVendorId], references: [id])
+  photos            MaintenancePhoto[]
+  comments          RequestComment[]
+  events            StatusEvent[]
+  dispatchHistory   VendorDispatchEvent[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
 }
 
 model Vendor {
-  id                  String           @id @default(cuid())
-  orgId               String?
-  name                String
-  email               String?
-  phone               String?
-  categoriesCsv       String?          @default("")
-  supportedLanguagesCsv String?        @default("")
-  supportedCurrenciesCsv String?       @default("")
-  isActive            Boolean          @default(true)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                    String               @id @default(cuid())
+  orgId                 String?
+  name                  String
+  email                 String?
+  phone                 String?
+  categoriesCsv         String?              @default("")
+  supportedLanguagesCsv String?              @default("")
+  supportedCurrenciesCsv String?             @default("")
+  isActive              Boolean              @default(true)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
-  assignedRequests    MaintenanceRequest[]
+  assignedRequests      MaintenanceRequest[]
+  dispatchEvents        VendorDispatchEvent[]
 
   @@index([orgId, isActive])
+}
+
+model VendorDispatchEvent {
+  id                String          @id @default(cuid())
+  requestId         String
+  vendorId          String?
+  actorUserId       String?
+  status            DispatchStatus
+  note              String?
+  scheduledStart    DateTime?
+  scheduledEnd      DateTime?
+  createdAt         DateTime        @default(now())
+
+  request           MaintenanceRequest @relation(fields: [requestId], references: [id])
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id])
+  actorUser         User?              @relation(fields: [actorUserId], references: [id])
+
+  @@index([requestId, createdAt])
 }
 
 model MaintenancePhoto {
