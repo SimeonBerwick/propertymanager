@@ -2,6 +2,7 @@ export type RequestStatus = 'new' | 'scheduled' | 'in_progress' | 'done'
 export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
 export type CurrencyOption = 'usd' | 'peso' | 'pound' | 'euro'
 export type LanguageOption = 'english' | 'spanish' | 'french'
+export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed'
 
 export interface Property {
   id: string
@@ -41,6 +42,9 @@ export interface MaintenanceRequest {
   assignedVendorName?: string
   assignedVendorEmail?: string
   assignedVendorPhone?: string
+  dispatchStatus?: DispatchStatus
+  vendorScheduledStart?: string
+  vendorScheduledEnd?: string
   slaBucket?: string
   triageTags: string[]
   createdAt: string
@@ -64,6 +68,18 @@ export interface RequestComment {
   authorName: string
   body: string
   visibility: 'internal' | 'external'
+  createdAt: string
+}
+
+export interface VendorDispatchEvent {
+  id: string
+  requestId: string
+  vendorName?: string
+  actorName: string
+  status: DispatchStatus
+  note?: string
+  scheduledStart?: string
+  scheduledEnd?: string
   createdAt: string
 }
 

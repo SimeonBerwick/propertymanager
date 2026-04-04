@@ -88,6 +88,13 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 {data.request.assignedVendorPhone ? (
                   <div><a href={`tel:${data.request.assignedVendorPhone}`}>{data.request.assignedVendorPhone}</a></div>
                 ) : null}
+                {data.request.dispatchStatus ? <div>Dispatch: {data.request.dispatchStatus}</div> : null}
+                {data.request.vendorScheduledStart ? (
+                  <div>
+                    Schedule: {new Date(data.request.vendorScheduledStart).toLocaleString()}
+                    {data.request.vendorScheduledEnd ? ` → ${new Date(data.request.vendorScheduledEnd).toLocaleString()}` : ''}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="muted" style={{ marginBottom: 0 }}>Unassigned</p>
@@ -116,6 +123,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             currentVendorPhone={data.request.assignedVendorPhone}
             currentCurrency={data.request.preferredCurrency}
             currentLanguage={data.request.preferredLanguage}
+            currentDispatchStatus={data.request.dispatchStatus}
+            currentScheduledStart={data.request.vendorScheduledStart}
+            currentScheduledEnd={data.request.vendorScheduledEnd}
             recommendedVendors={data.recommendedVendors}
             currentSlaBucket={data.request.slaBucket}
             currentTriageTags={data.request.triageTags}
@@ -140,6 +150,30 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           ) : (
             <div className="muted">No photos uploaded.</div>
+          )}
+        </div>
+
+        <div className="card stack">
+          <div>
+            <div className="kicker">Dispatch</div>
+            <h3 style={{ marginTop: 4 }}>Vendor execution history</h3>
+          </div>
+          {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
+            <div key={entry.id}>
+              <div style={{ fontWeight: 600 }}>
+                {entry.vendorName ? `${entry.vendorName} · ` : ''}{entry.status}
+              </div>
+              {entry.note ? <div>{entry.note}</div> : null}
+              {(entry.scheduledStart || entry.scheduledEnd) ? (
+                <div className="muted">
+                  {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '—'}
+                  {entry.scheduledEnd ? ` → ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                </div>
+              ) : null}
+              <div className="muted">{entry.actorName} · {new Date(entry.createdAt).toLocaleString()}</div>
+            </div>
+          )) : (
+            <div className="muted">No dispatch activity yet.</div>
           )}
         </div>
 

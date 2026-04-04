@@ -1,9 +1,10 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { CurrencyOption, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
+import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import {
+  updateDispatchFormAction,
   updatePreferencesFormAction,
   updateStatusFormAction,
   updateVendorFormAction,
@@ -20,6 +21,8 @@ const STATUS_LABELS: Record<RequestStatus, string> = {
   done: 'Done',
 }
 
+const DISPATCH_OPTIONS: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
+
 interface Props {
   requestId: string
   currentStatus: RequestStatus
@@ -28,15 +31,19 @@ interface Props {
   currentVendorPhone?: string
   currentCurrency: CurrencyOption
   currentLanguage: LanguageOption
+  currentDispatchStatus?: DispatchStatus
+  currentScheduledStart?: string
+  currentScheduledEnd?: string
   currentSlaBucket?: string
   currentTriageTags?: string[]
   recommendedVendors: Vendor[]
 }
 
-export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
+export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
+  const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
 
   const nextStatuses = STATUS_OPTIONS.filter((s) => s !== currentStatus)
   const bestMatch = recommendedVendors[0]
@@ -101,6 +108,38 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
       </div>
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 12 }}>Dispatch workflow</h3>
+        <form action={dispatchAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
+          <input type="hidden" name="requestId" value={requestId} />
+          <label className="field">
+            <span className="field-label">Dispatch status</span>
+            <select className="input" name="dispatchStatus" defaultValue={currentDispatchStatus ?? 'assigned'}>
+              {DISPATCH_OPTIONS.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid cols-2">
+            <label className="field">
+              <span className="field-label">Scheduled start</span>
+              <input className="input" type="datetime-local" name="scheduledStart" defaultValue={currentScheduledStart ? currentScheduledStart.slice(0, 16) : ''} />
+            </label>
+            <label className="field">
+              <span className="field-label">Scheduled end</span>
+              <input className="input" type="datetime-local" name="scheduledEnd" defaultValue={currentScheduledEnd ? currentScheduledEnd.slice(0, 16) : ''} />
+            </label>
+          </div>
+          <label className="field">
+            <span className="field-label">Dispatch note</span>
+            <textarea className="input" name="note" rows={3} placeholder="Optional note about vendor acceptance, outreach, or schedule" />
+          </label>
+          {dispatchState.error && <div className="notice error">{dispatchState.error}</div>}
+          {dispatchState.success && <div className="notice success">Dispatch workflow updated.</div>}
+          <button type="submit" className="button" disabled={dispatchPending}>
+            {dispatchPending ? 'Saving…' : 'Save dispatch update'}
+          </button>
+        </form>
+
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign vendor</h3>
         {recommendedVendors.length ? (
           <div className="stack" style={{ gap: 8, marginBottom: 12 }}>

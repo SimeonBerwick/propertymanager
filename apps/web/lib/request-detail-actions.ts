@@ -3,12 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
-import type { CurrencyOption, LanguageOption, RequestStatus } from '@/lib/types'
+import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
 
 export type RequestActionState = { error: string | null; success?: boolean }
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
+const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -145,9 +146,22 @@ export async function updateVendorFormAction(
         assignedVendorName: vendorName || null,
         assignedVendorEmail: vendorEmail || null,
         assignedVendorPhone: vendorPhone || null,
+        dispatchStatus: vendorName ? 'assigned' : null,
       },
       include: { property: true, unit: true },
     })
+
+    if (vendorName) {
+      await prisma.vendorDispatchEvent.create({
+        data: {
+          requestId,
+          vendorId: vendorId || null,
+          actorUserId: session.userId,
+          status: 'assigned',
+          note: 'Vendor assigned from landlord workflow.',
+        },
+      }).catch(() => null)
+    }
 
     if (vendorName && vendorEmail) {
       notificationPayload = {
@@ -216,6 +230,64 @@ export async function updatePreferencesFormAction(
     return { error: null, success: true }
   } catch {
     return { error: 'Could not update preferences. Database may not be connected.' }
+  }
+}
+
+export async function updateDispatchFormAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = formData.get('requestId') as string
+  const dispatchStatus = ((formData.get('dispatchStatus') as string) ?? '').trim() as DispatchStatus
+  const note = ((formData.get('note') as string) ?? '').trim()
+  const scheduledStartRaw = ((formData.get('scheduledStart') as string) ?? '').trim()
+  const scheduledEndRaw = ((formData.get('scheduledEnd') as string) ?? '').trim()
+
+  if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid dispatch status.' }
+
+  const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
+  const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
+
+  if (scheduledStart && Number.isNaN(scheduledStart.getTime())) return { error: 'Invalid scheduled start.' }
+  if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Invalid scheduled end.' }
+  if (scheduledStart && scheduledEnd && scheduledEnd < scheduledStart) return { error: 'Scheduled end must be after start.' }
+
+  try {
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      select: { id: true, assignedVendorId: true },
+    })
+    if (!request) return { error: 'Request not found.' }
+
+    await prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        dispatchStatus,
+        vendorScheduledStart: scheduledStart,
+        vendorScheduledEnd: scheduledEnd,
+      },
+    })
+
+    await prisma.vendorDispatchEvent.create({
+      data: {
+        requestId,
+        vendorId: request.assignedVendorId ?? null,
+        actorUserId: session.userId,
+        status: dispatchStatus,
+        note: note || null,
+        scheduledStart,
+        scheduledEnd,
+      },
+    })
+
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    return { error: null, success: true }
+  } catch {
+    return { error: 'Could not update dispatch workflow.' }
   }
 }
 

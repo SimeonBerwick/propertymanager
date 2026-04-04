@@ -7,6 +7,7 @@ import type {
   StatusEvent,
   Unit,
   Vendor,
+  VendorDispatchEvent,
 } from '@/lib/types'
 import { prisma } from '@/lib/prisma'
 
@@ -39,6 +40,7 @@ export interface RequestDetailData {
   events: StatusEvent[]
   photos: MaintenancePhoto[]
   recommendedVendors: Vendor[]
+  dispatchHistory: VendorDispatchEvent[]
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -78,6 +80,9 @@ function mapRequestRow(r: any): DashboardRequestRow {
     assignedVendorName: r.assignedVendorName ?? undefined,
     assignedVendorEmail: r.assignedVendorEmail ?? undefined,
     assignedVendorPhone: r.assignedVendorPhone ?? undefined,
+    dispatchStatus: r.dispatchStatus ?? undefined,
+    vendorScheduledStart: r.vendorScheduledStart ? new Date(r.vendorScheduledStart).toISOString() : undefined,
+    vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
     slaBucket: r.slaBucket ?? undefined,
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
@@ -245,6 +250,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         photos: { orderBy: { createdAt: 'asc' } },
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
         events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
+        dispatchHistory: { include: { vendor: true, actorUser: true }, orderBy: { createdAt: 'asc' } },
       },
     })
     if (!dbRequest) return null
@@ -282,12 +288,25 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       .slice(0, 5)
       .map(({ vendor }) => vendor)
 
+    const dispatchHistory: VendorDispatchEvent[] = dbRequest.dispatchHistory.map((entry) => ({
+      id: entry.id,
+      requestId: entry.requestId,
+      vendorName: entry.vendor?.name ?? undefined,
+      actorName: entry.actorUser?.email ?? 'System',
+      status: entry.status as VendorDispatchEvent['status'],
+      note: entry.note ?? undefined,
+      scheduledStart: entry.scheduledStart?.toISOString() ?? undefined,
+      scheduledEnd: entry.scheduledEnd?.toISOString() ?? undefined,
+      createdAt: entry.createdAt.toISOString(),
+    }))
+
     return {
       request,
       comments,
       events,
       photos: dbRequest.photos.map(mapPhoto),
       recommendedVendors,
+      dispatchHistory,
     }
   } catch {
     // DB unavailable: return null rather than falling back to unscoped seed data.
