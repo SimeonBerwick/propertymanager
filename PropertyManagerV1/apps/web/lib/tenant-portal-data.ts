@@ -35,6 +35,10 @@ export async function getTenantOwnedRequestById(requestId: string, session: Tena
       photos: {
         orderBy: { createdAt: 'asc' },
       },
+      dispatchHistory: {
+        orderBy: { createdAt: 'asc' },
+        include: { vendor: true },
+      },
     },
   })
 }

@@ -35,6 +35,53 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
 
       <section className="card stack">
         <div>
+          <div className="kicker">Appointment</div>
+          <h3 style={{ marginTop: 4 }}>Vendor schedule and contact</h3>
+        </div>
+        {request.assignedVendorName ? (
+          <div className="stack" style={{ gap: 6 }}>
+            <div><strong>{request.assignedVendorName}</strong></div>
+            {request.dispatchStatus ? <div className="muted">Dispatch status: {request.dispatchStatus}</div> : null}
+            {request.vendorScheduledStart ? (
+              <div className="muted">
+                Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
+                {request.vendorScheduledEnd ? ` → ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
+              </div>
+            ) : (
+              <div className="muted">No appointment window has been confirmed yet.</div>
+            )}
+            {request.assignedVendorEmail ? <div><a href={`mailto:${request.assignedVendorEmail}`}>{request.assignedVendorEmail}</a></div> : null}
+            {request.assignedVendorPhone ? <div><a href={`tel:${request.assignedVendorPhone}`}>{request.assignedVendorPhone}</a></div> : null}
+          </div>
+        ) : (
+          <div className="muted">No vendor has been assigned yet.</div>
+        )}
+      </section>
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Vendor updates</div>
+          <h3 style={{ marginTop: 4 }}>Dispatch timeline</h3>
+        </div>
+        {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
+          <div key={entry.id}>
+            <div style={{ fontWeight: 600 }}>
+              {entry.vendor?.name ? `${entry.vendor.name} · ` : ''}{entry.status}
+            </div>
+            {entry.note ? <div>{entry.note}</div> : null}
+            {(entry.scheduledStart || entry.scheduledEnd) ? (
+              <div className="muted">
+                {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '—'}
+                {entry.scheduledEnd ? ` → ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+              </div>
+            ) : null}
+            <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
+          </div>
+        )) : <div className="muted">No vendor updates yet.</div>}
+      </section>
+
+      <section className="card stack">
+        <div>
           <div className="kicker">Status timeline</div>
           <h3 style={{ marginTop: 4 }}>Visible updates</h3>
         </div>

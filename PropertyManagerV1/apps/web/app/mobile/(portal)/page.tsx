@@ -44,6 +44,7 @@ export default async function TenantMobileDashboardPage() {
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
                   {request.category} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
+                  {request.vendorScheduledStart ? ` · Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
                 </div>
               </div>
               <div className="muted">{request.status.replace('_', ' ')}</div>
