@@ -21,6 +21,19 @@ enum Urgency {
   urgent
 }
 
+enum CurrencyOption {
+  usd
+  peso
+  pound
+  euro
+}
+
+enum LanguageOption {
+  english
+  spanish
+  french
+}
+
 enum TenantIdentityStatus {
   pending_invite
   active
@@ -91,23 +104,27 @@ model Unit {
 }
 
 model MaintenanceRequest {
-  id                 String          @id @default(cuid())
-  propertyId         String
-  unitId             String
-  orgId              String?
-  tenantIdentityId   String?
-  submittedByUserId  String?
-  submittedByName    String?
-  submittedByEmail   String?
-  title              String
-  description        String
-  category           String
-  urgency            Urgency
-  status             RequestStatus   @default(new)
-  assignedVendorName String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  closedAt           DateTime?
+  id                  String           @id @default(cuid())
+  propertyId          String
+  unitId              String
+  orgId               String?
+  tenantIdentityId    String?
+  submittedByUserId   String?
+  submittedByName     String?
+  submittedByEmail    String?
+  preferredCurrency   CurrencyOption   @default(usd)
+  preferredLanguage   LanguageOption   @default(english)
+  title               String
+  description         String
+  category            String
+  urgency             Urgency
+  status              RequestStatus    @default(new)
+  assignedVendorName  String?
+  assignedVendorEmail String?
+  assignedVendorPhone String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  closedAt            DateTime?
 
   property        Property           @relation(fields: [propertyId], references: [id])
   unit            Unit               @relation(fields: [unitId], references: [id])

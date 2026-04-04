@@ -56,10 +56,20 @@ export async function submitTenantMobileRequestAction(
   const description = getString(formData, 'description')
   const category = getString(formData, 'category')
   const urgency = getString(formData, 'urgency')
+  const preferredCurrency = getString(formData, 'preferredCurrency') || 'usd'
+  const preferredLanguage = getString(formData, 'preferredLanguage') || 'english'
   const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
 
   if (!title || !description || !category || !urgency) {
     return { error: 'All fields are required.' }
+  }
+
+  if (!['usd', 'peso', 'pound', 'euro'].includes(preferredCurrency)) {
+    return { error: 'Choose a valid preferred currency.' }
+  }
+
+  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) {
+    return { error: 'Choose a valid preferred language.' }
   }
 
   if (!REQUEST_CATEGORIES.includes(category as (typeof REQUEST_CATEGORIES)[number])) {
@@ -97,6 +107,8 @@ export async function submitTenantMobileRequestAction(
       tenantIdentityId: session.tenantIdentityId,
       submittedByName: session.tenantName,
       submittedByEmail: session.email ?? undefined,
+      preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
+      preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
       title,
       description,
       category,
