@@ -122,6 +122,46 @@ export async function addInternalNote(requestId: string, formData: FormData) {
   revalidatePath(`/operator/requests/${requestId}`);
 }
 
+export async function acceptVendorOffer(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
+  const body = getString(formData, 'body');
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    include: { assignedVendor: true },
+  });
+
+  if (!request || !request.assignedVendorId) {
+    redirect(`/operator/requests/${requestId}`);
+  }
+
+  await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      vendorOfferStatus: VendorOfferStatus.ACCEPTED,
+      vendorResponseStatus: request.vendorResponseStatus === VendorResponseStatus.PENDING ? VendorResponseStatus.ACCEPTED : request.vendorResponseStatus,
+      events: {
+        create: {
+          type: RequestEventType.COMMENT,
+          actorRole: UserRole.OPERATOR,
+          actorName: session.displayName,
+          body: body
+            ? `Vendor offer accepted. Operator note: ${body}`
+            : 'Vendor offer accepted.',
+          visibility: EventVisibility.VENDOR,
+        },
+      },
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/vendor/queue');
+  revalidatePath(`/vendor/requests/${requestId}`);
+  redirect(`/operator/requests/${requestId}`);
+}
+
 export async function respondToVendorOffer(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
   const action = getString(formData, 'vendorOfferAction');

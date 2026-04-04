@@ -11,7 +11,7 @@ import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
-import { addInternalNote, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
+import { acceptVendorOffer, addInternalNote, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
 import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
@@ -59,6 +59,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   const noteAction = addInternalNote.bind(null, request.id);
   const dispatchAction = dispatchRequest.bind(null, request.id);
   const vendorOfferAction = respondToVendorOffer.bind(null, request.id);
+  const acceptOfferAction = acceptVendorOffer.bind(null, request.id);
   const regionId = request.property.regionId;
   const region = regionId
     ? await prisma.region.findFirst({
@@ -176,10 +177,18 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               </form>
             </PageSection>
 
-            <PageSection title="Vendor offer response" description="Reject a vendor offer and either reassign the ticket or send it back with what must change for approval.">
-              <form action={vendorOfferAction} className="space-y-3">
+            <PageSection title="Vendor offer decision" description="Accept an offer explicitly, or reject it and either reassign the ticket or send it back with what must change for approval.">
+              <form action={acceptOfferAction} className="space-y-3 border-b border-slate-200 pb-4">
                 <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Response path</span>
+                  <span className="mb-1 block font-medium">Acceptance note (optional)</span>
+                  <textarea name="body" rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Optional note to vendor when accepting this offer." />
+                </label>
+                <button className="rounded-md bg-emerald-700 px-4 py-2 text-sm text-white" type="submit">Accept vendor offer</button>
+              </form>
+
+              <form action={vendorOfferAction} className="space-y-3 pt-4">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Rejection path</span>
                   <select name="vendorOfferAction" defaultValue="send_back" className="w-full rounded-md border border-slate-300 px-3 py-2">
                     <option value="send_back">Reject and send back to current vendor</option>
                     <option value="send_to_another_vendor">Reject and send to another vendor</option>
@@ -195,7 +204,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </select>
                 </label>
                 <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Required note</span>
+                  <span className="mb-1 block font-medium">Required rejection note</span>
                   <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why the offer is rejected or what the vendor must change for approval." />
                 </label>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Send vendor response</button>
