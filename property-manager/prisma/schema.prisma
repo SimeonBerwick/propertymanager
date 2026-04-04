@@ -287,6 +287,7 @@ model MaintenanceRequest {
   status                      RequestStatus        @default(NEW)
   isTenantVisible             Boolean              @default(true)
   isVendorVisible             Boolean              @default(true)
+  tenantCommentsOpen          Boolean              @default(true)
   assignedVendorId            String?
   scheduledFor                DateTime?
   vendorResponseStatus        VendorResponseStatus @default(PENDING)

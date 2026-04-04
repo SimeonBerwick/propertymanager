@@ -1,6 +1,7 @@
 import { EventVisibility, RequestCategory, RequestEventType, RequestStatus, RequestUrgency, UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getFormFiles, persistTenantPhotos } from '@/lib/request-attachments';
+import { requireTenantSession } from '@/lib/auth';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -102,6 +103,40 @@ export async function createTenantRequest(tenantId: string, formData: FormData) 
   }
 
   return request;
+}
+
+export async function addTenantRequestComment(requestId: string, body: string) {
+  const session = await requireTenantSession();
+  const trimmed = body.trim();
+  if (!trimmed) throw new Error('Comment is required.');
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: {
+      id: requestId,
+      tenantId: session.tenantId,
+      isTenantVisible: true,
+    },
+    include: {
+      tenant: true,
+    },
+  });
+
+  if (!request) throw new Error('Request not found.');
+  if (!request.tenantCommentsOpen) throw new Error('Comments are closed for this ticket.');
+  if (request.status === RequestStatus.DONE || request.status === RequestStatus.CANCELED) {
+    throw new Error('Comments are only allowed on open tickets.');
+  }
+
+  await prisma.requestEvent.create({
+    data: {
+      requestId: request.id,
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.TENANT,
+      actorName: request.tenant?.name || session.displayName,
+      body: trimmed,
+      visibility: EventVisibility.ALL,
+    },
+  });
 }
 
 export async function getTenantVisibleRequest(requestId: string, tenantId: string) {

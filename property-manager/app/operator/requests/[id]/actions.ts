@@ -100,6 +100,38 @@ export async function cancelRequest(requestId: string, formData: FormData) {
   revalidatePath(`/tenant/request/${requestId}`);
 }
 
+export async function updateTenantComments(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
+  const tenantCommentsOpen = getBoolean(formData, 'tenantCommentsOpen');
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    select: { id: true, tenantCommentsOpen: true },
+  });
+  if (!request || request.tenantCommentsOpen === tenantCommentsOpen) return;
+
+  await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      tenantCommentsOpen,
+      events: {
+        create: {
+          type: RequestEventType.COMMENT,
+          actorRole: UserRole.OPERATOR,
+          actorName: session.displayName,
+          body: tenantCommentsOpen ? 'Tenant comments reopened on this ticket.' : 'Tenant comments closed on this ticket.',
+          visibility: EventVisibility.INTERNAL,
+        },
+      },
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath(`/tenant/request/${requestId}`);
+}
+
 export async function updatePaymentStatus(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
   const nextPaymentStatus = getString(formData, 'paymentStatus');

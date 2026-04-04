@@ -9,13 +9,14 @@ import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { getTenantVisibleRequest } from '@/lib/tenant-requests';
 import { requireTenantSession } from '@/lib/auth';
 import { getDisplayLanguage, getLocalizedDateTime, getRequestCopy } from '@/lib/request-display';
+import { submitTenantComment } from './actions';
 
 export default async function TenantRequestStatusPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ submitted?: string; lang?: string }>;
+  searchParams?: Promise<{ submitted?: string; commented?: string; error?: string; lang?: string }>;
 }) {
   const [{ id }, resolvedSearchParams, session] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined), requireTenantSession()]);
   const request = await getTenantVisibleRequest(id, session.tenantId);
@@ -25,6 +26,8 @@ export default async function TenantRequestStatusPage({
   const timeline = request.events;
   const language = getDisplayLanguage(resolvedSearchParams?.lang);
   const copy = getRequestCopy(language);
+  const commentAction = submitTenantComment.bind(null, request.id);
+  const commentsAllowed = request.tenantCommentsOpen && request.status !== 'DONE' && request.status !== 'CANCELED';
 
   return (
     <AppShell>
@@ -32,6 +35,16 @@ export default async function TenantRequestStatusPage({
         {resolvedSearchParams?.submitted === '1' ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             Request submitted successfully. You can return to this page anytime while signed in to check status and updates.
+          </div>
+        ) : null}
+        {resolvedSearchParams?.commented === '1' ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Your note was sent to the property manager.
+          </div>
+        ) : null}
+        {resolvedSearchParams?.error ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+            {resolvedSearchParams.error}
           </div>
         ) : null}
 
@@ -113,8 +126,20 @@ export default async function TenantRequestStatusPage({
               <div className="space-y-2 text-sm text-slate-700">
                 <p><strong>Status:</strong> {getRequestStatusLabel(request.status)}</p>
                 <p><strong>Latest visible update:</strong> {timeline[0] ? formatDateTime(timeline[0].createdAt) : 'Waiting for first update'}</p>
+                <p><strong>Comments:</strong> {commentsAllowed ? 'Open' : 'Closed'}</p>
                 <p><strong>Need help?</strong> Reference request ID <span className="font-mono text-xs">{request.id}</span> when calling the property team.</p>
               </div>
+            </PageSection>
+
+            <PageSection title="Send a note" description="Add context for the property manager while this ticket is still open.">
+              {commentsAllowed ? (
+                <form action={commentAction} className="space-y-3">
+                  <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Add an update, answer a question, or clarify the issue." />
+                  <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Send note</button>
+                </form>
+              ) : (
+                <p className="text-sm text-slate-600">Comments are closed on this ticket.</p>
+              )}
             </PageSection>
           </div>
         </div>

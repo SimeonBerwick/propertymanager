@@ -11,7 +11,7 @@ import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getVendorOfferStatusLabel } from '@/lib/vendor-offers';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
-import { acceptVendorOffer, addInternalNote, cancelRequest, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus } from './actions';
+import { acceptVendorOffer, addInternalNote, cancelRequest, dispatchRequest, respondToVendorOffer, updatePaymentStatus, updateRequestStatus, updateTenantComments } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
 import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
 
@@ -56,6 +56,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
 
   const statusAction = updateRequestStatus.bind(null, request.id);
   const paymentAction = updatePaymentStatus.bind(null, request.id);
+  const tenantCommentsAction = updateTenantComments.bind(null, request.id);
   const noteAction = addInternalNote.bind(null, request.id);
   const dispatchAction = dispatchRequest.bind(null, request.id);
   const vendorOfferAction = respondToVendorOffer.bind(null, request.id);
@@ -175,6 +176,16 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </select>
                 </label>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update payment status</button>
+              </form>
+            </PageSection>
+
+            <PageSection title="Tenant comments" description="Allow or shut down tenant notes on this specific ticket.">
+              <form action={tenantCommentsAction} className="space-y-3">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" name="tenantCommentsOpen" defaultChecked={request.tenantCommentsOpen} />
+                  Allow tenant comments while this ticket is open
+                </label>
+                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update comment access</button>
               </form>
             </PageSection>
 

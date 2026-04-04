@@ -6,9 +6,11 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
 import { prisma } from '@/lib/prisma';
 import { EventVisibility, RequestStatus } from '@prisma/client';
+import { submitMobileTenantComment } from './actions';
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ commented?: string; error?: string }>;
 }
 
 const statusLabel: Record<RequestStatus, string> = {
@@ -27,9 +29,10 @@ const statusColor: Record<RequestStatus, string> = {
   CANCELED: 'bg-rose-500/15 text-rose-100 border-rose-400/20',
 };
 
-export default async function MobileRequestDetailPage({ params }: Props) {
+export default async function MobileRequestDetailPage({ params, searchParams }: Props) {
   const session = await requireTenantMobileSession();
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
 
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
@@ -53,8 +56,22 @@ export default async function MobileRequestDetailPage({ params }: Props) {
 
   if (!request) notFound();
 
+  const commentAction = submitMobileTenantComment.bind(null, request.id);
+  const commentsAllowed = request.tenantCommentsOpen && request.status !== 'DONE' && request.status !== 'CANCELED';
+
   return (
     <div className="space-y-5 text-white">
+      {resolvedSearchParams?.commented === '1' ? (
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+          Your note was sent to the property manager.
+        </div>
+      ) : null}
+      {resolvedSearchParams?.error ? (
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          {resolvedSearchParams.error}
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         <Link href={'/mobile' as Route} className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
           &larr; Back to requests
@@ -107,6 +124,21 @@ export default async function MobileRequestDetailPage({ params }: Props) {
             </div>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">Send a note</h3>
+          <p className="mt-1 text-sm text-slate-300">Add context for your property manager while this ticket is still open.</p>
+        </div>
+        {commentsAllowed ? (
+          <form action={commentAction} className="space-y-3">
+            <textarea name="body" rows={4} className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white" placeholder="Add an update, answer a question, or clarify the issue." />
+            <button className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950" type="submit">Send note</button>
+          </form>
+        ) : (
+          <p className="text-sm text-slate-400">Comments are closed on this ticket.</p>
+        )}
       </section>
 
       {request.attachments.length > 0 ? (
