@@ -97,6 +97,9 @@ function mapPhoto(photo: any): MaintenancePhoto {
   return {
     id: photo.id,
     imageUrl: photo.imageUrl,
+    source: photo.source,
+    sourceLabel: photo.sourceLabel ?? undefined,
+    dispatchEventId: photo.dispatchEventId ?? undefined,
     createdAt: photo.createdAt instanceof Date ? photo.createdAt.toISOString() : String(photo.createdAt),
   }
 }
