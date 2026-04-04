@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { EventVisibility, RequestStatus } from '@prisma/client';
+import { EventVisibility, PaymentStatus, RequestStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
@@ -10,9 +10,22 @@ import { formatDateTime, getStatusClasses, getUrgencyClasses } from '@/lib/opera
 import { canTransition, getRequestEventTypeLabel, getRequestStatusLabel, REQUEST_STATUSES } from '@/lib/request-lifecycle';
 import { formatCurrencyFromCents, getVendorPricingTypeLabel, getVendorResponseLabel } from '@/lib/vendor-workflow';
 import { getAttachmentUrl } from '@/lib/attachment-paths';
-import { addInternalNote, dispatchRequest, updateRequestStatus } from './actions';
+import { addInternalNote, dispatchRequest, updatePaymentStatus, updateRequestStatus } from './actions';
 import { getLocalizedDateTime } from '@/lib/request-display';
 import { isVendorEligibleForPreferredSelection } from '@/lib/vendor-management';
+
+const paymentStatusOptions = [PaymentStatus.UNPAID, PaymentStatus.HALF_DOWN, PaymentStatus.PAID_IN_FULL] as const;
+
+function getPaymentStatusLabel(status: PaymentStatus) {
+  switch (status) {
+    case PaymentStatus.UNPAID:
+      return 'Unpaid';
+    case PaymentStatus.HALF_DOWN:
+      return 'Half down';
+    case PaymentStatus.PAID_IN_FULL:
+      return 'Paid in full';
+  }
+}
 
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireOperatorSession();
@@ -41,6 +54,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
   if (!request) notFound();
 
   const statusAction = updateRequestStatus.bind(null, request.id);
+  const paymentAction = updatePaymentStatus.bind(null, request.id);
   const noteAction = addInternalNote.bind(null, request.id);
   const dispatchAction = dispatchRequest.bind(null, request.id);
   const regionId = request.property.regionId;
@@ -82,8 +96,11 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               <p><strong>Planned start:</strong> {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p><strong>Expected completion:</strong> {formatDateTime(request.vendorExpectedCompletionDate)}</p>
               <p><strong>Pricing:</strong> {getVendorPricingTypeLabel(request.vendorPricingType)}{request.vendorPriceCents != null ? ` · ${formatCurrencyFromCents(request.vendorPriceCents)}` : ''}</p>
+              <p><strong>Payment status:</strong> {getPaymentStatusLabel(request.paymentStatus)}</p>
               <p><strong>Final bill:</strong> {request.vendorFinalBillCents != null ? formatCurrencyFromCents(request.vendorFinalBillCents) : 'Not submitted'}</p>
               <p><strong>Tax:</strong> {request.vendorFinalTaxCents != null ? formatCurrencyFromCents(request.vendorFinalTaxCents) : 'Not submitted'}</p>
+              <p><strong>Additional costs:</strong> {request.vendorAdditionalCostsCents != null ? formatCurrencyFromCents(request.vendorAdditionalCostsCents) : 'Not submitted'}</p>
+              <p><strong>Additional tax:</strong> {request.vendorAdditionalTaxCents != null ? formatCurrencyFromCents(request.vendorAdditionalTaxCents) : 'Not submitted'}</p>
             </div>
           </div>
         </PageSection>
@@ -132,6 +149,20 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </select>
                 </label>
                 <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update status</button>
+              </form>
+            </PageSection>
+
+            <PageSection title="Payment status" description="Operator-controlled payment state for this ticket.">
+              <form action={paymentAction} className="space-y-3">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Payment state</span>
+                  <select name="paymentStatus" defaultValue={request.paymentStatus} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    {paymentStatusOptions.map((status) => (
+                      <option key={status} value={status}>{getPaymentStatusLabel(status)}</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update payment status</button>
               </form>
             </PageSection>
 

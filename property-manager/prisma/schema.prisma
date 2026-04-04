@@ -88,6 +88,12 @@ enum VendorPricingType {
   LABOR_ONLY_COST
 }
 
+enum PaymentStatus {
+  UNPAID
+  HALF_DOWN
+  PAID_IN_FULL
+}
+
 model Organization {
   id                  String               @id @default(cuid())
   name                String
@@ -279,8 +285,11 @@ model MaintenanceRequest {
   vendorExpectedCompletionDate DateTime?
   vendorPricingType           VendorPricingType    @default(NONE)
   vendorPriceCents            Int?
+  paymentStatus               PaymentStatus        @default(UNPAID)
   vendorFinalBillCents        Int?
   vendorFinalTaxCents         Int?
+  vendorAdditionalCostsCents  Int?
+  vendorAdditionalTaxCents    Int?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
   closedAt                    DateTime?

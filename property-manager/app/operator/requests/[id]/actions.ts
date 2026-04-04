@@ -1,6 +1,6 @@
 'use server';
 
-import { EventVisibility, RequestEventType, RequestStatus, UserRole } from '@prisma/client';
+import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
@@ -17,6 +17,12 @@ function getString(formData: FormData, key: string) {
 function getBoolean(formData: FormData, key: string) {
   return formData.get(key) === 'on';
 }
+
+const paymentStatuses = new Set<PaymentStatus>([
+  PaymentStatus.UNPAID,
+  PaymentStatus.HALF_DOWN,
+  PaymentStatus.PAID_IN_FULL,
+]);
 
 export async function updateRequestStatus(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
@@ -56,6 +62,38 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   revalidatePath('/operator/units');
   revalidatePath(`/operator/units/${updated.unitId}`);
   revalidatePath(`/tenant/request/${requestId}`);
+}
+
+export async function updatePaymentStatus(requestId: string, formData: FormData) {
+  const session = await requireOperatorSession();
+  const nextPaymentStatus = getString(formData, 'paymentStatus');
+  if (!paymentStatuses.has(nextPaymentStatus as PaymentStatus)) return;
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: getOperatorRequestWhere(session.organizationId, requestId),
+    select: { id: true, paymentStatus: true },
+  });
+  if (!request || request.paymentStatus === nextPaymentStatus) return;
+
+  await prisma.maintenanceRequest.update({
+    where: { id: requestId },
+    data: {
+      paymentStatus: nextPaymentStatus as PaymentStatus,
+      events: {
+        create: {
+          type: RequestEventType.COMMENT,
+          actorRole: UserRole.OPERATOR,
+          actorName: session.displayName,
+          body: `Payment status updated to ${(nextPaymentStatus as string).replaceAll('_', ' ').toLowerCase()}.`,
+          visibility: EventVisibility.INTERNAL,
+        },
+      },
+    },
+  });
+
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
 }
 
 export async function addInternalNote(requestId: string, formData: FormData) {

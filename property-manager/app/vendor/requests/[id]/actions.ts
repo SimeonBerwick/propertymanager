@@ -2,6 +2,7 @@
 
 import {
   EventVisibility,
+  PaymentStatus,
   RequestEventType,
   RequestStatus,
   UserRole,
@@ -68,6 +69,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   const priceValue = getString(formData, 'vendorPrice');
   const finalBillValue = getString(formData, 'vendorFinalBill');
   const finalTaxValue = getString(formData, 'vendorFinalTax');
+  const additionalCostsValue = getString(formData, 'vendorAdditionalCosts');
+  const additionalTaxValue = getString(formData, 'vendorAdditionalTax');
   const bidFiles = formData
     .getAll('bidPdf')
     .filter((value): value is File => value instanceof File && value.size > 0);
@@ -109,6 +112,16 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20tax%20amount%20using%20numbers%20only.`);
   }
 
+  const vendorAdditionalCostsCents = parsePriceCents(additionalCostsValue);
+  if (vendorAdditionalCostsCents === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20costs%20using%20numbers%20only.`);
+  }
+
+  const vendorAdditionalTaxCents = parsePriceCents(additionalTaxValue);
+  if (vendorAdditionalTaxCents === 'invalid') {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20tax%20using%20numbers%20only.`);
+  }
+
   const pricingType = pricingTypeValue as VendorPricingType;
   if (pricingType === VendorPricingType.NONE && vendorPriceCents !== null) {
     redirect(`/vendor/requests/${requestId}?error=Clear%20the%20price%20or%20choose%20a%20pricing%20type.`);
@@ -119,6 +132,10 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
 
   if (vendorFinalTaxCents != null && vendorFinalBillCents == null) {
     redirect(`/vendor/requests/${requestId}?error=Enter%20a%20final%20bill%20before%20adding%20tax.`);
+  }
+
+  if (vendorAdditionalTaxCents != null && vendorAdditionalCostsCents == null) {
+    redirect(`/vendor/requests/${requestId}?error=Enter%20additional%20costs%20before%20adding%20additional%20tax.`);
   }
 
   const request = await prisma.maintenanceRequest.findFirst({
@@ -143,7 +160,11 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
 
   const responseStatus = responseStatusValue as VendorResponseStatus;
 
-  if (status === RequestStatus.DONE && vendorFinalBillCents == null) {
+  if (request.paymentStatus === PaymentStatus.PAID_IN_FULL) {
+    if (vendorFinalBillCents != null || vendorFinalTaxCents != null) {
+      redirect(`/vendor/requests/${requestId}?error=This%20ticket%20is%20already%20marked%20paid%20in%20full.%20Only%20additional%20costs%20may%20be%20submitted.`);
+    }
+  } else if (status === RequestStatus.DONE && vendorFinalBillCents == null) {
     redirect(`/vendor/requests/${requestId}?error=Enter%20the%20final%20bill%20before%20marking%20the%20job%20complete.`);
   }
 
@@ -157,6 +178,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     request.vendorPriceCents === vendorPriceCents &&
     request.vendorFinalBillCents === vendorFinalBillCents &&
     request.vendorFinalTaxCents === vendorFinalTaxCents &&
+    request.vendorAdditionalCostsCents === vendorAdditionalCostsCents &&
+    request.vendorAdditionalTaxCents === vendorAdditionalTaxCents &&
     bidFiles.length === 0;
 
   if (nothingChanged) {
@@ -245,6 +268,18 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     });
   }
 
+  if (request.vendorAdditionalCostsCents !== vendorAdditionalCostsCents || request.vendorAdditionalTaxCents !== vendorAdditionalTaxCents) {
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.VENDOR,
+      actorName,
+      body: vendorAdditionalCostsCents == null
+        ? 'Vendor cleared additional-cost billing details.'
+        : `Vendor submitted additional costs: $${(vendorAdditionalCostsCents / 100).toFixed(2)}${vendorAdditionalTaxCents != null ? ` with tax $${(vendorAdditionalTaxCents / 100).toFixed(2)}` : ''}.`,
+      visibility: EventVisibility.VENDOR,
+    });
+  }
+
   if (body) {
     events.push({
       type: RequestEventType.TENANT_UPDATE,
@@ -278,6 +313,8 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
       vendorPriceCents,
       vendorFinalBillCents,
       vendorFinalTaxCents,
+      vendorAdditionalCostsCents,
+      vendorAdditionalTaxCents,
       attachments: bidAttachments.length > 0
         ? {
             create: bidAttachments,
