@@ -8,6 +8,12 @@ export type ActivityType =
   | "showing"
   | "meeting";
 
+export type FollowUpTaskStatus = "pending" | "completed" | "canceled";
+
+export type CurrencyOption = "usd" | "peso" | "pound" | "euro";
+
+export type LanguageOption = "english" | "spanish" | "french";
+
 export interface Activity {
   id: string;
   type: ActivityType;
@@ -19,8 +25,15 @@ export interface FollowUpTask {
   id: string;
   title: string;
   dueAt: string;
-  status: "pending" | "completed" | "canceled";
+  status: FollowUpTaskStatus;
   completedAt: string | null;
+  notes: string;
+}
+
+export interface FollowUpTaskInput {
+  title: string;
+  dueAt: string;
+  notes: string;
 }
 
 export interface Lead {
@@ -35,6 +48,8 @@ export interface Lead {
   source: string;
   location: string;
   budget: string;
+  currency: CurrencyOption;
+  language: LanguageOption;
   tags: string[];
   notes: string;
   createdAt: string;

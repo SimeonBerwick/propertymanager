@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/db";
 import { seedLeadInputs, seedOrganization, seedUser } from "@/lib/seed";
-import { ActivityType, DashboardQueues, Lead, LeadStatus } from "@/lib/types";
+import {
+  ActivityType,
+  CurrencyOption,
+  DashboardQueues,
+  LanguageOption,
+  Lead,
+  LeadStatus,
+  FollowUpTaskInput,
+  FollowUpTaskStatus,
+} from "@/lib/types";
 import { startOfDay } from "@/lib/utils";
 
 export type AuthContext = {
@@ -9,6 +18,13 @@ export type AuthContext = {
 };
 
 const DEFAULT_ORG_SLUG = seedOrganization.slug;
+const CLOSED_STAGES: LeadStatus[] = ["closed"];
+
+type LeadRecord = Awaited<ReturnType<typeof prisma.lead.findFirstOrThrow>> & {
+  owner: { name: string } | null;
+  activities: any[];
+  followUpTasks: any[];
+};
 
 function dbStageToApp(stage: string): LeadStatus {
   switch (stage) {
@@ -23,7 +39,36 @@ function appStageToDb(stage: LeadStatus) {
   return stage === "under-contract" ? "under_contract" : stage;
 }
 
+function isClosedStage(stage: LeadStatus) {
+  return CLOSED_STAGES.includes(stage);
+}
+
+function getPrimaryOpenTask(tasks: Array<{ dueAt: Date; status: FollowUpTaskStatus }>) {
+  return tasks
+    .filter((task) => task.status === "pending")
+    .sort((a, b) => +a.dueAt - +b.dueAt)[0] ?? null;
+}
+
 function mapLead(lead: any): Lead {
+  const followUpTasks = lead.followUpTasks
+    .slice()
+    .sort((a: any, b: any) => {
+      const aPending = a.status === "pending" ? 0 : 1;
+      const bPending = b.status === "pending" ? 0 : 1;
+      if (aPending !== bPending) return aPending - bPending;
+      return +a.dueAt - +b.dueAt;
+    })
+    .map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      dueAt: task.dueAt.toISOString(),
+      status: task.status,
+      completedAt: task.completedAt?.toISOString() ?? null,
+      notes: task.notes ?? "",
+    }));
+
+  const primaryOpenTask = getPrimaryOpenTask(lead.followUpTasks);
+
   return {
     id: lead.id,
     organizationId: lead.organizationId,
@@ -36,12 +81,14 @@ function mapLead(lead: any): Lead {
     source: lead.source,
     location: lead.location,
     budget: lead.budget,
+    currency: lead.currency,
+    language: lead.language,
     tags: lead.tags,
     notes: lead.notes,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
     lastContactAt: lead.lastContactAt.toISOString(),
-    nextFollowUpAt: lead.nextFollowUpAt?.toISOString() ?? null,
+    nextFollowUpAt: primaryOpenTask?.dueAt.toISOString() ?? null,
     activities: lead.activities
       .slice()
       .sort((a: any, b: any) => +b.occurredAt - +a.occurredAt)
@@ -51,16 +98,7 @@ function mapLead(lead: any): Lead {
         summary: activity.summary,
         occurredAt: activity.occurredAt.toISOString(),
       })),
-    followUpTasks: lead.followUpTasks
-      .slice()
-      .sort((a: any, b: any) => +a.dueAt - +b.dueAt)
-      .map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        dueAt: task.dueAt.toISOString(),
-        status: task.status,
-        completedAt: task.completedAt?.toISOString() ?? null,
-      })),
+    followUpTasks,
   };
 }
 
@@ -88,13 +126,39 @@ async function getDefaultContext() {
   return { organization, owner };
 }
 
+async function syncLeadFollowUpState(leadId: string) {
+  const nextTask = await prisma.followUpTask.findFirst({
+    where: { leadId, status: "pending" },
+    orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
+  });
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      nextFollowUpAt: nextTask?.dueAt ?? null,
+    },
+  });
+}
+
+async function getLeadRecordOrThrow(leadId: string, context: AuthContext) {
+  await ensureSeedData();
+  return prisma.lead.findFirstOrThrow({
+    where: { id: leadId, organizationId: context.organizationId },
+    include: {
+      owner: true,
+      activities: true,
+      followUpTasks: true,
+    },
+  });
+}
+
 export async function ensureSeedData() {
   const { organization, owner } = await getDefaultContext();
   const existingCount = await prisma.lead.count({ where: { organizationId: organization.id } });
   if (existingCount > 0) return;
 
   for (const lead of seedLeadInputs) {
-    await prisma.lead.create({
+    const createdLead = await prisma.lead.create({
       data: {
         organizationId: organization.id,
         ownerUserId: owner.id,
@@ -105,12 +169,14 @@ export async function ensureSeedData() {
         source: lead.source,
         location: lead.location,
         budget: lead.budget,
+        currency: lead.currency,
+        language: lead.language,
         tags: lead.tags,
         notes: lead.notes,
         createdAt: new Date(lead.createdAt),
         updatedAt: new Date(lead.createdAt),
         lastContactAt: new Date(lead.lastContactAt),
-        nextFollowUpAt: lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt) : null,
+        nextFollowUpAt: null,
         activities: {
           create: lead.activities.map((activity) => ({
             userId: owner.id,
@@ -120,17 +186,21 @@ export async function ensureSeedData() {
             createdAt: new Date(activity.occurredAt),
           })),
         },
-        followUpTasks: lead.nextFollowUpAt
-          ? {
-              create: {
-                userId: owner.id,
-                title: `Follow up with ${lead.name}`,
-                dueAt: new Date(lead.nextFollowUpAt),
-              },
-            }
-          : undefined,
       },
     });
+
+    if (lead.nextFollowUpAt) {
+      await prisma.followUpTask.create({
+        data: {
+          leadId: createdLead.id,
+          userId: owner.id,
+          title: `Follow up with ${lead.name}`,
+          dueAt: new Date(lead.nextFollowUpAt),
+          notes: "",
+        },
+      });
+      await syncLeadFollowUpState(createdLead.id);
+    }
   }
 }
 
@@ -176,6 +246,8 @@ export async function addLead(
     source: string;
     location: string;
     budget: string;
+    currency: CurrencyOption;
+    language: LanguageOption;
     tags: string[];
     notes: string;
   },
@@ -192,6 +264,8 @@ export async function addLead(
       source: input.source,
       location: input.location,
       budget: input.budget,
+      currency: input.currency,
+      language: input.language,
       tags: input.tags,
       notes: input.notes,
       lastContactAt: now,
@@ -244,46 +318,124 @@ export async function addActivity(
   return activity;
 }
 
-export async function scheduleFollowUp(leadId: string, context: AuthContext, nextFollowUpAt: string) {
+export async function scheduleFollowUp(
+  leadId: string,
+  context: AuthContext,
+  input: FollowUpTaskInput,
+) {
   const lead = await getLead(leadId, context);
   if (!lead) return null;
-
-  const dueAt = new Date(nextFollowUpAt);
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: { nextFollowUpAt: dueAt },
-  });
-
-  const existingTask = await prisma.followUpTask.findFirst({
-    where: { leadId, status: "pending" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (existingTask) {
-    await prisma.followUpTask.update({
-      where: { id: existingTask.id },
-      data: {
-        dueAt,
-        title: `Follow up with ${lead.name}`,
-      },
-    });
-  } else {
-    await prisma.followUpTask.create({
-      data: {
-        leadId,
-        userId: context.userId,
-        title: `Follow up with ${lead.name}`,
-        dueAt,
-      },
-    });
+  if (isClosedStage(lead.stage)) {
+    throw new Error("Closed leads cannot receive new open follow-ups.");
   }
 
+  await prisma.followUpTask.create({
+    data: {
+      leadId,
+      userId: context.userId,
+      title: input.title,
+      dueAt: new Date(input.dueAt),
+      notes: input.notes,
+    },
+  });
+
+  await syncLeadFollowUpState(leadId);
+  return getLead(leadId, context);
+}
+
+export async function updateFollowUpTask(
+  leadId: string,
+  taskId: string,
+  context: AuthContext,
+  input: FollowUpTaskInput,
+) {
+  const lead = await getLead(leadId, context);
+  if (!lead) return null;
+  if (isClosedStage(lead.stage)) {
+    throw new Error("Closed leads cannot carry new open follow-ups.");
+  }
+
+  const task = await prisma.followUpTask.findFirst({
+    where: {
+      id: taskId,
+      leadId,
+      lead: { organizationId: context.organizationId },
+    },
+  });
+
+  if (!task || task.status !== "pending") return null;
+
+  await prisma.followUpTask.update({
+    where: { id: taskId },
+    data: {
+      title: input.title,
+      dueAt: new Date(input.dueAt),
+      notes: input.notes,
+    },
+  });
+
+  await syncLeadFollowUpState(leadId);
+  return getLead(leadId, context);
+}
+
+export async function completeFollowUpTask(leadId: string, taskId: string, context: AuthContext) {
+  const task = await prisma.followUpTask.findFirst({
+    where: {
+      id: taskId,
+      leadId,
+      status: "pending",
+      lead: { organizationId: context.organizationId },
+    },
+  });
+
+  if (!task) return null;
+
+  await prisma.followUpTask.update({
+    where: { id: taskId },
+    data: {
+      status: "completed",
+      completedAt: new Date(),
+    },
+  });
+
+  await syncLeadFollowUpState(leadId);
+  return getLead(leadId, context);
+}
+
+export async function cancelFollowUpTask(leadId: string, taskId: string, context: AuthContext) {
+  const task = await prisma.followUpTask.findFirst({
+    where: {
+      id: taskId,
+      leadId,
+      status: "pending",
+      lead: { organizationId: context.organizationId },
+    },
+  });
+
+  if (!task) return null;
+
+  await prisma.followUpTask.update({
+    where: { id: taskId },
+    data: {
+      status: "canceled",
+      completedAt: null,
+    },
+  });
+
+  await syncLeadFollowUpState(leadId);
   return getLead(leadId, context);
 }
 
 export async function updateLeadStage(leadId: string, context: AuthContext, stage: LeadStatus) {
   const existing = await getLead(leadId, context);
   if (!existing) return null;
+
+  if (stage === "closed") {
+    await prisma.followUpTask.updateMany({
+      where: { leadId, status: "pending" },
+      data: { status: "canceled", completedAt: null },
+    });
+  }
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -292,6 +444,7 @@ export async function updateLeadStage(leadId: string, context: AuthContext, stag
     },
   });
 
+  await syncLeadFollowUpState(leadId);
   return getLead(leadId, context);
 }
 

@@ -36,6 +36,19 @@ enum TaskStatus {
   canceled
 }
 
+enum CurrencyOption {
+  usd
+  peso
+  pound
+  euro
+}
+
+enum LanguageOption {
+  english
+  spanish
+  french
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -68,20 +81,22 @@ model User {
 }
 
 model Lead {
-  id             String       @id @default(cuid())
+  id             String          @id @default(cuid())
   organizationId String
   ownerUserId    String?
   name           String
   email          String
   phone          String
-  stage          LeadStage    @default(new)
+  stage          LeadStage       @default(new)
   source         String
   location       String
   budget         String
-  notes          String       @default("")
+  currency       CurrencyOption  @default(usd)
+  language       LanguageOption  @default(english)
+  notes          String          @default("")
   tags           String[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   lastContactAt  DateTime
   nextFollowUpAt DateTime?
 
@@ -114,14 +129,15 @@ model Activity {
 
 model FollowUpTask {
   id          String      @id @default(cuid())
-  leadId       String
-  userId       String?
-  title        String
-  dueAt        DateTime
-  status       TaskStatus  @default(pending)
-  completedAt  DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  leadId      String
+  userId      String?
+  title       String
+  notes       String      @default("")
+  dueAt       DateTime
+  status      TaskStatus  @default(pending)
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)

@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { requireUser } from "@/lib/auth";
 import { listLeads } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const leads = await listLeads();
+  const user = await requireUser();
+  const leads = await listLeads({ userId: user.id, organizationId: user.organizationId });
 
   return (
     <div className="page">
@@ -27,6 +29,7 @@ export default async function LeadsPage() {
             </div>
             <div>{lead.location}</div>
             <div>{lead.source}</div>
+            <div>{lead.currency} · {lead.language}</div>
             <div>{formatDate(lead.nextFollowUpAt)}</div>
             <div><span className={`badge ${lead.stage}`}>{lead.stage}</span></div>
           </Link>

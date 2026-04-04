@@ -1,4 +1,4 @@
-import { ActivityType, LeadStatus } from "@/lib/types";
+import { ActivityType, CurrencyOption, LanguageOption, LeadStatus } from "@/lib/types";
 
 const now = new Date("2026-04-01T13:00:00-07:00");
 
@@ -18,6 +18,7 @@ export const seedUser = {
   email: "owner@realtoraid.local",
   name: "Demo Agent",
   role: "owner" as const,
+  password: "change-me-now",
 };
 
 export const seedLeadInputs: Array<{
@@ -28,6 +29,8 @@ export const seedLeadInputs: Array<{
   source: string;
   location: string;
   budget: string;
+  currency: CurrencyOption;
+  language: LanguageOption;
   tags: string[];
   notes: string;
   createdAt: string;
@@ -47,6 +50,8 @@ export const seedLeadInputs: Array<{
     source: "Zillow",
     location: "Scottsdale",
     budget: "$700k-$850k",
+    currency: "usd",
+    language: "english",
     tags: ["buyer", "hot"],
     notes: "First-time luxury buyer. Wants gated community and modern kitchen.",
     createdAt: iso(-1, 10),
@@ -64,6 +69,8 @@ export const seedLeadInputs: Array<{
     source: "Open House",
     location: "Tempe",
     budget: "$450k-$550k",
+    currency: "peso",
+    language: "spanish",
     tags: ["buyer", "investor"],
     notes: "Looking for duplex potential. Very responsive by text.",
     createdAt: iso(-6, 12),
@@ -82,6 +89,8 @@ export const seedLeadInputs: Array<{
     source: "Referral",
     location: "Phoenix",
     budget: "$900k+",
+    currency: "pound",
+    language: "french",
     tags: ["seller"],
     notes: "Potential listing in Arcadia. Wants timing advice before summer.",
     createdAt: iso(-18, 9),
@@ -99,6 +108,8 @@ export const seedLeadInputs: Array<{
     source: "Instagram Ad",
     location: "Mesa",
     budget: "$350k-$450k",
+    currency: "euro",
+    language: "english",
     tags: ["buyer"],
     notes: "Needs lender intro. Wants low HOA and fast close.",
     createdAt: iso(-3, 8),
