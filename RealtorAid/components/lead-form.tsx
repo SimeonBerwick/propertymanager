@@ -1,11 +1,7 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
-
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-  return <button type="submit">{pending ? "Saving..." : label}</button>;
-}
+import { useFormState } from "react-dom";
+import { PendingButton } from "@/components/pending-button";
 
 export function LeadForm({ action }: { action: (state: { error?: string }, formData: FormData) => Promise<{ error?: string }> }) {
   const [state, formAction] = useFormState(action, {});
@@ -44,7 +40,7 @@ export function LeadForm({ action }: { action: (state: { error?: string }, formD
       </div>
       <textarea name="notes" placeholder="Critical context: intent, timeline, blockers, deal shape" />
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
-      <SubmitButton label="Create lead" />
+      <PendingButton idleLabel="Create lead" pendingLabel="Creating..." />
     </form>
   );
 }

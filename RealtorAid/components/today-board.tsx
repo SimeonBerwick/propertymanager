@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { completeFollowUp, setFollowUp, updateExistingFollowUp } from "@/app/actions";
+import { DisclosureCard } from "@/components/disclosure-card";
 import { QuickCompleteForm } from "@/components/quick-complete-form";
 import { TodayRescheduleForm } from "@/components/today-reschedule-form";
-import { Lead, TeamUser } from "@/lib/types";
+import { Lead } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
-import { getLeadAgeDays, getLastTouchDays, getLeadExecutionState, getPrimaryTaskId } from "@/lib/lead-state";
+import { getLeadAgeDays, getLastTouchDays, getLeadExecutionState } from "@/lib/lead-state";
 
 function TodayRow({ lead }: { lead: Lead }) {
   const state = getLeadExecutionState(lead);
@@ -41,12 +42,14 @@ function TodayRow({ lead }: { lead: Lead }) {
           <Link href={`/leads/${lead.id}`} className="buttonLike secondaryButtonLike smallButtonLike">Open</Link>
         </div>
       </div>
-      <TodayRescheduleForm action={rescheduleAction} defaultTitle={defaultTitle} defaultDateTime={defaultDateTime} />
+      <DisclosureCard title="Adjust next step" subtitle="Reschedule or create the next action without leaving the board.">
+        <TodayRescheduleForm action={rescheduleAction} defaultTitle={defaultTitle} defaultDateTime={defaultDateTime} />
+      </DisclosureCard>
     </div>
   );
 }
 
-export function TodayBoard({ overdue, dueToday, unscheduled }: { overdue: Lead[]; dueToday: Lead[]; unscheduled: Lead[]; users?: TeamUser[] }) {
+export function TodayBoard({ overdue, dueToday, unscheduled }: { overdue: Lead[]; dueToday: Lead[]; unscheduled: Lead[] }) {
   return (
     <div className="stack-lg">
       <section className="header">
@@ -58,22 +61,22 @@ export function TodayBoard({ overdue, dueToday, unscheduled }: { overdue: Lead[]
       </section>
 
       <section className="grid metricGrid">
-        <div className="card metricCard metricDanger">
+        <div className="card metricCard metricDanger interactiveCard">
           <div className="metricLabel">Overdue</div>
           <div className="metric">{overdue.length}</div>
           <p className="muted">Already missed.</p>
         </div>
-        <div className="card metricCard metricWarn">
+        <div className="card metricCard metricWarn interactiveCard">
           <div className="metricLabel">Due today</div>
           <div className="metric">{dueToday.length}</div>
           <p className="muted">Must be finished today.</p>
         </div>
-        <div className="card metricCard">
+        <div className="card metricCard interactiveCard">
           <div className="metricLabel">Unscheduled</div>
           <div className="metric">{unscheduled.length}</div>
           <p className="muted">No next action exists.</p>
         </div>
-        <div className="card metricCard">
+        <div className="card metricCard interactiveCard">
           <div className="metricLabel">Total pressure</div>
           <div className="metric">{overdue.length + dueToday.length + unscheduled.length}</div>
           <p className="muted">Items that need operator attention.</p>

@@ -1,11 +1,7 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <button type="submit" className="secondary">{pending ? "Saving..." : "Reschedule"}</button>;
-}
+import { useFormState } from "react-dom";
+import { PendingButton } from "@/components/pending-button";
 
 export function TodayRescheduleForm({
   action,
@@ -23,7 +19,7 @@ export function TodayRescheduleForm({
       <input type="text" name="title" defaultValue={defaultTitle} required />
       <input type="datetime-local" name="nextFollowUpAt" defaultValue={defaultDateTime} required />
       <input type="hidden" name="notes" value="Updated from Today board." />
-      <SubmitButton />
+      <PendingButton idleLabel="Reschedule" pendingLabel="Saving..." className="secondary" />
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
     </form>
   );

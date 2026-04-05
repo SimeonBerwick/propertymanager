@@ -1,11 +1,7 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <button type="submit">{pending ? "Logging..." : "Log activity"}</button>;
-}
+import { useFormState } from "react-dom";
+import { PendingButton } from "@/components/pending-button";
 
 export function ActivityForm({ action }: { action: (state: { error?: string }, formData: FormData) => Promise<{ error?: string }> }) {
   const [state, formAction] = useFormState(action, {});
@@ -26,7 +22,7 @@ export function ActivityForm({ action }: { action: (state: { error?: string }, f
       </select>
       <textarea name="summary" placeholder="What happened, what matters now, and what should happen next" required />
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
-      <SubmitButton />
+      <PendingButton idleLabel="Log activity" pendingLabel="Logging..." />
     </form>
   );
 }

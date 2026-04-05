@@ -166,6 +166,16 @@ button {
   align-items: center;
   justify-content: center;
   min-height: 46px;
+  transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+.buttonLike:hover,
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.22);
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 .secondary,
 .secondaryButtonLike {
@@ -221,6 +231,14 @@ textarea { min-height: 110px; resize: vertical; }
 }
 
 .metricCard { min-height: 168px; }
+.interactiveCard {
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.interactiveCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  background: rgba(255,255,255,0.035);
+}
 .metricLabel {
   color: var(--muted);
   text-transform: uppercase;
@@ -328,6 +346,12 @@ textarea { min-height: 110px; resize: vertical; }
   padding: 16px;
   display: grid;
   gap: 14px;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.todayRowCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  background: rgba(255,255,255,0.035);
 }
 .todayRow {
   display: grid;
@@ -344,6 +368,32 @@ textarea { min-height: 110px; resize: vertical; }
   grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.9fr) auto;
   gap: 10px;
   align-items: center;
+}
+.disclosureCard {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.disclosureToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  min-height: 54px;
+}
+.disclosureSubtitle {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.disclosureIcon {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+}
+.disclosureBody {
+  padding-top: 12px;
 }
 
 .badge {
@@ -376,6 +426,11 @@ textarea { min-height: 110px; resize: vertical; }
   background: rgba(255,255,255,0.03);
   font-size: 13px;
   font-weight: 600;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.filterChip:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
 }
 .activeFilterChip {
   border-color: rgba(103, 232, 249, 0.35);

@@ -1,12 +1,8 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormState } from "react-dom";
+import { PendingButton } from "@/components/pending-button";
 import { FollowUpTask } from "@/lib/types";
-
-function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
-  const { pending } = useFormStatus();
-  return <button type="submit">{pending ? pendingLabel : label}</button>;
-}
 
 export function FollowUpForm({
   action,
@@ -28,7 +24,7 @@ export function FollowUpForm({
       <input type="datetime-local" name="nextFollowUpAt" defaultValue={defaultValue} required />
       <textarea name="notes" placeholder="Context for the next touch." />
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
-      <SubmitButton label="Schedule follow-up" pendingLabel="Scheduling..." />
+      <PendingButton idleLabel="Schedule follow-up" pendingLabel="Scheduling..." />
     </form>
   );
 }
@@ -54,7 +50,7 @@ export function FollowUpTaskEditor({
   };
 
   return (
-    <div className="timelineItem stack">
+    <div className="timelineItem stack interactiveCard">
       <div className="detailTopRow">
         <div>
           <strong>{task.title}</strong>
@@ -75,15 +71,15 @@ export function FollowUpTaskEditor({
             <textarea name="notes" defaultValue={task.notes} placeholder="Add context for the next touch." />
             {state.error ? <div className="badge overdue">{state.error}</div> : null}
             <div className="inline">
-              <SubmitButton label="Update" pendingLabel="Updating..." />
+              <PendingButton idleLabel="Update" pendingLabel="Updating..." />
             </div>
           </form>
           <div className="inline">
             <form action={completeFormAction}>
-              <button type="submit">Complete</button>
+              <PendingButton idleLabel="Complete" pendingLabel="Completing..." />
             </form>
             <form action={cancelFormAction}>
-              <button type="submit" className="secondary">Cancel</button>
+              <PendingButton idleLabel="Cancel" pendingLabel="Canceling..." className="secondary" />
             </form>
           </div>
         </>

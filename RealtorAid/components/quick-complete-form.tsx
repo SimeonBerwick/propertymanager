@@ -1,3 +1,5 @@
+import { PendingButton } from "@/components/pending-button";
+
 export function QuickCompleteForm({
   action,
 }: {
@@ -5,7 +7,7 @@ export function QuickCompleteForm({
 }) {
   return (
     <form action={action}>
-      <button type="submit">Complete</button>
+      <PendingButton idleLabel="Complete" pendingLabel="Completing..." />
     </form>
   );
 }

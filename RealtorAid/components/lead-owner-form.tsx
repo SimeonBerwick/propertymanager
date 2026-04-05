@@ -1,12 +1,8 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormState } from "react-dom";
+import { PendingButton } from "@/components/pending-button";
 import { TeamUser } from "@/lib/types";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <button type="submit" className="secondary">{pending ? "Saving..." : "Assign owner"}</button>;
-}
 
 export function LeadOwnerForm({
   action,
@@ -28,7 +24,7 @@ export function LeadOwnerForm({
         ))}
       </select>
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
-      <SubmitButton />
+      <PendingButton idleLabel="Assign owner" pendingLabel="Saving..." className="secondary" />
     </form>
   );
 }
