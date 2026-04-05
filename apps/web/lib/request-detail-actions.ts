@@ -6,6 +6,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
+import { applyRequestAutomation } from '@/lib/automation'
 
 export type RequestActionState = { error: string | null; success?: boolean }
 
@@ -184,6 +185,7 @@ export async function updateVendorFormAction(
       }
     }
 
+    await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
   } catch {
     return { error: 'Could not update vendor. Database may not be connected.' }
@@ -229,6 +231,7 @@ export async function updatePreferencesFormAction(
       },
     })
 
+    await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
@@ -287,6 +290,7 @@ export async function updateDispatchFormAction(
       },
     })
 
+    await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
@@ -378,6 +382,7 @@ export async function reviewVendorUpdateFormAction(
       })
     }
 
+    await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }

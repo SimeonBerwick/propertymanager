@@ -144,6 +144,8 @@ model MaintenanceRequest {
   vendorScheduledEnd    DateTime?
   reviewState           String?            @default("none")
   reviewNote            String?
+  autoFlag              String?
+  autoFlaggedAt         DateTime?
   slaBucket             String?            @default("standard")
   triageTagsCsv         String?            @default("")
   createdAt             DateTime           @default(now())

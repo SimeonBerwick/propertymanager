@@ -44,6 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             {session.isLoggedIn && (
               <nav className="nav">
                 <Link href="/dashboard">Dashboard</Link>
+                <Link href="/exceptions">Exceptions</Link>
                 <Link href="/properties">Properties</Link>
                 <Link href="/vendors">Vendors</Link>
                 <Link href="/reports">Reports</Link>
