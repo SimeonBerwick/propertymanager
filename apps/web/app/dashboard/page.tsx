@@ -69,6 +69,37 @@ export default async function DashboardPage({
         </div>
       </section>
 
+      <section className="grid cols-3">
+        <div className="card">
+          <div className="kicker">Reassignment needed</div>
+          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.reassignmentNeeded}</h3>
+          <div className="muted">Vendor declined or landlord cleared assignment</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Pending completion review</div>
+          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.completedPendingReview}</h3>
+          <div className="muted">Vendor says complete; landlord has not approved yet</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Needs follow-up</div>
+          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.needsFollowUp}</h3>
+          <div className="muted">Vendor updates that still need operator action</div>
+        </div>
+      </section>
+
+      <section className="grid cols-2">
+        <div className="card">
+          <div className="kicker">Scheduled today</div>
+          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.scheduledToday}</h3>
+          <div className="muted">Confirmed vendor visits landing today</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Overdue scheduled</div>
+          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.overdueScheduled}</h3>
+          <div className="muted">Past-due scheduled windows on non-closed requests</div>
+        </div>
+      </section>
+
       <section className="card">
         <div className="row" style={{ marginBottom: 12 }}>
           <div>

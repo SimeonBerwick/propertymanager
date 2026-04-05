@@ -25,6 +25,11 @@ export interface DashboardData {
     nonEnglishOpen: number
     nonUsdOpen: number
     priorityOpen: number
+    reassignmentNeeded: number
+    completedPendingReview: number
+    needsFollowUp: number
+    scheduledToday: number
+    overdueScheduled: number
   }
 }
 
@@ -117,10 +122,21 @@ function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, numbe
 
 function queueCounts(rows: DashboardRequestRow[]) {
   const openRows = rows.filter((r) => r.status !== 'done')
+  const now = new Date()
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(todayStart)
+  todayEnd.setDate(todayEnd.getDate() + 1)
+
   return {
     nonEnglishOpen: openRows.filter((r) => r.preferredLanguage !== 'english').length,
     nonUsdOpen: openRows.filter((r) => r.preferredCurrency !== 'usd').length,
     priorityOpen: openRows.filter((r) => r.slaBucket === 'priority').length,
+    reassignmentNeeded: rows.filter((r) => r.reviewState === 'reassignment_needed' || r.reviewState === 'vendor_declined_reassignment_needed').length,
+    completedPendingReview: rows.filter((r) => r.reviewState === 'vendor_completed_pending_review').length,
+    needsFollowUp: rows.filter((r) => r.reviewState === 'needs_follow_up' || r.reviewState === 'vendor_update_pending_review').length,
+    scheduledToday: rows.filter((r) => r.vendorScheduledStart && new Date(r.vendorScheduledStart) >= todayStart && new Date(r.vendorScheduledStart) < todayEnd).length,
+    overdueScheduled: rows.filter((r) => r.vendorScheduledEnd && new Date(r.vendorScheduledEnd) < now && r.status !== 'done').length,
   }
 }
 
@@ -346,12 +362,27 @@ export interface RepeatIssueGroup {
   requestTitles: string[]
 }
 
+export interface VendorScorecard {
+  vendorId: string
+  vendorName: string
+  assignmentCount: number
+  acceptedCount: number
+  declinedCount: number
+  completedCount: number
+  avgCompletionDays: number | null
+}
+
 export interface ReportData {
   propertyStats: PropertyStats[]
   agingRequests: AgingRequest[]
   repeatIssues: RepeatIssueGroup[]
   totalOpen: number
   totalClosed: number
+  avgTimeToAssignHours: number | null
+  avgTimeToScheduleHours: number | null
+  avgTimeToCompleteDays: number | null
+  reopenCount: number
+  vendorScorecards: VendorScorecard[]
 }
 
 export interface UnitDetailData {
@@ -395,7 +426,7 @@ function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
 export async function getReportData(userId: string): Promise<ReportData> {
   const now = new Date()
   try {
-    const [dbProperties, openDbRequests, allDbRequests] = await Promise.all([
+    const [dbProperties, openDbRequests, allDbRequests, dispatchEvents, vendors] = await Promise.all([
       prisma.property.findMany({
         where: { ownerId: userId },
         include: {
@@ -413,6 +444,15 @@ export async function getReportData(userId: string): Promise<ReportData> {
         where: { property: { ownerId: userId } },
         include: { property: true, unit: true },
         orderBy: { createdAt: 'desc' },
+      }),
+      prisma.vendorDispatchEvent.findMany({
+        where: { request: { property: { ownerId: userId } } },
+        include: { vendor: true, request: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.vendor.findMany({
+        where: { orgId: userId },
+        orderBy: { name: 'asc' },
       }),
     ])
 
@@ -433,17 +473,71 @@ export async function getReportData(userId: string): Promise<ReportData> {
     const allRows = allDbRequests.map(mapRequestRow)
     const totalOpen = allRows.filter((r) => r.status !== 'done').length
     const totalClosed = allRows.filter((r) => r.status === 'done').length
+    const repeatIssues = groupRepeatIssues(allRows)
+
+    const assignmentDelays = allDbRequests
+      .filter((r) => r.assignedVendorName)
+      .map((r) => (r.updatedAt.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60))
+
+    const scheduleDelays = allDbRequests
+      .filter((r) => r.vendorScheduledStart)
+      .map((r) => (r.vendorScheduledStart!.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60))
+
+    const completionDelays = allDbRequests
+      .filter((r) => r.closedAt)
+      .map((r) => (r.closedAt!.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+
+    const avg = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null
+
+    const vendorScorecards: VendorScorecard[] = vendors.map((vendor) => {
+      const vendorEvents = dispatchEvents.filter((event) => event.vendorId === vendor.id)
+      const assignedRequestIds = new Set(vendorEvents.filter((event) => event.status === 'assigned').map((event) => event.requestId))
+      const completedRequestIds = new Set(vendorEvents.filter((event) => event.status === 'completed').map((event) => event.requestId))
+      const acceptedCount = vendorEvents.filter((event) => event.status === 'accepted').length
+      const declinedCount = vendorEvents.filter((event) => event.status === 'declined').length
+      const completedDurations = allDbRequests
+        .filter((request) => request.assignedVendorId === vendor.id && request.closedAt)
+        .map((request) => (request.closedAt!.getTime() - request.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+
+      return {
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        assignmentCount: assignedRequestIds.size,
+        acceptedCount,
+        declinedCount,
+        completedCount: completedRequestIds.size,
+        avgCompletionDays: avg(completedDurations),
+      }
+    })
+
+    const reopenCount = allRows.filter((r) => r.reviewState === 'reopened_after_review').length
 
     return {
       propertyStats,
       agingRequests,
-      repeatIssues: groupRepeatIssues(allRows),
+      repeatIssues,
       totalOpen,
       totalClosed,
+      avgTimeToAssignHours: avg(assignmentDelays),
+      avgTimeToScheduleHours: avg(scheduleDelays),
+      avgTimeToCompleteDays: avg(completionDelays),
+      reopenCount,
+      vendorScorecards,
     }
   } catch {
     // DB unavailable: return empty data rather than exposing unscoped seed data
-    return { propertyStats: [], agingRequests: [], repeatIssues: [], totalOpen: 0, totalClosed: 0 }
+    return {
+      propertyStats: [],
+      agingRequests: [],
+      repeatIssues: [],
+      totalOpen: 0,
+      totalClosed: 0,
+      avgTimeToAssignHours: null,
+      avgTimeToScheduleHours: null,
+      avgTimeToCompleteDays: null,
+      reopenCount: 0,
+      vendorScorecards: [],
+    }
   }
 }
 
