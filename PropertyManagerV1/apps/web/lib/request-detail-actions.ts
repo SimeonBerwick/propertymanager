@@ -295,6 +295,97 @@ export async function updateDispatchFormAction(
   }
 }
 
+export async function reviewVendorUpdateFormAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const action = String(formData.get('reviewAction') ?? '').trim()
+  const note = String(formData.get('reviewNote') ?? '').trim()
+
+  if (!['approve-completion', 'reopen-request', 'needs-follow-up', 'mark-reassignment-needed'].includes(action)) {
+    return { error: 'Invalid review action.' }
+  }
+
+  try {
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      select: { id: true, status: true },
+    })
+    if (!request) return { error: 'Request not found.' }
+
+    if (action === 'approve-completion') {
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'done',
+          closedAt: new Date(),
+          reviewState: 'approved',
+          reviewNote: note || 'Landlord approved vendor completion.',
+        },
+      })
+
+      await prisma.statusEvent.create({
+        data: {
+          requestId,
+          fromStatus: request.status,
+          toStatus: 'done',
+          actorUserId: session.userId,
+        },
+      })
+    } else if (action === 'reopen-request') {
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'in_progress',
+          closedAt: null,
+          reviewState: 'reopened_after_review',
+          reviewNote: note || 'Landlord reopened request after vendor update review.',
+        },
+      })
+
+      await prisma.statusEvent.create({
+        data: {
+          requestId,
+          fromStatus: request.status,
+          toStatus: 'in_progress',
+          actorUserId: session.userId,
+        },
+      })
+    } else if (action === 'needs-follow-up') {
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          reviewState: 'needs_follow_up',
+          reviewNote: note || 'Landlord requested follow-up on vendor update.',
+        },
+      })
+    } else if (action === 'mark-reassignment-needed') {
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          assignedVendorId: null,
+          assignedVendorName: null,
+          assignedVendorEmail: null,
+          assignedVendorPhone: null,
+          dispatchStatus: null,
+          reviewState: 'reassignment_needed',
+          reviewNote: note || 'Vendor declined or was removed; reassignment required.',
+        },
+      })
+    }
+
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    return { error: null, success: true }
+  } catch {
+    return { error: 'Could not apply review action.' }
+  }
+}
+
 export async function addCommentFormAction(
   _prev: RequestActionState,
   formData: FormData,

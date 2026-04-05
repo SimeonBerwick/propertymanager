@@ -142,6 +142,8 @@ model MaintenanceRequest {
   dispatchStatus        DispatchStatus?
   vendorScheduledStart  DateTime?
   vendorScheduledEnd    DateTime?
+  reviewState           String?            @default("none")
+  reviewNote            String?
   slaBucket             String?            @default("standard")
   triageTagsCsv         String?            @default("")
   createdAt             DateTime           @default(now())
