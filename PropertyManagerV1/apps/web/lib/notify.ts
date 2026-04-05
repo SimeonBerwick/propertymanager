@@ -378,3 +378,42 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
     `),
   }
 }
+
+export interface LandlordExceptionSummaryParams {
+  landlordEmail: string
+  requests: Array<{
+    id: string
+    title: string
+    propertyName: string
+    unitLabel: string
+    autoFlag?: string
+    reviewState?: string
+  }>
+}
+
+export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummaryParams): NotificationMessage {
+  return {
+    to: p.landlordEmail,
+    subject: `[Mission Control] Daily exception summary`,
+    text: [
+      `Daily exception summary`,
+      ``,
+      ...p.requests.map((request) =>
+        `- ${request.title} (${request.propertyName} / ${request.unitLabel}) · flag=${request.autoFlag ?? 'none'} · review=${request.reviewState ?? 'none'}`,
+      ),
+    ].join('\n'),
+    html: htmlEmail(`
+      <p><strong>Daily exception summary</strong></p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${p.requests.map((request) => `
+          <tr>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#111827">${esc(request.title)}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280">${esc(`${request.propertyName} / ${request.unitLabel}`)}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280">${esc(request.autoFlag ?? 'none')}</td>
+            <td style="padding:8px 0;vertical-align:top;color:#6b7280">${esc(request.reviewState ?? 'none')}</td>
+          </tr>
+        `).join('')}
+      </table>
+    `),
+  }
+}

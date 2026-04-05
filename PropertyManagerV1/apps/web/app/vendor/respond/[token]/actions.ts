@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/vendor-dispatch-link'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
+import { applyRequestAutomation } from '@/lib/automation'
 import type { DispatchStatus } from '@/lib/types'
 
 export type VendorResponseState = { error: string | null }
@@ -127,6 +128,8 @@ export async function submitVendorResponse(
   }
 
   await markVendorDispatchLinkUsed(validation.linkId)
+
+  await applyRequestAutomation(validation.requestId)
 
   const shouldNotifyTenant = dispatchStatus === 'scheduled' || dispatchStatus === 'completed' || savedPhotoPaths.length > 0
   if (shouldNotifyTenant && tenantNotification) {

@@ -85,17 +85,17 @@ export default async function DashboardPage({
       </section>
 
       <section className="grid cols-3">
-        <Link href="/dashboard?queue=reassignment-needed" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Reassignment needed</div>
           <h3 style={{ margin: '4px 0' }}>{data.queueCounts.reassignmentNeeded}</h3>
           <div className="muted">Vendor declined or landlord cleared assignment</div>
         </Link>
-        <Link href="/dashboard?queue=completion-review" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Pending completion review</div>
           <h3 style={{ margin: '4px 0' }}>{data.queueCounts.completedPendingReview}</h3>
           <div className="muted">Vendor says complete; landlord has not approved yet</div>
         </Link>
-        <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Needs follow-up</div>
           <h3 style={{ margin: '4px 0' }}>{data.queueCounts.needsFollowUp}</h3>
           <div className="muted">Vendor updates that still need operator action</div>

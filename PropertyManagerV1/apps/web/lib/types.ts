@@ -51,6 +51,8 @@ export interface MaintenanceRequest {
   vendorScheduledEnd?: string
   reviewState?: string
   reviewNote?: string
+  autoFlag?: string
+  autoFlaggedAt?: string
   slaBucket?: string
   triageTags: string[]
   createdAt: string

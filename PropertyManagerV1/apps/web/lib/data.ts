@@ -90,6 +90,8 @@ function mapRequestRow(r: any): DashboardRequestRow {
     vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
     reviewState: r.reviewState ?? undefined,
     reviewNote: r.reviewNote ?? undefined,
+    autoFlag: r.autoFlag ?? undefined,
+    autoFlaggedAt: r.autoFlaggedAt ? new Date(r.autoFlaggedAt).toISOString() : undefined,
     slaBucket: r.slaBucket ?? undefined,
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
