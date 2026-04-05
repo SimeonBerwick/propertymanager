@@ -22,30 +22,45 @@ export async function applyRequestAutomation(requestId: string) {
     autoFlag = 'follow_up'
   }
 
+  const shouldAlert = !!autoFlag
+    && (autoFlag === 'reassignment_needed' || autoFlag === 'overdue_scheduled')
+    && (!request.lastAutoAlertAt || now.getTime() - request.lastAutoAlertAt.getTime() > 12 * 60 * 60 * 1000)
+
   await prisma.maintenanceRequest.update({
     where: { id: requestId },
     data: {
       autoFlag,
       autoFlaggedAt: autoFlag ? now : null,
+      lastAutoAlertAt: shouldAlert ? now : request.lastAutoAlertAt,
     },
   }).catch(() => null)
 
   const landlordEmail = request.property.owner.email
-  if (!landlordEmail || !autoFlag) return
+  if (!landlordEmail || !shouldAlert || !autoFlag) return
 
-  if (autoFlag === 'reassignment_needed' || autoFlag === 'overdue_scheduled') {
-    await sendNotification({
-      to: landlordEmail,
-      subject: `[Mission Control] ${autoFlag.replace(/_/g, ' ')} — ${request.title}`,
-      text: [
-        `Request ${request.id} requires attention.`,
-        ``,
-        `Issue: ${request.title}`,
-        `Property: ${request.property.name}`,
-        `Flag: ${autoFlag}`,
-      ].join('\n'),
-    })
+  await sendNotification({
+    to: landlordEmail,
+    subject: `[Mission Control] ${autoFlag.replace(/_/g, ' ')} — ${request.title}`,
+    text: [
+      `Request ${request.id} requires attention.`,
+      ``,
+      `Issue: ${request.title}`,
+      `Property: ${request.property.name}`,
+      `Flag: ${autoFlag}`,
+    ].join('\n'),
+  })
+}
+
+export async function runAutomationSweep() {
+  const requests = await prisma.maintenanceRequest.findMany({
+    select: { id: true },
+  }).catch(() => [])
+
+  for (const request of requests) {
+    await applyRequestAutomation(request.id)
   }
+
+  return { processed: requests.length }
 }
 
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {
