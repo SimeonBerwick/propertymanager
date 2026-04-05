@@ -7,8 +7,8 @@ export default function NewLeadPage() {
       <div className="header">
         <div>
           <p className="eyebrow">Capture</p>
-          <h2>Quick add lead</h2>
-          <p className="muted">Fast intake first. Perfect data later.</p>
+          <h2>Create a lead without ceremony</h2>
+          <p className="muted">Capture the minimum real data, then move the lead into action fast.</p>
         </div>
       </div>
       <LeadForm action={createLead} />

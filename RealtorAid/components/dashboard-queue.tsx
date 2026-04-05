@@ -11,11 +11,11 @@ export function DashboardQueue({ title, subtitle, leads, tone }: { title: string
       </div>
       <div className="list">
         {leads.length === 0 ? (
-          <div className="muted">Nothing in this queue.</div>
+          <div className="emptyState">Nothing in this queue.</div>
         ) : (
           leads.map((lead) => (
-            <Link key={lead.id} href={`/leads/${lead.id}`} className="timelineItem">
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <Link key={lead.id} href={`/leads/${lead.id}`} className="timelineItem queueItem">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
                 <strong>{lead.name}</strong>
                 <span className={`badge ${tone === "overdue" ? "overdue" : tone === "due" ? "due" : lead.stage}`}>{lead.stage}</span>
               </div>

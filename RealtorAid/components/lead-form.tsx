@@ -11,7 +11,13 @@ export function LeadForm({ action }: { action: (state: { error?: string }, formD
   const [state, formAction] = useFormState(action, {});
 
   return (
-    <form action={formAction} className="card">
+    <form action={formAction} className="card stack-lg">
+      <div>
+        <p className="eyebrow">Lead intake</p>
+        <h3>Minimum viable truth</h3>
+        <p className="muted">Do not optimize for perfect CRM data. Optimize for enough context to take the next step.</p>
+      </div>
+
       <div className="grid cols-3">
         <input name="name" placeholder="Full name" required />
         <input name="email" type="email" placeholder="Email" required />
@@ -34,10 +40,9 @@ export function LeadForm({ action }: { action: (state: { error?: string }, formD
           <option value="spanish">Spanish</option>
           <option value="french">French</option>
         </select>
-        <div />
+        <input name="tags" placeholder="Tags, comma separated" />
       </div>
-      <input name="tags" placeholder="Tags, comma separated" />
-      <textarea name="notes" placeholder="Anything the agent needs to know right now" />
+      <textarea name="notes" placeholder="Critical context: intent, timeline, blockers, deal shape" />
       {state.error ? <div className="badge overdue">{state.error}</div> : null}
       <SubmitButton label="Create lead" />
     </form>
