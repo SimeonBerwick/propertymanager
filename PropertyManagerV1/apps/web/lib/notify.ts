@@ -359,7 +359,6 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
       `  Dispatch     : ${p.dispatchStatus}`,
       scheduleLine ? `  Schedule     : ${scheduleLine}` : '',
       p.photoCount ? `  Photos       : ${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}` : '',
-      p.note ? ``,
       p.note ? `Note: ${p.note}` : '',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
