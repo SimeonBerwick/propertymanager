@@ -59,11 +59,11 @@ export default async function ReportsPage() {
           <h2>{data.avgTimeToCompleteDays ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '—'}</h2>
           <div className="muted">Average request cycle time</div>
         </div>
-        <div className="card">
+        <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Reopened</div>
           <h2>{data.reopenCount}</h2>
           <div className="muted">Requests reopened after review</div>
-        </div>
+        </Link>
       </section>
 
       {/* ── Open vs closed by property ── */}
@@ -174,11 +174,31 @@ export default async function ReportsPage() {
             <tbody>
               {data.vendorScorecards.map((vendor) => (
                 <tr key={vendor.vendorId}>
-                  <td>{vendor.vendorName}</td>
-                  <td>{vendor.assignmentCount}</td>
-                  <td>{vendor.acceptedCount}</td>
-                  <td>{vendor.declinedCount}</td>
-                  <td>{vendor.completedCount}</td>
+                  <td>
+                    <Link href={`/vendors/${vendor.vendorId}`} style={{ fontWeight: 600 }}>
+                      {vendor.vendorName}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/vendors/${vendor.vendorId}`}>
+                      {vendor.assignmentCount}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/vendors/${vendor.vendorId}`}>
+                      {vendor.acceptedCount}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/vendors/${vendor.vendorId}`}>
+                      {vendor.declinedCount}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/vendors/${vendor.vendorId}`}>
+                      {vendor.completedCount}
+                    </Link>
+                  </td>
                   <td>{vendor.avgCompletionDays ? `${vendor.avgCompletionDays.toFixed(1)}d` : '—'}</td>
                 </tr>
               ))}
