@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { getReportData } from '@/lib/data'
 
 function csvToList(value: string | null | undefined) {
   return value ? value.split(',').map((item) => item.trim()).filter(Boolean) : []
@@ -11,10 +12,13 @@ export default async function VendorsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 
-  const vendors = await prisma.vendor.findMany({
-    where: { orgId: session.userId },
-    orderBy: { name: 'asc' },
-  }).catch(() => [])
+  const [vendors, reportData] = await Promise.all([
+    prisma.vendor.findMany({
+      where: { orgId: session.userId },
+      orderBy: { name: 'asc' },
+    }).catch(() => []),
+    getReportData(session.userId),
+  ])
 
   return (
     <div className="stack">
@@ -28,7 +32,9 @@ export default async function VendorsPage() {
 
       {vendors.length ? (
         <div className="grid cols-2">
-          {vendors.map((vendor) => (
+          {vendors.map((vendor) => {
+            const scorecard = reportData.vendorScorecards.find((item) => item.vendorId === vendor.id)
+            return (
             <section key={vendor.id} className="card stack">
               <div className="row">
                 <div>
@@ -41,8 +47,11 @@ export default async function VendorsPage() {
               <div><strong>Categories:</strong> {csvToList(vendor.categoriesCsv).join(', ') || 'None'}</div>
               <div><strong>Languages:</strong> {csvToList(vendor.supportedLanguagesCsv).join(', ') || 'None'}</div>
               <div><strong>Currencies:</strong> {csvToList(vendor.supportedCurrenciesCsv).join(', ') || 'None'}</div>
+              <div><strong>Assignments:</strong> {scorecard?.assignmentCount ?? 0}</div>
+              <div><strong>Accepted:</strong> {scorecard?.acceptedCount ?? 0} · <strong>Declined:</strong> {scorecard?.declinedCount ?? 0}</div>
+              <div><strong>Completed:</strong> {scorecard?.completedCount ?? 0}{scorecard?.avgCompletionDays ? ` · Avg ${scorecard.avgCompletionDays.toFixed(1)}d` : ''}</div>
             </section>
-          ))}
+          )})}
         </div>
       ) : (
         <div className="card stack" style={{ maxWidth: 520 }}>

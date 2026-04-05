@@ -43,6 +43,29 @@ export default async function ReportsPage() {
         </div>
       </section>
 
+      <section className="grid cols-4">
+        <div className="card">
+          <div className="kicker">Time to assign</div>
+          <h2>{data.avgTimeToAssignHours ? `${data.avgTimeToAssignHours.toFixed(1)}h` : '—'}</h2>
+          <div className="muted">Average from intake to assignment</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Time to schedule</div>
+          <h2>{data.avgTimeToScheduleHours ? `${data.avgTimeToScheduleHours.toFixed(1)}h` : '—'}</h2>
+          <div className="muted">Average from intake to visit window</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Time to complete</div>
+          <h2>{data.avgTimeToCompleteDays ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '—'}</h2>
+          <div className="muted">Average request cycle time</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Reopened</div>
+          <h2>{data.reopenCount}</h2>
+          <div className="muted">Requests reopened after review</div>
+        </div>
+      </section>
+
       {/* ── Open vs closed by property ── */}
       <section className="card stack">
         <div>
@@ -128,6 +151,41 @@ export default async function ReportsPage() {
           </table>
         ) : (
           <div className="muted">No open requests. All clear.</div>
+        )}
+      </section>
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Vendor scorecards</div>
+          <h3 style={{ marginTop: 4 }}>Assignment and completion performance</h3>
+        </div>
+        {data.vendorScorecards.length ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Assignments</th>
+                <th>Accepted</th>
+                <th>Declined</th>
+                <th>Completed</th>
+                <th>Avg completion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.vendorScorecards.map((vendor) => (
+                <tr key={vendor.vendorId}>
+                  <td>{vendor.vendorName}</td>
+                  <td>{vendor.assignmentCount}</td>
+                  <td>{vendor.acceptedCount}</td>
+                  <td>{vendor.declinedCount}</td>
+                  <td>{vendor.completedCount}</td>
+                  <td>{vendor.avgCompletionDays ? `${vendor.avgCompletionDays.toFixed(1)}d` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted">No vendor performance data yet.</div>
         )}
       </section>
 
