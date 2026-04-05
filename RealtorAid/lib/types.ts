@@ -60,6 +60,13 @@ export interface Lead {
   followUpTasks: FollowUpTask[];
 }
 
+export interface TeamUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export interface DashboardQueues {
   newLeads: Lead[];
   dueToday: Lead[];

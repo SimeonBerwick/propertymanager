@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   addActivity,
   addLead,
+  assignLeadOwner,
   cancelFollowUpTask,
   completeFollowUpTask,
   scheduleFollowUp,
@@ -154,6 +155,20 @@ export async function setLeadStage(leadId: string, formData: FormData) {
   const user = await requireUser();
   await updateLeadStage(leadId, { userId: user.id, organizationId: user.organizationId }, stage);
   revalidatePath("/");
+  revalidatePath("/today");
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
+}
+
+export async function setLeadOwner(leadId: string, formData: FormData) {
+  const ownerUserIdValue = String(formData.get("ownerUserId") || "").trim();
+  const ownerUserId = ownerUserIdValue || null;
+  const user = await requireUser();
+  const lead = await assignLeadOwner(leadId, { userId: user.id, organizationId: user.organizationId }, ownerUserId);
+  if (!lead) return { error: "Unable to assign owner." };
+  revalidatePath("/");
+  revalidatePath("/today");
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId}`);
+  return {};
 }

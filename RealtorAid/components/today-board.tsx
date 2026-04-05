@@ -1,42 +1,52 @@
 import Link from "next/link";
-import { completeFollowUp } from "@/app/actions";
+import { completeFollowUp, setFollowUp, updateExistingFollowUp } from "@/app/actions";
 import { QuickCompleteForm } from "@/components/quick-complete-form";
-import { Lead } from "@/lib/types";
+import { TodayRescheduleForm } from "@/components/today-reschedule-form";
+import { Lead, TeamUser } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { getLeadAgeDays, getLastTouchDays, getLeadExecutionState, getPrimaryTaskId } from "@/lib/lead-state";
 
 function TodayRow({ lead }: { lead: Lead }) {
   const state = getLeadExecutionState(lead);
-  const taskId = getPrimaryTaskId(lead);
+  const primaryTask = lead.followUpTasks.find((task) => task.status === "pending") ?? null;
+  const taskId = primaryTask?.id ?? null;
   const completeAction = taskId
     ? async (_formData: FormData) => {
         "use server";
         await completeFollowUp(lead.id, taskId);
       }
     : null;
+  const rescheduleAction = taskId
+    ? updateExistingFollowUp.bind(null, lead.id, taskId)
+    : setFollowUp.bind(null, lead.id);
+  const defaultDateTime = (lead.nextFollowUpAt ?? new Date().toISOString()).slice(0, 16);
+  const defaultTitle = primaryTask?.title ?? `Follow up with ${lead.name}`;
 
   return (
-    <div className="todayRow">
-      <div className="todayLeadCell">
-        <div>
-          <strong>{lead.name}</strong>
-          <div className="muted">{lead.location} · {lead.source}</div>
+    <div className="todayRowCard">
+      <div className="todayRow">
+        <div className="todayLeadCell">
+          <div>
+            <strong>{lead.name}</strong>
+            <div className="muted">{lead.location} · {lead.source}</div>
+          </div>
+          <span className={`badge ${state}`}>{state}</span>
         </div>
-        <span className={`badge ${state}`}>{state}</span>
+        <div>{formatDate(lead.nextFollowUpAt)}</div>
+        <div>{getLastTouchDays(lead)}d ago</div>
+        <div>{getLeadAgeDays(lead)}d old</div>
+        <div>{lead.ownerName ?? "Unassigned"}</div>
+        <div className="todayActions">
+          {completeAction ? <QuickCompleteForm action={completeAction} /> : <span className="muted">No open task</span>}
+          <Link href={`/leads/${lead.id}`} className="buttonLike secondaryButtonLike smallButtonLike">Open</Link>
+        </div>
       </div>
-      <div>{formatDate(lead.nextFollowUpAt)}</div>
-      <div>{getLastTouchDays(lead)}d ago</div>
-      <div>{getLeadAgeDays(lead)}d old</div>
-      <div>{lead.ownerName ?? "Unassigned"}</div>
-      <div className="todayActions">
-        {completeAction ? <QuickCompleteForm action={completeAction} /> : <span className="muted">No open task</span>}
-        <Link href={`/leads/${lead.id}`} className="buttonLike secondaryButtonLike smallButtonLike">Open</Link>
-      </div>
+      <TodayRescheduleForm action={rescheduleAction} defaultTitle={defaultTitle} defaultDateTime={defaultDateTime} />
     </div>
   );
 }
 
-export function TodayBoard({ overdue, dueToday, unscheduled }: { overdue: Lead[]; dueToday: Lead[]; unscheduled: Lead[] }) {
+export function TodayBoard({ overdue, dueToday, unscheduled }: { overdue: Lead[]; dueToday: Lead[]; unscheduled: Lead[]; users?: TeamUser[] }) {
   return (
     <div className="stack-lg">
       <section className="header">

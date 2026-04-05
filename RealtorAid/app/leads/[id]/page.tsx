@@ -4,25 +4,35 @@ import {
   completeFollowUp,
   createActivity,
   setFollowUp,
+  setLeadOwner,
   setLeadStage,
   updateExistingFollowUp,
 } from "@/app/actions";
 import { ActivityForm } from "@/components/activity-form";
 import { FollowUpForm, FollowUpTaskEditor } from "@/components/follow-up-form";
+import { LeadOwnerForm } from "@/components/lead-owner-form";
 import { requireUser } from "@/lib/auth";
 import { getLeadExecutionState, getLeadAgeDays, getLastTouchDays } from "@/lib/lead-state";
-import { getLead } from "@/lib/store";
+import { getLead, listTeamUsers } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const user = await requireUser();
-  const lead = await getLead(params.id, { userId: user.id, organizationId: user.organizationId });
+  const context = { userId: user.id, organizationId: user.organizationId };
+  const [lead, teamUsers] = await Promise.all([
+    getLead(params.id, context),
+    listTeamUsers(context),
+  ]);
   if (!lead) notFound();
 
   const activityAction = createActivity.bind(null, lead.id);
   const followUpAction = setFollowUp.bind(null, lead.id);
+  const ownerAction = async (_state: { error?: string }, formData: FormData) => {
+    "use server";
+    return setLeadOwner(lead.id, formData);
+  };
   const stageAction = setLeadStage.bind(null, lead.id);
   const executionState = getLeadExecutionState(lead);
 
@@ -72,6 +82,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
             </select>
             <button type="submit" className="secondary">Update stage</button>
           </form>
+          <LeadOwnerForm action={ownerAction} users={teamUsers} currentOwnerUserId={lead.ownerUserId} />
         </div>
       </section>
 

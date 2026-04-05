@@ -9,6 +9,7 @@ import {
   LeadStatus,
   FollowUpTaskInput,
   FollowUpTaskStatus,
+  TeamUser,
 } from "@/lib/types";
 import { startOfDay } from "@/lib/utils";
 
@@ -445,6 +446,39 @@ export async function updateLeadStage(leadId: string, context: AuthContext, stag
   });
 
   await syncLeadFollowUpState(leadId);
+  return getLead(leadId, context);
+}
+
+export async function listTeamUsers(context: AuthContext): Promise<TeamUser[]> {
+  const users = await prisma.user.findMany({
+    where: { organizationId: context.organizationId },
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+  });
+
+  return users.map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  }));
+}
+
+export async function assignLeadOwner(leadId: string, context: AuthContext, ownerUserId: string | null) {
+  const existing = await getLead(leadId, context);
+  if (!existing) return null;
+
+  if (ownerUserId) {
+    const owner = await prisma.user.findFirst({
+      where: { id: ownerUserId, organizationId: context.organizationId },
+    });
+    if (!owner) return null;
+  }
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: { ownerUserId },
+  });
+
   return getLead(leadId, context);
 }
 

@@ -6,9 +6,17 @@ import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeadsPage() {
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams?: { status?: string };
+}) {
   const user = await requireUser();
   const leads = await listLeads({ userId: user.id, organizationId: user.organizationId });
+  const statusFilter = searchParams?.status?.trim();
+  const filteredLeads = statusFilter
+    ? leads.filter((lead) => getLeadExecutionState(lead) === statusFilter)
+    : leads;
 
   return (
     <div className="page">
@@ -25,6 +33,14 @@ export default async function LeadsPage() {
       </section>
 
       <section className="card stack">
+        <div className="filterBar">
+          <Link href="/leads" className={`filterChip ${!statusFilter ? "activeFilterChip" : ""}`}>All</Link>
+          <Link href="/leads?status=overdue" className={`filterChip ${statusFilter === "overdue" ? "activeFilterChip" : ""}`}>Overdue</Link>
+          <Link href="/leads?status=due" className={`filterChip ${statusFilter === "due" ? "activeFilterChip" : ""}`}>Due today</Link>
+          <Link href="/leads?status=unscheduled" className={`filterChip ${statusFilter === "unscheduled" ? "activeFilterChip" : ""}`}>Unscheduled</Link>
+          <Link href="/leads?status=stale" className={`filterChip ${statusFilter === "stale" ? "activeFilterChip" : ""}`}>Stale</Link>
+        </div>
+
         <div className="listHeader leadListHeaderWide">
           <span>Lead</span>
           <span>Source</span>
@@ -36,7 +52,7 @@ export default async function LeadsPage() {
         </div>
 
         <div className="leadList">
-          {leads.map((lead) => (
+          {filteredLeads.map((lead) => (
             <Link className="leadListRow leadListRowWide" key={lead.id} href={`/leads/${lead.id}`}>
               <div className="listRowMeta">
                 <strong>{lead.name}</strong>
@@ -50,6 +66,7 @@ export default async function LeadsPage() {
               <div><span className={`badge ${getLeadExecutionState(lead)}`}>{getLeadExecutionState(lead)}</span></div>
             </Link>
           ))}
+          {filteredLeads.length === 0 ? <div className="emptyState">No leads match this execution state.</div> : null}
         </div>
       </section>
     </div>

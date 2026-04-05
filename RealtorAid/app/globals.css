@@ -321,17 +321,30 @@ textarea { min-height: 110px; resize: vertical; }
   grid-template-columns: minmax(0, 1.5fr) 1fr 0.75fr 0.7fr 0.8fr 0.9fr;
   gap: 14px;
 }
+.todayRowCard {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.02);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
 .todayRow {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) 1fr 0.75fr 0.7fr 0.8fr 0.9fr;
   gap: 14px;
-  padding: 16px;
   align-items: center;
 }
 .todayLeadCell { justify-content: flex-start; }
 .todayLeadCell > div { display: grid; gap: 4px; }
 .todayActions { justify-content: flex-end; }
 .todayActions form { width: auto; }
+.todayRescheduleForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.9fr) auto;
+  gap: 10px;
+  align-items: center;
+}
 
 .badge {
   display: inline-flex;
@@ -351,6 +364,24 @@ textarea { min-height: 110px; resize: vertical; }
 .badge.due { color: var(--warn); }
 .badge.unscheduled, .badge.closed, .badge.under-contract { color: #e5e7eb; }
 
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.filterChip {
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  font-size: 13px;
+  font-weight: 600;
+}
+.activeFilterChip {
+  border-color: rgba(103, 232, 249, 0.35);
+  color: var(--accent);
+  background: rgba(103, 232, 249, 0.08);
+}
 .emptyState {
   padding: 18px;
   border-radius: 14px;
@@ -383,7 +414,8 @@ textarea { min-height: 110px; resize: vertical; }
   .leadListRowWide,
   .leadListHeaderWide,
   .todayHeaderRow,
-  .todayRow {
+  .todayRow,
+  .todayRescheduleForm {
     grid-template-columns: 1fr;
   }
 
