@@ -10,7 +10,7 @@
  * propagate back to the caller so a failed email never breaks a user action.
  */
 
-import { currencyLabel, languageLabel, type RequestStatus } from '@/lib/types'
+import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
   to: string
@@ -320,6 +320,61 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')) : ''}
       </table>
       <p>${p.responseLink ? `Respond here: <a href="${esc(p.responseLink)}">${esc(p.responseLink)}</a>` : 'Please contact the operator to confirm scheduling and next steps.'}</p>
+    `),
+  }
+}
+
+export interface TenantVendorUpdateParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  tenantEmail: string
+  tenantName: string
+  vendorName: string
+  dispatchStatus: DispatchStatus
+  note?: string
+  scheduledStart?: string
+  scheduledEnd?: string
+  photoCount?: number
+}
+
+export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): NotificationMessage {
+  const scheduleLine = p.scheduledStart
+    ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` → ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
+    : ''
+
+  return {
+    to: p.tenantEmail,
+    subject: `Vendor update for your maintenance request — ${p.title}`,
+    text: [
+      `Hi ${p.tenantName},`,
+      ``,
+      `Your maintenance request has a vendor update.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      `  Vendor       : ${p.vendorName}`,
+      `  Dispatch     : ${p.dispatchStatus}`,
+      scheduleLine ? `  Schedule     : ${scheduleLine}` : '',
+      p.photoCount ? `  Photos       : ${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}` : '',
+      p.note ? ``,
+      p.note ? `Note: ${p.note}` : '',
+    ].filter(Boolean).join('\n'),
+    html: htmlEmail(`
+      <p>Hi ${esc(p.tenantName)},</p>
+      <p>Your maintenance request has a vendor update.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Vendor', p.vendorName)}
+        ${dtRow('Dispatch', p.dispatchStatus)}
+        ${scheduleLine ? dtRow('Schedule', scheduleLine) : ''}
+        ${p.photoCount ? dtRow('Photos', `${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}`) : ''}
+      </table>
+      ${p.note ? `<p><strong>Note:</strong> ${esc(p.note)}</p>` : ''}
     `),
   }
 }

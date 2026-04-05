@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/vendor-dispatch-link'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
+import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
 import type { DispatchStatus } from '@/lib/types'
 
 export type VendorResponseState = { error: string | null }
@@ -41,17 +42,44 @@ export async function submitVendorResponse(
   if (scheduledStart && scheduledEnd && scheduledEnd < scheduledStart) return { error: 'Scheduled end must be after start.' }
 
   const savedPhotoPaths = await savePhotos(photoFiles)
+  let tenantNotification:
+    | {
+        tenantEmail: string
+        tenantName: string
+        requestId: string
+        title: string
+        propertyName: string
+        unitLabel: string
+        vendorName: string
+      }
+    | undefined
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.maintenanceRequest.update({
+      const updatedRequest = await tx.maintenanceRequest.update({
         where: { id: validation.requestId },
         data: {
           dispatchStatus,
           vendorScheduledStart: scheduledStart,
           vendorScheduledEnd: scheduledEnd,
         },
+        include: {
+          property: true,
+          unit: true,
+        },
       })
+
+      if (updatedRequest.submittedByEmail && updatedRequest.submittedByName) {
+        tenantNotification = {
+          tenantEmail: updatedRequest.submittedByEmail,
+          tenantName: updatedRequest.submittedByName,
+          requestId: updatedRequest.id,
+          title: updatedRequest.title,
+          propertyName: updatedRequest.property.name,
+          unitLabel: updatedRequest.unit.label,
+          vendorName: validation.vendorName,
+        }
+      }
 
       const dispatchEvent = await tx.vendorDispatchEvent.create({
         data: {
@@ -82,6 +110,24 @@ export async function submitVendorResponse(
   }
 
   await markVendorDispatchLinkUsed(validation.linkId)
+
+  const shouldNotifyTenant = dispatchStatus === 'scheduled' || dispatchStatus === 'completed' || savedPhotoPaths.length > 0
+  if (shouldNotifyTenant && tenantNotification) {
+    await sendNotification(buildTenantVendorUpdateMessage({
+      tenantEmail: tenantNotification.tenantEmail,
+      tenantName: tenantNotification.tenantName,
+      requestId: tenantNotification.requestId,
+      title: tenantNotification.title,
+      propertyName: tenantNotification.propertyName,
+      unitLabel: tenantNotification.unitLabel,
+      vendorName: tenantNotification.vendorName,
+      dispatchStatus,
+      note: note || undefined,
+      scheduledStart: scheduledStart?.toISOString(),
+      scheduledEnd: scheduledEnd?.toISOString(),
+      photoCount: savedPhotoPaths.length || undefined,
+    }))
+  }
 
   redirect(`/vendor/respond/${token}?submitted=1`)
 }
