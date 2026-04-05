@@ -146,6 +146,7 @@ model MaintenanceRequest {
   reviewNote            String?
   autoFlag              String?
   autoFlaggedAt         DateTime?
+  lastAutoAlertAt       DateTime?
   slaBucket             String?            @default("standard")
   triageTagsCsv         String?            @default("")
   createdAt             DateTime           @default(now())
