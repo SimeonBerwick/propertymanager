@@ -1,24 +1,10 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { getLeadAgeDays, getLastTouchDays, getLeadExecutionState } from "@/lib/lead-state";
 import { listLeads } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function getLeadState(lead: Awaited<ReturnType<typeof listLeads>>[number]) {
-  if (!lead.nextFollowUpAt) return "unscheduled";
-  const next = new Date(lead.nextFollowUpAt);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (next < today) return "overdue";
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  if (next < tomorrow) return "due";
-
-  return lead.stage;
-}
 
 export default async function LeadsPage() {
   const user = await requireUser();
@@ -30,33 +16,38 @@ export default async function LeadsPage() {
         <div>
           <p className="eyebrow">Pipeline</p>
           <h2>All live leads</h2>
-          <p className="muted">One row should tell you whether this lead is healthy, drifting, or already missed.</p>
+          <p className="muted">Each row should expose urgency, ownership, contact decay, and the next decision.</p>
         </div>
-        <Link href="/leads/new" className="buttonLike">Capture lead</Link>
+        <div className="heroActions">
+          <Link href="/today" className="buttonLike secondaryButtonLike">Open Today board</Link>
+          <Link href="/leads/new" className="buttonLike">Capture lead</Link>
+        </div>
       </section>
 
       <section className="card stack">
-        <div className="listHeader">
+        <div className="listHeader leadListHeaderWide">
           <span>Lead</span>
-          <span>Market</span>
           <span>Source</span>
           <span>Owner</span>
           <span>Next action</span>
+          <span>Last touch</span>
+          <span>Lead age</span>
           <span>Status</span>
         </div>
 
         <div className="leadList">
           {leads.map((lead) => (
-            <Link className="leadListRow" key={lead.id} href={`/leads/${lead.id}`}>
+            <Link className="leadListRow leadListRowWide" key={lead.id} href={`/leads/${lead.id}`}>
               <div className="listRowMeta">
                 <strong>{lead.name}</strong>
-                <span className="muted">{lead.email} · {lead.phone}</span>
+                <span className="muted">{lead.location} · {lead.email}</span>
               </div>
-              <div>{lead.location}</div>
               <div>{lead.source}</div>
               <div>{lead.ownerName || "Unassigned"}</div>
               <div>{formatDate(lead.nextFollowUpAt)}</div>
-              <div><span className={`badge ${getLeadState(lead)}`}>{getLeadState(lead)}</span></div>
+              <div>{getLastTouchDays(lead)}d ago</div>
+              <div>{getLeadAgeDays(lead)}d</div>
+              <div><span className={`badge ${getLeadExecutionState(lead)}`}>{getLeadExecutionState(lead)}</span></div>
             </Link>
           ))}
         </div>

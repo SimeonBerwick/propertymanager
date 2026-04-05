@@ -61,9 +61,7 @@ body { min-height: 100vh; }
   letter-spacing: -0.03em;
 }
 
-.content {
-  padding: 36px;
-}
+.content { padding: 36px; }
 
 .eyebrow {
   color: var(--accent);
@@ -126,12 +124,14 @@ body { min-height: 100vh; }
   align-items: stretch;
   padding: 24px;
 }
+.detailHeroCard { align-items: start; }
 .heroCopy { align-content: space-between; }
 .heroCard h1 {
   font-size: clamp(32px, 5vw, 52px);
   line-height: 1;
   max-width: 12ch;
 }
+.detailHeroCard h1 { max-width: none; }
 .heroText {
   max-width: 64ch;
   font-size: 15px;
@@ -173,6 +173,7 @@ button {
   border: 1px solid var(--border);
 }
 .buttonLike { width: auto; min-width: 160px; }
+.smallButtonLike { min-width: 92px; min-height: 40px; padding: 10px 12px; }
 textarea { min-height: 110px; resize: vertical; }
 
 .signalHeader,
@@ -182,7 +183,11 @@ textarea { min-height: 110px; resize: vertical; }
 .leadListRow,
 .listHeader,
 .listRowMain,
-.detailTopRow {
+.detailTopRow,
+.todayHeaderRow,
+.todayRow,
+.todayLeadCell,
+.todayActions {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -233,11 +238,13 @@ textarea { min-height: 110px; resize: vertical; }
 
 .focusList,
 .list,
-.miniList { display: grid; gap: 12px; }
+.miniList,
+.leadList { display: grid; gap: 12px; }
 .focusItem,
 .timelineItem,
 .leadListRow,
-.miniItem {
+.miniItem,
+.todayRow {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: rgba(255,255,255,0.02);
@@ -252,7 +259,8 @@ textarea { min-height: 110px; resize: vertical; }
 .timelineItem:hover,
 .leadListRow:hover,
 .miniItem:hover,
-.nav a:hover {
+.nav a:hover,
+.todayRow:hover {
   transform: translateY(-1px);
   transition: 140ms ease;
 }
@@ -273,26 +281,22 @@ textarea { min-height: 110px; resize: vertical; }
   font-size: 13px;
 }
 
-.miniItem {
-  padding: 14px 16px;
-}
+.miniItem { padding: 14px 16px; }
 .miniMeta {
   color: var(--muted);
   font-size: 13px;
   text-align: right;
 }
 
-.leadList {
-  display: grid;
-  gap: 10px;
-}
-.listHeader {
+.listHeader,
+.todayHeaderRow {
   padding: 0 14px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 11px;
 }
+
 .leadListRow {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) 1fr 1fr 0.8fr 0.9fr 0.7fr;
@@ -300,13 +304,34 @@ textarea { min-height: 110px; resize: vertical; }
   align-items: center;
   padding: 16px;
 }
-.listRowMain {
-  justify-content: flex-start;
+.leadListRowWide {
+  grid-template-columns: minmax(0, 1.5fr) 0.9fr 0.9fr 1fr 0.8fr 0.7fr 0.8fr;
 }
-.listRowMeta {
+.leadListHeaderWide {
   display: grid;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1.5fr) 0.9fr 0.9fr 1fr 0.8fr 0.7fr 0.8fr;
+  gap: 14px;
+  align-items: center;
 }
+.listRowMain { justify-content: flex-start; }
+.listRowMeta { display: grid; gap: 4px; }
+
+.todayHeaderRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 1fr 0.75fr 0.7fr 0.8fr 0.9fr;
+  gap: 14px;
+}
+.todayRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 1fr 0.75fr 0.7fr 0.8fr 0.9fr;
+  gap: 14px;
+  padding: 16px;
+  align-items: center;
+}
+.todayLeadCell { justify-content: flex-start; }
+.todayLeadCell > div { display: grid; gap: 4px; }
+.todayActions { justify-content: flex-end; }
+.todayActions form { width: auto; }
 
 .badge {
   display: inline-flex;
@@ -321,10 +346,10 @@ textarea { min-height: 110px; resize: vertical; }
 }
 .badge.new { color: var(--accent); }
 .badge.active, .badge.stable { color: var(--ok); }
-.badge.nurture { color: #c4b5fd; }
+.badge.nurture, .badge.stale { color: #c4b5fd; }
 .badge.overdue { color: var(--danger); }
 .badge.due { color: var(--warn); }
-.badge.unscheduled { color: #e5e7eb; }
+.badge.unscheduled, .badge.closed, .badge.under-contract { color: #e5e7eb; }
 
 .emptyState {
   padding: 18px;
@@ -354,7 +379,11 @@ textarea { min-height: 110px; resize: vertical; }
   .heroCard,
   .twoCol,
   .shell,
-  .leadListRow {
+  .leadListRow,
+  .leadListRowWide,
+  .leadListHeaderWide,
+  .todayHeaderRow,
+  .todayRow {
     grid-template-columns: 1fr;
   }
 
@@ -364,7 +393,7 @@ textarea { min-height: 110px; resize: vertical; }
   }
 
   .content { padding: 20px; }
-  .listHeader { display: none; }
+  .listHeader, .todayHeaderRow { display: none; }
   .miniMeta { text-align: left; }
-  .inline { flex-direction: column; }
+  .inline, .todayActions, .todayLeadCell { flex-direction: column; align-items: flex-start; }
 }
