@@ -88,6 +88,22 @@
 - improve vendor recommendation with availability / category normalization / performance history
 - add vendor deletion/deactivation safeguards and assignment history
 - move media + database architecture to production-safe infrastructure when deployment scope expands
+- productionize automation path:
+  - set INTERNAL_AUTOMATION_SECRET in deployment config, not just local .env
+  - add automation failure reporting / last-run visibility
+  - run daily automation from a reliable scheduler against the internal automation endpoint
 
 ## 8. Success metric for this version
 A landlord should be able to create properties and units, accept tenant maintenance requests, see communication preferences, assign a best-fit vendor directly from the request panel, manage vendor capabilities in-app, and track the request to completion without ambiguity.
+
+## 9. Current ops wiring
+- OpenClaw cron job created for daily automation sweep:
+  - name: `PropertyManagerV1 daily automation sweep`
+  - job id: `e6e7ca87-ab38-4c48-9df0-54609a58fa4c`
+  - schedule: 8:00 AM America/Phoenix
+- Internal automation endpoint:
+  - `POST /api/internal/automation`
+  - requires `Authorization: Bearer ${INTERNAL_AUTOMATION_SECRET}`
+- Deployment requirement:
+  - `INTERNAL_AUTOMATION_SECRET` must be set in runtime config / hosting secrets
+  - do not rely on local ignored `.env` state for production
