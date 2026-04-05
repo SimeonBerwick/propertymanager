@@ -393,6 +393,12 @@ export interface UnitDetailData {
   closedCount: number
 }
 
+export interface VendorDetailData {
+  vendor: Vendor
+  requests: DashboardRequestRow[]
+  scorecard: VendorScorecard | null
+}
+
 function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
   const grouped = new Map<string, DashboardRequestRow[]>()
   for (const r of rows) {
@@ -538,6 +544,32 @@ export async function getReportData(userId: string): Promise<ReportData> {
       reopenCount: 0,
       vendorScorecards: [],
     }
+  }
+}
+
+export async function getVendorDetailData(vendorId: string, userId: string): Promise<VendorDetailData | null> {
+  try {
+    const [vendorRecord, requestRows, reportData] = await Promise.all([
+      prisma.vendor.findFirst({
+        where: { id: vendorId, orgId: userId },
+      }),
+      prisma.maintenanceRequest.findMany({
+        where: { assignedVendorId: vendorId, property: { ownerId: userId } },
+        include: { property: true, unit: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      getReportData(userId),
+    ])
+
+    if (!vendorRecord) return null
+
+    return {
+      vendor: mapVendor(vendorRecord),
+      requests: requestRows.map(mapRequestRow),
+      scorecard: reportData.vendorScorecards.find((item) => item.vendorId === vendorId) ?? null,
+    }
+  } catch {
+    return null
   }
 }
 
