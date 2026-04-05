@@ -49,6 +49,8 @@ export interface MaintenanceRequest {
   dispatchStatus?: DispatchStatus
   vendorScheduledStart?: string
   vendorScheduledEnd?: string
+  reviewState?: string
+  reviewNote?: string
   slaBucket?: string
   triageTags: string[]
   createdAt: string

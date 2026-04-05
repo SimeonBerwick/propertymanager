@@ -56,12 +56,29 @@ export async function submitVendorResponse(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const reviewState = dispatchStatus === 'completed'
+        ? 'vendor_completed_pending_review'
+        : dispatchStatus === 'declined'
+          ? 'vendor_declined_reassignment_needed'
+          : savedPhotoPaths.length > 0
+            ? 'vendor_update_pending_review'
+            : 'none'
+      const reviewNote = dispatchStatus === 'completed'
+        ? 'Vendor marked work complete. Awaiting landlord review.'
+        : dispatchStatus === 'declined'
+          ? 'Vendor declined assignment. Reassignment needed.'
+          : savedPhotoPaths.length > 0
+            ? 'Vendor provided photo evidence. Review if tenant-visible follow-up is needed.'
+            : null
+
       const updatedRequest = await tx.maintenanceRequest.update({
         where: { id: validation.requestId },
         data: {
           dispatchStatus,
           vendorScheduledStart: scheduledStart,
           vendorScheduledEnd: scheduledEnd,
+          reviewState,
+          reviewNote,
         },
         include: {
           property: true,

@@ -83,6 +83,8 @@ function mapRequestRow(r: any): DashboardRequestRow {
     dispatchStatus: r.dispatchStatus ?? undefined,
     vendorScheduledStart: r.vendorScheduledStart ? new Date(r.vendorScheduledStart).toISOString() : undefined,
     vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
+    reviewState: r.reviewState ?? undefined,
+    reviewNote: r.reviewNote ?? undefined,
     slaBucket: r.slaBucket ?? undefined,
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),

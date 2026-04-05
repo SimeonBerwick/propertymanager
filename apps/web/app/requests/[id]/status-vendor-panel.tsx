@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import {
+  reviewVendorUpdateFormAction,
   updateDispatchFormAction,
   updatePreferencesFormAction,
   updateStatusFormAction,
@@ -34,16 +35,19 @@ interface Props {
   currentDispatchStatus?: DispatchStatus
   currentScheduledStart?: string
   currentScheduledEnd?: string
+  currentReviewState?: string
+  currentReviewNote?: string
   currentSlaBucket?: string
   currentTriageTags?: string[]
   recommendedVendors: Vendor[]
 }
 
-export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
+export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentReviewState, currentReviewNote, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
   const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
+  const [reviewState, reviewAction, reviewPending] = useActionState(reviewVendorUpdateFormAction, INITIAL_STATE)
 
   const nextStatuses = STATUS_OPTIONS.filter((s) => s !== currentStatus)
   const bestMatch = recommendedVendors[0]
@@ -109,6 +113,33 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Dispatch workflow</h3>
+        {(currentReviewState && currentReviewState !== 'none') ? (
+          <div className="notice error" style={{ marginBottom: 12 }}>
+            Review state: {currentReviewState}
+            {currentReviewNote ? ` · ${currentReviewNote}` : ''}
+          </div>
+        ) : null}
+        <form action={reviewAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
+          <input type="hidden" name="requestId" value={requestId} />
+          <label className="field">
+            <span className="field-label">Review action</span>
+            <select className="input" name="reviewAction" defaultValue="needs-follow-up">
+              <option value="needs-follow-up">Needs follow-up</option>
+              <option value="approve-completion">Approve completion</option>
+              <option value="reopen-request">Reopen request</option>
+              <option value="mark-reassignment-needed">Mark reassignment needed</option>
+            </select>
+          </label>
+          <label className="field">
+            <span className="field-label">Review note</span>
+            <textarea className="input" name="reviewNote" rows={3} placeholder="Optional landlord review note" defaultValue={currentReviewNote ?? ''} />
+          </label>
+          {reviewState.error && <div className="notice error">{reviewState.error}</div>}
+          {reviewState.success && <div className="notice success">Review action applied.</div>}
+          <button type="submit" className="button" disabled={reviewPending}>
+            {reviewPending ? 'Applying…' : 'Apply review action'}
+          </button>
+        </form>
         <form action={dispatchAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
           <input type="hidden" name="requestId" value={requestId} />
           <label className="field">

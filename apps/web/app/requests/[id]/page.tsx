@@ -78,6 +78,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               SLA: {data.request.slaBucket ?? 'standard'}
               {data.request.triageTags.length ? ` · Tags: ${data.request.triageTags.join(', ')}` : ''}
             </p>
+            {data.request.reviewState && data.request.reviewState !== 'none' ? (
+              <p className="muted" style={{ marginBottom: 0 }}>
+                Review: {data.request.reviewState}
+                {data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}
+              </p>
+            ) : null}
           </div>
 
           <div>
@@ -130,6 +136,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             currentScheduledStart={data.request.vendorScheduledStart}
             currentScheduledEnd={data.request.vendorScheduledEnd}
             recommendedVendors={data.recommendedVendors}
+            currentReviewState={data.request.reviewState}
+            currentReviewNote={data.request.reviewNote}
             currentSlaBucket={data.request.slaBucket}
             currentTriageTags={data.request.triageTags}
           />
