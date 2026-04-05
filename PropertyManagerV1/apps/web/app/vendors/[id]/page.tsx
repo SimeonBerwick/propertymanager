@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { VendorForm } from '@/components/vendor-form'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { prisma } from '@/lib/prisma'
+import { getReportData } from '@/lib/data'
 import type { Vendor } from '@/lib/types'
 
 function csvToList(value: string | null | undefined) {
@@ -13,9 +14,12 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
   if (!session) redirect('/login')
   const { id } = await params
 
-  const record = await prisma.vendor.findFirst({
-    where: { id, orgId: session.userId },
-  }).catch(() => null)
+  const [record, reportData] = await Promise.all([
+    prisma.vendor.findFirst({
+      where: { id, orgId: session.userId },
+    }).catch(() => null),
+    getReportData(session.userId),
+  ])
 
   if (!record) notFound()
 
@@ -31,13 +35,37 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
     isActive: record.isActive,
   }
 
+  const scorecard = reportData.vendorScorecards.find((item) => item.vendorId === vendor.id)
+
   return (
-    <div className="card stack" style={{ maxWidth: 760 }}>
-      <div>
-        <div className="kicker">Vendors</div>
-        <h2 style={{ margin: '4px 0 0' }}>Edit vendor</h2>
+    <div className="stack" style={{ maxWidth: 760 }}>
+      <div className="card stack">
+        <div>
+          <div className="kicker">Vendors</div>
+          <h2 style={{ margin: '4px 0 0' }}>Edit vendor</h2>
+        </div>
+        {scorecard ? (
+          <div className="grid cols-4">
+            <div>
+              <div className="kicker">Assignments</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.assignmentCount}</div>
+            </div>
+            <div>
+              <div className="kicker">Accepted</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.acceptedCount}</div>
+            </div>
+            <div>
+              <div className="kicker">Declined</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.declinedCount}</div>
+            </div>
+            <div>
+              <div className="kicker">Avg completion</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.avgCompletionDays ? `${scorecard.avgCompletionDays.toFixed(1)}d` : '—'}</div>
+            </div>
+          </div>
+        ) : null}
+        <VendorForm vendor={vendor} />
       </div>
-      <VendorForm vendor={vendor} />
     </div>
   )
 }
