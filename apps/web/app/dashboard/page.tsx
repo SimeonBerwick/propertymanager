@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
+import { RequestOpsSignals } from '@/components/request-ops-signals'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
@@ -40,7 +41,23 @@ export default async function DashboardPage({
     return currencyMatch && languageMatch && queueMatch
   })
 
-  const focusNow = filteredRequests.slice(0, 8)
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    const score = (request: typeof a) => {
+      let value = 0
+      if (request.status === 'new') value += 6
+      if (request.reviewState && request.reviewState !== 'none') value += 5
+      if (!request.assignedVendorName) value += 4
+      if (request.autoFlag) value += 3
+      if (request.urgency === 'urgent') value += 3
+      if (request.urgency === 'high') value += 2
+      if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done') value += 3
+      return value
+    }
+
+    return score(b) - score(a) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  })
+
+  const focusNow = sortedRequests.slice(0, 12)
 
   return (
     <div className="stack">
@@ -159,6 +176,9 @@ export default async function DashboardPage({
         </div>
 
         {selectedQueue !== 'all' ? <div className="notice success">Queue filter active: {selectedQueue}</div> : null}
+        <div className="notice">
+          Showing {focusNow.length} of {filteredRequests.length} matching requests, sorted by operator pressure.
+        </div>
 
         <div className="inboxList">
           {focusNow.length === 0 ? (
@@ -172,19 +192,13 @@ export default async function DashboardPage({
                   <RequestFlowBadge request={request} />
                   <span className="muted">{request.category}</span>
                   <span className="muted">{request.urgency} urgency</span>
+                  <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
                 </div>
-              </div>
-              <div>
-                <div style={{ fontWeight: 600 }}>{request.assignedVendorName ?? 'Unassigned'}</div>
-                <div className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</div>
+                <RequestOpsSignals request={request} />
               </div>
               <div>
                 <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
                 <div className="muted">Scheduled start</div>
-              </div>
-              <div>
-                <div style={{ fontWeight: 600 }}>{formatRelativeAge(request.createdAt)}</div>
-                <div className="muted">Request age</div>
               </div>
             </Link>
           ))}
