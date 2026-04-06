@@ -1,0 +1,42 @@
+import type { MaintenanceRequest, RequestStatus } from '@/lib/types'
+
+export function formatDateTime(value?: string) {
+  if (!value) return 'Not scheduled'
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+export function formatRelativeAge(value: string) {
+  const diffMs = Date.now() - new Date(value).getTime()
+  const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)))
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' | 'reviewState' | 'vendorScheduledEnd' | 'vendorScheduledStart'>):
+  | 'new'
+  | 'scheduled-today'
+  | 'overdue'
+  | 'follow-up'
+  | 'review'
+  | RequestStatus {
+  const now = new Date()
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(todayStart)
+  todayEnd.setDate(todayEnd.getDate() + 1)
+
+  if (request.reviewState === 'vendor_completed_pending_review') return 'review'
+  if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') return 'follow-up'
+  if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done') return 'overdue'
+  if (request.vendorScheduledStart) {
+    const start = new Date(request.vendorScheduledStart)
+    if (start >= todayStart && start < todayEnd) return 'scheduled-today'
+  }
+  return request.status
+}

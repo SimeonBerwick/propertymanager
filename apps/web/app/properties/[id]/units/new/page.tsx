@@ -1,10 +1,14 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { NewUnitForm } from './new-unit-form'
 
 export default async function NewUnitPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+
   const { id } = await params
-  const data = await getPropertyDetailData(id)
+  const data = await getPropertyDetailData(id, session.userId)
 
   if (!data) {
     notFound()

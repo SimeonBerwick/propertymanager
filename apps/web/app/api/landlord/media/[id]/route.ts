@@ -51,7 +51,7 @@ export async function GET(
   const ext = path.extname(photo.imageUrl).toLowerCase().slice(1)
   const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream'
 
-  return new NextResponse(fileBytes, {
+  return new NextResponse(new Uint8Array(fileBytes), {
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'private, max-age=3600',

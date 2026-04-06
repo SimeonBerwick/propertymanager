@@ -11,8 +11,15 @@ export const units: Unit[] = [
   { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz' },
 ]
 
+const baseRequest = {
+  preferredCurrency: 'usd' as const,
+  preferredLanguage: 'english' as const,
+  triageTags: [],
+}
+
 export const requests: MaintenanceRequest[] = [
   {
+    ...baseRequest,
     id: 'req-1001',
     propertyId: 'prop-1',
     unitId: 'unit-1a',
@@ -24,6 +31,7 @@ export const requests: MaintenanceRequest[] = [
     createdAt: '2026-03-11T17:30:00Z',
   },
   {
+    ...baseRequest,
     id: 'req-1002',
     propertyId: 'prop-2',
     unitId: 'unit-2c',
@@ -36,6 +44,7 @@ export const requests: MaintenanceRequest[] = [
     createdAt: '2026-03-10T20:00:00Z',
   },
   {
+    ...baseRequest,
     id: 'req-1003',
     propertyId: 'prop-1',
     unitId: 'unit-1b',

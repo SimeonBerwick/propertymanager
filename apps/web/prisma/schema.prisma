@@ -78,6 +78,23 @@ enum PhotoSource {
   vendor
 }
 
+enum BillingRecipientType {
+  tenant
+  vendor
+}
+
+enum BillingDocumentType {
+  tenant_invoice
+  vendor_remittance
+}
+
+enum BillingDocumentStatus {
+  draft
+  sent
+  partial
+  paid
+}
+
 model User {
   id                String               @id @default(cuid())
   email             String               @unique
@@ -91,6 +108,8 @@ model User {
   submittedRequests MaintenanceRequest[] @relation("SubmittedRequests")
   statusEvents      StatusEvent[]        @relation("StatusActor")
   dispatchEvents    VendorDispatchEvent[]
+  billingDocuments  BillingDocument[]
+  billingEvents     BillingEvent[]
 }
 
 model Property {
@@ -163,6 +182,7 @@ model MaintenanceRequest {
   events            StatusEvent[]
   dispatchHistory   VendorDispatchEvent[]
   dispatchLinks     VendorDispatchLink[]
+  billingDocuments  BillingDocument[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
@@ -348,4 +368,44 @@ model TenantSession {
 
   @@index([tenantIdentityId, revokedAt])
   @@index([orgId])
+}
+
+model BillingDocument {
+  id              String                @id @default(cuid())
+  requestId       String
+  recipientType   BillingRecipientType
+  documentType    BillingDocumentType
+  status          BillingDocumentStatus @default(draft)
+  currency        CurrencyOption        @default(usd)
+  totalCents      Int
+  paidCents       Int                   @default(0)
+  title           String
+  description     String?
+  pdfUrl          String?
+  sentTo          String?
+  sentAt          DateTime?
+  createdByUserId String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  request         MaintenanceRequest    @relation(fields: [requestId], references: [id])
+  createdByUser   User?                 @relation(fields: [createdByUserId], references: [id])
+  events          BillingEvent[]
+
+  @@index([requestId])
+  @@index([status])
+}
+
+model BillingEvent {
+  id                String          @id @default(cuid())
+  billingDocumentId String
+  actorUserId       String?
+  eventType         String
+  note              String?
+  createdAt         DateTime        @default(now())
+
+  billingDocument   BillingDocument @relation(fields: [billingDocumentId], references: [id])
+  actorUser         User?           @relation(fields: [actorUserId], references: [id])
+
+  @@index([billingDocumentId, createdAt])
 }

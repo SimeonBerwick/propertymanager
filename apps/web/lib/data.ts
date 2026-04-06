@@ -9,6 +9,7 @@ import type {
   Vendor,
   VendorDispatchEvent,
 } from '@/lib/types'
+import type { BillingDocumentView } from '@/lib/billing-types'
 import { prisma } from '@/lib/prisma'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
@@ -46,6 +47,7 @@ export interface RequestDetailData {
   photos: MaintenancePhoto[]
   recommendedVendors: Vendor[]
   dispatchHistory: VendorDispatchEvent[]
+  billingDocuments: BillingDocumentView[]
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -274,6 +276,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
         events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
         dispatchHistory: { include: { vendor: true, actorUser: true }, orderBy: { createdAt: 'asc' } },
+        billingDocuments: { orderBy: { createdAt: 'desc' } },
       },
     })
     if (!dbRequest) return null
@@ -323,6 +326,24 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       createdAt: entry.createdAt.toISOString(),
     }))
 
+    const billingDocuments: BillingDocumentView[] = dbRequest.billingDocuments.map((doc) => ({
+      id: doc.id,
+      requestId: doc.requestId,
+      recipientType: doc.recipientType as BillingDocumentView['recipientType'],
+      documentType: doc.documentType as BillingDocumentView['documentType'],
+      status: doc.status as BillingDocumentView['status'],
+      currency: doc.currency as BillingDocumentView['currency'],
+      totalCents: doc.totalCents,
+      paidCents: doc.paidCents,
+      title: doc.title,
+      description: doc.description ?? undefined,
+      pdfUrl: doc.pdfUrl ?? undefined,
+      sentTo: doc.sentTo ?? undefined,
+      sentAt: doc.sentAt?.toISOString() ?? undefined,
+      createdAt: doc.createdAt.toISOString(),
+      updatedAt: doc.updatedAt.toISOString(),
+    }))
+
     return {
       request,
       comments,
@@ -330,6 +351,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       photos: dbRequest.photos.map(mapPhoto),
       recommendedVendors,
       dispatchHistory,
+      billingDocuments,
     }
   } catch {
     // DB unavailable: return null rather than falling back to unscoped seed data.
