@@ -1,4 +1,5 @@
 import type { MaintenanceRequest } from '@/lib/types'
+import { reviewStateLabel } from '@/lib/ui-utils'
 
 function urgencyTone(urgency: MaintenanceRequest['urgency']) {
   if (urgency === 'urgent') return { className: 'badge signalUrgent', label: 'Urgent' }
@@ -25,7 +26,7 @@ export function RequestSignalStrip({
       <span className={urgency.className}>{urgency.label}</span>
       <span className={sla.className}>{sla.label}</span>
       {request.reviewState && request.reviewState !== 'none' ? (
-        <span className="badge signalWarn">Review: {request.reviewState}</span>
+        <span className="badge signalWarn">Review: {reviewStateLabel(request.reviewState)}</span>
       ) : null}
       {request.triageTags?.map((tag) => (
         <span key={tag} className="badge signalNeutral">{tag}</span>

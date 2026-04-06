@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { reviewStateLabel } from '@/lib/ui-utils'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestQuickActions } from '@/components/request-quick-actions'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -12,9 +13,23 @@ export default async function ExceptionsPage() {
   if (!session) redirect('/login')
   const data = await getDashboardData(session.userId)
 
-  const exceptionRequests = data.requestRows.filter((request) =>
-    request.autoFlag || (request.reviewState && request.reviewState !== 'none'),
-  )
+  const exceptionRequests = data.requestRows
+    .filter((request) => request.autoFlag || (request.reviewState && request.reviewState !== 'none'))
+    .sort((a, b) => {
+      const score = (request: typeof a) => {
+        let value = 0
+        if (request.urgency === 'urgent') value += 5
+        if (request.urgency === 'high') value += 4
+        if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') value += 5
+        if (request.reviewState === 'vendor_completed_pending_review') value += 4
+        if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') value += 3
+        if (request.autoFlag) value += 2
+        if (!request.assignedVendorName) value += 2
+        return value
+      }
+
+      return score(b) - score(a) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
 
   return (
     <div className="stack">
@@ -24,7 +39,7 @@ export default async function ExceptionsPage() {
           <h2 style={{ margin: '4px 0 0' }}>Exceptions</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          This is the operator queue for auto-flagged and review-blocked requests.
+          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure.
         </p>
         <SendSummaryForm />
       </section>
@@ -53,7 +68,7 @@ export default async function ExceptionsPage() {
                     <div className="requestMetaLine" style={{ flexWrap: 'wrap' }}>
                       <RequestFlowBadge request={request} />
                       {request.autoFlag ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Flag: {request.autoFlag}</span> : null}
-                      {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {request.reviewState}</span> : null}
+                      {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {reviewStateLabel(request.reviewState)}</span> : null}
                       {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
                     </div>
                     <RequestSignalStrip request={request} />
