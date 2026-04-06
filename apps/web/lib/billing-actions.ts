@@ -278,9 +278,7 @@ export async function duplicateBillingDocumentAction(
     const doc = await getOwnedBillingDocument(session.userId, billingDocumentId, requestId)
     if (!doc) return { error: 'Billing document not found.' }
 
-    const duplicatedStatus = (doc.sentTo
-      ? deriveBillingStatus(doc.totalCents, doc.paidCents)
-      : 'draft') as BillingDocumentStatus
+    const duplicatedStatus = 'draft' as BillingDocumentStatus
     const duplicatedTitle = `${doc.title} copy`
     const pdfHtml = renderBillingPdfHtml({
       title: duplicatedTitle,
@@ -290,7 +288,7 @@ export async function duplicateBillingDocumentAction(
       documentType: doc.documentType,
       status: duplicatedStatus,
       amountCents: doc.totalCents,
-      paidCents: doc.paidCents,
+      paidCents: 0,
       currency: doc.currency,
       description: doc.description ?? '',
       requestTitle: doc.request.title,
@@ -306,18 +304,18 @@ export async function duplicateBillingDocumentAction(
         status: duplicatedStatus as PrismaBillingDocumentStatus,
         currency: doc.currency,
         totalCents: doc.totalCents,
-        paidCents: doc.paidCents,
+        paidCents: 0,
         title: duplicatedTitle,
         description: doc.description,
         pdfUrl: `data:text/html;charset=utf-8,${encodeURIComponent(pdfHtml)}`,
-        sentTo: doc.sentTo,
-        sentAt: doc.sentTo ? new Date() : null,
+        sentTo: null,
+        sentAt: null,
         createdByUserId: session.userId,
         events: {
           create: {
             actorUserId: session.userId,
             eventType: 'duplicated',
-            note: `Duplicated from ${doc.id}`,
+            note: `Draft copy created from ${doc.id}`,
           },
         },
       },
