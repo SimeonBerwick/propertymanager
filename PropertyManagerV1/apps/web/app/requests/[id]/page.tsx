@@ -8,6 +8,7 @@ import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
 import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
+import { BillingEventList } from '@/components/billing-event-list'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
 
@@ -66,7 +67,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <div className="requestSignalCard">
             <div className="kicker">Operator focus</div>
             <div className="signalTitle">Move this request forward with one decisive update.</div>
-            <div className="muted">Assign vendor, set dispatch state, handle review, or close with confidence.</div>
+            <div className="muted">Assign vendor, set dispatch state, handle review, close the work, then handle billing if needed.</div>
           </div>
         </div>
       </section>
@@ -91,13 +92,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
-          <SectionCard kicker="Billing" title="Charges and remittances" subtitle="Create a tenant invoice or vendor payment statement directly from the request.">
-            <BillingDocumentForm
-              requestId={data.request.id}
-              tenantEmail={data.request.submittedByEmail}
-              vendorEmail={data.request.assignedVendorEmail}
-            />
-            <BillingDocumentList documents={data.billingDocuments} />
+          <SectionCard kicker="Billing" title="Charges and remittances" subtitle="Use only when the request creates a tenant chargeback or vendor payment record.">
+            <div className="billingLayout">
+              <div className="stack">
+                <BillingDocumentForm
+                  requestId={data.request.id}
+                  tenantEmail={data.request.submittedByEmail}
+                  vendorEmail={data.request.assignedVendorEmail}
+                />
+              </div>
+              <div className="stack">
+                <BillingDocumentList documents={data.billingDocuments} />
+                <BillingEventList documents={data.billingDocuments} />
+              </div>
+            </div>
           </SectionCard>
 
           <SectionCard kicker="Dispatch" title="Vendor execution history" subtitle="What has happened in the field so far.">

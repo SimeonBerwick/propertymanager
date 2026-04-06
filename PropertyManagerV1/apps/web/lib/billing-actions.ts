@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
-import { centsFromDollars, deriveBillingStatus } from '@/lib/billing-utils'
-import { sendNotification, type NotificationMessage } from '@/lib/notify'
+import { centsFromDollars, deriveBillingStatus, formatMoney } from '@/lib/billing-utils'
+import { buildBillingDocumentMessage, sendNotification } from '@/lib/notify'
 
 export type BillingActionState = { error: string | null; success?: boolean }
 
@@ -26,7 +26,8 @@ export async function createBillingDocumentAction(
   const description = String(formData.get('description') ?? '').trim()
   const amountRaw = String(formData.get('amount') ?? '').trim()
   const paidRaw = String(formData.get('paidAmount') ?? '').trim()
-  const sentTo = String(formData.get('sentTo') ?? '').trim()
+  const sendMode = String(formData.get('sendMode') ?? 'send')
+  const sentTo = sendMode === 'send' ? String(formData.get('sentTo') ?? '').trim() : ''
 
   if (!['tenant', 'vendor'].includes(recipientType)) return { error: 'Invalid recipient type.' }
   if (!title) return { error: 'Title is required.' }
@@ -44,13 +45,14 @@ export async function createBillingDocumentAction(
     })
     if (!request) return { error: 'Request not found.' }
 
+    const status = (sendMode === 'draft' ? 'draft' : deriveBillingStatus(totalCents, paidCents ?? 0)) as 'draft' | 'sent' | 'partial' | 'paid'
     const pdfHtml = renderBillingPdfHtml({
       title,
       recipientLabel: recipientType === 'tenant'
         ? (request.submittedByName || request.submittedByEmail || 'Tenant')
         : (request.assignedVendorName || 'Vendor'),
       documentType: inferDocumentType(recipientType),
-      status: deriveBillingStatus(totalCents, paidCents ?? 0),
+      status,
       amountCents: totalCents,
       paidCents: paidCents ?? 0,
       currency: request.preferredCurrency,
@@ -60,12 +62,12 @@ export async function createBillingDocumentAction(
       unitLabel: request.unit.label,
     })
 
-    const billingDocument = await prisma.billingDocument.create({
+    await prisma.billingDocument.create({
       data: {
         requestId,
         recipientType: recipientType as 'tenant' | 'vendor',
         documentType: inferDocumentType(recipientType) as 'tenant_invoice' | 'vendor_remittance',
-        status: deriveBillingStatus(totalCents, paidCents ?? 0) as 'sent' | 'partial' | 'paid',
+        status,
         currency: request.preferredCurrency,
         totalCents,
         paidCents: paidCents ?? 0,
@@ -86,18 +88,71 @@ export async function createBillingDocumentAction(
     })
 
     if (sentTo) {
-      const msg: NotificationMessage = {
+      await sendNotification(buildBillingDocumentMessage({
         to: sentTo,
-        subject: title,
-        text: `${title}\n\nThis document is attached in the operator record for request ${request.title}.\n\nAmount: ${(totalCents / 100).toFixed(2)}\nPaid: ${((paidCents ?? 0) / 100).toFixed(2)}`,
-        html: pdfHtml,
-      }
-      await sendNotification(msg)
+        title,
+        recipientLabel: recipientType === 'tenant'
+          ? (request.submittedByName || request.submittedByEmail || 'Tenant')
+          : (request.assignedVendorName || 'Vendor'),
+        documentType: inferDocumentType(recipientType),
+        status,
+        amountLabel: formatMoney(totalCents, request.preferredCurrency),
+        paidLabel: formatMoney(paidCents ?? 0, request.preferredCurrency),
+        balanceLabel: formatMoney(totalCents - (paidCents ?? 0), request.preferredCurrency),
+      }))
     }
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
   } catch {
     return { error: 'Could not create billing document.' }
+  }
+}
+
+export async function updateBillingDocumentAction(
+  _prev: BillingActionState,
+  formData: FormData,
+): Promise<BillingActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const billingDocumentId = String(formData.get('billingDocumentId') ?? '')
+  const requestId = String(formData.get('requestId') ?? '')
+  const paidRaw = String(formData.get('paidAmount') ?? '').trim()
+  const paidCents = centsFromDollars(paidRaw)
+  if (paidCents === null) return { error: 'Invalid paid amount.' }
+
+  try {
+    const doc = await prisma.billingDocument.findFirst({
+      where: {
+        id: billingDocumentId,
+        requestId,
+        request: { property: { ownerId: session.userId } },
+      },
+    })
+    if (!doc) return { error: 'Billing document not found.' }
+    if (paidCents > doc.totalCents) return { error: 'Paid amount cannot exceed total.' }
+
+    const status = deriveBillingStatus(doc.totalCents, paidCents) as 'sent' | 'partial' | 'paid'
+
+    await prisma.billingDocument.update({
+      where: { id: billingDocumentId },
+      data: {
+        paidCents,
+        status,
+        events: {
+          create: {
+            actorUserId: session.userId,
+            eventType: 'payment_state_updated',
+            note: `Paid amount updated to ${paidRaw || '0.00'}`,
+          },
+        },
+      },
+    })
+
+    revalidatePath(`/requests/${requestId}`)
+    return { error: null, success: true }
+  } catch {
+    return { error: 'Could not update billing document.' }
   }
 }
