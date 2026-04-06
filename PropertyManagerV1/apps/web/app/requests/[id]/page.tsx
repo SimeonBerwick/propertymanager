@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { reviewStateLabel } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -90,7 +91,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
               <RequestSignalStrip request={data.request} />
               {data.request.reviewState && data.request.reviewState !== 'none' ? (
-                <div className="notice error">Review: {data.request.reviewState}{data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}</div>
+                <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}</div>
               ) : null}
             </div>
           </SectionCard>

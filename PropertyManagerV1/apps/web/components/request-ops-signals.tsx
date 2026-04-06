@@ -1,4 +1,4 @@
-import { formatDateTime, formatRelativeAge } from '@/lib/ui-utils'
+import { formatDateTime, formatRelativeAge, reviewStateLabel } from '@/lib/ui-utils'
 import type { MaintenanceRequest } from '@/lib/types'
 
 function scheduleLabel(request: Pick<MaintenanceRequest, 'vendorScheduledStart' | 'vendorScheduledEnd'>) {
@@ -12,7 +12,7 @@ function scheduleLabel(request: Pick<MaintenanceRequest, 'vendorScheduledStart' 
 export function RequestOpsSignals({ request }: { request: MaintenanceRequest }) {
   const pressure = [
     request.assignedVendorName ? null : 'Unassigned vendor',
-    request.reviewState && request.reviewState !== 'none' ? `Review: ${request.reviewState}` : null,
+    request.reviewState && request.reviewState !== 'none' ? `Review: ${reviewStateLabel(request.reviewState)}` : null,
     request.autoFlag ? `Flag: ${request.autoFlag}` : null,
     request.preferredLanguage !== 'english' ? `Language: ${request.preferredLanguage}` : null,
     request.preferredCurrency !== 'usd' ? `Currency: ${request.preferredCurrency}` : null,
