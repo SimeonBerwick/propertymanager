@@ -179,7 +179,8 @@ export default async function DashboardPage({
 
         {selectedQueue !== 'all' ? <div className="notice success">Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing {focusNow.length} of {filteredRequests.length} matching requests, sorted by operator pressure.
+          Showing the top {focusNow.length} of {filteredRequests.length} matching requests, sorted by operator pressure.
+          {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
         </div>
 
         <div className="inboxList">

@@ -12,7 +12,7 @@ function confirmQuickAction(event: React.MouseEvent<HTMLButtonElement>) {
   if (action !== 'mark-reassignment-needed') return
 
   const confirmed = window.confirm(
-    'Reassign vendor? This clears the current vendor, contact details, and dispatch state, then marks the request for reassignment.',
+    'Clear this vendor assignment and mark reassignment needed? This removes current vendor contact details and dispatch state.',
   )
 
   if (!confirmed) event.preventDefault()
@@ -29,7 +29,7 @@ export function RequestQuickActions({
 
   const actions = [
     request.status === 'new'
-      ? { key: 'mark-scheduled', label: 'Mark scheduled', tone: 'button primary', title: 'Move this request into scheduled status from the queue.' }
+      ? { key: 'mark-scheduled', label: 'Mark ready to schedule', tone: 'button primary', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
       : null,
     request.status === 'new' || request.status === 'scheduled'
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
@@ -38,7 +38,7 @@ export function RequestQuickActions({
       ? { key: 'needs-follow-up', label: 'Needs follow-up', tone: 'button', title: 'Keep this request in the follow-up queue for operator action.' }
       : null,
     request.assignedVendorName
-      ? { key: 'mark-reassignment-needed', label: 'Reassign vendor', tone: 'button', title: 'Clears vendor assignment and dispatch state, then marks reassignment needed.' }
+      ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and dispatch state, then marks reassignment needed.' }
       : null,
   ].filter(Boolean) as { key: string; label: string; tone: string; title: string }[]
 

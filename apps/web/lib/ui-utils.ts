@@ -40,3 +40,25 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
   }
   return request.status
 }
+
+export function reviewStateLabel(value?: string) {
+  switch (value) {
+    case 'vendor_completed_pending_review':
+      return 'Completion needs review'
+    case 'needs_follow_up':
+      return 'Needs follow-up'
+    case 'vendor_update_pending_review':
+      return 'Vendor update needs review'
+    case 'reassignment_needed':
+      return 'Vendor reassignment needed'
+    case 'vendor_declined_reassignment_needed':
+      return 'Vendor declined, reassign needed'
+    case 'reopened_after_review':
+      return 'Reopened after review'
+    case 'none':
+    case undefined:
+      return 'Clear'
+    default:
+      return value.replaceAll('_', ' ')
+  }
+}

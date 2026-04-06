@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { RequestStatus } from '@/lib/types'
 import { reviewVendorUpdateFormAction, updateStatusFormAction, type RequestActionState } from '@/lib/request-detail-actions'
+import { reviewStateLabel } from '@/lib/ui-utils'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -26,7 +27,7 @@ export function RequestOperatorPresets({
   const [reviewState, reviewAction, reviewPending] = useActionState(reviewVendorUpdateFormAction, INITIAL_STATE)
 
   const statusPresets = [
-    currentStatus !== 'scheduled' ? { toStatus: 'scheduled' as RequestStatus, label: 'Mark scheduled' } : null,
+    currentStatus !== 'scheduled' ? { toStatus: 'scheduled' as RequestStatus, label: 'Mark ready to schedule' } : null,
     currentStatus !== 'in_progress' ? { toStatus: 'in_progress' as RequestStatus, label: 'Start work' } : null,
     currentStatus !== 'done' ? { toStatus: 'done' as RequestStatus, label: 'Mark done' } : null,
   ].filter(Boolean) as { toStatus: RequestStatus; label: string }[]
@@ -35,7 +36,7 @@ export function RequestOperatorPresets({
     { action: 'needs-follow-up', label: 'Needs follow-up' },
     { action: 'approve-completion', label: 'Approve completion' },
     { action: 'reopen-request', label: 'Reopen request' },
-    { action: 'mark-reassignment-needed', label: 'Reassign vendor' },
+    { action: 'mark-reassignment-needed', label: 'Clear vendor, reassign' },
   ]
 
   return (
@@ -62,7 +63,7 @@ export function RequestOperatorPresets({
       </div>
 
       <div className="stack" style={{ gap: 8 }}>
-        <div className="muted">Review state: {currentReviewState && currentReviewState !== 'none' ? currentReviewState : 'clear'}</div>
+        <div className="muted">Review state: {reviewStateLabel(currentReviewState)}</div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           {reviewPresets.map((preset) => (
             <form key={preset.action} action={reviewAction}>
