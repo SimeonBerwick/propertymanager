@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SendSummaryForm } from './send-summary-form'
 
 export default async function ExceptionsPage() {
@@ -32,35 +33,36 @@ export default async function ExceptionsPage() {
           <h3 style={{ marginTop: 4 }}>Requests needing active operator attention</h3>
         </div>
         {exceptionRequests.length ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Request</th>
-                <th>Property</th>
-                <th>Auto flag</th>
-                <th>Review state</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exceptionRequests.map((request) => (
-                <tr key={request.id}>
-                  <td>
-                    <Link href={`/requests/${request.id}`} style={{ fontWeight: 600 }}>
-                      {request.title}
-                    </Link>
-                    <div className="muted">{request.unitLabel}</div>
-                  </td>
-                  <td>
-                    <Link href={`/properties/${request.propertyId}`} className="muted">
-                      {request.propertyName}
-                    </Link>
-                  </td>
-                  <td>{request.autoFlag ?? '—'}</td>
-                  <td>{request.reviewState ?? 'none'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="stack" style={{ gap: 12 }}>
+            {exceptionRequests.map((request) => (
+              <div key={request.id} className="billingRowCard">
+                <div className="billingRow" style={{ alignItems: 'flex-start' }}>
+                  <div className="stack" style={{ gap: 8 }}>
+                    <div>
+                      <Link href={`/requests/${request.id}`} style={{ fontWeight: 700 }}>
+                        {request.title}
+                      </Link>
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        <Link href={`/properties/${request.propertyId}`} className="muted">{request.propertyName}</Link>
+                        {' · '}
+                        {request.unitLabel}
+                      </div>
+                    </div>
+                    <div className="requestMetaLine" style={{ flexWrap: 'wrap' }}>
+                      <RequestFlowBadge request={request} />
+                      {request.autoFlag ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Flag: {request.autoFlag}</span> : null}
+                      {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {request.reviewState}</span> : null}
+                      {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
+                    </div>
+                    {request.reviewNote ? <div className="notice">{request.reviewNote}</div> : null}
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Link href={`/requests/${request.id}`} className="button primary">Open request</Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="muted">No active exceptions right now.</div>
         )}
