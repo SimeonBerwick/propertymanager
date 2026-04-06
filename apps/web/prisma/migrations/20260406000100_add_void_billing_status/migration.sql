@@ -1,0 +1,2 @@
+-- BillingDocumentStatus enum uses TEXT in SQLite-backed Prisma models.
+-- Existing rows remain valid; 'void' is now permitted by Prisma schema/client regeneration.

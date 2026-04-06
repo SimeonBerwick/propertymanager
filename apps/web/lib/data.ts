@@ -276,7 +276,15 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
         events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
         dispatchHistory: { include: { vendor: true, actorUser: true }, orderBy: { createdAt: 'asc' } },
-        billingDocuments: { orderBy: { createdAt: 'desc' } },
+        billingDocuments: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            events: {
+              orderBy: { createdAt: 'desc' },
+              include: { actorUser: true },
+            },
+          },
+        },
       },
     })
     if (!dbRequest) return null
@@ -342,6 +350,14 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       sentAt: doc.sentAt?.toISOString() ?? undefined,
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),
+      events: doc.events.map((event) => ({
+        id: event.id,
+        billingDocumentId: event.billingDocumentId,
+        eventType: event.eventType,
+        note: event.note ?? undefined,
+        actorName: event.actorUser?.email ?? undefined,
+        createdAt: event.createdAt.toISOString(),
+      })),
     }))
 
     return {
