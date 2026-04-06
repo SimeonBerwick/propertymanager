@@ -4,6 +4,7 @@ import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestQuickActions } from '@/components/request-quick-actions'
+import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { SendSummaryForm } from './send-summary-form'
 
 export default async function ExceptionsPage() {
@@ -55,6 +56,7 @@ export default async function ExceptionsPage() {
                       {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {request.reviewState}</span> : null}
                       {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
                     </div>
+                    <RequestSignalStrip request={request} />
                     {request.reviewNote ? <div className="notice">{request.reviewNote}</div> : null}
                     <RequestQuickActions request={request} compact />
                   </div>

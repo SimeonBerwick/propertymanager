@@ -5,6 +5,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
+import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { SectionCard } from '@/components/section-card'
 import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
@@ -59,9 +60,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <StatusBadge status={data.request.status} />
             <RequestFlowBadge request={data.request} />
             <span className="muted">{data.request.category}</span>
-            <span className="muted">{data.request.urgency} urgency</span>
             <span className="muted">Submitted {new Date(data.request.createdAt).toLocaleString()}</span>
           </div>
+          <RequestSignalStrip request={data.request} />
         </div>
 
         <div className="requestHeroAside">
@@ -87,6 +88,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` · ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
               </div>
+              <RequestSignalStrip request={data.request} />
               {data.request.reviewState && data.request.reviewState !== 'none' ? (
                 <div className="notice error">Review: {data.request.reviewState}{data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}</div>
               ) : null}

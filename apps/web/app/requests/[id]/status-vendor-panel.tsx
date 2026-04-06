@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
+import { RequestOperatorPresets } from '@/components/request-operator-presets'
 import { StatusBadge } from '@/components/status-badge'
 import {
   reviewVendorUpdateFormAction,
@@ -56,12 +57,18 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
     <div className="stack">
       <div>
         <div className="kicker">Landlord actions</div>
-        <h3 style={{ marginTop: 4, marginBottom: 0 }}>Update status</h3>
+        <h3 style={{ marginTop: 4, marginBottom: 0 }}>Operator control surface</h3>
         <div className="muted" style={{ marginTop: 4 }}>
           SLA: {currentSlaBucket ?? 'standard'}
           {currentTriageTags?.length ? ` · ${currentTriageTags.join(', ')}` : ''}
         </div>
       </div>
+
+      <RequestOperatorPresets
+        requestId={requestId}
+        currentStatus={currentStatus}
+        currentReviewState={currentReviewState}
+      />
 
       <form key={currentStatus} action={statusAction} className="stack" style={{ gap: 8 }}>
         <input type="hidden" name="requestId" value={requestId} />
@@ -77,8 +84,8 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
         </div>
         {statusState.error && <div className="notice error">{statusState.error}</div>}
         {statusState.success && <div className="notice success">Status updated.</div>}
-        <button type="submit" className="button primary" disabled={statusPending}>
-          {statusPending ? 'Saving…' : 'Update status'}
+        <button type="submit" className="button" disabled={statusPending}>
+          {statusPending ? 'Saving…' : 'Update status manually'}
         </button>
       </form>
 

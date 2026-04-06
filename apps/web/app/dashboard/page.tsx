@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
+import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { SectionCard } from '@/components/section-card'
 import { RequestOpsSignals } from '@/components/request-ops-signals'
 import { RequestQuickActions } from '@/components/request-quick-actions'
@@ -193,10 +194,10 @@ export default async function DashboardPage({
                   <div className="requestMetaLine">
                     <RequestFlowBadge request={request} />
                     <span className="muted">{request.category}</span>
-                    <span className="muted">{request.urgency} urgency</span>
                     <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
                   </div>
                 </div>
+                <RequestSignalStrip request={request} />
                 <RequestOpsSignals request={request} />
                 <RequestQuickActions request={request} compact />
               </div>
