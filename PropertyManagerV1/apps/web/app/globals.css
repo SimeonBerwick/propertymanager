@@ -124,6 +124,12 @@ body { min-height: 100vh; }
 .metricValue { font-size: clamp(30px, 4vw, 42px); font-weight: 800; letter-spacing: -0.04em; margin: 8px 0; }
 .metricDanger { border-color: #f5c2bd; }
 .metricWarn { border-color: #ffe082; }
+
+.badge.signalUrgent { background: #ffe3e3; color: #c92a2a; }
+.badge.signalHigh { background: #fff4e6; color: #d9480f; }
+.badge.signalMedium { background: #fff9db; color: #a66a00; }
+.badge.signalWarn { background: #fff0f6; color: #c2255c; }
+.badge.signalNeutral { background: #f1f3f5; color: #495057; }
 .requestDetailPage { gap: 18px; }
 .requestHero {
   display: grid;
