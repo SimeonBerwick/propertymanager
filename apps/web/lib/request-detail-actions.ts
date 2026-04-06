@@ -8,7 +8,7 @@ import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 
-export type RequestActionState = { error: string | null; success?: boolean }
+export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
@@ -417,7 +417,10 @@ export async function quickRequestAction(
     })
     if (!request) return { error: 'Request not found.' }
 
+    let message = 'Quick action applied.'
+
     if (quickAction === 'mark-scheduled') {
+      if (!['new', 'in_progress'].includes(request.status)) return { error: 'Only new or active requests can be marked scheduled from the queue.' }
       if (request.status === 'scheduled') return { error: 'Request is already scheduled.' }
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
@@ -426,9 +429,11 @@ export async function quickRequestAction(
       await prisma.statusEvent.create({
         data: { requestId, fromStatus: request.status, toStatus: 'scheduled', actorUserId: session.userId },
       })
+      message = 'Request marked scheduled.'
     }
 
     if (quickAction === 'start-work') {
+      if (!['new', 'scheduled'].includes(request.status)) return { error: 'Only new or scheduled requests can be started from the queue.' }
       if (request.status === 'in_progress') return { error: 'Request is already in progress.' }
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
@@ -437,6 +442,7 @@ export async function quickRequestAction(
       await prisma.statusEvent.create({
         data: { requestId, fromStatus: request.status, toStatus: 'in_progress', actorUserId: session.userId },
       })
+      message = 'Request moved to in progress.'
     }
 
     if (quickAction === 'needs-follow-up') {
@@ -447,6 +453,7 @@ export async function quickRequestAction(
           reviewNote: 'Operator flagged this request for follow-up from queue view.',
         },
       })
+      message = 'Request flagged for follow-up.'
     }
 
     if (quickAction === 'mark-reassignment-needed') {
@@ -456,18 +463,21 @@ export async function quickRequestAction(
         data: {
           assignedVendorId: null,
           assignedVendorName: null,
+          assignedVendorEmail: null,
+          assignedVendorPhone: null,
           dispatchStatus: null,
           reviewState: 'reassignment_needed',
           reviewNote: 'Operator marked reassignment needed from queue view.',
         },
       })
+      message = 'Vendor cleared and reassignment needed flagged.'
     }
 
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     revalidatePath('/exceptions')
-    return { error: null, success: true }
+    return { error: null, success: true, message }
   } catch {
     return { error: 'Could not apply quick action.' }
   }
