@@ -185,26 +185,29 @@ export default async function DashboardPage({
           {focusNow.length === 0 ? (
             <div className="notice">No maintenance requests match the current filters or queue drill-down.</div>
           ) : focusNow.map((request) => (
-            <Link key={request.id} href={`/requests/${request.id}`} className="inboxRow">
-              <div>
-                <div style={{ fontWeight: 700 }}>{request.title}</div>
-                <div className="muted" style={{ marginTop: 4 }}>{request.propertyName} · {request.unitLabel}</div>
-                <div className="requestMetaLine">
-                  <RequestFlowBadge request={request} />
-                  <span className="muted">{request.category}</span>
-                  <span className="muted">{request.urgency} urgency</span>
-                  <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
+            <div key={request.id} className="inboxRow" style={{ cursor: 'default' }}>
+              <div className="stack" style={{ gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{request.title}</div>
+                  <div className="muted" style={{ marginTop: 4 }}>{request.propertyName} · {request.unitLabel}</div>
+                  <div className="requestMetaLine">
+                    <RequestFlowBadge request={request} />
+                    <span className="muted">{request.category}</span>
+                    <span className="muted">{request.urgency} urgency</span>
+                    <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
+                  </div>
                 </div>
                 <RequestOpsSignals request={request} />
-                <div style={{ marginTop: 8 }} onClick={(event) => event.preventDefault()}>
-                  <RequestQuickActions request={request} compact />
+                <RequestQuickActions request={request} compact />
+              </div>
+              <div className="stack" style={{ gap: 10, alignItems: 'flex-end' }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
+                  <div className="muted">Scheduled start</div>
                 </div>
+                <Link href={`/requests/${request.id}`} className="button primary">Open request</Link>
               </div>
-              <div>
-                <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
-                <div className="muted">Scheduled start</div>
-              </div>
-            </Link>
+            </div>
           ))}
         </div>
       </SectionCard>
