@@ -93,6 +93,7 @@ enum BillingDocumentStatus {
   sent
   partial
   paid
+  void
 }
 
 model User {

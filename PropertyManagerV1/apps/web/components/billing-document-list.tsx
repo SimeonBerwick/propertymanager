@@ -2,8 +2,9 @@ import Link from 'next/link'
 import { formatMoney } from '@/lib/billing-utils'
 import type { BillingDocumentView } from '@/lib/billing-types'
 import { BillingStatusForm } from '@/components/billing-status-form'
+import { BillingDocumentActions } from '@/components/billing-document-actions'
 
-export function BillingDocumentList({ documents }: { documents: BillingDocumentView[] }) {
+export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
     return <div className="muted">No billing documents yet.</div>
   }
@@ -32,6 +33,7 @@ export function BillingDocumentList({ documents }: { documents: BillingDocumentV
             <div className="billingActionsRow">
               <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open document</Link>
               <BillingStatusForm document={doc} />
+              <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} />
             </div>
           </div>
         )

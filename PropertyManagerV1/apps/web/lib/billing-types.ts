@@ -1,6 +1,15 @@
 export type BillingRecipientType = 'tenant' | 'vendor'
 export type BillingDocumentType = 'tenant_invoice' | 'vendor_remittance'
-export type BillingDocumentStatus = 'draft' | 'sent' | 'partial' | 'paid'
+export type BillingDocumentStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'void'
+
+export interface BillingEventView {
+  id: string
+  billingDocumentId: string
+  eventType: string
+  note?: string
+  actorName?: string
+  createdAt: string
+}
 
 export interface BillingDocumentView {
   id: string
@@ -18,4 +27,5 @@ export interface BillingDocumentView {
   sentAt?: string
   createdAt: string
   updatedAt: string
+  events: BillingEventView[]
 }

@@ -9,6 +9,7 @@ import { SectionCard } from '@/components/section-card'
 import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
 import { BillingEventList } from '@/components/billing-event-list'
+import { BillingSummaryCards } from '@/components/billing-summary-cards'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
 
@@ -93,17 +94,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </SectionCard>
 
           <SectionCard kicker="Billing" title="Charges and remittances" subtitle="Use only when the request creates a tenant chargeback or vendor payment record.">
-            <div className="billingLayout">
-              <div className="stack">
-                <BillingDocumentForm
-                  requestId={data.request.id}
-                  tenantEmail={data.request.submittedByEmail}
-                  vendorEmail={data.request.assignedVendorEmail}
-                />
-              </div>
-              <div className="stack">
-                <BillingDocumentList documents={data.billingDocuments} />
-                <BillingEventList documents={data.billingDocuments} />
+            <div className="stack" style={{ gap: 16 }}>
+              <BillingSummaryCards documents={data.billingDocuments} />
+              <div className="billingLayout">
+                <div className="stack">
+                  <BillingDocumentForm
+                    requestId={data.request.id}
+                    tenantEmail={data.request.submittedByEmail}
+                    vendorEmail={data.request.assignedVendorEmail}
+                  />
+                </div>
+                <div className="stack">
+                  <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
+                  <BillingEventList documents={data.billingDocuments} />
+                </div>
               </div>
             </div>
           </SectionCard>
