@@ -16,8 +16,13 @@ export const units: Unit[] = [
   { id: 'unit-2d', propertyId: 'prop-2', label: 'Unit 4' },
 ]
 
+const withBaseRequest = (request: Omit<MaintenanceRequest, 'triageTags'>): MaintenanceRequest => ({
+  ...request,
+  triageTags: [],
+})
+
 export const requests: MaintenanceRequest[] = [
-  {
+  withBaseRequest({
     id: 'req-1001',
     propertyId: 'prop-1',
     unitId: 'unit-1a',
@@ -31,8 +36,8 @@ export const requests: MaintenanceRequest[] = [
     urgency: 'high',
     status: 'new',
     createdAt: '2026-03-11T17:30:00Z',
-  },
-  {
+  }),
+  withBaseRequest({
     id: 'req-1002',
     propertyId: 'prop-2',
     unitId: 'unit-2c',
@@ -49,8 +54,8 @@ export const requests: MaintenanceRequest[] = [
     assignedVendorEmail: 'dispatch@desertair.example.com',
     assignedVendorPhone: '602-555-0112',
     createdAt: '2026-03-10T20:00:00Z',
-  },
-  {
+  }),
+  withBaseRequest({
     id: 'req-1003',
     propertyId: 'prop-1',
     unitId: 'unit-1b',
@@ -67,8 +72,8 @@ export const requests: MaintenanceRequest[] = [
     assignedVendorEmail: 'service@mesarepair.example.com',
     assignedVendorPhone: '480-555-0177',
     createdAt: '2026-02-28T14:15:00Z',
-  },
-  {
+  }),
+  withBaseRequest({
     id: 'req-1004',
     propertyId: 'prop-2',
     unitId: 'unit-2a',
@@ -85,8 +90,8 @@ export const requests: MaintenanceRequest[] = [
     assignedVendorEmail: 'dispatch@southwestplumbing.example.com',
     assignedVendorPhone: '623-555-0144',
     createdAt: '2026-03-15T09:00:00Z',
-  },
-  {
+  }),
+  withBaseRequest({
     id: 'req-1005',
     propertyId: 'prop-1',
     unitId: 'unit-1a',
@@ -100,7 +105,7 @@ export const requests: MaintenanceRequest[] = [
     urgency: 'low',
     status: 'new',
     createdAt: '2026-03-20T11:45:00Z',
-  },
+  }),
 ]
 
 export const vendors: Vendor[] = [
@@ -191,7 +196,6 @@ export const requestComments: RequestComment[] = [
 ]
 
 export const statusEvents: StatusEvent[] = [
-  // req-1001: submitted as new
   {
     id: 'event-1',
     requestId: 'req-1001',
@@ -199,7 +203,6 @@ export const statusEvents: StatusEvent[] = [
     actorName: 'System',
     createdAt: '2026-03-11T17:30:00Z',
   },
-  // req-1002: submitted then scheduled
   {
     id: 'event-2',
     requestId: 'req-1002',
@@ -215,7 +218,6 @@ export const statusEvents: StatusEvent[] = [
     actorName: 'Elon PM Ops',
     createdAt: '2026-03-10T20:15:00Z',
   },
-  // req-1003: full lifecycle to done
   {
     id: 'event-4',
     requestId: 'req-1003',
@@ -247,7 +249,6 @@ export const statusEvents: StatusEvent[] = [
     actorName: 'Elon PM Ops',
     createdAt: '2026-03-10T15:45:00Z',
   },
-  // req-1004: submitted then in_progress
   {
     id: 'event-8',
     requestId: 'req-1004',
@@ -263,7 +264,6 @@ export const statusEvents: StatusEvent[] = [
     actorName: 'Elon PM Ops',
     createdAt: '2026-03-16T08:00:00Z',
   },
-  // req-1005: submitted as new
   {
     id: 'event-10',
     requestId: 'req-1005',

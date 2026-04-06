@@ -339,6 +339,17 @@ export interface TenantVendorUpdateParams {
   photoCount?: number
 }
 
+export interface BillingDocumentNotificationParams {
+  to: string
+  title: string
+  recipientLabel: string
+  documentType: string
+  status: string
+  amountLabel: string
+  paidLabel: string
+  balanceLabel: string
+}
+
 export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): NotificationMessage {
   const scheduleLine = p.scheduledStart
     ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` → ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
@@ -412,6 +423,34 @@ export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummary
             <td style="padding:8px 0;vertical-align:top;color:#6b7280">${esc(request.reviewState ?? 'none')}</td>
           </tr>
         `).join('')}
+      </table>
+    `),
+  }
+}
+
+export function buildBillingDocumentMessage(p: BillingDocumentNotificationParams): NotificationMessage {
+  return {
+    to: p.to,
+    subject: p.title,
+    text: [
+      `${p.title}`,
+      ``,
+      `Recipient: ${p.recipientLabel}`,
+      `Type: ${p.documentType}`,
+      `Status: ${p.status}`,
+      `Amount: ${p.amountLabel}`,
+      `Paid: ${p.paidLabel}`,
+      `Balance: ${p.balanceLabel}`,
+    ].join('\n'),
+    html: htmlEmail(`
+      <p>${esc(p.title)}</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Recipient', p.recipientLabel)}
+        ${dtRow('Type', p.documentType)}
+        ${dtRow('Status', p.status)}
+        ${dtRow('Amount', p.amountLabel)}
+        ${dtRow('Paid', p.paidLabel)}
+        ${dtRow('Balance', p.balanceLabel)}
       </table>
     `),
   }

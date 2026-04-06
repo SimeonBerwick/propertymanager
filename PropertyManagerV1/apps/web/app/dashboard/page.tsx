@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { StatusBadge } from '@/components/status-badge'
+import { RequestFlowBadge } from '@/components/request-flow-badge'
+import { SectionCard } from '@/components/section-card'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { formatDateTime, formatRelativeAge } from '@/lib/ui-utils'
 
 export default async function DashboardPage({
   searchParams,
@@ -38,95 +40,93 @@ export default async function DashboardPage({
     return currencyMatch && languageMatch && queueMatch
   })
 
-  const nonEnglishOpen = data.requestRows.filter(
-    (request) => request.status !== 'done' && request.preferredLanguage !== 'english',
-  )
-
-  const nonUsdOpen = data.requestRows.filter(
-    (request) => request.status !== 'done' && request.preferredCurrency !== 'usd',
-  )
+  const focusNow = filteredRequests.slice(0, 8)
 
   return (
     <div className="stack">
-      <section className="grid cols-4">
-        <div className="card">
-          <div className="kicker">New</div>
-          <h2>{data.statusCounts.new}</h2>
-          <div className="muted">Needs triage</div>
-        </div>
-        <div className="card">
-          <div className="kicker">Scheduled</div>
-          <h2>{data.statusCounts.scheduled}</h2>
-          <div className="muted">Vendor date set</div>
-        </div>
-        <div className="card">
-          <div className="kicker">In Progress</div>
-          <h2>{data.statusCounts.in_progress}</h2>
-          <div className="muted">Active work in flight</div>
-        </div>
-        <div className="card">
-          <div className="kicker">Done</div>
-          <h2>{data.statusCounts.done}</h2>
-          <div className="muted">Closed out</div>
-        </div>
-      </section>
-
-      <section className="grid cols-2">
-        <Link href="/dashboard?queue=non-english" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Language queue</div>
-          <h3 style={{ margin: '4px 0' }}>{nonEnglishOpen.length}</h3>
-          <div className="muted">Open requests with non-English language preferences</div>
-        </Link>
-        <Link href="/dashboard?queue=non-usd" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Currency queue</div>
-          <h3 style={{ margin: '4px 0' }}>{nonUsdOpen.length}</h3>
-          <div className="muted">Open requests using Peso, Pound, or Euro</div>
-        </Link>
-      </section>
-
-      <section className="grid cols-3">
-        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Reassignment needed</div>
-          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.reassignmentNeeded}</h3>
-          <div className="muted">Vendor declined or landlord cleared assignment</div>
-        </Link>
-        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Pending completion review</div>
-          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.completedPendingReview}</h3>
-          <div className="muted">Vendor says complete; landlord has not approved yet</div>
-        </Link>
-        <Link href="/exceptions" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Needs follow-up</div>
-          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.needsFollowUp}</h3>
-          <div className="muted">Vendor updates that still need operator action</div>
-        </Link>
-      </section>
-
-      <section className="grid cols-2">
-        <Link href="/dashboard?queue=scheduled-today" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Scheduled today</div>
-          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.scheduledToday}</h3>
-          <div className="muted">Confirmed vendor visits landing today</div>
-        </Link>
-        <Link href="/dashboard?queue=overdue-scheduled" className="card" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Overdue scheduled</div>
-          <h3 style={{ margin: '4px 0' }}>{data.queueCounts.overdueScheduled}</h3>
-          <div className="muted">Past-due scheduled windows on non-closed requests</div>
-        </Link>
-      </section>
-
-      <section className="card">
-        <div className="row" style={{ marginBottom: 12 }}>
+      <section className="card requestHero">
+        <div className="stack" style={{ gap: 14 }}>
           <div>
-            <div className="kicker">Inbox</div>
-            <h2 style={{ margin: '4px 0 0' }}>Maintenance requests</h2>
+            <div className="kicker">Mission control</div>
+            <h1 className="pageTitle">Maintenance triage, not spreadsheet theater.</h1>
+            <div className="muted">Surface what needs action now, what is drifting, and what can be cleared fastest.</div>
           </div>
-          <Link href="/submit" className="button primary">
-            Tenant issue form
-          </Link>
+          <div className="requestHeroMeta">
+            <Link href="/submit" className="button primary">Tenant issue form</Link>
+            <Link href="/exceptions" className="button">Exceptions queue</Link>
+            <Link href="/reports" className="button">Reports</Link>
+          </div>
         </div>
+        <div className="requestHeroAside">
+          <div className="requestSignalCard">
+            <div className="kicker">Operator pressure</div>
+            <div className="signalTitle">{data.queueCounts.reassignmentNeeded + data.queueCounts.completedPendingReview + data.queueCounts.needsFollowUp}</div>
+            <div className="muted">requests need review, reassignment, or follow-up</div>
+          </div>
+        </div>
+      </section>
 
-        <form method="get" className="row" style={{ gap: 12, alignItems: 'flex-end', marginBottom: 16 }}>
+      <section className="grid cols-4">
+        <div className="card metricCard metricDanger">
+          <div>
+            <div className="kicker">Needs triage</div>
+            <div className="metricValue">{data.statusCounts.new}</div>
+          </div>
+          <div className="muted">Fresh requests still waiting on operator attention.</div>
+        </div>
+        <div className="card metricCard metricWarn">
+          <div>
+            <div className="kicker">Scheduled today</div>
+            <div className="metricValue">{data.queueCounts.scheduledToday}</div>
+          </div>
+          <div className="muted">Vendor visits expected to land today.</div>
+        </div>
+        <div className="card metricCard metricDanger">
+          <div>
+            <div className="kicker">Overdue scheduled</div>
+            <div className="metricValue">{data.queueCounts.overdueScheduled}</div>
+          </div>
+          <div className="muted">Scheduled windows already slipped.</div>
+        </div>
+        <div className="card metricCard">
+          <div>
+            <div className="kicker">Open exceptions</div>
+            <div className="metricValue">{data.queueCounts.reassignmentNeeded + data.queueCounts.completedPendingReview + data.queueCounts.needsFollowUp}</div>
+          </div>
+          <div className="muted">Requests blocked on review or vendor handling.</div>
+        </div>
+      </section>
+
+      <section className="queueGrid">
+        <Link href="/dashboard?queue=reassignment-needed" className="card queueCard">
+          <div className="kicker">Reassignment needed</div>
+          <div className="queueValue">{data.queueCounts.reassignmentNeeded}</div>
+          <div className="muted">Vendor declined or was cleared.</div>
+        </Link>
+        <Link href="/dashboard?queue=completion-review" className="card queueCard">
+          <div className="kicker">Completion review</div>
+          <div className="queueValue">{data.queueCounts.completedPendingReview}</div>
+          <div className="muted">Vendor says complete; landlord has not signed off.</div>
+        </Link>
+        <Link href="/dashboard?queue=follow-up" className="card queueCard">
+          <div className="kicker">Follow-up</div>
+          <div className="queueValue">{data.queueCounts.needsFollowUp}</div>
+          <div className="muted">Vendor updates need operator action.</div>
+        </Link>
+        <Link href="/dashboard?queue=non-english" className="card queueCard">
+          <div className="kicker">Non-English</div>
+          <div className="queueValue">{data.queueCounts.nonEnglishOpen}</div>
+          <div className="muted">Open requests with language constraints.</div>
+        </Link>
+      </section>
+
+      <SectionCard
+        kicker="Inbox"
+        title="Operator request queue"
+        subtitle="Scan fast. Open the right request. Move it forward without guessing."
+        action={<Link href="/dashboard" className="button">Reset view</Link>}
+      >
+        <form method="get" className="filtersRow">
           <input type="hidden" name="queue" value={selectedQueue} />
           <label className="field" style={{ minWidth: 180 }}>
             <span className="field-label">Currency</span>
@@ -148,56 +148,48 @@ export default async function DashboardPage({
             </select>
           </label>
           <button type="submit" className="button">Apply filters</button>
-          <Link href="/dashboard" className="button">Clear</Link>
         </form>
 
-        {selectedQueue !== 'all' ? (
-          <div className="notice success" style={{ marginBottom: 16 }}>
-            Queue filter active: {selectedQueue}
-          </div>
-        ) : null}
+        <div className="filterChipRow">
+          <Link href="/dashboard" className="filterChip">All</Link>
+          <Link href="/dashboard?queue=scheduled-today" className="filterChip">Scheduled today</Link>
+          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip">Overdue scheduled</Link>
+          <Link href="/dashboard?queue=non-usd" className="filterChip">Non-USD</Link>
+          <Link href="/dashboard?queue=follow-up" className="filterChip">Needs follow-up</Link>
+        </div>
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Request</th>
-              <th>Property</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Vendor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRequests.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted)' }}>
-                  No maintenance requests match the current filters or queue drill-down.
-                </td>
-              </tr>
-            ) : filteredRequests.map((request) => (
-              <tr key={request.id}>
-                <td>
-                  <Link href={`/requests/${request.id}`}>
-                    <div style={{ fontWeight: 600 }}>{request.title}</div>
-                    <div className="muted">
-                      {request.unitLabel} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
-                    </div>
-                  </Link>
-                </td>
-                <td>
-                  <Link href={`/properties/${request.propertyId}`}>
-                    <div>{request.propertyName}</div>
-                    <div className="muted">{request.propertyAddress}</div>
-                  </Link>
-                </td>
-                <td>{request.category}</td>
-                <td><StatusBadge status={request.status} /></td>
-                <td>{request.assignedVendorName ?? 'Unassigned'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+        {selectedQueue !== 'all' ? <div className="notice success">Queue filter active: {selectedQueue}</div> : null}
+
+        <div className="inboxList">
+          {focusNow.length === 0 ? (
+            <div className="notice">No maintenance requests match the current filters or queue drill-down.</div>
+          ) : focusNow.map((request) => (
+            <Link key={request.id} href={`/requests/${request.id}`} className="inboxRow">
+              <div>
+                <div style={{ fontWeight: 700 }}>{request.title}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{request.propertyName} · {request.unitLabel}</div>
+                <div className="requestMetaLine">
+                  <RequestFlowBadge request={request} />
+                  <span className="muted">{request.category}</span>
+                  <span className="muted">{request.urgency} urgency</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>{request.assignedVendorName ?? 'Unassigned'}</div>
+                <div className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
+                <div className="muted">Scheduled start</div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>{formatRelativeAge(request.createdAt)}</div>
+                <div className="muted">Request age</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </SectionCard>
     </div>
   )
 }

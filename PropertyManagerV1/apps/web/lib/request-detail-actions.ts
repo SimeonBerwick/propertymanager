@@ -137,6 +137,7 @@ export async function updateVendorFormAction(
         category: string
         preferredCurrency?: string
         preferredLanguage?: string
+        responseLink?: string
       }
     | undefined
 
