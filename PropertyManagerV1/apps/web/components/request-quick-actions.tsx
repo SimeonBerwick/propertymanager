@@ -70,7 +70,7 @@ export function RequestQuickActions({
         ))}
       </div>
       {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">{state.message ?? 'Quick action applied.'}</div> : null}
+      {state.success ? <div className="notice success">{state.message ?? 'Quick action applied.'} The queue may refresh and move this request.</div> : null}
     </div>
   )
 }
