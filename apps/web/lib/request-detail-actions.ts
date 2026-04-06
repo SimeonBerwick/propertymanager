@@ -12,6 +12,7 @@ export type RequestActionState = { error: string | null; success?: boolean }
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
+const VALID_QUICK_ACTIONS = ['mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -389,6 +390,86 @@ export async function reviewVendorUpdateFormAction(
     return { error: null, success: true }
   } catch {
     return { error: 'Could not apply review action.' }
+  }
+}
+
+export async function quickRequestAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const quickAction = String(formData.get('quickAction') ?? '').trim() as (typeof VALID_QUICK_ACTIONS)[number]
+
+  if (!VALID_QUICK_ACTIONS.includes(quickAction)) return { error: 'Invalid quick action.' }
+
+  try {
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      select: {
+        id: true,
+        status: true,
+        assignedVendorId: true,
+        assignedVendorName: true,
+      },
+    })
+    if (!request) return { error: 'Request not found.' }
+
+    if (quickAction === 'mark-scheduled') {
+      if (request.status === 'scheduled') return { error: 'Request is already scheduled.' }
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: { status: 'scheduled' },
+      })
+      await prisma.statusEvent.create({
+        data: { requestId, fromStatus: request.status, toStatus: 'scheduled', actorUserId: session.userId },
+      })
+    }
+
+    if (quickAction === 'start-work') {
+      if (request.status === 'in_progress') return { error: 'Request is already in progress.' }
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: { status: 'in_progress' },
+      })
+      await prisma.statusEvent.create({
+        data: { requestId, fromStatus: request.status, toStatus: 'in_progress', actorUserId: session.userId },
+      })
+    }
+
+    if (quickAction === 'needs-follow-up') {
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          reviewState: 'needs_follow_up',
+          reviewNote: 'Operator flagged this request for follow-up from queue view.',
+        },
+      })
+    }
+
+    if (quickAction === 'mark-reassignment-needed') {
+      if (!request.assignedVendorName && !request.assignedVendorId) return { error: 'No assigned vendor to clear.' }
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          assignedVendorId: null,
+          assignedVendorName: null,
+          dispatchStatus: null,
+          reviewState: 'reassignment_needed',
+          reviewNote: 'Operator marked reassignment needed from queue view.',
+        },
+      })
+    }
+
+    await applyRequestAutomation(requestId)
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    revalidatePath('/exceptions')
+    return { error: null, success: true }
+  } catch {
+    return { error: 'Could not apply quick action.' }
   }
 }
 

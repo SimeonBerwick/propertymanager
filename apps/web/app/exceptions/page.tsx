@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
+import { RequestQuickActions } from '@/components/request-quick-actions'
 import { SendSummaryForm } from './send-summary-form'
 
 export default async function ExceptionsPage() {
@@ -55,6 +56,7 @@ export default async function ExceptionsPage() {
                       {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
                     </div>
                     {request.reviewNote ? <div className="notice">{request.reviewNote}</div> : null}
+                    <RequestQuickActions request={request} compact />
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <Link href={`/requests/${request.id}`} className="button primary">Open request</Link>

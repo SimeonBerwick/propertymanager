@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
 import { RequestOpsSignals } from '@/components/request-ops-signals'
+import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
@@ -195,6 +196,9 @@ export default async function DashboardPage({
                   <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
                 </div>
                 <RequestOpsSignals request={request} />
+                <div style={{ marginTop: 8 }} onClick={(event) => event.preventDefault()}>
+                  <RequestQuickActions request={request} compact />
+                </div>
               </div>
               <div>
                 <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
