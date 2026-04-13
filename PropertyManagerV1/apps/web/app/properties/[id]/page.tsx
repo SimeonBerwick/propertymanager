@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="stack">
+      <Breadcrumbs items={[{ label: 'Properties', href: '/properties' }, { label: data.property.name }]} />
+
       <section className="card stack">
         <div className="row">
           <div>

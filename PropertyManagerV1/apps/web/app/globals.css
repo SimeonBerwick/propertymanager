@@ -60,6 +60,18 @@ body { min-height: 100vh; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .kicker { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; }
 .muted { color: var(--muted); }
+.breadcrumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.breadcrumbs-item { display: inline-flex; gap: 8px; align-items: center; }
+.breadcrumbs-link:hover { color: var(--accent); }
+.breadcrumbs-current { color: var(--text); font-weight: 600; }
+.breadcrumbs-separator { color: #94a3b8; }
 .button {
   display: inline-flex;
   align-items: center;

@@ -1,8 +1,11 @@
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { NewPropertyForm } from './new-property-form'
 
 export default function NewPropertyPage() {
   return (
     <div className="stack" style={{ maxWidth: 640, margin: '0 auto' }}>
+      <Breadcrumbs items={[{ label: 'Properties', href: '/properties' }, { label: 'Add property' }]} />
+
       <section className="card stack">
         <div>
           <div className="kicker">Properties</div>

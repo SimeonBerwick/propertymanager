@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
@@ -35,6 +36,14 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="stack">
+      <Breadcrumbs
+        items={[
+          { label: 'Properties', href: '/properties' },
+          { label: property.name, href: `/properties/${property.id}` },
+          { label: unit.label },
+        ]}
+      />
+
       <section className="card stack">
         <div className="row">
           <div>
