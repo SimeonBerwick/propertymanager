@@ -115,6 +115,20 @@ export async function submitTenantMobileRequestAction(
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
   const triageTagsCsv = triageTags.join(',')
 
+  const activeUnit = await prisma.unit.findFirst({
+    where: {
+      id: session.unitId,
+      propertyId: session.propertyId,
+      isActive: true,
+      property: { id: session.propertyId, isActive: true },
+    },
+    select: { id: true },
+  })
+
+  if (!activeUnit) {
+    return { error: 'This unit is no longer active for new requests. Contact your property manager.' }
+  }
+
   const request = await prisma.maintenanceRequest.create({
     data: {
       propertyId: session.propertyId,

@@ -34,6 +34,14 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
     }
   }, [filteredUnits, selectedUnitId])
 
+  if (!properties.length) {
+    return (
+      <div className="notice">
+        No active properties or units are available for online request submission right now. Contact your property manager directly.
+      </div>
+    )
+  }
+
   return (
     <form action={formAction} className="stack">
       {orgSlug && <input type="hidden" name="orgSlug" value={orgSlug} />}

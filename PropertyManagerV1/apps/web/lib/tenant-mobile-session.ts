@@ -99,7 +99,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
 
   const identity = session.tenantIdentity
 
-  if (identity.status !== 'active') {
+  if (identity.status !== 'active' || !identity.property.isActive || !identity.unit.isActive) {
     cookieStore.delete(TENANT_COOKIE)
     return null
   }
