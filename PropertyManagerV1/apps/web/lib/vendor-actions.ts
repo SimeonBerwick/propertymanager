@@ -99,6 +99,9 @@ export async function updateVendorAction(
   if (error) return { error }
 
   try {
+    const existing = await prisma.vendor.findFirst({ where: { id: vendorId, orgId: session.userId }, select: { isActive: true } })
+    if (!existing) return { error: 'Could not update vendor.' }
+
     await prisma.vendor.update({
       where: { id: vendorId, orgId: session.userId },
       data: {
@@ -112,13 +115,20 @@ export async function updateVendorAction(
       },
     })
 
+    const action = !existing.isActive && isActive ? 'vendor.restored' : !isActive ? 'vendor.archived' : 'vendor.updated'
+    const summary = action === 'vendor.restored'
+      ? `Restored vendor ${name}.`
+      : action === 'vendor.archived'
+        ? `Archived vendor ${name}.`
+        : `Updated vendor ${name}.`
+
     await writeAuditLog({
       orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'vendor',
       entityId: vendorId,
-      action: isActive ? 'vendor.updated' : 'vendor.archived',
-      summary: isActive ? `Updated vendor ${name}.` : `Archived vendor ${name}.`,
+      action,
+      summary,
       metadata: { email: email || null, phone: phone || null, isActive, categories, supportedLanguages, supportedCurrencies },
     })
   } catch {
