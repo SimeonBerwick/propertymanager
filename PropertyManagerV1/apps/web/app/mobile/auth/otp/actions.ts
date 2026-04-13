@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { consumeTenantInvite } from '@/lib/tenant-invite-lib'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { verifyOtpChallenge } from '@/lib/tenant-otp-lib'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type OtpState = { error: string | null }
 
@@ -38,5 +39,13 @@ export async function verifyTenantOtpAction(_prev: OtpState, formData: FormData)
 
   await consumeTenantInvite(inviteId)
   await createTenantMobileSession(result.tenantIdentityId)
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: result.tenantIdentityId,
+    action: 'tenantIdentity.inviteOnboardingCompleted',
+    summary: 'Completed invite-based tenant onboarding.',
+    metadata: { inviteId, challengeId },
+  })
   redirect('/mobile' as never)
 }

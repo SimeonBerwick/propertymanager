@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { validateTenantInviteToken } from '@/lib/tenant-invite-lib'
 import { createOtpChallenge } from '@/lib/tenant-otp-lib'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export default async function MobileAcceptInvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -15,6 +16,15 @@ export default async function MobileAcceptInvitePage({ params }: { params: Promi
       </div>
     )
   }
+
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: result.tenantIdentityId,
+    action: 'tenantIdentity.inviteOpened',
+    summary: 'Tenant opened mobile invite link.',
+    metadata: { inviteId: result.inviteId },
+  })
 
   const otp = await createOtpChallenge(result.tenantIdentityId, 'invite_login', 'email')
   const paramsString = new URLSearchParams({

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/audit-log'
 
 const INVITE_TTL_DAYS = 7
 
@@ -57,6 +58,15 @@ export async function createTenantInvite(tenantIdentityId: string, sentVia: 'sms
     })
   })
 
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentity.id,
+    action: 'tenantIdentity.inviteGenerated',
+    summary: `Generated ${sentVia} invite for ${tenantIdentity.tenantName}.`,
+    metadata: { inviteId: invite.id, sentVia, sentTo: destination },
+  })
+
   return {
     inviteId: invite.id,
     rawToken,
@@ -106,6 +116,14 @@ export async function validateTenantInviteToken(rawToken: string): Promise<Invit
       where: { id: invite.id },
       data: { status: 'expired' },
     })
+    await writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: invite.tenantIdentityId,
+      action: 'tenantIdentity.inviteExpired',
+      summary: 'Tenant invite expired before acceptance.',
+      metadata: { inviteId: invite.id },
+    })
     return { ok: false, code: 'expired' }
   }
 
@@ -126,9 +144,18 @@ export async function validateTenantInviteToken(rawToken: string): Promise<Invit
 }
 
 export async function consumeTenantInvite(inviteId: string) {
-  await prisma.tenantInvite.update({
+  const invite = await prisma.tenantInvite.update({
     where: { id: inviteId },
     data: { status: 'accepted', acceptedAt: new Date() },
+  })
+
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: invite.tenantIdentityId,
+    action: 'tenantIdentity.inviteAccepted',
+    summary: 'Tenant invite accepted.',
+    metadata: { inviteId },
   })
 }
 
@@ -142,5 +169,13 @@ export async function revokeAllInvitesAndSessionsForIdentity(tenantIdentityId: s
       where: { tenantIdentityId, revokedAt: null },
       data: { revokedAt: new Date() },
     })
+  })
+
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentityId,
+    action: 'tenantIdentity.accessRevoked',
+    summary: 'Revoked pending invites and active sessions for tenant identity.',
   })
 }

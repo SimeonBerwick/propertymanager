@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers'
 import { randomBytes, createHash } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/audit-log'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 30
@@ -68,6 +69,15 @@ export async function createTenantMobileSession(tenantIdentityId: string) {
     expires: expiresAt,
   })
 
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentity.id,
+    action: 'tenantIdentity.sessionCreated',
+    summary: 'Created tenant mobile session.',
+    metadata: { sessionId: session.id },
+  })
+
   return session
 }
 
@@ -100,6 +110,14 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
   const identity = session.tenantIdentity
 
   if (identity.status !== 'active' || !identity.property.isActive || !identity.unit.isActive) {
+    await writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: identity.id,
+      action: 'tenantIdentity.sessionRejected',
+      summary: 'Rejected tenant mobile session because identity or inventory is inactive.',
+      metadata: { sessionId: session.id },
+    })
     cookieStore.delete(TENANT_COOKIE)
     return null
   }
@@ -136,10 +154,24 @@ export async function revokeTenantMobileSession() {
   const cookieStore = await cookies()
   const rawSecret = cookieStore.get(TENANT_COOKIE)?.value
   if (rawSecret) {
+    const sessions = await prisma.tenantSession.findMany({
+      where: { sessionSecretHash: sha256(rawSecret), revokedAt: null },
+      select: { id: true, tenantIdentityId: true },
+    })
+
     await prisma.tenantSession.updateMany({
       where: { sessionSecretHash: sha256(rawSecret), revokedAt: null },
       data: { revokedAt: new Date() },
     })
+
+    await Promise.all(sessions.map((session) => writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: session.tenantIdentityId,
+      action: 'tenantIdentity.sessionRevoked',
+      summary: 'Revoked tenant mobile session.',
+      metadata: { sessionId: session.id },
+    })))
   }
   cookieStore.delete(TENANT_COOKIE)
 }
@@ -148,5 +180,13 @@ export async function revokeAllSessionsForIdentity(tenantIdentityId: string) {
   await prisma.tenantSession.updateMany({
     where: { tenantIdentityId, revokedAt: null },
     data: { revokedAt: new Date() },
+  })
+
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentityId,
+    action: 'tenantIdentity.allSessionsRevoked',
+    summary: 'Revoked all tenant mobile sessions for identity.',
   })
 }
