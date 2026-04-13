@@ -140,7 +140,7 @@ export async function createBillingDocumentAction(
     })
 
     await writeAuditLog({
-      actorUserId: session.userId,
+            actorUserId: session.userId,
       entityType: 'billingDocument',
       entityId: billingDocument.id,
       action: 'billingDocument.created',
@@ -212,7 +212,7 @@ export async function updateBillingDocumentAction(
     })
 
     await writeAuditLog({
-      actorUserId: session.userId,
+            actorUserId: session.userId,
       entityType: 'billingDocument',
       entityId: billingDocumentId,
       action: 'billingDocument.paymentUpdated',
@@ -264,7 +264,7 @@ export async function resendBillingDocumentAction(
     })
 
     await writeAuditLog({
-      actorUserId: session.userId,
+            actorUserId: session.userId,
       entityType: 'billingDocument',
       entityId: doc.id,
       action: 'billingDocument.resent',
@@ -350,7 +350,7 @@ export async function duplicateBillingDocumentAction(
     })
 
     await writeAuditLog({
-      actorUserId: session.userId,
+            actorUserId: session.userId,
       entityType: 'billingDocument',
       entityId: duplicated.id,
       action: 'billingDocument.duplicated',
@@ -396,7 +396,7 @@ export async function voidBillingDocumentAction(
     })
 
     await writeAuditLog({
-      actorUserId: session.userId,
+            actorUserId: session.userId,
       entityType: 'billingDocument',
       entityId: doc.id,
       action: 'billingDocument.voided',

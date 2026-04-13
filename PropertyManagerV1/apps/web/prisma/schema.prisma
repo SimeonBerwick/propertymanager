@@ -416,6 +416,7 @@ model BillingEvent {
 
 model AuditLog {
   id           String   @id @default(cuid())
+  orgId        String?
   actorUserId  String?
   entityType   String
   entityId     String
@@ -426,6 +427,7 @@ model AuditLog {
 
   actorUser    User?    @relation(fields: [actorUserId], references: [id])
 
+  @@index([orgId, createdAt])
   @@index([entityType, entityId, createdAt])
   @@index([actorUserId, createdAt])
 }

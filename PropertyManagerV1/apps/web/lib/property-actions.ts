@@ -48,6 +48,7 @@ export async function createPropertyAction(
     const property = await prisma.property.create({ data: { name, address, ownerId } })
     propertyId = property.id
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'property',
       entityId: property.id,
@@ -95,6 +96,7 @@ export async function updatePropertyAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'property',
       entityId: propertyId,
@@ -142,6 +144,7 @@ export async function archivePropertyAction(
     })
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'property',
       entityId: propertyId,
@@ -183,6 +186,7 @@ export async function restorePropertyAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'property',
       entityId: propertyId,
@@ -246,6 +250,7 @@ export async function deletePropertyAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'property',
       entityId: propertyId,
@@ -304,6 +309,7 @@ export async function createUnitAction(
     })
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'unit',
       entityId: unit.id,
@@ -358,6 +364,7 @@ export async function updateUnitAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'unit',
       entityId: unitId,
@@ -403,6 +410,7 @@ export async function archiveUnitAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'unit',
       entityId: unitId,
@@ -461,6 +469,7 @@ export async function restoreUnitAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'unit',
       entityId: unitId,
@@ -527,6 +536,7 @@ export async function deleteUnitAction(
     }
 
     await writeAuditLog({
+      orgId: ownerId,
       actorUserId: ownerId,
       entityType: 'unit',
       entityId: unitId,

@@ -70,6 +70,7 @@ export async function createTenantMobileSession(tenantIdentityId: string) {
   })
 
   await writeAuditLog({
+    orgId: tenantIdentity.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: tenantIdentity.id,
@@ -111,6 +112,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
 
   if (identity.status !== 'active' || !identity.property.isActive || !identity.unit.isActive) {
     await writeAuditLog({
+      orgId: identity.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: identity.id,
@@ -156,7 +158,7 @@ export async function revokeTenantMobileSession() {
   if (rawSecret) {
     const sessions = await prisma.tenantSession.findMany({
       where: { sessionSecretHash: sha256(rawSecret), revokedAt: null },
-      select: { id: true, tenantIdentityId: true },
+      select: { id: true, tenantIdentityId: true, orgId: true },
     })
 
     await prisma.tenantSession.updateMany({
@@ -165,6 +167,7 @@ export async function revokeTenantMobileSession() {
     })
 
     await Promise.all(sessions.map((session) => writeAuditLog({
+      orgId: session.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: session.tenantIdentityId,
@@ -177,12 +180,15 @@ export async function revokeTenantMobileSession() {
 }
 
 export async function revokeAllSessionsForIdentity(tenantIdentityId: string) {
+  const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId }, select: { orgId: true } })
+
   await prisma.tenantSession.updateMany({
     where: { tenantIdentityId, revokedAt: null },
     data: { revokedAt: new Date() },
   })
 
   await writeAuditLog({
+    orgId: tenantIdentity?.orgId ?? null,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: tenantIdentityId,

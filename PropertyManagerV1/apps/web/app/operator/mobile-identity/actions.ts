@@ -95,7 +95,8 @@ export async function setupMobileIdentityAction(
   })
 
   await writeAuditLog({
-    actorUserId: session.userId,
+    orgId: session.userId,
+      actorUserId: session.userId,
     entityType: 'tenantIdentity',
     entityId: unit.id,
     action: 'tenantIdentity.setup',
@@ -152,6 +153,7 @@ export async function sendMobileInviteAction(
     })
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'tenantIdentity',
       entityId: tenantIdentity.id,
@@ -207,7 +209,8 @@ export async function deactivateMobileIdentityAction(
   })
 
   await writeAuditLog({
-    actorUserId: session.userId,
+    orgId: session.userId,
+      actorUserId: session.userId,
     entityType: 'tenantIdentity',
     entityId: tenantIdentity.id,
     action: 'tenantIdentity.deactivated',

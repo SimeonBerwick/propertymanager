@@ -74,7 +74,8 @@ export async function updateStatusFormAction(
   }
 
   await writeAuditLog({
-    actorUserId: session.userId,
+    orgId: session.userId,
+      actorUserId: session.userId,
     entityType: 'request',
     entityId: requestId,
     action: 'request.statusChanged',
@@ -198,6 +199,7 @@ export async function updateVendorFormAction(
     }
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
@@ -253,6 +255,7 @@ export async function updatePreferencesFormAction(
     })
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
@@ -321,6 +324,7 @@ export async function updateDispatchFormAction(
     })
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
@@ -422,6 +426,7 @@ export async function reviewVendorUpdateFormAction(
     }
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
@@ -520,6 +525,7 @@ export async function quickRequestAction(
     }
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
@@ -565,6 +571,7 @@ export async function addCommentFormAction(
       data: { requestId, body, visibility, authorUserId: session.userId },
     })
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'request',
       entityId: requestId,
