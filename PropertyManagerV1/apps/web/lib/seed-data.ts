@@ -1,19 +1,19 @@
 import type { MaintenanceRequest, Property, RequestComment, StatusEvent, Unit, Vendor } from '@/lib/types'
 
 export const properties: Property[] = [
-  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', unitCount: 2 },
-  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', unitCount: 4 },
+  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', isActive: true, unitCount: 2 },
+  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', isActive: true, unitCount: 4 },
 ]
 
 export const units: Unit[] = [
   // Canyon View Duplex
-  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed',  tenantEmail: 'taylor@example.com' },
-  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', tenantEmail: 'jordan@example.com' },
+  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed',  tenantEmail: 'taylor@example.com', isActive: true },
+  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', tenantEmail: 'jordan@example.com', isActive: true },
   // Palm Court Fourplex
-  { id: 'unit-2a', propertyId: 'prop-2', label: 'Unit 1', tenantName: 'Maria Soto',   tenantEmail: 'maria@example.com' },
-  { id: 'unit-2b', propertyId: 'prop-2', label: 'Unit 2', tenantName: 'Dev Patel',    tenantEmail: 'dev@example.com' },
-  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz',  tenantEmail: 'chris@example.com' },
-  { id: 'unit-2d', propertyId: 'prop-2', label: 'Unit 4' },
+  { id: 'unit-2a', propertyId: 'prop-2', label: 'Unit 1', tenantName: 'Maria Soto',   tenantEmail: 'maria@example.com', isActive: true },
+  { id: 'unit-2b', propertyId: 'prop-2', label: 'Unit 2', tenantName: 'Dev Patel',    tenantEmail: 'dev@example.com', isActive: true },
+  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz',  tenantEmail: 'chris@example.com', isActive: true },
+  { id: 'unit-2d', propertyId: 'prop-2', label: 'Unit 4', isActive: true },
 ]
 
 const withBaseRequest = (request: Omit<MaintenanceRequest, 'triageTags'>): MaintenanceRequest => ({

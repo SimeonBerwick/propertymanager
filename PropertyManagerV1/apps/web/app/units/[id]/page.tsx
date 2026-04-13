@@ -48,7 +48,10 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
         <div className="row">
           <div>
             <div className="kicker">Unit history</div>
-            <h2 style={{ margin: '4px 0' }}>{unit.label}</h2>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <h2 style={{ margin: '4px 0' }}>{unit.label}</h2>
+              {!unit.isActive && <span className="archiveBadge">Archived</span>}
+            </div>
             <div className="muted">
               <Link href={`/properties/${property.id}`}>{property.name}</Link>
               {' · '}{property.address}

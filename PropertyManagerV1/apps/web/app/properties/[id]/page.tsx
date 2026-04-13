@@ -29,6 +29,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="kicker">Property</div>
             <h2 style={{ margin: '4px 0' }}>{data.property.name}</h2>
             <div className="muted">{data.property.address}</div>
+            {!data.property.isActive && (
+              <div className="archiveBadge" style={{ marginTop: 8 }}>Archived</div>
+            )}
           </div>
           <Link href={`/properties/${data.property.id}/edit`} className="button">Edit property</Link>
         </div>
@@ -67,7 +70,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           {data.units.map((unit) => (
             <div key={unit.id} className="row" style={{ alignItems: 'flex-start' }}>
               <div>
-                <Link href={`/units/${unit.id}`} style={{ fontWeight: 600 }}>{unit.label}</Link>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Link href={`/units/${unit.id}`} style={{ fontWeight: 600 }}>{unit.label}</Link>
+                  {!unit.isActive && <span className="archiveBadge">Archived</span>}
+                </div>
                 <div className="muted">{unit.tenantName ?? 'Vacant'}</div>
               </div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

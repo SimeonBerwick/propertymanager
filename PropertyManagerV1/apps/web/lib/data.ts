@@ -54,7 +54,13 @@ export interface RequestDetailData {
 // avoids re-declaring complex generated Prisma types in app code.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapProperty(p: any): Property {
-  return { id: p.id, name: p.name, address: p.address, unitCount: p._count?.units ?? 0 }
+  return {
+    id: p.id,
+    name: p.name,
+    address: p.address,
+    isActive: p.isActive !== false,
+    unitCount: p._count?.units ?? 0,
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +71,7 @@ function mapUnit(u: any): Unit {
     label: u.label,
     tenantName: u.tenantName ?? undefined,
     tenantEmail: u.tenantEmail ?? undefined,
+    isActive: u.isActive !== false,
   }
 }
 
@@ -176,7 +183,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
     const [dbProperties, dbRequests] = await Promise.all([
       prisma.property.findMany({
-        where: { ownerId: userId },
+        where: { ownerId: userId, isActive: true },
         include: { _count: { select: { units: true } } },
       }),
       prisma.maintenanceRequest.findMany({
@@ -193,7 +200,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       queueCounts: queueCounts(requestRows),
     }
   } catch {
-    // DB unavailable: return empty data rather than exposing unscoped seed data
     return { properties: [], requestRows: [], statusCounts: countStatuses([]), queueCounts: queueCounts([]) }
   }
 }
@@ -206,48 +212,44 @@ export async function getLandlordBySlug(slug: string): Promise<{ id: string } | 
   }
 }
 
-export async function getProperties(userId?: string, orgSlug?: string): Promise<Property[]> {
+export async function getProperties(userId?: string, orgSlug?: string, includeInactive = false): Promise<Property[]> {
   try {
     let where: Record<string, unknown> | undefined
-    if (userId) where = { ownerId: userId }
-    else if (orgSlug) where = { owner: { slug: orgSlug } }
+    if (userId) where = { ownerId: userId, ...(includeInactive ? {} : { isActive: true }) }
+    else if (orgSlug) where = { owner: { slug: orgSlug }, isActive: true }
     const dbProperties = await prisma.property.findMany({
       where,
       include: { _count: { select: { units: true } } },
-      orderBy: { name: 'asc' },
+      orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     })
     return dbProperties.map(mapProperty)
   } catch {
-    // DB unavailable: never fall back to seed data — seed properties belong to no real owner.
-    // The public /submit form calls this without a userId; returning [] is safe and prevents
-    // seed data from appearing as real properties on that form.
     return []
   }
 }
 
-export async function getAllUnits(userId?: string, orgSlug?: string): Promise<Unit[]> {
+export async function getAllUnits(userId?: string, orgSlug?: string, includeInactive = false): Promise<Unit[]> {
   try {
     let where: Record<string, unknown> | undefined
-    if (userId) where = { property: { ownerId: userId } }
-    else if (orgSlug) where = { property: { owner: { slug: orgSlug } } }
+    if (userId) where = { property: { ownerId: userId }, ...(includeInactive ? {} : { isActive: true }) }
+    else if (orgSlug) where = { property: { owner: { slug: orgSlug } }, isActive: true }
     const dbUnits = await prisma.unit.findMany({
       where,
-      orderBy: [{ propertyId: 'asc' }, { label: 'asc' }],
+      orderBy: [{ isActive: 'desc' }, { propertyId: 'asc' }, { label: 'asc' }],
     })
     return dbUnits.map(mapUnit)
   } catch {
-    // DB unavailable: never fall back to seed data (see getProperties comment above).
     return []
   }
 }
 
 export async function getPropertyDetailData(propertyId: string, userId: string): Promise<PropertyDetailData | null> {
   try {
-    const dbProperty = await prisma.property.findUnique({
+    const dbProperty = await prisma.property.findFirst({
       where: { id: propertyId, ownerId: userId },
       include: {
         _count: { select: { units: true } },
-        units: true,
+        units: { orderBy: [{ isActive: 'desc' }, { label: 'asc' }] },
         requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
       },
     })
@@ -258,9 +260,6 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
       requests: dbProperty.requests.map(mapRequestRow),
     }
   } catch {
-    // DB unavailable: return null rather than falling back to unscoped seed data.
-    // Seed data has no real ownerId, so serving it here would bypass owner-filtering
-    // and could expose demo records to an authenticated user who does not own them.
     return null
   }
 }
@@ -370,13 +369,9 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       billingDocuments,
     }
   } catch {
-    // DB unavailable: return null rather than falling back to unscoped seed data.
-    // See getPropertyDetailData for rationale.
     return null
   }
 }
-
-// ── M4: History + Reporting ───────────────────────────────────────────────────
 
 export interface PropertyStats {
   propertyId: string
@@ -571,7 +566,6 @@ export async function getReportData(userId: string): Promise<ReportData> {
       vendorScorecards,
     }
   } catch {
-    // DB unavailable: return empty data rather than exposing unscoped seed data
     return {
       propertyStats: [],
       agingRequests: [],
@@ -615,7 +609,7 @@ export async function getVendorDetailData(vendorId: string, userId: string): Pro
 
 export async function getUnitDetailData(unitId: string, userId: string): Promise<UnitDetailData | null> {
   try {
-    const dbUnit = await prisma.unit.findUnique({
+    const dbUnit = await prisma.unit.findFirst({
       where: { id: unitId, property: { ownerId: userId } },
       include: {
         property: { include: { _count: { select: { units: true } } } },
@@ -632,8 +626,6 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
       closedCount: requests.filter((r) => r.status === 'done').length,
     }
   } catch {
-    // DB unavailable: return null rather than falling back to unscoped seed data.
-    // See getPropertyDetailData for rationale.
     return null
   }
 }
