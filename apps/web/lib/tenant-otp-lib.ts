@@ -77,6 +77,7 @@ export async function createOtpChallenge(
   })
 
   await writeAuditLog({
+    orgId: tenantIdentity.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: tenantIdentity.id,
@@ -106,6 +107,7 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
 
   if (challenge.lockedUntil && challenge.lockedUntil > new Date()) {
     await writeAuditLog({
+      orgId: challenge.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: challenge.tenantIdentityId,
@@ -118,6 +120,7 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
 
   if (challenge.expiresAt <= new Date()) {
     await writeAuditLog({
+      orgId: challenge.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: challenge.tenantIdentityId,
@@ -140,6 +143,7 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
       },
     })
     await writeAuditLog({
+      orgId: challenge.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: challenge.tenantIdentityId,
@@ -156,6 +160,7 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
   })
 
   await writeAuditLog({
+    orgId: challenge.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: challenge.tenantIdentityId,

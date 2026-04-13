@@ -18,6 +18,7 @@ export default async function MobileAcceptInvitePage({ params }: { params: Promi
   }
 
   await writeAuditLog({
+    orgId: result.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: result.tenantIdentityId,

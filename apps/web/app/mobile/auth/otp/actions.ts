@@ -37,9 +37,12 @@ export async function verifyTenantOtpAction(_prev: OtpState, formData: FormData)
     },
   })
 
+  const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: result.tenantIdentityId }, select: { orgId: true } })
+
   await consumeTenantInvite(inviteId)
   await createTenantMobileSession(result.tenantIdentityId)
   await writeAuditLog({
+    orgId: tenantIdentity?.orgId ?? null,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: result.tenantIdentityId,

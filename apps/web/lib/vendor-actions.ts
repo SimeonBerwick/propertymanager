@@ -63,6 +63,7 @@ export async function createVendorAction(
     })
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'vendor',
       entityId: vendor.id,
@@ -112,6 +113,7 @@ export async function updateVendorAction(
     })
 
     await writeAuditLog({
+      orgId: session.userId,
       actorUserId: session.userId,
       entityType: 'vendor',
       entityId: vendorId,

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 interface WriteAuditLogInput {
+  orgId?: string | null
   actorUserId?: string | null
   entityType: string
   entityId: string
@@ -9,10 +10,11 @@ interface WriteAuditLogInput {
   metadata?: Record<string, unknown>
 }
 
-export async function writeAuditLog({ actorUserId, entityType, entityId, action, summary, metadata }: WriteAuditLogInput) {
+export async function writeAuditLog({ orgId, actorUserId, entityType, entityId, action, summary, metadata }: WriteAuditLogInput) {
   try {
     await prisma.auditLog.create({
       data: {
+        orgId: orgId ?? actorUserId ?? null,
         actorUserId: actorUserId ?? null,
         entityType,
         entityId,

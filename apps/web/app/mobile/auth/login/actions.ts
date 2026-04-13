@@ -28,6 +28,7 @@ export async function startReturningLoginAction(
 
   const channel = identifier.includes('@') ? 'email' : 'sms'
   await writeAuditLog({
+    orgId: match.tenantIdentity.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: match.tenantIdentity.id,

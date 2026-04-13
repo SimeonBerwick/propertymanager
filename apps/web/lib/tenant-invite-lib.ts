@@ -59,6 +59,7 @@ export async function createTenantInvite(tenantIdentityId: string, sentVia: 'sms
   })
 
   await writeAuditLog({
+    orgId: tenantIdentity.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: tenantIdentity.id,
@@ -117,6 +118,7 @@ export async function validateTenantInviteToken(rawToken: string): Promise<Invit
       data: { status: 'expired' },
     })
     await writeAuditLog({
+      orgId: invite.orgId,
       actorUserId: null,
       entityType: 'tenantIdentity',
       entityId: invite.tenantIdentityId,
@@ -150,6 +152,7 @@ export async function consumeTenantInvite(inviteId: string) {
   })
 
   await writeAuditLog({
+    orgId: invite.orgId,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: invite.tenantIdentityId,
@@ -160,6 +163,8 @@ export async function consumeTenantInvite(inviteId: string) {
 }
 
 export async function revokeAllInvitesAndSessionsForIdentity(tenantIdentityId: string) {
+  const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId }, select: { orgId: true } })
+
   await prisma.$transaction(async (tx) => {
     await tx.tenantInvite.updateMany({
       where: { tenantIdentityId, status: 'pending' },
@@ -172,6 +177,7 @@ export async function revokeAllInvitesAndSessionsForIdentity(tenantIdentityId: s
   })
 
   await writeAuditLog({
+    orgId: tenantIdentity?.orgId ?? null,
     actorUserId: null,
     entityType: 'tenantIdentity',
     entityId: tenantIdentityId,
