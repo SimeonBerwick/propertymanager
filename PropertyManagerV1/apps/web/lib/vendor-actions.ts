@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type VendorActionState = { error: string | null; success?: boolean }
 
@@ -48,7 +49,7 @@ export async function createVendorAction(
   if (error) return { error }
 
   try {
-    await prisma.vendor.create({
+    const vendor = await prisma.vendor.create({
       data: {
         orgId: session.userId,
         name,
@@ -59,6 +60,15 @@ export async function createVendorAction(
         supportedCurrenciesCsv: getCsv(supportedCurrencies),
         isActive,
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'vendor',
+      entityId: vendor.id,
+      action: 'vendor.created',
+      summary: `Created vendor ${name}.`,
+      metadata: { email: email || null, phone: phone || null, isActive, categories, supportedLanguages, supportedCurrencies },
     })
   } catch {
     return { error: 'Could not create vendor.' }
@@ -99,6 +109,15 @@ export async function updateVendorAction(
         supportedCurrenciesCsv: getCsv(supportedCurrencies),
         isActive,
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'vendor',
+      entityId: vendorId,
+      action: isActive ? 'vendor.updated' : 'vendor.archived',
+      summary: isActive ? `Updated vendor ${name}.` : `Archived vendor ${name}.`,
+      metadata: { email: email || null, phone: phone || null, isActive, categories, supportedLanguages, supportedCurrencies },
     })
   } catch {
     return { error: 'Could not update vendor.' }
