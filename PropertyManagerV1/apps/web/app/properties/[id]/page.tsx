@@ -5,6 +5,8 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
+import { AuditLogList } from '@/components/audit-log-list'
+import { getAuditLogs } from '@/lib/audit-log'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -18,6 +20,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const openCount = data.requests.filter((r) => r.status !== 'done').length
   const closedCount = data.requests.filter((r) => r.status === 'done').length
+  const auditLogs = await getAuditLogs('property', data.property.id)
 
   return (
     <div className="stack">
@@ -54,6 +57,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           <div className="muted">Completed</div>
         </div>
       </section>
+
+      <AuditLogList
+        title="Lifecycle changes"
+        items={auditLogs.map((item) => ({
+          id: item.id,
+          action: item.action,
+          summary: item.summary,
+          createdAt: item.createdAt.toISOString(),
+          actorName: item.actorUser?.email ?? undefined,
+        }))}
+      />
 
       <section className="grid cols-2">
         <div className="card stack">

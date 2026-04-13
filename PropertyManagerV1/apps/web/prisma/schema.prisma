@@ -111,6 +111,7 @@ model User {
   dispatchEvents    VendorDispatchEvent[]
   billingDocuments  BillingDocument[]
   billingEvents     BillingEvent[]
+  auditLogs         AuditLog[]
 }
 
 model Property {
@@ -411,4 +412,20 @@ model BillingEvent {
   actorUser         User?           @relation(fields: [actorUserId], references: [id])
 
   @@index([billingDocumentId, createdAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  entityType   String
+  entityId     String
+  action       String
+  summary      String
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  actorUser    User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
 }
