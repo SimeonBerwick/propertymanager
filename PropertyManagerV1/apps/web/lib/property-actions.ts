@@ -19,6 +19,10 @@ function readTrimmedString(formData: FormData, key: string) {
   return ((formData.get(key) as string) ?? '').trim()
 }
 
+function normalizeConfirmation(value: string) {
+  return value.trim()
+}
+
 export async function createPropertyAction(
   _prev: PropertyActionState,
   formData: FormData,
@@ -87,6 +91,62 @@ export async function updatePropertyAction(
   revalidatePath('/properties')
   revalidatePath(`/properties/${propertyId}`)
   redirect(`/properties/${propertyId}`)
+}
+
+export async function deletePropertyAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Deleting properties is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to delete a property.' }
+
+  const propertyId = readTrimmedString(formData, 'propertyId')
+  const propertyName = readTrimmedString(formData, 'propertyName')
+  const confirmation = normalizeConfirmation(readTrimmedString(formData, 'confirmation'))
+
+  if (!propertyId) return { error: 'Property ID is required.' }
+  if (!propertyName) return { error: 'Property name is required.' }
+  if (confirmation !== propertyName) {
+    return { error: 'Type the exact property name to confirm deletion.' }
+  }
+
+  try {
+    const property = await prisma.property.findFirst({
+      where: { id: propertyId, ownerId },
+      include: {
+        _count: {
+          select: {
+            units: true,
+            requests: true,
+            tenantIdentities: true,
+          },
+        },
+      },
+    })
+
+    if (!property) {
+      return { error: 'Property not found or you do not have access.' }
+    }
+
+    if (property._count.requests > 0) {
+      return { error: 'Cannot delete a property with maintenance history. Keep it for records.' }
+    }
+
+    if (property._count.tenantIdentities > 0) {
+      return { error: 'Cannot delete a property with tenant identities attached.' }
+    }
+
+    await prisma.property.delete({ where: { id: propertyId } })
+  } catch {
+    return { error: 'Could not delete property. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  redirect('/properties')
 }
 
 export async function createUnitAction(
@@ -182,4 +242,62 @@ export async function updateUnitAction(
   revalidatePath(`/properties/${propertyId}`)
   revalidatePath(`/units/${unitId}`)
   redirect(`/units/${unitId}`)
+}
+
+export async function deleteUnitAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Deleting units is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to delete a unit.' }
+
+  const unitId = readTrimmedString(formData, 'unitId')
+  const propertyId = readTrimmedString(formData, 'propertyId')
+  const unitLabel = readTrimmedString(formData, 'unitLabel')
+  const confirmation = normalizeConfirmation(readTrimmedString(formData, 'confirmation'))
+
+  if (!unitId) return { error: 'Unit ID is required.' }
+  if (!propertyId) return { error: 'Property ID is required.' }
+  if (!unitLabel) return { error: 'Unit label is required.' }
+  if (confirmation !== unitLabel) {
+    return { error: 'Type the exact unit label to confirm deletion.' }
+  }
+
+  try {
+    const unit = await prisma.unit.findFirst({
+      where: { id: unitId, propertyId, property: { ownerId } },
+      include: {
+        _count: {
+          select: {
+            requests: true,
+            tenantIdentities: true,
+          },
+        },
+      },
+    })
+
+    if (!unit) {
+      return { error: 'Unit not found or you do not have access.' }
+    }
+
+    if (unit._count.requests > 0) {
+      return { error: 'Cannot delete a unit with maintenance history. Keep it for records.' }
+    }
+
+    if (unit._count.tenantIdentities > 0) {
+      return { error: 'Cannot delete a unit with tenant identity records attached.' }
+    }
+
+    await prisma.unit.delete({ where: { id: unitId } })
+  } catch {
+    return { error: 'Could not delete unit. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  revalidatePath(`/properties/${propertyId}`)
+  redirect(`/properties/${propertyId}`)
 }

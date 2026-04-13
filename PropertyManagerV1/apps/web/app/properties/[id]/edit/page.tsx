@@ -3,6 +3,8 @@ import { Breadcrumbs } from '@/components/breadcrumbs'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { EditPropertyForm } from './edit-property-form'
+import { DangerZoneForm } from '@/components/danger-zone-form'
+import { deletePropertyAction } from '@/lib/property-actions'
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -40,6 +42,26 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           propertyId={data.property.id}
           initialName={data.property.name}
           initialAddress={data.property.address}
+        />
+      </section>
+
+      <section className="card stack">
+        <DangerZoneForm
+          action={deletePropertyAction}
+          hiddenFields={[
+            { name: 'propertyId', value: data.property.id },
+            { name: 'propertyName', value: data.property.name },
+          ]}
+          title="Delete property"
+          description={
+            <>
+              Only empty properties can be deleted. If this property has units, tenant identities, or maintenance history,
+              deletion is blocked. Type <strong>{data.property.name}</strong> to confirm.
+            </>
+          }
+          confirmationLabel="Confirm property name"
+          confirmationValue={data.property.name}
+          submitLabel="Delete property"
         />
       </section>
     </div>

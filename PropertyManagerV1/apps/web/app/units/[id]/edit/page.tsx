@@ -3,6 +3,8 @@ import { Breadcrumbs } from '@/components/breadcrumbs'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { EditUnitForm } from './edit-unit-form'
+import { DangerZoneForm } from '@/components/danger-zone-form'
+import { deleteUnitAction } from '@/lib/property-actions'
 
 export default async function EditUnitPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -43,6 +45,26 @@ export default async function EditUnitPage({ params }: { params: Promise<{ id: s
           initialLabel={data.unit.label}
           initialTenantName={data.unit.tenantName}
           initialTenantEmail={data.unit.tenantEmail}
+        />
+      </section>
+
+      <section className="card stack">
+        <DangerZoneForm
+          action={deleteUnitAction}
+          hiddenFields={[
+            { name: 'unitId', value: data.unit.id },
+            { name: 'propertyId', value: data.property.id },
+            { name: 'unitLabel', value: data.unit.label },
+          ]}
+          title="Delete unit"
+          description={
+            <>
+              Only units with no maintenance history and no tenant identity records can be deleted. Type <strong>{data.unit.label}</strong> to confirm.
+            </>
+          }
+          confirmationLabel="Confirm unit label"
+          confirmationValue={data.unit.label}
+          submitLabel="Delete unit"
         />
       </section>
     </div>
