@@ -152,40 +152,41 @@ export async function submitMaintenanceRequest(
     }
   }
 
-  // When the form was served from /submit/[orgSlug], verify the submitted property
-  // actually belongs to that landlord — prevents cross-org request injection.
+  let verifiedLandlordId: string | undefined
+
   if (orgSlug) {
     const landlord = await getLandlordBySlug(orgSlug)
     if (!landlord) {
       return { error: 'Invalid submission link. Please use the link provided by your property manager.' }
     }
-    try {
-      const prop = await prisma.property.findUnique({ where: { id: propertyId }, select: { ownerId: true } })
-      if (!prop || prop.ownerId !== landlord.id) {
-        return { error: 'The selected property is not valid for this submission link.' }
-      }
-    } catch {
-      return { error: 'Could not verify property. Please try again.' }
-    }
+    verifiedLandlordId = landlord.id
   }
 
-  const savedPhotoPaths = await savePhotos(photoFiles)
-
-  // Fetch the unit so we can include property name + unit label in notifications.
   let propertyName = 'Unknown property'
   let unitLabel = 'Unknown unit'
   try {
-    const unit = await prisma.unit.findUnique({
-      where: { id: unitId },
+    const unit = await prisma.unit.findFirst({
+      where: {
+        id: unitId,
+        propertyId,
+        isActive: true,
+        property: {
+          isActive: true,
+          ...(verifiedLandlordId ? { ownerId: verifiedLandlordId } : {}),
+        },
+      },
       include: { property: true },
     })
-    if (unit) {
-      unitLabel = unit.label
-      propertyName = unit.property.name
+    if (!unit) {
+      return { error: 'The selected property or unit is no longer available for new requests.' }
     }
+    unitLabel = unit.label
+    propertyName = unit.property.name
   } catch {
-    // Non-fatal — we still have IDs; notifications will use fallback labels.
+    return { error: 'Could not verify property or unit. Please try again.' }
   }
+
+  const savedPhotoPaths = await savePhotos(photoFiles)
 
   let createdRequestId: string
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
