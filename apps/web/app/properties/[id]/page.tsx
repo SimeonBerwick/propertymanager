@@ -20,10 +20,15 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="stack">
-      <section className="card">
-        <div className="kicker">Property</div>
-        <h2 style={{ margin: '4px 0' }}>{data.property.name}</h2>
-        <div className="muted">{data.property.address}</div>
+      <section className="card stack">
+        <div className="row">
+          <div>
+            <div className="kicker">Property</div>
+            <h2 style={{ margin: '4px 0' }}>{data.property.name}</h2>
+            <div className="muted">{data.property.address}</div>
+          </div>
+          <Link href={`/properties/${data.property.id}/edit`} className="button">Edit property</Link>
+        </div>
       </section>
 
       <section className="grid cols-3">
@@ -62,7 +67,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 <Link href={`/units/${unit.id}`} style={{ fontWeight: 600 }}>{unit.label}</Link>
                 <div className="muted">{unit.tenantName ?? 'Vacant'}</div>
               </div>
-              <div className="muted">{unit.tenantEmail ?? 'No tenant email'}</div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div className="muted">{unit.tenantEmail ?? 'No tenant email'}</div>
+                <Link href={`/units/${unit.id}/edit`} className="button">Edit</Link>
+              </div>
             </div>
           ))}
         </div>
