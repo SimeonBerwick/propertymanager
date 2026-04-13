@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { EditUnitForm } from './edit-unit-form'
@@ -16,6 +17,15 @@ export default async function EditUnitPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="stack" style={{ maxWidth: 640, margin: '0 auto' }}>
+      <Breadcrumbs
+        items={[
+          { label: 'Properties', href: '/properties' },
+          { label: data.property.name, href: `/properties/${data.property.id}` },
+          { label: data.unit.label, href: `/units/${data.unit.id}` },
+          { label: 'Edit unit' },
+        ]}
+      />
+
       <section className="card stack">
         <div>
           <div className="kicker">Units</div>

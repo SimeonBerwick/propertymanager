@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { Breadcrumbs } from '@/components/breadcrumbs'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { EditPropertyForm } from './edit-property-form'
@@ -16,6 +17,14 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   return (
     <div className="stack" style={{ maxWidth: 640, margin: '0 auto' }}>
+      <Breadcrumbs
+        items={[
+          { label: 'Properties', href: '/properties' },
+          { label: data.property.name, href: `/properties/${data.property.id}` },
+          { label: 'Edit property' },
+        ]}
+      />
+
       <section className="card stack">
         <div>
           <div className="kicker">Properties</div>
