@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createOtpChallenge } from '@/lib/tenant-otp-lib'
 import { findReturningTenantIdentityByIdentifier } from '@/lib/tenant-portal-data'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type ReturningLoginState = { error: string | null }
 
@@ -26,6 +27,14 @@ export async function startReturningLoginAction(
   }
 
   const channel = identifier.includes('@') ? 'email' : 'sms'
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: match.tenantIdentity.id,
+    action: 'tenantIdentity.returningLoginStarted',
+    summary: `Started returning tenant login via ${channel}.`,
+    metadata: { channel },
+  })
   const otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel)
   const paramsString = new URLSearchParams({
     challengeId: otp.challengeId,

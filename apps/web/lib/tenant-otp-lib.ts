@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
+import { writeAuditLog } from '@/lib/audit-log'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -75,6 +76,15 @@ export async function createOtpChallenge(
     tenantName: tenantIdentity.tenantName,
   })
 
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentity.id,
+    action: 'tenantIdentity.otpIssued',
+    summary: `Issued ${purpose} OTP via ${channel}.`,
+    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked },
+  })
+
   return {
     challengeId: challenge.id,
     code,
@@ -95,22 +105,47 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
   }
 
   if (challenge.lockedUntil && challenge.lockedUntil > new Date()) {
+    await writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: challenge.tenantIdentityId,
+      action: 'tenantIdentity.otpBlocked',
+      summary: 'Rejected OTP verification because the challenge is locked.',
+      metadata: { challengeId: challenge.id },
+    })
     return { ok: false, code: 'locked' }
   }
 
   if (challenge.expiresAt <= new Date()) {
+    await writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: challenge.tenantIdentityId,
+      action: 'tenantIdentity.otpExpired',
+      summary: 'OTP verification failed because the code expired.',
+      metadata: { challengeId: challenge.id },
+    })
     return { ok: false, code: 'expired' }
   }
 
   const matches = hashOtp(submittedCode, challenge.codeSalt) === challenge.codeHash
   if (!matches) {
     const nextAttemptCount = challenge.attemptCount + 1
+    const lockedUntil = nextAttemptCount >= challenge.maxAttempts ? addMinutes(new Date(), OTP_LOCKOUT_MINUTES) : null
     await prisma.tenantOtpChallenge.update({
       where: { id: challenge.id },
       data: {
         attemptCount: nextAttemptCount,
-        lockedUntil: nextAttemptCount >= challenge.maxAttempts ? addMinutes(new Date(), OTP_LOCKOUT_MINUTES) : null,
+        lockedUntil,
       },
+    })
+    await writeAuditLog({
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: challenge.tenantIdentityId,
+      action: lockedUntil ? 'tenantIdentity.otpLocked' : 'tenantIdentity.otpFailed',
+      summary: lockedUntil ? 'OTP challenge locked after too many failed attempts.' : 'OTP verification failed with incorrect code.',
+      metadata: { challengeId: challenge.id, attemptCount: nextAttemptCount },
     })
     return { ok: false, code: nextAttemptCount >= challenge.maxAttempts ? 'locked' : 'invalid' }
   }
@@ -118,6 +153,15 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
   await prisma.tenantOtpChallenge.update({
     where: { id: challenge.id },
     data: { verifiedAt: new Date() },
+  })
+
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: challenge.tenantIdentityId,
+    action: 'tenantIdentity.otpVerified',
+    summary: 'OTP challenge verified successfully.',
+    metadata: { challengeId: challenge.id },
   })
 
   return { ok: true, challengeId: challenge.id, tenantIdentityId: challenge.tenantIdentityId }

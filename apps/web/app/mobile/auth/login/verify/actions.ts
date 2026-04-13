@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { verifyOtpChallenge } from '@/lib/tenant-otp-lib'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type ReturningVerifyState = { error: string | null }
 
@@ -28,5 +29,13 @@ export async function verifyReturningLoginAction(
   }
 
   await createTenantMobileSession(result.tenantIdentityId)
+  await writeAuditLog({
+    actorUserId: null,
+    entityType: 'tenantIdentity',
+    entityId: result.tenantIdentityId,
+    action: 'tenantIdentity.returningLoginCompleted',
+    summary: 'Completed returning tenant login.',
+    metadata: { challengeId },
+  })
   redirect('/mobile' as never)
 }
