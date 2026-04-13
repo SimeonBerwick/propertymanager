@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { getOpsActivity } from '@/lib/ops-activity'
 
 export default async function OpsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
+
+  const activity = await getOpsActivity(session.userId)
 
   const checks = [
     {
@@ -59,6 +62,23 @@ export default async function OpsPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Activity</div>
+          <h3 style={{ marginTop: 4 }}>Cross-entity ops feed</h3>
+        </div>
+        {activity.length ? (
+          activity.map((item) => (
+            <div key={item.id} className="timelineRow">
+              <div style={{ fontWeight: 600 }}>{item.summary}</div>
+              <div className="muted">{item.entityType} · {item.actorName ?? 'System'} · {new Date(item.createdAt).toLocaleString()}</div>
+            </div>
+          ))
+        ) : (
+          <div className="muted">No recent operator activity yet.</div>
+        )}
       </section>
 
       <section className="card stack">
