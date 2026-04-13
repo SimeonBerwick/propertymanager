@@ -35,22 +35,27 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="stack">
-      <section className="card">
-        <div className="kicker">Unit history</div>
-        <h2 style={{ margin: '4px 0' }}>{unit.label}</h2>
-        <div className="muted">
-          <Link href={`/properties/${property.id}`}>{property.name}</Link>
-          {' · '}{property.address}
-        </div>
-        {(unit.tenantName || unit.tenantEmail) && (
-          <div className="muted" style={{ marginTop: 4 }}>
-            Tenant: {unit.tenantName ?? '—'}
-            {unit.tenantEmail ? ` · ${unit.tenantEmail}` : ''}
+      <section className="card stack">
+        <div className="row">
+          <div>
+            <div className="kicker">Unit history</div>
+            <h2 style={{ margin: '4px 0' }}>{unit.label}</h2>
+            <div className="muted">
+              <Link href={`/properties/${property.id}`}>{property.name}</Link>
+              {' · '}{property.address}
+            </div>
+            {(unit.tenantName || unit.tenantEmail) && (
+              <div className="muted" style={{ marginTop: 4 }}>
+                Tenant: {unit.tenantName ?? '—'}
+                {unit.tenantEmail ? ` · ${unit.tenantEmail}` : ''}
+              </div>
+            )}
+            {!unit.tenantName && !unit.tenantEmail && (
+              <div className="muted" style={{ marginTop: 4 }}>Vacant</div>
+            )}
           </div>
-        )}
-        {!unit.tenantName && !unit.tenantEmail && (
-          <div className="muted" style={{ marginTop: 4 }}>Vacant</div>
-        )}
+          <Link href={`/units/${unit.id}/edit`} className="button">Edit unit</Link>
+        </div>
       </section>
 
       <section className="grid cols-3">
