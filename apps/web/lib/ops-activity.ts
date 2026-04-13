@@ -10,10 +10,19 @@ export interface OpsActivityItem {
   actorName?: string
 }
 
-export async function getOpsActivity(userId: string, limit = 50): Promise<OpsActivityItem[]> {
+export interface OpsActivityFilters {
+  entityType?: string
+  actionPrefix?: string
+}
+
+export async function getOpsActivity(userId: string, limit = 50, filters: OpsActivityFilters = {}): Promise<OpsActivityItem[]> {
   try {
     const logs = await prisma.auditLog.findMany({
-      where: { orgId: userId },
+      where: {
+        orgId: userId,
+        ...(filters.entityType ? { entityType: filters.entityType } : {}),
+        ...(filters.actionPrefix ? { action: { startsWith: filters.actionPrefix } } : {}),
+      },
       include: { actorUser: true },
       orderBy: { createdAt: 'desc' },
       take: limit,

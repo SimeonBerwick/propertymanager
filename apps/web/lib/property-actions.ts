@@ -249,16 +249,20 @@ export async function deletePropertyAction(
       return { error: 'Cannot delete a property with tenant identities attached.' }
     }
 
-    await writeAuditLog({
-      orgId: ownerId,
-      actorUserId: ownerId,
-      entityType: 'property',
-      entityId: propertyId,
-      action: 'property.deleted',
-      summary: `Deleted property ${propertyName}.`,
-    })
+    await prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          orgId: ownerId,
+          actorUserId: ownerId,
+          entityType: 'property',
+          entityId: propertyId,
+          action: 'property.deleted',
+          summary: `Deleted property ${propertyName}.`,
+        },
+      })
 
-    await prisma.property.delete({ where: { id: propertyId } })
+      await tx.property.delete({ where: { id: propertyId } })
+    })
   } catch {
     return { error: 'Could not delete property. Please try again.' }
   }
@@ -535,17 +539,21 @@ export async function deleteUnitAction(
       return { error: 'Cannot delete a unit with tenant identity records attached.' }
     }
 
-    await writeAuditLog({
-      orgId: ownerId,
-      actorUserId: ownerId,
-      entityType: 'unit',
-      entityId: unitId,
-      action: 'unit.deleted',
-      summary: `Deleted unit ${unitLabel}.`,
-      metadata: { propertyId },
-    })
+    await prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          orgId: ownerId,
+          actorUserId: ownerId,
+          entityType: 'unit',
+          entityId: unitId,
+          action: 'unit.deleted',
+          summary: `Deleted unit ${unitLabel}.`,
+          metadataJson: JSON.stringify({ propertyId }),
+        },
+      })
 
-    await prisma.unit.delete({ where: { id: unitId } })
+      await tx.unit.delete({ where: { id: unitId } })
+    })
   } catch {
     return { error: 'Could not delete unit. Please try again.' }
   }

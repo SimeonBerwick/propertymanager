@@ -2,12 +2,21 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getOpsActivity } from '@/lib/ops-activity'
+import { OpsActivityFeed } from '@/components/ops-activity-feed'
 
-export default async function OpsPage() {
+export default async function OpsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ entity?: string; action?: string }>
+}) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 
-  const activity = await getOpsActivity(session.userId)
+  const { entity, action } = await searchParams
+  const activity = await getOpsActivity(session.userId, 50, {
+    entityType: entity || undefined,
+    actionPrefix: action || undefined,
+  })
 
   const checks = [
     {
@@ -69,16 +78,15 @@ export default async function OpsPage() {
           <div className="kicker">Activity</div>
           <h3 style={{ marginTop: 4 }}>Cross-entity ops feed</h3>
         </div>
-        {activity.length ? (
-          activity.map((item) => (
-            <div key={item.id} className="timelineRow">
-              <div style={{ fontWeight: 600 }}>{item.summary}</div>
-              <div className="muted">{item.entityType} · {item.actorName ?? 'System'} · {new Date(item.createdAt).toLocaleString()}</div>
-            </div>
-          ))
-        ) : (
-          <div className="muted">No recent operator activity yet.</div>
-        )}
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+          <Link href="/ops" className="button">All</Link>
+          <Link href="/ops?entity=request" className="button">Requests</Link>
+          <Link href="/ops?entity=tenantIdentity" className="button">Access</Link>
+          <Link href="/ops?entity=billingDocument" className="button">Billing</Link>
+          <Link href="/ops?entity=vendor" className="button">Vendors</Link>
+          <Link href="/ops?action=property." className="button">Lifecycle</Link>
+        </div>
+        <OpsActivityFeed items={activity} />
       </section>
 
       <section className="card stack">
