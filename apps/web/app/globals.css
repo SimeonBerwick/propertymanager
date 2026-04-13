@@ -100,6 +100,17 @@ body { min-height: 100vh; }
 .notice { border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; }
 .notice.success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
 .notice.error { background: var(--error-bg); border-color: var(--error-border); color: var(--danger); }
+.dangerZone {
+  border: 1px solid var(--error-border);
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff8f7;
+}
+.dangerButton {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+}
 .badge {
   display: inline-flex;
   align-items: center;
