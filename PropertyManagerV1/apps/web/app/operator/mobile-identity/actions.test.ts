@@ -74,6 +74,18 @@ describe('setupMobileIdentityAction', () => {
     expect(result.error).toMatch(/not found/i)
   })
 
+  test('returns error when unit is archived', async () => {
+    const { user, unit } = await scaffoldLandlord()
+    await prisma.unit.update({ where: { id: unit.id }, data: { isActive: false } })
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+
+    const result = await setupMobileIdentityAction(
+      PREV,
+      formData({ unitId: unit.id, tenantName: 'Test Tenant', phoneE164: '+16025001234' }),
+    )
+    expect(result.error).toMatch(/archived units cannot receive/i)
+  })
+
   test('returns error for an invalid phone number', async () => {
     const { user, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
@@ -190,6 +202,18 @@ describe('sendMobileInviteAction', () => {
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const result = await sendMobileInviteAction(PREV, formData({ tenantIdentityId: identity.id }))
     expect(result.error).toBeTruthy()
+  })
+
+  test('returns error when identity unit is archived', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const identity = await createActiveTenantIdentity(user.id, property.id, unit.id, {
+      email: 'tenant@example.com',
+    })
+    await prisma.unit.update({ where: { id: unit.id }, data: { isActive: false } })
+
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const result = await sendMobileInviteAction(PREV, formData({ tenantIdentityId: identity.id }))
+    expect(result.error).toMatch(/archived units cannot receive mobile invites/i)
   })
 
   test('creates invite and returns inviteLink on success', async () => {

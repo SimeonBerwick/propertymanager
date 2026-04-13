@@ -90,6 +90,8 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
 
       <MobileIdentityPanel
         unitId={unit.id}
+        unitIsActive={unit.isActive}
+        propertyIsActive={property.isActive}
         tenantName={unit.tenantName}
         tenantEmail={unit.tenantEmail}
         tenantIdentity={tenantIdentity ? {
