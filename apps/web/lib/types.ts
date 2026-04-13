@@ -9,6 +9,7 @@ export interface Property {
   id: string
   name: string
   address: string
+  isActive: boolean
   unitCount: number
 }
 
@@ -18,6 +19,7 @@ export interface Unit {
   label: string
   tenantName?: string
   tenantEmail?: string
+  isActive: boolean
 }
 
 export interface MaintenancePhoto {

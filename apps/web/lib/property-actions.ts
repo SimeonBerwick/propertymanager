@@ -93,6 +93,77 @@ export async function updatePropertyAction(
   redirect(`/properties/${propertyId}`)
 }
 
+export async function archivePropertyAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Archiving properties is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to archive a property.' }
+
+  const propertyId = readTrimmedString(formData, 'propertyId')
+
+  if (!propertyId) return { error: 'Property ID is required.' }
+
+  try {
+    const updated = await prisma.property.updateMany({
+      where: { id: propertyId, ownerId },
+      data: { isActive: false },
+    })
+
+    if (updated.count === 0) {
+      return { error: 'Property not found or you do not have access.' }
+    }
+
+    await prisma.unit.updateMany({
+      where: { propertyId },
+      data: { isActive: false },
+    })
+  } catch {
+    return { error: 'Could not archive property. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  revalidatePath(`/properties/${propertyId}`)
+  redirect('/properties')
+}
+
+export async function restorePropertyAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Restoring properties is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to restore a property.' }
+
+  const propertyId = readTrimmedString(formData, 'propertyId')
+
+  if (!propertyId) return { error: 'Property ID is required.' }
+
+  try {
+    const updated = await prisma.property.updateMany({
+      where: { id: propertyId, ownerId },
+      data: { isActive: true },
+    })
+
+    if (updated.count === 0) {
+      return { error: 'Property not found or you do not have access.' }
+    }
+  } catch {
+    return { error: 'Could not restore property. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  revalidatePath(`/properties/${propertyId}`)
+  redirect(`/properties/${propertyId}`)
+}
+
 export async function deletePropertyAction(
   _prev: PropertyActionState,
   formData: FormData,
@@ -236,6 +307,91 @@ export async function updateUnitAction(
     }
   } catch {
     return { error: 'Could not update unit. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  revalidatePath(`/properties/${propertyId}`)
+  revalidatePath(`/units/${unitId}`)
+  redirect(`/units/${unitId}`)
+}
+
+export async function archiveUnitAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Archiving units is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to archive a unit.' }
+
+  const unitId = readTrimmedString(formData, 'unitId')
+  const propertyId = readTrimmedString(formData, 'propertyId')
+
+  if (!unitId) return { error: 'Unit ID is required.' }
+  if (!propertyId) return { error: 'Property ID is required.' }
+
+  try {
+    const updated = await prisma.unit.updateMany({
+      where: { id: unitId, propertyId, property: { ownerId } },
+      data: { isActive: false },
+    })
+
+    if (updated.count === 0) {
+      return { error: 'Unit not found or you do not have access.' }
+    }
+  } catch {
+    return { error: 'Could not archive unit. Please try again.' }
+  }
+
+  revalidatePath('/properties')
+  revalidatePath(`/properties/${propertyId}`)
+  revalidatePath(`/units/${unitId}`)
+  redirect(`/properties/${propertyId}`)
+}
+
+export async function restoreUnitAction(
+  _prev: PropertyActionState,
+  formData: FormData,
+): Promise<PropertyActionState> {
+  if (!await isDatabaseAvailable()) {
+    return { error: 'Demo mode, no database connected. Restoring units is disabled.' }
+  }
+
+  const ownerId = await getSessionUserId()
+  if (!ownerId) return { error: 'You must be logged in to restore a unit.' }
+
+  const unitId = readTrimmedString(formData, 'unitId')
+  const propertyId = readTrimmedString(formData, 'propertyId')
+
+  if (!unitId) return { error: 'Unit ID is required.' }
+  if (!propertyId) return { error: 'Property ID is required.' }
+
+  try {
+    const property = await prisma.property.findFirst({
+      where: { id: propertyId, ownerId },
+      select: { isActive: true },
+    })
+
+    if (!property) {
+      return { error: 'Property not found or you do not have access.' }
+    }
+
+    if (!property.isActive) {
+      return { error: 'Restore the property before restoring its units.' }
+    }
+
+    const updated = await prisma.unit.updateMany({
+      where: { id: unitId, propertyId, property: { ownerId } },
+      data: { isActive: true },
+    })
+
+    if (updated.count === 0) {
+      return { error: 'Unit not found or you do not have access.' }
+    }
+  } catch {
+    return { error: 'Could not restore unit. Please try again.' }
   }
 
   revalidatePath('/properties')

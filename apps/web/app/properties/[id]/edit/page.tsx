@@ -4,7 +4,8 @@ import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { EditPropertyForm } from './edit-property-form'
 import { DangerZoneForm } from '@/components/danger-zone-form'
-import { deletePropertyAction } from '@/lib/property-actions'
+import { StateToggleForm } from '@/components/state-toggle-form'
+import { archivePropertyAction, deletePropertyAction, restorePropertyAction } from '@/lib/property-actions'
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -43,6 +44,29 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           initialName={data.property.name}
           initialAddress={data.property.address}
         />
+      </section>
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Lifecycle</div>
+          <h3 style={{ margin: '4px 0 0' }}>{data.property.isActive ? 'Archive property' : 'Restore property'}</h3>
+        </div>
+        {data.property.isActive ? (
+          <StateToggleForm
+            action={archivePropertyAction}
+            hiddenFields={[{ name: 'propertyId', value: data.property.id }]}
+            submitLabel="Archive property"
+            tone="warn"
+            helperText="Archived properties leave the active roster. Their units are archived with them, and history stays intact."
+          />
+        ) : (
+          <StateToggleForm
+            action={restorePropertyAction}
+            hiddenFields={[{ name: 'propertyId', value: data.property.id }]}
+            submitLabel="Restore property"
+            helperText="Restoring a property puts it back into active operations. Units stay in their current state so you can reactivate selectively."
+          />
+        )}
       </section>
 
       <section className="card stack">

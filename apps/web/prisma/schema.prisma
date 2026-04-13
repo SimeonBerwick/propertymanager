@@ -118,6 +118,7 @@ model Property {
   ownerId   String
   name      String
   address   String
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
   owner            User                 @relation(fields: [ownerId], references: [id])
@@ -132,6 +133,7 @@ model Unit {
   label       String
   tenantName  String?
   tenantEmail String?
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   property         Property             @relation(fields: [propertyId], references: [id])

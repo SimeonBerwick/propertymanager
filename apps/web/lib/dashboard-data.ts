@@ -1,14 +1,14 @@
 import type { MaintenanceRequest, Property, Unit } from '@/lib/types'
 
 export const properties: Property[] = [
-  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', unitCount: 2 },
-  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', unitCount: 4 },
+  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', isActive: true, unitCount: 2 },
+  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', isActive: true, unitCount: 4 },
 ]
 
 export const units: Unit[] = [
-  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed' },
-  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes' },
-  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz' },
+  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed', isActive: true },
+  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', isActive: true },
+  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz', isActive: true },
 ]
 
 const baseRequest = {
