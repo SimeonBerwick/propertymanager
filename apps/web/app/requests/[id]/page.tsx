@@ -14,6 +14,8 @@ import { BillingEventList } from '@/components/billing-event-list'
 import { BillingSummaryCards } from '@/components/billing-summary-cards'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
+import { AuditLogList } from '@/components/audit-log-list'
+import { getAuditLogs } from '@/lib/audit-log'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -43,6 +45,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
   const vendorPhotos = data.photos.filter((photo) => photo.source === 'vendor')
+  const [requestAuditLogs, billingAuditLogs] = await Promise.all([
+    getAuditLogs('request', data.request.id),
+    Promise.all(data.billingDocuments.map((doc) => getAuditLogs('billingDocument', doc.id))).then((groups) => groups.flat()),
+  ])
 
   return (
     <div className="stack requestDetailPage">
@@ -132,6 +138,19 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
             )) : <div className="muted">No dispatch activity yet.</div>}
           </SectionCard>
+
+          <AuditLogList
+            title="Operational activity"
+            items={[...requestAuditLogs, ...billingAuditLogs]
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+              .map((item) => ({
+                id: item.id,
+                action: item.action,
+                summary: item.summary,
+                createdAt: item.createdAt.toISOString(),
+                actorName: item.actorUser?.email ?? undefined,
+              }))}
+          />
 
           <SectionCard kicker="Timeline" title="Status activity" subtitle="How the request has moved.">
             {data.events.length ? data.events.map((event) => (

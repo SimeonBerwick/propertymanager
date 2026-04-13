@@ -7,6 +7,7 @@ import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } fr
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -71,6 +72,15 @@ export async function updateStatusFormAction(
   } catch {
     return { error: 'Could not update status. Database may not be connected.' }
   }
+
+  await writeAuditLog({
+    actorUserId: session.userId,
+    entityType: 'request',
+    entityId: requestId,
+    action: 'request.statusChanged',
+    summary: `Changed request status from ${fromStatus} to ${toStatus}.`,
+    metadata: { fromStatus, toStatus },
+  })
 
   revalidatePath(`/requests/${requestId}`)
   revalidatePath('/dashboard')
@@ -187,6 +197,15 @@ export async function updateVendorFormAction(
       }
     }
 
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.vendorUpdated',
+      summary: vendorName ? `Assigned vendor ${vendorName}.` : 'Cleared assigned vendor.',
+      metadata: { vendorId: vendorId || null, vendorName: vendorName || null, vendorEmail: vendorEmail || null, vendorPhone: vendorPhone || null },
+    })
+
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
   } catch {
@@ -231,6 +250,15 @@ export async function updatePreferencesFormAction(
         triageTagsCsv,
         slaBucket,
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.preferencesUpdated',
+      summary: `Updated request preferences to ${preferredCurrency} and ${preferredLanguage}.`,
+      metadata: { preferredCurrency, preferredLanguage, triageTags, slaBucket },
     })
 
     await applyRequestAutomation(requestId)
@@ -290,6 +318,15 @@ export async function updateDispatchFormAction(
         scheduledStart,
         scheduledEnd,
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.dispatchUpdated',
+      summary: `Updated dispatch status to ${dispatchStatus}.`,
+      metadata: { dispatchStatus, note, scheduledStart: scheduledStart?.toISOString() ?? null, scheduledEnd: scheduledEnd?.toISOString() ?? null },
     })
 
     await applyRequestAutomation(requestId)
@@ -384,6 +421,15 @@ export async function reviewVendorUpdateFormAction(
       })
     }
 
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.reviewAction',
+      summary: `Applied review action ${action}.`,
+      metadata: { action, note: note || null },
+    })
+
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
@@ -473,6 +519,15 @@ export async function quickRequestAction(
       message = 'Vendor cleared and reassignment needed flagged.'
     }
 
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.quickAction',
+      summary: `Applied quick action ${quickAction}.`,
+      metadata: { quickAction, message },
+    })
+
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
@@ -508,6 +563,14 @@ export async function addCommentFormAction(
   try {
     await prisma.requestComment.create({
       data: { requestId, body, visibility, authorUserId: session.userId },
+    })
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.commentAdded',
+      summary: `Added ${visibility} comment.`,
+      metadata: { visibility },
     })
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }

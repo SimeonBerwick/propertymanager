@@ -8,6 +8,7 @@ import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { centsFromDollars, deriveBillingStatus, formatMoney } from '@/lib/billing-utils'
 import { buildBillingDocumentMessage, sendNotification } from '@/lib/notify'
 import type { BillingDocumentStatus } from '@/lib/billing-types'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type BillingActionState = { error: string | null; success?: boolean }
 
@@ -113,7 +114,7 @@ export async function createBillingDocumentAction(
       unitLabel: request.unit.label,
     })
 
-    await prisma.billingDocument.create({
+    const billingDocument = await prisma.billingDocument.create({
       data: {
         requestId,
         recipientType: recipientType as 'tenant' | 'vendor',
@@ -136,6 +137,15 @@ export async function createBillingDocumentAction(
           },
         },
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: billingDocument.id,
+      action: 'billingDocument.created',
+      summary: `Created ${recipientType} billing document ${title}.`,
+      metadata: { requestId, status, sentTo: sentTo || null, totalCents, paidCents: paidCents ?? 0 },
     })
 
     if (sentTo) {
@@ -201,6 +211,15 @@ export async function updateBillingDocumentAction(
       },
     })
 
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: billingDocumentId,
+      action: 'billingDocument.paymentUpdated',
+      summary: `Updated billing payment state to ${status}.`,
+      metadata: { requestId, paidCents, totalCents: doc.totalCents },
+    })
+
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
   } catch {
@@ -242,6 +261,15 @@ export async function resendBillingDocumentAction(
           },
         },
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: doc.id,
+      action: 'billingDocument.resent',
+      summary: `Resent billing document to ${doc.sentTo}.`,
+      metadata: { requestId, status: nextStatus },
     })
 
     await notifyBillingRecipient({
@@ -296,7 +324,7 @@ export async function duplicateBillingDocumentAction(
       unitLabel: doc.request.unit.label,
     })
 
-    await prisma.billingDocument.create({
+    const duplicated = await prisma.billingDocument.create({
       data: {
         requestId: doc.requestId,
         recipientType: doc.recipientType,
@@ -319,6 +347,15 @@ export async function duplicateBillingDocumentAction(
           },
         },
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: duplicated.id,
+      action: 'billingDocument.duplicated',
+      summary: `Duplicated billing document from ${doc.id}.`,
+      metadata: { requestId, sourceBillingDocumentId: doc.id },
     })
 
     revalidatePath(`/requests/${requestId}`)
@@ -356,6 +393,15 @@ export async function voidBillingDocumentAction(
           },
         },
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: doc.id,
+      action: 'billingDocument.voided',
+      summary: 'Voided billing document.',
+      metadata: { requestId },
     })
 
     revalidatePath(`/requests/${requestId}`)
