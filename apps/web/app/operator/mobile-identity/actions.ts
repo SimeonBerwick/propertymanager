@@ -55,6 +55,10 @@ export async function setupMobileIdentityAction(
     return { error: 'Unit not found.' }
   }
 
+  if (!unit.property.isActive || !unit.isActive) {
+    return { error: 'Archived units cannot receive new mobile identity setup. Restore the unit first.' }
+  }
+
   await prisma.tenantIdentity.upsert({
     where: {
       orgId_phoneE164_unitId: {
@@ -110,6 +114,20 @@ export async function sendMobileInviteAction(
 
     if (!tenantIdentity || tenantIdentity.orgId !== session.userId) {
       return { error: 'Tenant identity not found.' }
+    }
+
+    const unit = await prisma.unit.findFirst({
+      where: {
+        id: tenantIdentity.unitId,
+        propertyId: tenantIdentity.propertyId,
+        isActive: true,
+        property: { ownerId: session.userId, isActive: true },
+      },
+      select: { id: true },
+    })
+
+    if (!unit) {
+      return { error: 'Archived units cannot receive mobile invites. Restore the unit first.' }
     }
 
     const invite = await createTenantInvite(tenantIdentityId, 'email')

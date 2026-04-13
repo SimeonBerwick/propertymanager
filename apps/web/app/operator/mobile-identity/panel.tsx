@@ -12,6 +12,8 @@ const INITIAL_STATE: MobileIdentityState = { error: null }
 
 interface MobileIdentityPanelProps {
   unitId: string
+  unitIsActive?: boolean
+  propertyIsActive?: boolean
   tenantName?: string
   tenantEmail?: string
   tenantIdentity?: {
@@ -25,10 +27,12 @@ interface MobileIdentityPanelProps {
   } | null
 }
 
-export function MobileIdentityPanel({ unitId, tenantName, tenantEmail, tenantIdentity }: MobileIdentityPanelProps) {
+export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsActive = true, tenantName, tenantEmail, tenantIdentity }: MobileIdentityPanelProps) {
   const [setupState, setupAction, setupPending] = useActionState(setupMobileIdentityAction, INITIAL_STATE)
   const [inviteState, inviteAction, invitePending] = useActionState(sendMobileInviteAction, INITIAL_STATE)
   const [deactivateState, deactivateAction, deactivatePending] = useActionState(deactivateMobileIdentityAction, INITIAL_STATE)
+
+  const isArchived = !unitIsActive || !propertyIsActive
 
   return (
     <section className="card stack">
@@ -48,6 +52,12 @@ export function MobileIdentityPanel({ unitId, tenantName, tenantEmail, tenantIde
         </div>
       ) : (
         <div className="muted">No mobile identity configured yet.</div>
+      )}
+
+      {isArchived && (
+        <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
+          This unit is archived. Mobile identity setup and invite delivery are disabled until the property and unit are restored.
+        </div>
       )}
 
       {setupState.error && <div className="notice error">{setupState.error}</div>}
@@ -95,14 +105,14 @@ export function MobileIdentityPanel({ unitId, tenantName, tenantEmail, tenantIde
           <span className="field-label">Email</span>
           <input className="input" type="email" name="email" defaultValue={tenantIdentity?.email ?? tenantEmail ?? ''} placeholder="tenant@example.com" />
         </label>
-        <button type="submit" className="button" disabled={setupPending}>{setupPending ? 'Saving…' : 'Save mobile identity'}</button>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save mobile identity'}</button>
       </form>
 
       {tenantIdentity && (
         <div className="row" style={{ justifyContent: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <form action={inviteAction}>
             <input type="hidden" name="tenantIdentityId" value={tenantIdentity.id} />
-            <button type="submit" className="button primary" disabled={invitePending}>
+            <button type="submit" className="button primary" disabled={invitePending || isArchived}>
               {invitePending ? 'Creating invite…' : 'Create invite link'}
             </button>
           </form>
