@@ -6,6 +6,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { createTenantInvite } from '@/lib/tenant-invite-lib'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import { normalizePhoneToE164, type CountryCode } from '@/lib/phone'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type MobileIdentityState = {
   error: string | null
@@ -93,6 +94,15 @@ export async function setupMobileIdentityAction(
     },
   })
 
+  await writeAuditLog({
+    actorUserId: session.userId,
+    entityType: 'tenantIdentity',
+    entityId: unit.id,
+    action: 'tenantIdentity.setup',
+    summary: `Configured mobile identity for ${tenantName}.`,
+    metadata: { unitId: unit.id, phoneE164: phone, email },
+  })
+
   revalidatePath(`/units/${unit.id}`)
   return { error: null, success: true }
 }
@@ -141,6 +151,15 @@ export async function sendMobileInviteAction(
       tenantName: tenantIdentity.tenantName,
     })
 
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'tenantIdentity',
+      entityId: tenantIdentity.id,
+      action: 'tenantIdentity.inviteCreated',
+      summary: `Created mobile invite for ${tenantIdentity.tenantName}.`,
+      metadata: { sentTo: invite.sentTo },
+    })
+
     revalidatePath('/units')
     return {
       error: null,
@@ -185,6 +204,15 @@ export async function deactivateMobileIdentityAction(
       where: { id: tenantIdentityId },
       data: { status: 'inactive' },
     })
+  })
+
+  await writeAuditLog({
+    actorUserId: session.userId,
+    entityType: 'tenantIdentity',
+    entityId: tenantIdentity.id,
+    action: 'tenantIdentity.deactivated',
+    summary: `Deactivated mobile identity for ${tenantIdentity.tenantName}.`,
+    metadata: { unitId: tenantIdentity.unitId },
   })
 
   revalidatePath('/units')

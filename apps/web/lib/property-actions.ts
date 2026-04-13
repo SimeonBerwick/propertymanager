@@ -7,6 +7,7 @@ import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
 import { isDatabaseAvailable } from '@/lib/db-status'
 import { getSessionOptions, type SessionData } from '@/lib/session'
+import { writeAuditLog } from '@/lib/audit-log'
 
 export type PropertyActionState = { error: string | null }
 
@@ -46,6 +47,14 @@ export async function createPropertyAction(
   try {
     const property = await prisma.property.create({ data: { name, address, ownerId } })
     propertyId = property.id
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'property',
+      entityId: property.id,
+      action: 'property.created',
+      summary: `Created property ${name}.`,
+      metadata: { address },
+    })
   } catch {
     return { error: 'Could not create property. Please try again.' }
   }
@@ -84,6 +93,15 @@ export async function updatePropertyAction(
     if (updated.count === 0) {
       return { error: 'Property not found or you do not have access.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'property.updated',
+      summary: `Updated property ${name}.`,
+      metadata: { address },
+    })
   } catch {
     return { error: 'Could not update property. Please try again.' }
   }
@@ -122,6 +140,14 @@ export async function archivePropertyAction(
       where: { propertyId },
       data: { isActive: false },
     })
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'property.archived',
+      summary: 'Archived property and inactive-linked its units.',
+    })
   } catch {
     return { error: 'Could not archive property. Please try again.' }
   }
@@ -155,6 +181,14 @@ export async function restorePropertyAction(
     if (updated.count === 0) {
       return { error: 'Property not found or you do not have access.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'property.restored',
+      summary: 'Restored property to active state.',
+    })
   } catch {
     return { error: 'Could not restore property. Please try again.' }
   }
@@ -211,6 +245,14 @@ export async function deletePropertyAction(
       return { error: 'Cannot delete a property with tenant identities attached.' }
     }
 
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'property.deleted',
+      summary: `Deleted property ${propertyName}.`,
+    })
+
     await prisma.property.delete({ where: { id: propertyId } })
   } catch {
     return { error: 'Could not delete property. Please try again.' }
@@ -252,13 +294,22 @@ export async function createUnitAction(
       return { error: 'Property not found or you do not have access.' }
     }
 
-    await prisma.unit.create({
+    const unit = await prisma.unit.create({
       data: {
         propertyId,
         label,
         tenantName: tenantName || null,
         tenantEmail: tenantEmail || null,
       },
+    })
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'unit',
+      entityId: unit.id,
+      action: 'unit.created',
+      summary: `Created unit ${label}.`,
+      metadata: { propertyId },
     })
   } catch {
     return { error: 'Could not create unit. Please try again.' }
@@ -305,6 +356,15 @@ export async function updateUnitAction(
     if (updated.count === 0) {
       return { error: 'Unit not found or you do not have access.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'unit',
+      entityId: unitId,
+      action: 'unit.updated',
+      summary: `Updated unit ${label}.`,
+      metadata: { propertyId },
+    })
   } catch {
     return { error: 'Could not update unit. Please try again.' }
   }
@@ -341,6 +401,15 @@ export async function archiveUnitAction(
     if (updated.count === 0) {
       return { error: 'Unit not found or you do not have access.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'unit',
+      entityId: unitId,
+      action: 'unit.archived',
+      summary: 'Archived unit.',
+      metadata: { propertyId },
+    })
   } catch {
     return { error: 'Could not archive unit. Please try again.' }
   }
@@ -390,6 +459,15 @@ export async function restoreUnitAction(
     if (updated.count === 0) {
       return { error: 'Unit not found or you do not have access.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'unit',
+      entityId: unitId,
+      action: 'unit.restored',
+      summary: 'Restored unit to active state.',
+      metadata: { propertyId },
+    })
   } catch {
     return { error: 'Could not restore unit. Please try again.' }
   }
@@ -447,6 +525,15 @@ export async function deleteUnitAction(
     if (unit._count.tenantIdentities > 0) {
       return { error: 'Cannot delete a unit with tenant identity records attached.' }
     }
+
+    await writeAuditLog({
+      actorUserId: ownerId,
+      entityType: 'unit',
+      entityId: unitId,
+      action: 'unit.deleted',
+      summary: `Deleted unit ${unitLabel}.`,
+      metadata: { propertyId },
+    })
 
     await prisma.unit.delete({ where: { id: unitId } })
   } catch {

@@ -6,7 +6,9 @@ import { currencyLabel, languageLabel } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
+import { getAuditLogs } from '@/lib/audit-log'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
+import { AuditLogList } from '@/components/audit-log-list'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -29,10 +31,13 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { unit, property, requests, openCount, closedCount } = data
-  const tenantIdentity = await prisma.tenantIdentity.findFirst({
-    where: { unitId: unit.id, property: { ownerId: session.userId } },
-    orderBy: { createdAt: 'desc' },
-  }).catch(() => null)
+  const [tenantIdentity, auditLogs] = await Promise.all([
+    prisma.tenantIdentity.findFirst({
+      where: { unitId: unit.id, property: { ownerId: session.userId } },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => null),
+    getAuditLogs('unit', unit.id),
+  ])
 
   return (
     <div className="stack">
@@ -103,6 +108,17 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
           verifiedAt: tenantIdentity.verifiedAt?.toISOString() ?? null,
           lastLoginAt: tenantIdentity.lastLoginAt?.toISOString() ?? null,
         } : null}
+      />
+
+      <AuditLogList
+        title="Lifecycle and access changes"
+        items={auditLogs.map((item) => ({
+          id: item.id,
+          action: item.action,
+          summary: item.summary,
+          createdAt: item.createdAt.toISOString(),
+          actorName: item.actorUser?.email ?? undefined,
+        }))}
       />
 
       <section className="card stack">
