@@ -1,5 +1,6 @@
 'use server';
 
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -128,6 +129,9 @@ export async function createVendor(formData: FormData) {
     revalidateVendorPaths();
     redirect('/operator/vendors?created=1');
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(vendorRedirect(getErrorMessage(error)) as any);
   }
 }
@@ -205,6 +209,9 @@ export async function importVendors(formData: FormData) {
     revalidateVendorPaths();
     redirect(`/operator/vendors?imported=${rows.length}` as any);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(vendorRedirect(getErrorMessage(error)) as any);
   }
 }
@@ -240,6 +247,9 @@ export async function updateVendorStatus(formData: FormData) {
     revalidateVendorPaths();
     redirect('/operator/vendors?updated=1');
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(vendorRedirect(getErrorMessage(error)) as any);
   }
 }
@@ -308,6 +318,9 @@ export async function saveVendorAssignments(formData: FormData) {
     revalidateVendorPaths();
     redirect('/operator/vendors?assignmentsSaved=1');
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(vendorRedirect(getErrorMessage(error)) as any);
   }
 }
