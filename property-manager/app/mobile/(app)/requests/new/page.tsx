@@ -8,6 +8,8 @@ const categoryLabels: Record<RequestCategory, string> = {
   ELECTRICAL: 'Electrical',
   HVAC: 'HVAC',
   APPLIANCE: 'Appliance',
+  PAINTING: 'Painting',
+  CLEANING: 'Cleaning',
   GENERAL: 'General',
   OTHER: 'Other',
 };

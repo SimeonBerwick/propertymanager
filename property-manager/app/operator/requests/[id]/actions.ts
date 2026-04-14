@@ -1,6 +1,15 @@
 'use server';
 
-import { EventVisibility, PaymentStatus, RequestEventType, RequestStatus, UserRole, VendorOfferStatus, VendorResponseStatus } from '@prisma/client';
+import {
+  EventVisibility,
+  PaymentStatus,
+  RequestEventType,
+  RequestStatus,
+  RequestTenderStatus,
+  UserRole,
+  VendorOfferStatus,
+  VendorResponseStatus,
+} from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
@@ -16,6 +25,23 @@ function getString(formData: FormData, key: string) {
 
 function getBoolean(formData: FormData, key: string) {
   return formData.get(key) === 'on';
+}
+
+function getVendorIds(formData: FormData, key: string) {
+  return Array.from(new Set(formData.getAll(key).filter((value): value is string => typeof value === 'string').map((value) => value.trim()).filter(Boolean)));
+}
+
+async function revalidateRequestPaths(requestId: string, propertyId?: string, unitId?: string) {
+  revalidatePath('/operator');
+  revalidatePath('/operator/requests');
+  revalidatePath(`/operator/requests/${requestId}`);
+  revalidatePath('/operator/vendors');
+  revalidatePath('/operator/regions');
+  revalidatePath('/vendor/queue');
+  revalidatePath(`/vendor/requests/${requestId}`);
+  revalidatePath(`/tenant/request/${requestId}`);
+  if (propertyId) revalidatePath(`/operator/properties/${propertyId}`);
+  if (unitId) revalidatePath(`/operator/units/${unitId}`);
 }
 
 const paymentStatuses = new Set<PaymentStatus>([
@@ -54,14 +80,7 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
     },
   });
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath('/operator/properties');
-  revalidatePath(`/operator/properties/${updated.propertyId}`);
-  revalidatePath('/operator/units');
-  revalidatePath(`/operator/units/${updated.unitId}`);
-  revalidatePath(`/tenant/request/${requestId}`);
+  await revalidateRequestPaths(requestId, updated.propertyId, updated.unitId);
 }
 
 export async function cancelRequest(requestId: string, formData: FormData) {
@@ -75,29 +94,30 @@ export async function cancelRequest(requestId: string, formData: FormData) {
   });
   if (!request || request.status === RequestStatus.CANCELED) return;
 
-  await prisma.maintenanceRequest.update({
-    where: { id: requestId },
-    data: {
-      status: RequestStatus.CANCELED,
-      closedAt: new Date(),
-      events: {
-        create: {
-          type: RequestEventType.STATUS_CHANGED,
-          actorRole: UserRole.OPERATOR,
-          actorName: session.displayName,
-          body: `Request canceled by operator. Reason: ${body}`,
-          visibility: EventVisibility.ALL,
+  await prisma.$transaction([
+    prisma.requestTender.updateMany({
+      where: { requestId, status: { in: [RequestTenderStatus.REQUESTED, RequestTenderStatus.SUBMITTED] } },
+      data: { status: RequestTenderStatus.CANCELED, decidedAt: new Date() },
+    }),
+    prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        status: RequestStatus.CANCELED,
+        closedAt: new Date(),
+        events: {
+          create: {
+            type: RequestEventType.STATUS_CHANGED,
+            actorRole: UserRole.OPERATOR,
+            actorName: session.displayName,
+            body: `Request canceled by operator. Reason: ${body}`,
+            visibility: EventVisibility.ALL,
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath('/vendor/queue');
-  revalidatePath(`/vendor/requests/${requestId}`);
-  revalidatePath(`/tenant/request/${requestId}`);
+  await revalidateRequestPaths(requestId, request.propertyId, request.unitId);
 }
 
 export async function updateTenantComments(requestId: string, formData: FormData) {
@@ -126,10 +146,7 @@ export async function updateTenantComments(requestId: string, formData: FormData
     },
   });
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath(`/tenant/request/${requestId}`);
+  await revalidateRequestPaths(requestId);
 }
 
 export async function updatePaymentStatus(requestId: string, formData: FormData) {
@@ -159,9 +176,7 @@ export async function updatePaymentStatus(requestId: string, formData: FormData)
     },
   });
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
+  await revalidateRequestPaths(requestId);
 }
 
 export async function addInternalNote(requestId: string, formData: FormData) {
@@ -186,134 +201,153 @@ export async function addInternalNote(requestId: string, formData: FormData) {
     },
   });
 
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
+  await revalidateRequestPaths(requestId);
 }
 
 export async function acceptVendorOffer(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
+  const tenderId = getString(formData, 'tenderId');
   const body = getString(formData, 'body');
 
-  const request = await prisma.maintenanceRequest.findFirst({
-    where: getOperatorRequestWhere(session.organizationId, requestId),
-    include: { assignedVendor: true },
+  const tender = await prisma.requestTender.findFirst({
+    where: {
+      id: tenderId,
+      requestId,
+      request: { property: { organizationId: session.organizationId } },
+    },
+    include: { vendor: true, request: true },
   });
 
-  if (!request || !request.assignedVendorId) {
-    redirect(`/operator/requests/${requestId}`);
-  }
+  if (!tender) redirect(`/operator/requests/${requestId}`);
 
-  await prisma.maintenanceRequest.update({
-    where: { id: requestId },
-    data: {
-      vendorOfferStatus: VendorOfferStatus.ACCEPTED,
-      vendorResponseStatus: request.vendorResponseStatus === VendorResponseStatus.PENDING ? VendorResponseStatus.ACCEPTED : request.vendorResponseStatus,
-      events: {
-        create: {
-          type: RequestEventType.COMMENT,
-          actorRole: UserRole.OPERATOR,
-          actorName: session.displayName,
-          body: body
-            ? `Vendor offer accepted. Operator note: ${body}`
-            : 'Vendor offer accepted.',
-          visibility: EventVisibility.VENDOR,
+  await prisma.$transaction([
+    prisma.requestTender.updateMany({
+      where: { requestId, id: { not: tender.id }, status: { in: [RequestTenderStatus.REQUESTED, RequestTenderStatus.SUBMITTED] } },
+      data: { status: RequestTenderStatus.NOT_AWARDED, decidedAt: new Date() },
+    }),
+    prisma.requestTender.update({
+      where: { id: tender.id },
+      data: {
+        status: RequestTenderStatus.AWARDED,
+        decidedAt: new Date(),
+        awardedAt: new Date(),
+        operatorNote: body || tender.operatorNote,
+      },
+    }),
+    prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        assignedVendorId: tender.vendorId,
+        vendorOfferStatus: VendorOfferStatus.ACCEPTED,
+        vendorResponseStatus: VendorResponseStatus.ACCEPTED,
+        vendorPricingType: tender.pricingType,
+        vendorPriceCents: tender.priceCents,
+        vendorPlannedStartDate: tender.plannedStartDate,
+        vendorExpectedCompletionDate: tender.expectedCompletionDate,
+        events: {
+          create: [
+            {
+              type: RequestEventType.VENDOR_ASSIGNED,
+              actorRole: UserRole.OPERATOR,
+              actorName: session.displayName,
+              body: `Awarded vendor tender to ${tender.vendor.name}.`,
+              visibility: EventVisibility.ALL,
+            },
+            {
+              type: RequestEventType.COMMENT,
+              actorRole: UserRole.OPERATOR,
+              actorName: session.displayName,
+              body: body ? `Vendor offer accepted. ${body}` : 'Vendor offer accepted.',
+              visibility: EventVisibility.VENDOR,
+            },
+          ],
         },
       },
-    },
-  });
+    }),
+  ]);
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath('/vendor/queue');
-  revalidatePath(`/vendor/requests/${requestId}`);
+  await revalidateRequestPaths(requestId, tender.request.propertyId, tender.request.unitId);
   redirect(`/operator/requests/${requestId}`);
 }
 
 export async function respondToVendorOffer(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
+  const tenderId = getString(formData, 'tenderId');
   const action = getString(formData, 'vendorOfferAction');
   const body = getString(formData, 'body');
-  const reassignedVendorId = getString(formData, 'reassignedVendorId');
+  if (!body) redirect(`/operator/requests/${requestId}`);
 
-  const request = await prisma.maintenanceRequest.findFirst({
-    where: getOperatorRequestWhere(session.organizationId, requestId),
-    include: { property: true, assignedVendor: true },
+  const tender = await prisma.requestTender.findFirst({
+    where: {
+      id: tenderId,
+      requestId,
+      request: { property: { organizationId: session.organizationId } },
+    },
+    include: { vendor: true, request: { include: { property: true } } },
   });
-
-  if (!request || !request.assignedVendorId) {
-    redirect(`/operator/requests/${requestId}`);
-  }
-
-  if (!body) {
-    redirect(`/operator/requests/${requestId}`);
-  }
-
-  if (action !== 'send_back' && action !== 'send_to_another_vendor') {
-    redirect(`/operator/requests/${requestId}`);
-  }
-
-  let nextAssignedVendorId = request.assignedVendorId;
-  let nextVendorResponseStatus = request.vendorResponseStatus;
-  const events: Array<{
-    type: RequestEventType;
-    actorRole: UserRole;
-    actorName: string;
-    body: string;
-    visibility: EventVisibility;
-  }> = [];
+  if (!tender) redirect(`/operator/requests/${requestId}`);
 
   if (action === 'send_back') {
-    nextVendorResponseStatus = VendorResponseStatus.PENDING;
-    events.push({
-      type: RequestEventType.COMMENT,
-      actorRole: UserRole.OPERATOR,
-      actorName: session.displayName,
-      body: `Vendor offer rejected. Sent back to vendor with required changes: ${body}`,
-      visibility: EventVisibility.VENDOR,
-    });
+    await prisma.$transaction([
+      prisma.requestTender.update({
+        where: { id: tender.id },
+        data: {
+          status: RequestTenderStatus.REQUESTED,
+          operatorNote: body,
+          vendorNote: null,
+          pricingType: tender.pricingType,
+          priceCents: tender.priceCents,
+          plannedStartDate: tender.plannedStartDate,
+          expectedCompletionDate: tender.expectedCompletionDate,
+        },
+      }),
+      prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          vendorOfferStatus: VendorOfferStatus.REVISION_REQUESTED,
+          events: {
+            create: {
+              type: RequestEventType.COMMENT,
+              actorRole: UserRole.OPERATOR,
+              actorName: session.displayName,
+              body: `Tender from ${tender.vendor.name} sent back for revision: ${body}`,
+              visibility: EventVisibility.VENDOR,
+            },
+          },
+        },
+      }),
+    ]);
+  } else if (action === 'reject') {
+    await prisma.$transaction([
+      prisma.requestTender.update({
+        where: { id: tender.id },
+        data: {
+          status: RequestTenderStatus.NOT_AWARDED,
+          decidedAt: new Date(),
+          operatorNote: body,
+        },
+      }),
+      prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          vendorOfferStatus: VendorOfferStatus.REJECTED,
+          events: {
+            create: {
+              type: RequestEventType.COMMENT,
+              actorRole: UserRole.OPERATOR,
+              actorName: session.displayName,
+              body: `Tender from ${tender.vendor.name} rejected: ${body}`,
+              visibility: EventVisibility.VENDOR,
+            },
+          },
+        },
+      }),
+    ]);
+  } else {
+    redirect(`/operator/requests/${requestId}`);
   }
 
-  if (action === 'send_to_another_vendor') {
-    if (!reassignedVendorId) {
-      redirect(`/operator/requests/${requestId}`);
-    }
-
-    const nextVendor = await prisma.vendor.findFirst({
-      where: getOperatorVendorWhere(session.organizationId, reassignedVendorId),
-    });
-
-    if (!nextVendor) {
-      redirect(`/operator/requests/${requestId}`);
-    }
-
-    nextAssignedVendorId = nextVendor.id;
-    nextVendorResponseStatus = VendorResponseStatus.PENDING;
-
-    events.push({
-      type: RequestEventType.COMMENT,
-      actorRole: UserRole.OPERATOR,
-      actorName: session.displayName,
-      body: `Vendor offer rejected. Reassigned from ${request.assignedVendor?.name || 'current vendor'} to ${nextVendor.name}. Reason: ${body}`,
-      visibility: EventVisibility.ALL,
-    });
-  }
-
-  await prisma.maintenanceRequest.update({
-    where: { id: requestId },
-    data: {
-      assignedVendorId: nextAssignedVendorId,
-      vendorResponseStatus: nextVendorResponseStatus,
-      vendorOfferStatus: action === 'send_back' ? VendorOfferStatus.REVISION_REQUESTED : VendorOfferStatus.REJECTED,
-      events: events.length > 0 ? { create: events } : undefined,
-    },
-  });
-
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath('/vendor/queue');
-  revalidatePath(`/vendor/requests/${requestId}`);
+  await revalidateRequestPaths(requestId, tender.request.propertyId, tender.request.unitId);
   redirect(`/operator/requests/${requestId}`);
 }
 
@@ -324,70 +358,88 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
   const scheduledForInput = getString(formData, 'scheduledFor');
   const scopeOfWork = getString(formData, 'scopeOfWork');
   const isVendorVisible = getBoolean(formData, 'isVendorVisible');
+  const vendorIds = dispatchMode === 'request_bid' ? getVendorIds(formData, 'vendorIds') : [];
 
   const request = await prisma.maintenanceRequest.findFirst({
     where: getOperatorRequestWhere(session.organizationId, requestId),
-    include: { assignedVendor: true, property: true },
+    include: { assignedVendor: true, property: true, tenders: true },
   });
-
-  if (!request) {
-    redirect('/operator/requests');
-  }
-
-  const nextVendor = assignedVendorId
-    ? await prisma.vendor.findFirst({
-        where: getOperatorVendorWhere(session.organizationId, assignedVendorId),
-        include: { serviceAreaAssignments: true },
-      })
-    : null;
+  if (!request) redirect('/operator/requests');
 
   const region = request.property.regionId
     ? await prisma.region.findFirst({
         where: { id: request.property.regionId, organizationId: session.organizationId },
-        include: { preferredVendor: true },
       })
     : null;
 
-  if (assignedVendorId && !nextVendor) {
-    redirect(`/operator/requests/${requestId}`);
-  }
+  const selectedIds = dispatchMode === 'request_bid' ? vendorIds : assignedVendorId ? [assignedVendorId] : [];
+  const vendors = selectedIds.length > 0
+    ? await prisma.vendor.findMany({
+        where: { organizationId: session.organizationId, id: { in: selectedIds } },
+        include: { serviceAreaAssignments: true },
+      })
+    : [];
 
-  if (nextVendor) {
-    if (!isVendorEligibleForPreferredSelection(nextVendor)) {
-      redirect(`/operator/requests/${requestId}`);
-    }
-    if (region && !nextVendor.serviceAreaAssignments.some((assignment) => assignment.regionId === region.id)) {
+  if (vendors.length !== selectedIds.length) redirect(`/operator/requests/${requestId}`);
+  for (const vendor of vendors) {
+    if (!isVendorEligibleForPreferredSelection(vendor)) redirect(`/operator/requests/${requestId}`);
+    if (region && !vendor.serviceAreaAssignments.some((assignment) => assignment.regionId === region.id)) {
       redirect(`/operator/requests/${requestId}`);
     }
   }
 
   const scheduledFor = scheduledForInput ? new Date(scheduledForInput) : null;
-  if (scheduledForInput && Number.isNaN(scheduledFor?.getTime())) {
+  if (scheduledForInput && Number.isNaN(scheduledFor?.getTime())) redirect(`/operator/requests/${requestId}`);
+
+  if (dispatchMode === 'request_bid') {
+    if (vendorIds.length === 0) redirect(`/operator/requests/${requestId}`);
+    const existingTenders = new Map(request.tenders.map((tender) => [tender.vendorId, tender]));
+    const events = vendors.map((vendor) => ({
+      type: RequestEventType.COMMENT,
+      actorRole: UserRole.OPERATOR,
+      actorName: session.displayName,
+      body: `Tender request sent to ${vendor.name}.${scopeOfWork ? ` Scope: ${scopeOfWork}` : ''}`,
+      visibility: EventVisibility.VENDOR,
+    }));
+
+    await prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        isVendorVisible,
+        vendorOfferStatus: VendorOfferStatus.PENDING_REVIEW,
+        tenders: {
+          upsert: vendors.map((vendor) => ({
+            where: { requestId_vendorId: { requestId, vendorId: vendor.id } },
+            update: {
+              status: RequestTenderStatus.REQUESTED,
+              scopeOfWork: scopeOfWork || null,
+              operatorNote: scopeOfWork || null,
+              decidedAt: null,
+              respondedAt: existingTenders.get(vendor.id)?.status === RequestTenderStatus.SUBMITTED ? existingTenders.get(vendor.id)?.respondedAt ?? null : null,
+            },
+            create: {
+              vendorId: vendor.id,
+              invitedByUserId: session.userId,
+              status: RequestTenderStatus.REQUESTED,
+              scopeOfWork: scopeOfWork || null,
+              operatorNote: scopeOfWork || null,
+            },
+          })),
+        },
+        events: events.length > 0 ? { create: events } : undefined,
+      },
+    });
+
+    await revalidateRequestPaths(requestId, request.propertyId, request.unitId);
     redirect(`/operator/requests/${requestId}`);
   }
 
-  const vendorShouldSeeRequest = assignedVendorId ? isVendorVisible : false;
-  const nextVendorResponseStatus = assignedVendorId
-    ? VendorResponseStatus.PENDING
-    : request.vendorResponseStatus;
-  const nextVendorOfferStatus = dispatchMode === 'request_bid' && assignedVendorId
-    ? VendorOfferStatus.PENDING_REVIEW
-    : assignedVendorId
-      ? VendorOfferStatus.NONE
-      : request.vendorOfferStatus;
-  const nextStatus = assignedVendorId && scheduledFor && request.status === RequestStatus.NEW
-    ? RequestStatus.SCHEDULED
-    : request.status;
+  const nextVendor = vendors[0] ?? null;
+  const vendorShouldSeeRequest = Boolean(nextVendor) && isVendorVisible;
+  const nextStatus = nextVendor && scheduledFor && request.status === RequestStatus.NEW ? RequestStatus.SCHEDULED : request.status;
+  const events = [] as Array<{ type: RequestEventType; actorRole: UserRole; actorName: string; body: string; visibility: EventVisibility }>;
 
-  const events = [] as Array<{
-    type: RequestEventType;
-    actorRole: UserRole;
-    actorName: string;
-    body: string;
-    visibility: EventVisibility;
-  }>;
-
-  if (request.assignedVendorId !== assignedVendorId) {
+  if (request.assignedVendorId !== (nextVendor?.id ?? '')) {
     events.push({
       type: RequestEventType.VENDOR_ASSIGNED,
       actorRole: UserRole.OPERATOR,
@@ -396,75 +448,44 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
       visibility: EventVisibility.ALL,
     });
   }
-
-  const previousSchedule = request.scheduledFor?.toISOString() ?? null;
-  const nextSchedule = scheduledFor?.toISOString() ?? null;
-  if (previousSchedule !== nextSchedule) {
-    events.push({
-      type: RequestEventType.SCHEDULE_SET,
-      actorRole: UserRole.OPERATOR,
-      actorName: session.displayName,
-      body: scheduledFor ? `Dispatch scheduled for ${scheduledFor.toLocaleString('en-US')}.` : 'Scheduled visit cleared.',
-      visibility: EventVisibility.ALL,
-    });
-  }
-
   if (scopeOfWork) {
     events.push({
       type: RequestEventType.COMMENT,
       actorRole: UserRole.OPERATOR,
       actorName: session.displayName,
-      body: dispatchMode === 'request_bid'
-        ? `Bid request: ${scopeOfWork}`
-        : scopeOfWork,
+      body: scopeOfWork,
       visibility: vendorShouldSeeRequest ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
     });
   }
-
-  if (assignedVendorId && request.assignedVendorId !== assignedVendorId) {
+  if (scheduledFor) {
     events.push({
-      type: RequestEventType.TENANT_UPDATE,
+      type: RequestEventType.SCHEDULE_SET,
       actorRole: UserRole.OPERATOR,
       actorName: session.displayName,
-      body: dispatchMode === 'request_bid'
-        ? `Bid requested from ${nextVendor?.name || 'assigned vendor'}.`
-        : `Work dispatched to ${nextVendor?.name || 'assigned vendor'}.`,
-      visibility: vendorShouldSeeRequest ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
-    });
-  }
-
-  if (request.status !== nextStatus) {
-    events.push({
-      type: RequestEventType.STATUS_CHANGED,
-      actorRole: UserRole.OPERATOR,
-      actorName: session.displayName,
-      body: `Status updated to ${nextStatus.replace('_', ' ')} during dispatch.`,
+      body: `Dispatch scheduled for ${scheduledFor.toLocaleString('en-US')}.`,
       visibility: EventVisibility.ALL,
     });
   }
 
-  const updated = await prisma.maintenanceRequest.update({
-    where: { id: requestId },
-    data: {
-      assignedVendorId: assignedVendorId || null,
-      scheduledFor,
-      isVendorVisible: vendorShouldSeeRequest,
-      status: nextStatus,
-      vendorResponseStatus: nextVendorResponseStatus,
-      vendorOfferStatus: nextVendorOfferStatus,
-      events: events.length > 0 ? { create: events } : undefined,
-    },
-  });
+  await prisma.$transaction([
+    prisma.requestTender.updateMany({
+      where: { requestId, status: { in: [RequestTenderStatus.REQUESTED, RequestTenderStatus.SUBMITTED] }, ...(nextVendor ? { vendorId: { not: nextVendor.id } } : {}) },
+      data: { status: RequestTenderStatus.NOT_AWARDED, decidedAt: new Date() },
+    }),
+    prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        assignedVendorId: nextVendor?.id ?? null,
+        scheduledFor,
+        isVendorVisible: vendorShouldSeeRequest,
+        status: nextStatus,
+        vendorResponseStatus: nextVendor ? VendorResponseStatus.ACCEPTED : request.vendorResponseStatus,
+        vendorOfferStatus: nextVendor ? VendorOfferStatus.ACCEPTED : request.vendorOfferStatus,
+        events: events.length > 0 ? { create: events } : undefined,
+      },
+    }),
+  ]);
 
-  revalidatePath('/operator');
-  revalidatePath('/operator/requests');
-  revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath('/operator/vendors');
-  revalidatePath('/operator/regions');
-  revalidatePath('/vendor/queue');
-  revalidatePath(`/vendor/requests/${requestId}`);
-  revalidatePath(`/operator/properties/${updated.propertyId}`);
-  revalidatePath(`/operator/units/${updated.unitId}`);
-  revalidatePath(`/tenant/request/${requestId}`);
+  await revalidateRequestPaths(requestId, request.propertyId, request.unitId);
   redirect(`/operator/requests/${requestId}`);
 }

@@ -105,6 +105,15 @@ enum VendorOfferStatus {
   REJECTED
 }
 
+enum RequestTenderStatus {
+  REQUESTED
+  SUBMITTED
+  DECLINED
+  AWARDED
+  NOT_AWARDED
+  CANCELED
+}
+
 model Organization {
   id                  String               @id @default(cuid())
   name                String
@@ -152,6 +161,7 @@ model AppUser {
   createdAt             DateTime       @default(now())
   organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requestEvents         RequestEvent[]
+  requestTendersCreated RequestTender[]         @relation("RequestTenderInvitedBy")
   invitesCreated        Invite[]
   tenantInvitesCreated  TenantInvite[]
 
@@ -230,6 +240,7 @@ model Vendor {
   createdAt               DateTime                 @default(now())
   organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requests                MaintenanceRequest[]
+  tenders                 RequestTender[]
   invites                 Invite[]
   serviceAreaAssignments  VendorRegionAssignment[]
   skillAssignments        VendorSkillAssignment[]
@@ -310,6 +321,7 @@ model MaintenanceRequest {
   unit             Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
   tenant           Tenant?         @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   assignedVendor   Vendor?         @relation(fields: [assignedVendorId], references: [id], onDelete: SetNull)
+  tenders          RequestTender[]
   events           RequestEvent[]
   attachments      Attachment[]
 
@@ -317,6 +329,34 @@ model MaintenanceRequest {
   @@index([unitId, status])
   @@index([tenantId])
   @@index([assignedVendorId])
+}
+
+model RequestTender {
+  id                     String              @id @default(cuid())
+  requestId              String
+  vendorId               String
+  invitedByUserId        String?
+  status                 RequestTenderStatus @default(REQUESTED)
+  scopeOfWork            String?
+  operatorNote           String?
+  vendorNote             String?
+  pricingType            VendorPricingType   @default(NONE)
+  priceCents             Int?
+  plannedStartDate       DateTime?
+  expectedCompletionDate DateTime?
+  requestedAt            DateTime            @default(now())
+  respondedAt            DateTime?
+  decidedAt              DateTime?
+  awardedAt              DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  request                MaintenanceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  vendor                 Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invitedByUser          AppUser?            @relation("RequestTenderInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([requestId, vendorId])
+  @@index([vendorId, status, updatedAt])
+  @@index([requestId, status, updatedAt])
 }
 
 model RequestEvent {

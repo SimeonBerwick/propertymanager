@@ -205,6 +205,19 @@ async function main() {
       vendorExpectedCompletionDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
       vendorPricingType: VendorPricingType.SERVICE_CALL_ONLY,
       vendorPriceCents: 12500,
+      tenders: {
+        create: {
+          vendorId: vendor.id,
+          status: 'AWARDED',
+          pricingType: VendorPricingType.SERVICE_CALL_ONLY,
+          priceCents: 12500,
+          plannedStartDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          expectedCompletionDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
+          respondedAt: new Date(),
+          decidedAt: new Date(),
+          awardedAt: new Date(),
+        },
+      },
       events: {
         create: [
           {

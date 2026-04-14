@@ -5,6 +5,7 @@ import {
   PaymentStatus,
   RequestEventType,
   RequestStatus,
+  RequestTenderStatus,
   UserRole,
   VendorOfferStatus,
   VendorPricingType,
@@ -72,58 +73,56 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
   const finalTaxValue = getString(formData, 'vendorFinalTax');
   const additionalCostsValue = getString(formData, 'vendorAdditionalCosts');
   const additionalTaxValue = getString(formData, 'vendorAdditionalTax');
-  const bidFiles = formData
-    .getAll('bidPdf')
-    .filter((value): value is File => value instanceof File && value.size > 0);
-
-  if (!vendorAllowedStatuses.has(nextStatus as RequestStatus)) {
-    redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20vendor%20status.`);
-  }
+  const bidFiles = formData.getAll('bidPdf').filter((value): value is File => value instanceof File && value.size > 0);
 
   if (!vendorResponseStatuses.has(responseStatusValue as VendorResponseStatus)) {
     redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20vendor%20response.`);
   }
-
   if (!vendorPricingTypes.has(pricingTypeValue as VendorPricingType)) {
     redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20pricing%20type.`);
   }
 
   const plannedStartDate = parseOptionalDate(plannedStartValue);
-  if (plannedStartDate === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20planned%20start%20date.`);
-  }
-
+  if (plannedStartDate === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20planned%20start%20date.`);
   const expectedCompletionDate = parseOptionalDate(expectedCompletionValue);
-  if (expectedCompletionDate === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20expected%20completion%20date.`);
-  }
+  if (expectedCompletionDate === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20expected%20completion%20date.`);
 
   const vendorPriceCents = parsePriceCents(priceValue);
-  if (vendorPriceCents === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20price%20using%20numbers%20only.`);
-  }
-
+  if (vendorPriceCents === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20price%20using%20numbers%20only.`);
   const vendorFinalBillCents = parsePriceCents(finalBillValue);
-  if (vendorFinalBillCents === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20final%20bill%20using%20numbers%20only.`);
-  }
-
+  if (vendorFinalBillCents === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20final%20bill%20using%20numbers%20only.`);
   const vendorFinalTaxCents = parsePriceCents(finalTaxValue);
-  if (vendorFinalTaxCents === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20tax%20amount%20using%20numbers%20only.`);
-  }
-
+  if (vendorFinalTaxCents === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20a%20valid%20tax%20amount%20using%20numbers%20only.`);
   const vendorAdditionalCostsCents = parsePriceCents(additionalCostsValue);
-  if (vendorAdditionalCostsCents === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20costs%20using%20numbers%20only.`);
-  }
-
+  if (vendorAdditionalCostsCents === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20costs%20using%20numbers%20only.`);
   const vendorAdditionalTaxCents = parsePriceCents(additionalTaxValue);
-  if (vendorAdditionalTaxCents === 'invalid') {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20tax%20using%20numbers%20only.`);
+  if (vendorAdditionalTaxCents === 'invalid') redirect(`/vendor/requests/${requestId}?error=Enter%20valid%20additional%20tax%20using%20numbers%20only.`);
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: {
+      id: requestId,
+      isVendorVisible: true,
+      OR: [
+        { assignedVendorId: session.vendorId },
+        { tenders: { some: { vendorId: session.vendorId, status: { in: [RequestTenderStatus.REQUESTED, RequestTenderStatus.SUBMITTED, RequestTenderStatus.AWARDED] } } } },
+      ],
+    },
+    include: {
+      assignedVendor: true,
+      tenders: { where: { vendorId: session.vendorId }, orderBy: { createdAt: 'desc' } },
+    },
+  });
+
+  if (!request) redirect('/unauthorized?requiredRole=vendor');
+  const tender = request.tenders[0] ?? null;
+  const responseStatus = responseStatusValue as VendorResponseStatus;
+  const pricingType = pricingTypeValue as VendorPricingType;
+  const isAwardedVendor = request.assignedVendorId === session.vendorId;
+
+  if (!isAwardedVendor && responseStatus === VendorResponseStatus.DECLINED && !body) {
+    redirect(`/vendor/requests/${requestId}?error=Add%20a%20note%20when%20declining%20a%20tender.`);
   }
 
-  const pricingType = pricingTypeValue as VendorPricingType;
   if (pricingType === VendorPricingType.NONE && vendorPriceCents !== null) {
     redirect(`/vendor/requests/${requestId}?error=Clear%20the%20price%20or%20choose%20a%20pricing%20type.`);
   }
@@ -131,216 +130,97 @@ export async function submitVendorUpdate(requestId: string, formData: FormData) 
     redirect(`/vendor/requests/${requestId}?error=Enter%20a%20price%20for%20the%20selected%20pricing%20type.`);
   }
 
-  if (vendorFinalTaxCents != null && vendorFinalBillCents == null) {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20a%20final%20bill%20before%20adding%20tax.`);
-  }
-
-  if (vendorAdditionalTaxCents != null && vendorAdditionalCostsCents == null) {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20additional%20costs%20before%20adding%20additional%20tax.`);
-  }
-
-  const request = await prisma.maintenanceRequest.findFirst({
-    where: {
-      id: requestId,
-      assignedVendorId: session.vendorId,
-      isVendorVisible: true,
-    },
-    include: {
-      assignedVendor: true,
-    },
-  });
-
-  if (!request) {
-    redirect('/unauthorized?requiredRole=vendor');
-  }
-
-  const status = nextStatus as RequestStatus;
-  if (!canTransition(request.status, status) && request.status !== status) {
-    redirect(`/vendor/requests/${requestId}?error=That%20status%20transition%20is%20not%20allowed.`);
-  }
-
-  const responseStatus = responseStatusValue as VendorResponseStatus;
-
-  if (request.paymentStatus === PaymentStatus.PAID_IN_FULL) {
-    if (vendorFinalBillCents != null || vendorFinalTaxCents != null) {
-      redirect(`/vendor/requests/${requestId}?error=This%20ticket%20is%20already%20marked%20paid%20in%20full.%20Only%20additional%20costs%20may%20be%20submitted.`);
-    }
-  } else if (status === RequestStatus.DONE && vendorFinalBillCents == null) {
-    redirect(`/vendor/requests/${requestId}?error=Enter%20the%20final%20bill%20before%20marking%20the%20job%20complete.`);
-  }
-
-  const offerSubmitted = pricingType !== VendorPricingType.NONE
-    || vendorPriceCents != null
-    || vendorFinalBillCents != null
-    || vendorAdditionalCostsCents != null;
-
-  const nextOfferStatus = offerSubmitted ? VendorOfferStatus.PENDING_REVIEW : VendorOfferStatus.NONE;
-
-  const nothingChanged =
-    !body &&
-    request.status === status &&
-    request.vendorResponseStatus === responseStatus &&
-    String(request.vendorPlannedStartDate ?? '') === String(plannedStartDate ?? '') &&
-    String(request.vendorExpectedCompletionDate ?? '') === String(expectedCompletionDate ?? '') &&
-    request.vendorPricingType === pricingType &&
-    request.vendorPriceCents === vendorPriceCents &&
-    request.vendorFinalBillCents === vendorFinalBillCents &&
-    request.vendorFinalTaxCents === vendorFinalTaxCents &&
-    request.vendorAdditionalCostsCents === vendorAdditionalCostsCents &&
-    request.vendorAdditionalTaxCents === vendorAdditionalTaxCents &&
-    request.vendorOfferStatus === nextOfferStatus &&
-    bidFiles.length === 0;
-
-  if (nothingChanged) {
-    redirect(`/vendor/requests/${requestId}?error=Add%20an%20update%20or%20change%20one%20of%20the%20vendor%20fields.`);
-  }
-
-  const actorName = request.assignedVendor?.name || session.displayName;
-  const events: Array<{
-    type: RequestEventType;
-    actorRole: UserRole;
-    actorName: string;
-    body: string;
-    visibility: EventVisibility;
-  }> = [];
-
-  if (request.status !== status) {
-    events.push({
-      type: RequestEventType.STATUS_CHANGED,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: `Vendor updated status to ${status.replace('_', ' ')}.`,
-      visibility: EventVisibility.ALL,
-    });
-  }
-
-  if (request.vendorResponseStatus !== responseStatus) {
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: `Vendor ${responseStatus.toLowerCase()} the work ticket.`,
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (String(request.vendorPlannedStartDate ?? '') !== String(plannedStartDate ?? '')) {
-    events.push({
-      type: RequestEventType.SCHEDULE_SET,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: plannedStartDate ? `Vendor planned start date: ${plannedStartDate.toLocaleString()}.` : 'Vendor cleared the planned start date.',
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (String(request.vendorExpectedCompletionDate ?? '') !== String(expectedCompletionDate ?? '')) {
-    events.push({
-      type: RequestEventType.SCHEDULE_SET,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: expectedCompletionDate ? `Vendor expected completion date: ${expectedCompletionDate.toLocaleString()}.` : 'Vendor cleared the expected completion date.',
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (request.vendorPricingType !== pricingType || request.vendorPriceCents !== vendorPriceCents) {
-    const pricingLabel = pricingType === VendorPricingType.ESTIMATE
-      ? 'estimate'
-      : pricingType === VendorPricingType.SERVICE_CALL_ONLY
-        ? 'service call only'
-        : pricingType === VendorPricingType.FIRM_BID
-          ? 'firm bid'
-          : pricingType === VendorPricingType.LABOR_ONLY_COST
-            ? 'labor only cost'
-            : 'pricing';
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: pricingType === VendorPricingType.NONE || vendorPriceCents == null
-        ? 'Vendor cleared pricing from the ticket.'
-        : `Vendor submitted ${pricingLabel}: $${(vendorPriceCents / 100).toFixed(2)}.`,
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (request.vendorFinalBillCents !== vendorFinalBillCents || request.vendorFinalTaxCents !== vendorFinalTaxCents) {
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: vendorFinalBillCents == null
-        ? 'Vendor cleared final billing details.'
-        : `Vendor recorded final bill: $${(vendorFinalBillCents / 100).toFixed(2)}${vendorFinalTaxCents != null ? ` with tax $${(vendorFinalTaxCents / 100).toFixed(2)}` : ''}.`,
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (request.vendorAdditionalCostsCents !== vendorAdditionalCostsCents || request.vendorAdditionalTaxCents !== vendorAdditionalTaxCents) {
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: vendorAdditionalCostsCents == null
-        ? 'Vendor cleared additional-cost billing details.'
-        : `Vendor submitted additional costs: $${(vendorAdditionalCostsCents / 100).toFixed(2)}${vendorAdditionalTaxCents != null ? ` with tax $${(vendorAdditionalTaxCents / 100).toFixed(2)}` : ''}.`,
-      visibility: EventVisibility.VENDOR,
-    });
-  }
-
-  if (body) {
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body,
-      visibility: shareWithTenant ? EventVisibility.ALL : EventVisibility.VENDOR,
-    });
-  }
-
   const bidAttachments = await persistVendorBidPdfs(request.id, bidFiles);
-  if (bidAttachments.length > 0) {
-    events.push({
-      type: RequestEventType.TENANT_UPDATE,
-      actorRole: UserRole.VENDOR,
-      actorName,
-      body: `${bidAttachments.length} PDF bid attachment${bidAttachments.length === 1 ? '' : 's'} uploaded.`,
-      visibility: EventVisibility.VENDOR,
+  const actorName = request.assignedVendor?.name || session.displayName;
+
+  if (!isAwardedVendor) {
+    if (!tender) redirect(`/vendor/requests/${requestId}?error=No%20active%20tender%20found.`);
+    const nextTenderStatus = responseStatus === VendorResponseStatus.DECLINED ? RequestTenderStatus.DECLINED : (pricingType !== VendorPricingType.NONE || vendorPriceCents != null || body ? RequestTenderStatus.SUBMITTED : RequestTenderStatus.REQUESTED);
+    if (!body && vendorPriceCents == null && bidAttachments.length === 0 && responseStatus === VendorResponseStatus.PENDING) {
+      redirect(`/vendor/requests/${requestId}?error=Add%20a%20note,%20price,%20or%20PDF%20before%20saving.`);
+    }
+
+    await prisma.$transaction([
+      prisma.requestTender.update({
+        where: { id: tender.id },
+        data: {
+          status: nextTenderStatus,
+          vendorNote: body || tender.vendorNote,
+          pricingType,
+          priceCents: vendorPriceCents,
+          plannedStartDate,
+          expectedCompletionDate,
+          respondedAt: new Date(),
+        },
+      }),
+      prisma.maintenanceRequest.update({
+        where: { id: request.id },
+        data: {
+          vendorOfferStatus: nextTenderStatus === RequestTenderStatus.SUBMITTED ? VendorOfferStatus.PENDING_REVIEW : request.vendorOfferStatus,
+          attachments: bidAttachments.length > 0 ? { create: bidAttachments } : undefined,
+          events: {
+            create: {
+              type: RequestEventType.TENANT_UPDATE,
+              actorRole: UserRole.VENDOR,
+              actorName,
+              body: nextTenderStatus === RequestTenderStatus.DECLINED
+                ? `Vendor declined tender. ${body}`
+                : `Vendor submitted tender${vendorPriceCents != null ? ` for $${(vendorPriceCents / 100).toFixed(2)}` : ''}.${body ? ` ${body}` : ''}`,
+              visibility: EventVisibility.VENDOR,
+            },
+          },
+        },
+      }),
+    ]);
+  } else {
+    if (!vendorAllowedStatuses.has(nextStatus as RequestStatus)) {
+      redirect(`/vendor/requests/${requestId}?error=Choose%20a%20valid%20vendor%20status.`);
+    }
+    const status = nextStatus as RequestStatus;
+    if (!canTransition(request.status, status) && request.status !== status) {
+      redirect(`/vendor/requests/${requestId}?error=That%20status%20transition%20is%20not%20allowed.`);
+    }
+    if (request.paymentStatus === PaymentStatus.PAID_IN_FULL) {
+      if (vendorFinalBillCents != null || vendorFinalTaxCents != null) {
+        redirect(`/vendor/requests/${requestId}?error=This%20ticket%20is%20already%20marked%20paid%20in%20full.%20Only%20additional%20costs%20may%20be%20submitted.`);
+      }
+    } else if (status === RequestStatus.DONE && vendorFinalBillCents == null) {
+      redirect(`/vendor/requests/${requestId}?error=Enter%20the%20final%20bill%20before%20marking%20the%20job%20complete.`);
+    }
+
+    await prisma.maintenanceRequest.update({
+      where: { id: request.id },
+      data: {
+        status,
+        closedAt: status === RequestStatus.DONE ? new Date() : null,
+        vendorResponseStatus: responseStatus,
+        vendorPlannedStartDate: plannedStartDate,
+        vendorExpectedCompletionDate: expectedCompletionDate,
+        vendorPricingType: pricingType,
+        vendorPriceCents,
+        vendorFinalBillCents,
+        vendorFinalTaxCents,
+        vendorAdditionalCostsCents,
+        vendorAdditionalTaxCents,
+        attachments: bidAttachments.length > 0 ? { create: bidAttachments } : undefined,
+        events: {
+          create: {
+            type: RequestEventType.TENANT_UPDATE,
+            actorRole: UserRole.VENDOR,
+            actorName,
+            body: body || 'Vendor updated dispatched work details.',
+            visibility: shareWithTenant ? EventVisibility.ALL : EventVisibility.VENDOR,
+          },
+        },
+      },
     });
   }
-
-  await prisma.maintenanceRequest.update({
-    where: { id: request.id },
-    data: {
-      status,
-      closedAt: status === RequestStatus.DONE ? new Date() : null,
-      vendorResponseStatus: responseStatus,
-      vendorPlannedStartDate: plannedStartDate,
-      vendorExpectedCompletionDate: expectedCompletionDate,
-      vendorPricingType: pricingType,
-      vendorPriceCents,
-      vendorOfferStatus: nextOfferStatus,
-      vendorFinalBillCents,
-      vendorFinalTaxCents,
-      vendorAdditionalCostsCents,
-      vendorAdditionalTaxCents,
-      attachments: bidAttachments.length > 0
-        ? {
-            create: bidAttachments,
-          }
-        : undefined,
-      events: events.length > 0 ? { create: events } : undefined,
-    },
-  });
 
   revalidatePath('/vendor/queue');
   revalidatePath(`/vendor/requests/${requestId}`);
   revalidatePath('/operator');
   revalidatePath('/operator/requests');
   revalidatePath(`/operator/requests/${requestId}`);
-  revalidatePath(`/operator/properties/${request.propertyId}`);
-  revalidatePath(`/operator/units/${request.unitId}`);
   revalidatePath(`/tenant/request/${requestId}`);
   redirect(`/vendor/requests/${requestId}?saved=1`);
 }

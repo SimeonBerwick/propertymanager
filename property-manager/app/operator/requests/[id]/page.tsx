@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { EventVisibility, PaymentStatus, RequestStatus } from '@prisma/client';
+import { EventVisibility, PaymentStatus, RequestStatus, RequestTenderStatus } from '@prisma/client';
 import { AppShell } from '@/components/app-shell';
 import { ActionLink, PageActions } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
@@ -28,21 +28,37 @@ function getPaymentStatusLabel(status: PaymentStatus) {
   }
 }
 
+function getTenderStatusLabel(status: RequestTenderStatus) {
+  switch (status) {
+    case RequestTenderStatus.REQUESTED:
+      return 'Bid requested';
+    case RequestTenderStatus.SUBMITTED:
+      return 'Offer submitted';
+    case RequestTenderStatus.DECLINED:
+      return 'Declined';
+    case RequestTenderStatus.AWARDED:
+      return 'Awarded';
+    case RequestTenderStatus.NOT_AWARDED:
+      return 'Not awarded';
+    case RequestTenderStatus.CANCELED:
+      return 'Canceled';
+  }
+}
+
 export default async function OperatorRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireOperatorSession();
   const { id } = await params;
   const [request, vendors] = await Promise.all([
     prisma.maintenanceRequest.findFirst({
-      where: { id, property: { organizationId: session.organizationId } }, 
+      where: { id, property: { organizationId: session.organizationId } },
       include: {
         property: true,
         unit: true,
         tenant: true,
         assignedVendor: true,
         attachments: true,
-        events: {
-          orderBy: { createdAt: 'desc' },
-        },
+        tenders: { include: { vendor: true }, orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }] },
+        events: { orderBy: { createdAt: 'desc' } },
       },
     }),
     prisma.vendor.findMany({
@@ -74,12 +90,14 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
     if (!regionId) return true;
     return vendor.serviceAreaAssignments.some((assignment) => assignment.regionId === regionId);
   });
-  const hasVendorOfferToReview = Boolean(request.assignedVendorId) && request.vendorOfferStatus === 'PENDING_REVIEW';
-  const hasAcceptedOffer = request.vendorOfferStatus === 'ACCEPTED';
-  const showBidSelection = !request.assignedVendorId && !hasVendorOfferToReview && !hasAcceptedOffer;
-  const showOfferDecision = hasVendorOfferToReview;
+  const openTenders = request.tenders.filter((tender) => tender.status === RequestTenderStatus.REQUESTED || tender.status === RequestTenderStatus.SUBMITTED);
+  const submittedTenders = request.tenders.filter((tender) => tender.status === RequestTenderStatus.SUBMITTED);
+  const awardedTender = request.tenders.find((tender) => tender.status === RequestTenderStatus.AWARDED);
+  const hasAcceptedOffer = request.vendorOfferStatus === 'ACCEPTED' || Boolean(awardedTender);
+  const showBidSelection = !hasAcceptedOffer;
+  const showOfferDecision = submittedTenders.length > 0 && !hasAcceptedOffer;
   const showDispatch = hasAcceptedOffer;
-  const showPaymentAndCancel = hasVendorOfferToReview || hasAcceptedOffer;
+  const showPaymentAndCancel = request.tenders.length > 0 || hasAcceptedOffer;
 
   return (
     <AppShell>
@@ -97,7 +115,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <p>Tenant / occupancy: {request.tenant?.name || 'Empty unit / turnover prep'}</p>
-              <p>Vendor: {request.assignedVendor?.name || 'Unassigned'}</p>
+              <p>Awarded vendor: {request.assignedVendor?.name || 'Not awarded yet'}</p>
               <p>Created: {formatDateTime(request.createdAt)}</p>
               <p>Scheduled: {formatDateTime(request.scheduledFor)}</p>
             </div>
@@ -105,6 +123,8 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-slate-700">
               <p><strong>Vendor response:</strong> {getVendorResponseLabel(request.vendorResponseStatus)}</p>
               <p><strong>Offer status:</strong> {getVendorOfferStatusLabel(request.vendorOfferStatus)}</p>
+              <p><strong>Open tenders:</strong> {openTenders.length}</p>
+              <p><strong>Submitted offers:</strong> {submittedTenders.length}</p>
               <p><strong>Planned start:</strong> {formatDateTime(request.vendorPlannedStartDate)}</p>
               <p><strong>Expected completion:</strong> {formatDateTime(request.vendorExpectedCompletionDate)}</p>
               <p><strong>Payment status:</strong> {getPaymentStatusLabel(request.paymentStatus)}</p>
@@ -156,7 +176,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
 
           <div className="space-y-6">
             {showBidSelection ? (
-              <PageSection title="Select vendors to bid" description="New ticket phase. Pick one or more vendors to send this job out for pricing.">
+              <PageSection title="Tender vendors" description="Send this request to one or more vendors for pricing.">
                 {region ? (
                   <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                     Service area: <strong>{region.name}</strong> · Preferred vendor: <strong>{region.preferredVendor?.name || 'None set'}</strong>
@@ -164,78 +184,95 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                 ) : null}
                 <form action={dispatchAction} className="space-y-3">
                   <input type="hidden" name="dispatchMode" value="request_bid" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Select vendor</p>
-                    <p className="text-xs text-slate-500">Current system supports one active vendor thread on a ticket. Multi-vendor bidding is the next layer, but this gets the workflow into the right phase now.</p>
+                  <div className="space-y-2 text-sm text-slate-700">
+                    {eligibleDispatchVendors.map((vendor) => {
+                      const tender = request.tenders.find((entry) => entry.vendorId === vendor.id);
+                      const isChecked = tender ? tender.status !== RequestTenderStatus.NOT_AWARDED && tender.status !== RequestTenderStatus.CANCELED : false;
+                      return (
+                        <label key={vendor.id} className="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+                          <input type="checkbox" name="vendorIds" value={vendor.id} defaultChecked={isChecked} />
+                          <span>
+                            <span className="block font-medium text-slate-900">{vendor.name} · {vendor.trade}{region?.preferredVendorId === vendor.id ? ' · preferred' : ''}</span>
+                            <span className="block text-xs text-slate-500">{tender ? `Current tender status: ${getTenderStatusLabel(tender.status)}` : 'No tender sent yet'}</span>
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
-                  <label className="block text-sm text-slate-700">
-                    <span className="mb-1 block font-medium">Vendor</span>
-                    <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
-                      <option value="">Select vendor</option>
-                      {eligibleDispatchVendors.map((vendor) => (
-                        <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}{region?.preferredVendorId === vendor.id ? ' · preferred' : ''}</option>
-                      ))}
-                    </select>
-                  </label>
                   <label className="block text-sm text-slate-700">
                     <span className="mb-1 block font-medium">Bid request note</span>
                     <textarea name="scopeOfWork" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Describe the work and ask for pricing or scope confirmation." />
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input type="checkbox" name="isVendorVisible" defaultChecked />
+                    <input type="checkbox" name="isVendorVisible" defaultChecked={request.isVendorVisible} />
                     Share this request with the vendor portal
                   </label>
-                  <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Send bid request</button>
+                  <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Send tender requests</button>
                 </form>
               </PageSection>
             ) : null}
 
-            {showOfferDecision ? (
-              <PageSection title="Vendor offer decision" description="A bid came back. Accept it or reject it and send it back or reassign.">
-                <div className="mb-3 rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-900">
-                  Offer received from <strong>{request.assignedVendor?.name || 'assigned vendor'}</strong>.
+            <PageSection title="Tender board" description="Compare vendor responses and award one vendor when ready.">
+              {request.tenders.length === 0 ? (
+                <p className="text-sm text-slate-600">No tenders have been sent for this request yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {request.tenders.map((tender) => (
+                    <div key={tender.id} className="rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-slate-900">{tender.vendor.name}</p>
+                          <p className="text-xs text-slate-500">{getTenderStatusLabel(tender.status)} · Requested {formatDateTime(tender.requestedAt)}</p>
+                        </div>
+                        <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-800">{getVendorPricingTypeLabel(tender.pricingType)}{tender.priceCents != null ? ` · ${formatCurrencyFromCents(tender.priceCents)}` : ''}</span>
+                      </div>
+                      <div className="mt-3 space-y-1">
+                        <p><strong>Scope:</strong> {tender.scopeOfWork || 'No scope note'}</p>
+                        <p><strong>Vendor note:</strong> {tender.vendorNote || 'No vendor note yet'}</p>
+                        <p><strong>Planned start:</strong> {formatDateTime(tender.plannedStartDate)}</p>
+                        <p><strong>Expected completion:</strong> {formatDateTime(tender.expectedCompletionDate)}</p>
+                      </div>
+                      {tender.status === RequestTenderStatus.SUBMITTED && !hasAcceptedOffer ? (
+                        <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
+                          <form action={acceptOfferAction} className="space-y-3 border-b border-slate-200 pb-4">
+                            <input type="hidden" name="tenderId" value={tender.id} />
+                            <label className="block text-sm text-slate-700">
+                              <span className="mb-1 block font-medium">Award note (optional)</span>
+                              <textarea name="body" rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Optional note when awarding this vendor." />
+                            </label>
+                            <button className="rounded-md bg-emerald-700 px-4 py-2 text-sm text-white" type="submit">Award vendor</button>
+                          </form>
+
+                          <form action={vendorOfferAction} className="space-y-3">
+                            <input type="hidden" name="tenderId" value={tender.id} />
+                            <label className="block text-sm text-slate-700">
+                              <span className="mb-1 block font-medium">Response</span>
+                              <select name="vendorOfferAction" defaultValue="send_back" className="w-full rounded-md border border-slate-300 px-3 py-2">
+                                <option value="send_back">Send back for revision</option>
+                                <option value="reject">Reject / not award</option>
+                              </select>
+                            </label>
+                            <label className="block text-sm text-slate-700">
+                              <span className="mb-1 block font-medium">Required note</span>
+                              <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain what needs to change or why this offer is not being awarded." />
+                            </label>
+                            <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Send response</button>
+                          </form>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
-                <form action={acceptOfferAction} className="space-y-3 border-b border-slate-200 pb-4">
-                  <label className="block text-sm text-slate-700">
-                    <span className="mb-1 block font-medium">Acceptance note (optional)</span>
-                    <textarea name="body" rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Optional note to vendor when accepting this offer." />
-                  </label>
-                  <button className="rounded-md bg-emerald-700 px-4 py-2 text-sm text-white" type="submit">Accept vendor offer</button>
-                </form>
-
-                <form action={vendorOfferAction} className="space-y-3 pt-4">
-                  <label className="block text-sm text-slate-700">
-                    <span className="mb-1 block font-medium">Rejection path</span>
-                    <select name="vendorOfferAction" defaultValue="send_back" className="w-full rounded-md border border-slate-300 px-3 py-2">
-                      <option value="send_back">Reject and send back to current vendor</option>
-                      <option value="send_to_another_vendor">Reject and send to another vendor</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm text-slate-700">
-                    <span className="mb-1 block font-medium">If reassigning, choose vendor</span>
-                    <select name="reassignedVendorId" defaultValue="" className="w-full rounded-md border border-slate-300 px-3 py-2">
-                      <option value="">Select vendor</option>
-                      {eligibleDispatchVendors.map((vendor) => (
-                        <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-sm text-slate-700">
-                    <span className="mb-1 block font-medium">Required rejection note</span>
-                    <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why the offer is rejected or what the vendor must change for approval." />
-                  </label>
-                  <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Send vendor response</button>
-                </form>
-              </PageSection>
-            ) : null}
+              )}
+            </PageSection>
 
             {showDispatch ? (
-              <PageSection title="Dispatch" description="Offer accepted. Set the visit and dispatch the work.">
+              <PageSection title="Dispatch" description="Award complete. Confirm visit details and dispatch the work.">
                 <form action={dispatchAction} className="space-y-3">
                   <input type="hidden" name="dispatchMode" value="assign" />
                   <label className="block text-sm text-slate-700">
                     <span className="mb-1 block font-medium">Assigned vendor</span>
-                    <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? awardedTender?.vendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
                       <option value="">Select vendor</option>
                       {eligibleDispatchVendors.map((vendor) => (
                         <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
@@ -276,7 +313,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
             </PageSection>
 
             {showPaymentAndCancel ? (
-              <PageSection title="Payment status" description="Visible once the request is in offer-review or dispatch phase.">
+              <PageSection title="Payment status" description="Visible once the request is in tender or dispatch phase.">
                 <form action={paymentAction} className="space-y-3">
                   <label className="block text-sm text-slate-700">
                     <span className="mb-1 block font-medium">Payment state</span>
