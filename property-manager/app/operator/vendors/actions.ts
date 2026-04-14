@@ -9,7 +9,9 @@ import { requireOperatorSession } from '@/lib/auth';
 import {
   buildVendorPreferredVendorCleanup,
   isVendorEligibleForPreferredSelection,
+  normalizeVendorTradeInput,
   parseVendorImportCsv,
+  parseVendorSkillTagInputs,
   parseVendorSkillTags,
 } from '@/lib/vendor-management';
 
@@ -74,7 +76,7 @@ export async function createVendor(formData: FormData) {
   try {
     const session = await requireOperatorSession();
     const name = getString(formData, 'name');
-    const trade = getString(formData, 'trade');
+    const trade = normalizeVendorTradeInput(getString(formData, 'trade'), getOptionalString(formData, 'customTrade'));
     if (!name) throw new Error('Vendor name is required.');
     if (!trade) throw new Error('Vendor trade is required.');
 
@@ -82,7 +84,10 @@ export async function createVendor(formData: FormData) {
     const preferredRegionIds = new Set(
       formData.getAll('preferredRegionIds').filter((value): value is string => typeof value === 'string' && value.trim().length > 0),
     );
-    const skillTags = parseVendorSkillTags(getString(formData, 'skillTags'));
+    const skillTags = parseVendorSkillTagInputs([
+      ...formData.getAll('skillTags').filter((value): value is string => typeof value === 'string'),
+      getString(formData, 'newSkillTags'),
+    ]);
 
     const allowedRegions = await prisma.region.findMany({
       where: { organizationId: session.organizationId, id: { in: selectedRegionIds } },
@@ -267,7 +272,10 @@ export async function saveVendorAssignments(formData: FormData) {
     const preferredRegionIds = new Set(
       formData.getAll('preferredRegionIds').filter((value): value is string => typeof value === 'string' && value.trim().length > 0),
     );
-    const skillTags = parseVendorSkillTags(getString(formData, 'skillTags'));
+    const skillTags = parseVendorSkillTagInputs([
+      ...formData.getAll('skillTags').filter((value): value is string => typeof value === 'string'),
+      getString(formData, 'newSkillTags'),
+    ]);
 
     const allowedRegions = await prisma.region.findMany({
       where: { organizationId: session.organizationId, id: { in: selectedRegionIds } },

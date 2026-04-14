@@ -1,6 +1,19 @@
 import { Prisma, type Vendor } from '@prisma/client';
 
 export const MAX_SERVICE_AREAS_PER_ORG = 10;
+export const DEFAULT_VENDOR_TRADES = [
+  'General',
+  'Plumbing',
+  'Electrical',
+  'HVAC',
+  'Appliance',
+  'Painting',
+  'Cleaning',
+  'Flooring',
+  'Landscaping',
+  'Locksmith',
+  'Pest Control',
+] as const;
 
 export type ParsedVendorImportRow = {
   name: string;
@@ -62,6 +75,23 @@ export function parseVendorSkillTags(raw: string) {
 
   const deduped = new Map(tags.map((tag) => [tag.slug, tag]));
   return [...deduped.values()];
+}
+
+export function parseVendorSkillTagInputs(rawValues: string[]) {
+  const tags = rawValues
+    .flatMap((value) => parseVendorSkillTags(value))
+    .filter((value, index, array) => array.findIndex((candidate) => candidate.slug === value.slug) === index);
+
+  return tags;
+}
+
+export function normalizeVendorTradeInput(selectedTrade: string, customTrade?: string | null) {
+  const trade = (selectedTrade === '__custom__' ? customTrade ?? '' : selectedTrade).trim().replace(/\s+/g, ' ');
+  if (!trade) return null;
+  return trade
+    .split(' ')
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(' ');
 }
 
 function splitCsvLine(line: string) {
