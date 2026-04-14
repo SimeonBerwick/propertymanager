@@ -61,7 +61,7 @@ export default async function AuthPage({ searchParams }: { searchParams?: Promis
           ) : null}
           <div className="grid gap-6 lg:grid-cols-3">
             {loginCards.map((card) => (
-              <form key={card.role} action={login} className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+              <form key={card.role} action={login} method="post" className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
                 <input type="hidden" name="role" value={card.role} />
                 <div>
                   <p className="font-medium text-slate-900">{card.title}</p>
