@@ -320,6 +320,7 @@ export async function respondToVendorOffer(requestId: string, formData: FormData
 export async function dispatchRequest(requestId: string, formData: FormData) {
   const session = await requireOperatorSession();
   const assignedVendorId = getString(formData, 'assignedVendorId');
+  const dispatchMode = getString(formData, 'dispatchMode') || 'assign';
   const scheduledForInput = getString(formData, 'scheduledFor');
   const scopeOfWork = getString(formData, 'scopeOfWork');
   const isVendorVisible = getBoolean(formData, 'isVendorVisible');
@@ -365,6 +366,15 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     redirect(`/operator/requests/${requestId}`);
   }
 
+  const vendorShouldSeeRequest = assignedVendorId ? isVendorVisible : false;
+  const nextVendorResponseStatus = assignedVendorId
+    ? VendorResponseStatus.PENDING
+    : request.vendorResponseStatus;
+  const nextVendorOfferStatus = dispatchMode === 'request_bid' && assignedVendorId
+    ? VendorOfferStatus.PENDING_REVIEW
+    : assignedVendorId
+      ? VendorOfferStatus.NONE
+      : request.vendorOfferStatus;
   const nextStatus = assignedVendorId && scheduledFor && request.status === RequestStatus.NEW
     ? RequestStatus.SCHEDULED
     : request.status;
@@ -404,8 +414,22 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
       type: RequestEventType.COMMENT,
       actorRole: UserRole.OPERATOR,
       actorName: session.displayName,
-      body: scopeOfWork,
-      visibility: isVendorVisible ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
+      body: dispatchMode === 'request_bid'
+        ? `Bid request: ${scopeOfWork}`
+        : scopeOfWork,
+      visibility: vendorShouldSeeRequest ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
+    });
+  }
+
+  if (assignedVendorId && request.assignedVendorId !== assignedVendorId) {
+    events.push({
+      type: RequestEventType.TENANT_UPDATE,
+      actorRole: UserRole.OPERATOR,
+      actorName: session.displayName,
+      body: dispatchMode === 'request_bid'
+        ? `Bid requested from ${nextVendor?.name || 'assigned vendor'}.`
+        : `Work dispatched to ${nextVendor?.name || 'assigned vendor'}.`,
+      visibility: vendorShouldSeeRequest ? EventVisibility.VENDOR : EventVisibility.INTERNAL,
     });
   }
 
@@ -424,8 +448,10 @@ export async function dispatchRequest(requestId: string, formData: FormData) {
     data: {
       assignedVendorId: assignedVendorId || null,
       scheduledFor,
-      isVendorVisible,
+      isVendorVisible: vendorShouldSeeRequest,
       status: nextStatus,
+      vendorResponseStatus: nextVendorResponseStatus,
+      vendorOfferStatus: nextVendorOfferStatus,
       events: events.length > 0 ? { create: events } : undefined,
     },
   });

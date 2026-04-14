@@ -223,13 +223,20 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               </form>
             </PageSection>
 
-            <PageSection title="Dispatch" description="Assign the vendor, set the next visit, and push a vendor-visible work order note.">
+            <PageSection title="Dispatch or request bid" description="Choose a vendor, either request pricing or fully dispatch the work, and push a vendor-visible scope note from the request itself.">
               {region ? (
                 <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                   Service area: <strong>{region.name}</strong> · Preferred vendor: <strong>{region.preferredVendor?.name || 'None set'}</strong>
                 </div>
               ) : null}
               <form action={dispatchAction} className="space-y-3">
+                <label className="block text-sm text-slate-700">
+                  <span className="mb-1 block font-medium">Workflow</span>
+                  <select name="dispatchMode" defaultValue={request.assignedVendorId && request.vendorOfferStatus === 'PENDING_REVIEW' ? 'request_bid' : 'assign'} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                    <option value="request_bid">Request bid / pricing from vendor</option>
+                    <option value="assign">Assign and dispatch work order</option>
+                  </select>
+                </label>
                 <label className="block text-sm text-slate-700">
                   <span className="mb-1 block font-medium">Assigned vendor</span>
                   <select name="assignedVendorId" defaultValue={request.assignedVendorId ?? ''} className="w-full rounded-md border border-slate-300 px-3 py-2">
@@ -246,18 +253,18 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
                   </button>
                 ) : null}
                 <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Scheduled visit</span>
+                  <span className="mb-1 block font-medium">Scheduled visit (optional for bidding)</span>
                   <input name="scheduledFor" type="datetime-local" defaultValue={request.scheduledFor ? new Date(request.scheduledFor.getTime() - request.scheduledFor.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''} className="w-full rounded-md border border-slate-300 px-3 py-2" />
                 </label>
                 <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Dispatch note</span>
-                  <textarea name="scopeOfWork" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Scope of work, access notes, parts needed, or arrival window." />
+                  <span className="mb-1 block font-medium">Scope / bid note</span>
+                  <textarea name="scopeOfWork" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Describe the job, ask for pricing, include access notes, or define arrival expectations." />
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input type="checkbox" name="isVendorVisible" defaultChecked={request.isVendorVisible} />
+                  <input type="checkbox" name="isVendorVisible" defaultChecked={request.assignedVendorId ? request.isVendorVisible : true} />
                   Share this request with the assigned vendor portal
                 </label>
-                <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Save dispatch</button>
+                <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Save vendor workflow</button>
               </form>
             </PageSection>
 
