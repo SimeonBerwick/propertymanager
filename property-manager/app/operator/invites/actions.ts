@@ -1,5 +1,6 @@
 'use server';
 
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireOperatorSession } from '@/lib/auth';
@@ -31,6 +32,9 @@ export async function createTenantInviteAction(formData: FormData) {
     revalidatePath('/operator/units');
     redirect(`${returnTo}?inviteLink=${encodeURIComponent(result.inviteLink)}&inviteType=tenant` as never);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(`${returnTo}?error=${encodeURIComponent(getErrorMessage(error))}` as never);
   }
 }
@@ -52,6 +56,9 @@ export async function createVendorInviteAction(formData: FormData) {
     revalidatePath('/operator/vendors');
     redirect(`${returnTo}?inviteLink=${encodeURIComponent(result.inviteLink)}&inviteType=vendor` as never);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(`${returnTo}?error=${encodeURIComponent(getErrorMessage(error))}` as never);
   }
 }
