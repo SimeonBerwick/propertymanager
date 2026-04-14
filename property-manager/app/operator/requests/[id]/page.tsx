@@ -90,7 +90,7 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{request.category}</span>
             </div>
             <div className="grid gap-2 md:grid-cols-2">
-              <p>Tenant: {request.tenant?.name || 'None linked'}</p>
+              <p>Tenant / occupancy: {request.tenant?.name || 'Empty unit / turnover prep'}</p>
               <p>Vendor: {request.assignedVendor?.name || 'Unassigned'}</p>
               <p>Created: {formatDateTime(request.createdAt)}</p>
               <p>Scheduled: {formatDateTime(request.scheduledFor)}</p>

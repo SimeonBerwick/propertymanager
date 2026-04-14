@@ -62,7 +62,7 @@ export default async function EditRequestPage({
             </Field>
             <Field label="Tenant (optional)">
               <Select name="tenantId" defaultValue={request.tenantId ?? ''}>
-                <option value="">No tenant linked</option>
+                <option value="">Empty unit / turnover prep</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>{tenant.name} — {tenant.unit.property.name} / {tenant.unit.label}</option>
                 ))}

@@ -61,7 +61,7 @@ export default async function RequestsPage({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium text-slate-900">{request.title}</p>
-                    <p className="text-sm text-slate-600">{request.property.name} · {request.property.region?.name || 'Unassigned region'} · Unit {request.unit.label} · {request.tenant?.name || 'No tenant linked'}</p>
+                    <p className="text-sm text-slate-600">{request.property.name} · {request.property.region?.name || 'Unassigned region'} · Unit {request.unit.label} · {request.tenant?.name || 'Empty unit / turnover prep'}</p>
                     <p className="mt-1 text-xs text-slate-500">Vendor: {request.assignedVendor?.name || 'Unassigned'} · Updated {formatDateTime(request.updatedAt)} · {request._count.events} events</p>
                   </div>
                   <div className="flex gap-2 text-xs font-medium">
