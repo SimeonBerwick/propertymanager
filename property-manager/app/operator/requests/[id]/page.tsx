@@ -151,44 +151,54 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
           </PageSection>
 
           <div className="space-y-6">
-            <PageSection title="Status transition" description="Operator-only state changes with timeline logging.">
-              <form action={statusAction} className="space-y-3">
-                <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Next status</span>
-                  <select name="status" defaultValue={request.status} className="w-full rounded-md border border-slate-300 px-3 py-2">
-                    {REQUEST_STATUSES.map((status) => (
-                      <option key={status} value={status} disabled={status !== request.status && !canTransition(request.status, status)}>
-                        {getRequestStatusLabel(status)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update status</button>
-              </form>
-            </PageSection>
+            <PageSection title="Operations" description="Core controls, collapsed into one place so the request page stays usable.">
+              <div className="space-y-6">
+                <form action={statusAction} className="space-y-3 border-b border-slate-200 pb-5">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Status</p>
+                    <p className="text-xs text-slate-500">Move the ticket through its lifecycle.</p>
+                  </div>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Next status</span>
+                    <select name="status" defaultValue={request.status} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                      {REQUEST_STATUSES.map((status) => (
+                        <option key={status} value={status} disabled={status !== request.status && !canTransition(request.status, status)}>
+                          {getRequestStatusLabel(status)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update status</button>
+                </form>
 
-            <PageSection title="Payment status" description="Operator-controlled payment state for this ticket.">
-              <form action={paymentAction} className="space-y-3">
-                <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Payment state</span>
-                  <select name="paymentStatus" defaultValue={request.paymentStatus} className="w-full rounded-md border border-slate-300 px-3 py-2">
-                    {paymentStatusOptions.map((status) => (
-                      <option key={status} value={status}>{getPaymentStatusLabel(status)}</option>
-                    ))}
-                  </select>
-                </label>
-                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update payment status</button>
-              </form>
-            </PageSection>
+                <form action={paymentAction} className="space-y-3 border-b border-slate-200 pb-5">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Payment</p>
+                    <p className="text-xs text-slate-500">Track where billing stands.</p>
+                  </div>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Payment state</span>
+                    <select name="paymentStatus" defaultValue={request.paymentStatus} className="w-full rounded-md border border-slate-300 px-3 py-2">
+                      {paymentStatusOptions.map((status) => (
+                        <option key={status} value={status}>{getPaymentStatusLabel(status)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update payment status</button>
+                </form>
 
-            <PageSection title="Tenant comments" description="Allow or shut down tenant notes on this specific ticket.">
-              <form action={tenantCommentsAction} className="space-y-3">
-                <label className="flex items-center gap-2 text-sm text-slate-700">
-                  <input type="checkbox" name="tenantCommentsOpen" defaultChecked={request.tenantCommentsOpen} />
-                  Allow tenant comments while this ticket is open
-                </label>
-                <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update comment access</button>
-              </form>
+                <form action={tenantCommentsAction} className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Tenant comments</p>
+                    <p className="text-xs text-slate-500">Control whether the resident can keep replying.</p>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" name="tenantCommentsOpen" defaultChecked={request.tenantCommentsOpen} />
+                    Allow tenant comments while this ticket is open
+                  </label>
+                  <button className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white" type="submit">Update comment access</button>
+                </form>
+              </div>
             </PageSection>
 
             <PageSection title="Vendor workflow" description="Keep vendor work in one place: assign someone, request a bid, dispatch the job, then review the offer when it comes back.">
@@ -279,34 +289,44 @@ export default async function OperatorRequestDetailPage({ params }: { params: Pr
               ) : null}
             </PageSection>
 
-            <PageSection title="Cancel ticket" description="Cancel bogus or invalid renter requests so they stop flowing as active work.">
-              <form action={cancelAction} className="space-y-3">
-                <label className="block text-sm text-slate-700">
-                  <span className="mb-1 block font-medium">Cancellation reason</span>
-                  <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why this renter request is being canceled." />
-                </label>
-                <button className="rounded-md bg-rose-700 px-4 py-2 text-sm text-white" type="submit">Cancel ticket</button>
-              </form>
-            </PageSection>
+            <PageSection title="Notes and files" description="Operator notes, attachments, and destructive controls in one lower-priority block.">
+              <div className="space-y-6">
+                <form action={noteAction} className="space-y-3 border-b border-slate-200 pb-5">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Internal note</p>
+                    <p className="text-xs text-slate-500">Add context for ops follow-through.</p>
+                  </div>
+                  <textarea name="body" rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Leave an internal note for ops follow-through" />
+                  <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Add note</button>
+                </form>
 
-            <PageSection title="Internal note" description="Operator-only note added to the request timeline.">
-              <form action={noteAction} className="space-y-3">
-                <textarea name="body" rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Leave an internal note for ops follow-through" />
-                <button className="rounded-md bg-brand-700 px-4 py-2 text-sm text-white" type="submit">Add note</button>
-              </form>
-            </PageSection>
+                <div className="space-y-2 border-b border-slate-200 pb-5 text-sm text-slate-700">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Attachments</p>
+                    <p className="text-xs text-slate-500">Stored files related to this request.</p>
+                  </div>
+                  {request.attachments.length === 0 ? <p>No attachments on this request yet.</p> : request.attachments.map((attachment) => {
+                    const attachmentUrl = getAttachmentUrl(attachment.id);
+                    const label = attachment.mimeType === 'application/pdf' ? 'PDF bid' : 'Attachment';
+                    return (
+                      <p key={attachment.id}>
+                        <a href={attachmentUrl} target="_blank" rel="noreferrer" className="text-brand-700 underline">{label}</a> · {attachment.mimeType}
+                      </p>
+                    );
+                  })}
+                </div>
 
-            <PageSection title="Attachments" description="Stored attachment references loaded from Prisma.">
-              <div className="space-y-2 text-sm text-slate-700">
-                {request.attachments.length === 0 ? <p>No attachments on this request yet.</p> : request.attachments.map((attachment) => {
-                  const attachmentUrl = getAttachmentUrl(attachment.id);
-                  const label = attachment.mimeType === 'application/pdf' ? 'PDF bid' : 'Attachment';
-                  return (
-                    <p key={attachment.id}>
-                      <a href={attachmentUrl} target="_blank" rel="noreferrer" className="text-brand-700 underline">{label}</a> · {attachment.mimeType}
-                    </p>
-                  );
-                })}
+                <form action={cancelAction} className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Cancel ticket</p>
+                    <p className="text-xs text-slate-500">Use only for invalid or dead-end requests.</p>
+                  </div>
+                  <label className="block text-sm text-slate-700">
+                    <span className="mb-1 block font-medium">Cancellation reason</span>
+                    <textarea name="body" rows={4} className="w-full rounded-md border border-slate-300 px-3 py-2" placeholder="Explain why this renter request is being canceled." />
+                  </label>
+                  <button className="rounded-md bg-rose-700 px-4 py-2 text-sm text-white" type="submit">Cancel ticket</button>
+                </form>
               </div>
             </PageSection>
           </div>
