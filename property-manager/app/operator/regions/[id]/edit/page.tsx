@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { ErrorBanner, Field, FormActions, Input, Textarea } from '@/components/operator-form-ui';
+import { ErrorBanner, Field, FormActions, Input, Select, Textarea } from '@/components/operator-form-ui';
 import { PageSection } from '@/components/page-section';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorSession } from '@/lib/auth';
@@ -15,7 +15,10 @@ export default async function EditRegionPage({
 }) {
   const session = await requireOperatorSession();
   const { id } = await params;
-  const region = await prisma.region.findFirst({ where: { id, organizationId: session.organizationId } });
+  const [region, vendors] = await Promise.all([
+    prisma.region.findFirst({ where: { id, organizationId: session.organizationId } }),
+    prisma.vendor.findMany({ where: { organizationId: session.organizationId, isActive: true, isAvailable: true, deletedAt: null }, orderBy: [{ trade: 'asc' }, { name: 'asc' }] }),
+  ]);
   if (!region) notFound();
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -34,6 +37,14 @@ export default async function EditRegionPage({
               <Input name="slug" defaultValue={region.slug ?? ''} />
             </Field>
           </div>
+          <Field label="Preferred vendor (optional)">
+            <Select name="preferredVendorId" defaultValue={region.preferredVendorId ?? ''}>
+              <option value="">None</option>
+              {vendors.map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>{vendor.name} · {vendor.trade}</option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Notes">
             <Textarea name="notes" rows={5} defaultValue={region.notes ?? ''} />
           </Field>

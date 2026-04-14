@@ -13,6 +13,11 @@ export default async function RegionDetailPage({ params }: { params: Promise<{ i
   const region = await prisma.region.findFirst({
     where: { id, organizationId: session.organizationId },
     include: {
+      preferredVendor: true,
+      vendorAssignments: {
+        include: { vendor: true },
+        orderBy: { vendor: { name: 'asc' } },
+      },
       properties: {
         orderBy: { name: 'asc' },
         include: {
@@ -39,6 +44,8 @@ export default async function RegionDetailPage({ params }: { params: Promise<{ i
         </PageActions>
         <PageSection title={region.name} description={`Slug: ${region.slug || '—'}`}>
           <p className="text-sm text-slate-700">{region.notes || 'No region notes yet.'}</p>
+          <p className="mt-3 text-sm text-slate-700"><strong>Preferred vendor:</strong> {region.preferredVendor?.name || 'None set'}</p>
+          <p className="mt-2 text-sm text-slate-700"><strong>Assigned vendors:</strong> {region.vendorAssignments.length > 0 ? region.vendorAssignments.map((assignment) => assignment.vendor.name).join(', ') : 'None assigned'}</p>
         </PageSection>
         <PageSection title="Properties in this region" description="Portfolio grouped under this operating region.">
           <div className="space-y-3">
