@@ -41,6 +41,8 @@ enum RequestCategory {
   ELECTRICAL
   HVAC
   APPLIANCE
+  PAINTING
+  CLEANING
   GENERAL
   OTHER
 }

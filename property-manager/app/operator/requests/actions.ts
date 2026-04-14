@@ -1,5 +1,6 @@
 'use server';
 
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { EventVisibility, Prisma, RequestEventType, UserRole } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -40,6 +41,9 @@ export async function createRequest(formData: FormData) {
     revalidatePath(`/operator/units/${request.unitId}`);
     redirect(`/operator/requests/${request.id}`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(`/operator/requests/new?error=${encodeURIComponent(getErrorMessage(error))}`);
   }
 }
@@ -92,6 +96,9 @@ export async function updateRequest(requestId: string, formData: FormData) {
     revalidatePath(`/operator/units/${updated.unitId}`);
     redirect(`/operator/requests/${requestId}`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     redirect(`/operator/requests/${requestId}/edit?error=${encodeURIComponent(getErrorMessage(error))}`);
   }
 }
