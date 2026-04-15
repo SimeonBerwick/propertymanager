@@ -217,6 +217,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               currentSlaBucket={data.request.slaBucket}
               currentTriageTags={data.request.triageTags}
               assignedVendorNames={data.request.assignedVendorNames}
+              tenders={data.tenders}
             />
           </SectionCard>
 
