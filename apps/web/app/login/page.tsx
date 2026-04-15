@@ -1,6 +1,12 @@
 import { LoginForm } from './login-form'
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string }>
+}) {
+  const params = searchParams ? await searchParams : undefined
+  const error = params?.error
   return (
     <div style={{ maxWidth: 420, margin: '48px auto 0' }}>
       <div className="card stack">
@@ -11,7 +17,7 @@ export default function LoginPage() {
         <p className="muted" style={{ margin: 0 }}>
           Sign in to manage your properties, maintenance requests, and tenant communications.
         </p>
-        <LoginForm />
+        <LoginForm error={error} />
       </div>
     </div>
   )

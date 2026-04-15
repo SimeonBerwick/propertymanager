@@ -64,7 +64,7 @@ function authenticateAgainstDevFallback(email: string, password: string) {
   }
 }
 
-export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
+export async function authenticateLogin(formData: FormData): Promise<{ error: string | null; user?: { userId: string; email: string; role: string } }> {
   assertProductionAuthEnv()
 
   const email = formData.get('email')
@@ -97,12 +97,21 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: 'Invalid email or password' }
   }
 
+  return { error: null, user: authenticatedUser }
+}
+
+export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
+  const result = await authenticateLogin(formData)
+  if (result.error || !result.user) {
+    return { error: result.error ?? 'Invalid email or password' }
+  }
+
   try {
     const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
     session.isLoggedIn = true
-    session.userId = authenticatedUser.userId
-    session.email = authenticatedUser.email
-    session.role = authenticatedUser.role
+    session.userId = result.user.userId
+    session.email = result.user.email
+    session.role = result.user.role
     await session.save()
   } catch (error) {
     logAuthError('session.save', error)

@@ -1,15 +1,21 @@
 'use client'
 
-import { useActionState } from 'react'
-import { login } from '@/lib/auth-actions'
-import type { LoginState } from '@/lib/auth-actions'
+import { useFormStatus } from 'react-dom'
 
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState<LoginState, FormData>(login, { error: '' })
+function SubmitButton() {
+  const { pending } = useFormStatus()
 
   return (
-    <form action={formAction} className="stack">
-      {state?.error && <div className="notice error">{state.error}</div>}
+    <button type="submit" className="button primary" disabled={pending}>
+      {pending ? 'Signing in…' : 'Sign in'}
+    </button>
+  )
+}
+
+export function LoginForm({ error }: { error?: string }) {
+  return (
+    <form action="/api/login" method="post" className="stack">
+      {error ? <div className="notice error">{error}</div> : null}
 
       <label className="field">
         <span className="field-label">Email</span>
@@ -35,9 +41,7 @@ export function LoginForm() {
         />
       </label>
 
-      <button type="submit" className="button primary" disabled={isPending}>
-        {isPending ? 'Signing in…' : 'Sign in'}
-      </button>
+      <SubmitButton />
     </form>
   )
 }
