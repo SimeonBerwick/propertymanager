@@ -121,6 +121,35 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
+          <SectionCard kicker="Tender" title="Vendor bids and invitations" subtitle="Real tender state, not fake single-vendor assignment.">
+            {data.tenders.length ? data.tenders.map((tender) => (
+              <div key={tender.id} className="stack" style={{ gap: 10, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                <div>
+                  <strong>{tender.title ?? 'Tender round'}</strong>
+                  <div className="muted">Status: {tender.status}{tender.sentAt ? ` · Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}</div>
+                </div>
+                {tender.note ? <div className="muted">{tender.note}</div> : null}
+                <div className="stack" style={{ gap: 8 }}>
+                  {tender.invites.map((invite) => (
+                    <div key={invite.id} className="timelineRow">
+                      <div style={{ fontWeight: 600 }}>{invite.vendorName} · {invite.status}</div>
+                      <div className="muted">
+                        {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
+                        {invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}
+                      </div>
+                      {(invite.proposedStart || invite.proposedEnd) ? (
+                        <div className="muted">
+                          {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '—'}
+                          {invite.proposedEnd ? ` → ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )) : <div className="muted">No tender rounds yet.</div>}
+          </SectionCard>
+
           <SectionCard kicker="Dispatch" title="Vendor execution history" subtitle="What has happened in the field so far.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">

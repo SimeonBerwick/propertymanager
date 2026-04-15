@@ -8,6 +8,7 @@ import type {
   Unit,
   Vendor,
   VendorDispatchEvent,
+  RequestTenderView,
 } from '@/lib/types'
 import type { BillingDocumentView } from '@/lib/billing-types'
 import { prisma } from '@/lib/prisma'
@@ -47,6 +48,7 @@ export interface RequestDetailData {
   photos: MaintenancePhoto[]
   recommendedVendors: Vendor[]
   dispatchHistory: VendorDispatchEvent[]
+  tenders: RequestTenderView[]
   billingDocuments: BillingDocumentView[]
 }
 
@@ -286,6 +288,15 @@ export async function getRequestDetailData(requestId: string, userId: string): P
             },
           },
         },
+        tenders: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            invites: {
+              orderBy: { invitedAt: 'asc' },
+              include: { vendor: true },
+            },
+          },
+        },
       },
     })
     if (!dbRequest) return null
@@ -361,6 +372,31 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       })),
     }))
 
+    const tenders: RequestTenderView[] = dbRequest.tenders.map((tender) => ({
+      id: tender.id,
+      status: tender.status,
+      title: tender.title ?? undefined,
+      note: tender.note ?? undefined,
+      sentAt: tender.sentAt?.toISOString() ?? undefined,
+      awardedAt: tender.awardedAt?.toISOString() ?? undefined,
+      createdAt: tender.createdAt.toISOString(),
+      invites: tender.invites.map((invite) => ({
+        id: invite.id,
+        vendorId: invite.vendorId,
+        vendorName: invite.vendor.name,
+        vendorEmail: invite.vendor.email ?? undefined,
+        status: invite.status,
+        bidAmountCents: invite.bidAmountCents ?? undefined,
+        bidCurrency: invite.bidCurrency ?? undefined,
+        availabilityNote: invite.availabilityNote ?? undefined,
+        proposedStart: invite.proposedStart?.toISOString() ?? undefined,
+        proposedEnd: invite.proposedEnd?.toISOString() ?? undefined,
+        invitedAt: invite.invitedAt.toISOString(),
+        respondedAt: invite.respondedAt?.toISOString() ?? undefined,
+        awardedAt: invite.awardedAt?.toISOString() ?? undefined,
+      })),
+    }))
+
     return {
       request,
       comments,
@@ -368,6 +404,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       photos: dbRequest.photos.map(mapPhoto),
       recommendedVendors,
       dispatchHistory,
+      tenders,
       billingDocuments,
     }
   } catch {

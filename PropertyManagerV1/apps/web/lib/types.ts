@@ -95,6 +95,33 @@ export interface VendorDispatchEvent {
   createdAt: string
 }
 
+export interface TenderInviteView {
+  id: string
+  vendorId: string
+  vendorName: string
+  vendorEmail?: string
+  status: string
+  bidAmountCents?: number
+  bidCurrency?: CurrencyOption
+  availabilityNote?: string
+  proposedStart?: string
+  proposedEnd?: string
+  invitedAt: string
+  respondedAt?: string
+  awardedAt?: string
+}
+
+export interface RequestTenderView {
+  id: string
+  status: string
+  title?: string
+  note?: string
+  sentAt?: string
+  awardedAt?: string
+  createdAt: string
+  invites: TenderInviteView[]
+}
+
 export interface StatusEvent {
   id: string
   requestId: string
