@@ -41,9 +41,10 @@ interface Props {
   currentSlaBucket?: string
   currentTriageTags?: string[]
   recommendedVendors: Vendor[]
+  assignedVendorNames?: string[]
 }
 
-export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentReviewState, currentReviewNote, currentSlaBucket, currentTriageTags, recommendedVendors }: Props) {
+export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentReviewState, currentReviewNote, currentSlaBucket, currentTriageTags, recommendedVendors, assignedVendorNames }: Props) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
@@ -96,10 +97,7 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
           <label className="field">
             <span className="field-label">Preferred currency</span>
             <select className="input" name="preferredCurrency" defaultValue={currentCurrency}>
-              <option value="usd">US Dollar</option>
-              <option value="peso">Peso</option>
-              <option value="pound">Pound</option>
-              <option value="euro">Euro</option>
+              <option value="usd">USD</option>
             </select>
           </label>
           <label className="field">
@@ -178,7 +176,12 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
           </button>
         </form>
 
-        <h3 style={{ marginTop: 0, marginBottom: 12 }}>Assign vendor</h3>
+        <h3 style={{ marginTop: 0, marginBottom: 12 }}>Tender and vendor assignment</h3>
+        {assignedVendorNames?.length ? (
+          <div className="notice success" style={{ marginBottom: 12 }}>
+            Current vendor set: {assignedVendorNames.join(', ')}
+          </div>
+        ) : null}
         {recommendedVendors.length ? (
           <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
             {bestMatch ? (
@@ -192,23 +195,25 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
             ) : null}
             <form action={vendorAction} className="stack" style={{ gap: 8 }}>
               <input type="hidden" name="requestId" value={requestId} />
-              <label className="field">
-                <span className="field-label">Assign from recommended vendors</span>
-                <select className="input" name="vendorId" defaultValue="">
-                  <option value="">Select a recommended vendor</option>
+              <input type="hidden" name="mode" value="tender" />
+              <div className="field">
+                <span className="field-label">Select one or more vendors to tender</span>
+                <div className="stack" style={{ gap: 8 }}>
                   {recommendedVendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                      {vendor.email ? ` · ${vendor.email}` : ''}
-                      {vendor.phone ? ` · ${vendor.phone}` : ''}
-                    </option>
+                    <label key={vendor.id} className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
+                      <input type="checkbox" name="vendorIds" value={vendor.id} />
+                      <span>
+                        <strong>{vendor.name}</strong>
+                        <span className="muted">{vendor.email ? ` · ${vendor.email}` : ''}{vendor.phone ? ` · ${vendor.phone}` : ''}</span>
+                      </span>
+                    </label>
                   ))}
-                </select>
-              </label>
+                </div>
+              </div>
               {vendorState.error && <div className="notice error">{vendorState.error}</div>}
-              {vendorState.success && <div className="notice success">Recommended vendor assigned.</div>}
+              {vendorState.success && <div className="notice success">Tender invitations sent or vendor assignment saved.</div>}
               <button type="submit" className="button" disabled={vendorPending}>
-                {vendorPending ? 'Assigning…' : 'Assign selected recommended vendor'}
+                {vendorPending ? 'Sending…' : 'Save / send bid invitations'}
               </button>
             </form>
           </div>

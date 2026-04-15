@@ -94,6 +94,8 @@ function mapRequestRow(r: any): DashboardRequestRow {
     assignedVendorName: r.assignedVendorName ?? undefined,
     assignedVendorEmail: r.assignedVendorEmail ?? undefined,
     assignedVendorPhone: r.assignedVendorPhone ?? undefined,
+    assignedVendorIds: r.assignedVendorId ? [r.assignedVendorId] : [],
+    assignedVendorNames: r.assignedVendorName ? [r.assignedVendorName] : [],
     dispatchStatus: r.dispatchStatus ?? undefined,
     vendorScheduledStart: r.vendorScheduledStart ? new Date(r.vendorScheduledStart).toISOString() : undefined,
     vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
@@ -309,7 +311,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     const request = mapRequestRow(dbRequest)
 
     const vendorRows = await prisma.vendor.findMany({
-      where: { isActive: true },
+      where: { orgId: userId, isActive: true },
       orderBy: { name: 'asc' },
     })
 

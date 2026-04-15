@@ -187,6 +187,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               currentReviewNote={data.request.reviewNote}
               currentSlaBucket={data.request.slaBucket}
               currentTriageTags={data.request.triageTags}
+              assignedVendorNames={data.request.assignedVendorNames}
             />
           </SectionCard>
 

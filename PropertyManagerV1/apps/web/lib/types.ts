@@ -48,6 +48,8 @@ export interface MaintenanceRequest {
   assignedVendorName?: string
   assignedVendorEmail?: string
   assignedVendorPhone?: string
+  assignedVendorIds?: string[]
+  assignedVendorNames?: string[]
   dispatchStatus?: DispatchStatus
   vendorScheduledStart?: string
   vendorScheduledEnd?: string

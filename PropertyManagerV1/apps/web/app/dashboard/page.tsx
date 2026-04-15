@@ -13,7 +13,7 @@ import { formatDateTime, formatRelativeAge } from '@/lib/ui-utils'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; language?: string; queue?: string }>
+  searchParams?: Promise<{ currency?: string; language?: string; queue?: string; sort?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
@@ -22,6 +22,7 @@ export default async function DashboardPage({
   const selectedCurrency = params?.currency ?? 'all'
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
+  const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -44,19 +45,11 @@ export default async function DashboardPage({
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
-    const score = (request: typeof a) => {
-      let value = 0
-      if (request.status === 'new') value += 6
-      if (request.reviewState && request.reviewState !== 'none') value += 5
-      if (!request.assignedVendorName) value += 4
-      if (request.autoFlag) value += 3
-      if (request.urgency === 'urgent') value += 3
-      if (request.urgency === 'high') value += 2
-      if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done') value += 3
-      return value
+    if (selectedSort === 'oldest') {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     }
 
-    return score(b) - score(a) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 
   const focusNow = sortedRequests.slice(0, 12)
@@ -166,6 +159,13 @@ export default async function DashboardPage({
               <option value="french">French</option>
             </select>
           </label>
+          <label className="field" style={{ minWidth: 180 }}>
+            <span className="field-label">Sort order</span>
+            <select className="input" name="sort" defaultValue={selectedSort}>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
+            </select>
+          </label>
           <button type="submit" className="button">Apply filters</button>
         </form>
 
@@ -179,7 +179,7 @@ export default async function DashboardPage({
 
         {selectedQueue !== 'all' ? <div className="notice success">Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing the top {focusNow.length} of {filteredRequests.length} matching requests, sorted by operator pressure.
+          Showing the top {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
         </div>
 
