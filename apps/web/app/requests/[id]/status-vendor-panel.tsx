@@ -149,24 +149,55 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
           </button>
         </form>
         {tenders.length ? (
-          <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
+          <div className="stack" style={{ gap: 10, marginBottom: 12 }}>
             <h3 style={{ marginTop: 0, marginBottom: 0 }}>Award a bid</h3>
-            {tenders.flatMap((tender) => tender.invites.filter((invite) => invite.status === 'bid_submitted' || invite.status === 'viewed' || invite.status === 'awarded').map((invite) => ({ tender, invite }))).map(({ tender, invite }) => (
-              <form key={invite.id} action={awardAction} className="row" style={{ gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                <input type="hidden" name="requestId" value={requestId} />
-                <input type="hidden" name="tenderId" value={tender.id} />
-                <input type="hidden" name="inviteId" value={invite.id} />
-                <div>
-                  <strong>{invite.vendorName}</strong>
-                  <div className="muted">{invite.bidAmountCents != null ? `USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid yet'}{invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}</div>
+            {tenders.map((tender) => {
+              const awardableInvites = tender.invites.filter((invite) =>
+                invite.status === 'bid_submitted' || invite.status === 'viewed' || invite.status === 'awarded',
+              )
+
+              if (!awardableInvites.length) {
+                return null
+              }
+
+              return (
+                <div key={tender.id} className="stack" style={{ gap: 8, border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
+                  <div>
+                    <strong>{tender.title ?? 'Tender round'}</strong>
+                    <div className="muted">
+                      {tender.status}
+                      {tender.sentAt ? ` · Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
+                    </div>
+                  </div>
+                  {awardableInvites.map((invite) => (
+                    <form key={invite.id} action={awardAction} className="stack" style={{ gap: 6, padding: 10, border: '1px solid var(--border)', borderRadius: 10 }}>
+                      <input type="hidden" name="requestId" value={requestId} />
+                      <input type="hidden" name="tenderId" value={tender.id} />
+                      <input type="hidden" name="inviteId" value={invite.id} />
+                      <div className="row" style={{ justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                        <div className="stack" style={{ gap: 4 }}>
+                          <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
+                          <div className="muted">Status: {invite.status}</div>
+                          <div className="muted">{invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount submitted'}</div>
+                          {invite.availabilityNote ? <div className="muted">Availability: {invite.availabilityNote}</div> : null}
+                          {(invite.proposedStart || invite.proposedEnd) ? (
+                            <div className="muted">
+                              Proposed window: {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '—'}
+                              {invite.proposedEnd ? ` → ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                            </div>
+                          ) : null}
+                        </div>
+                        <button type="submit" className={invite.status === 'awarded' ? 'button' : 'button primary'} disabled={awardPending || invite.status === 'awarded'}>
+                          {invite.status === 'awarded' ? 'Awarded winner' : awardPending ? 'Awarding…' : `Award ${invite.vendorName}`}
+                        </button>
+                      </div>
+                    </form>
+                  ))}
                 </div>
-                <button type="submit" className="button" disabled={awardPending || invite.status === 'awarded'}>
-                  {invite.status === 'awarded' ? 'Awarded' : awardPending ? 'Awarding…' : 'Award bid'}
-                </button>
-              </form>
-            ))}
+              )
+            })}
             {awardState.error && <div className="notice error">{awardState.error}</div>}
-            {awardState.success && <div className="notice success">Bid awarded.</div>}
+            {awardState.success && <div className="notice success">Winning bid selected.</div>}
           </div>
         ) : null}
 
