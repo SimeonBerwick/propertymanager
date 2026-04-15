@@ -105,7 +105,7 @@ export interface StatusEvent {
 }
 
 const CURRENCY_LABELS: Record<CurrencyOption, string> = {
-  usd: 'US Dollar',
+  usd: 'USD',
   peso: 'Peso',
   pound: 'Pound',
   euro: 'Euro',

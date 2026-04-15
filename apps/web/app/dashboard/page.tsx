@@ -170,14 +170,14 @@ export default async function DashboardPage({
         </form>
 
         <div className="filterChipRow">
-          <Link href="/dashboard" className="filterChip">All</Link>
-          <Link href="/dashboard?queue=scheduled-today" className="filterChip">Scheduled today</Link>
-          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip">Overdue scheduled</Link>
-          <Link href="/dashboard?queue=non-usd" className="filterChip">Non-USD</Link>
-          <Link href="/dashboard?queue=follow-up" className="filterChip">Needs follow-up</Link>
+          <Link href="/dashboard" className="filterChip" style={selectedQueue === 'all' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>All</Link>
+          <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
+          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue scheduled</Link>
+          <Link href="/dashboard?queue=non-usd" className="filterChip" style={selectedQueue === 'non-usd' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Non-USD</Link>
+          <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
         </div>
 
-        {selectedQueue !== 'all' ? <div className="notice success">Queue filter active: {selectedQueue}</div> : null}
+        {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
           Showing the top {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
