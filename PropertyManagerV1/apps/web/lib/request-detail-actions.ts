@@ -18,6 +18,18 @@ function parseVendorIds(formData: FormData): string[] {
     .filter(Boolean)
 }
 
+async function getAwardedInvite(requestId: string, userId: string) {
+  return prisma.tenderInvite.findFirst({
+    where: {
+      requestId,
+      status: 'awarded',
+      request: { property: { ownerId: userId } },
+    },
+    include: { vendor: true, tender: true },
+    orderBy: { awardedAt: 'desc' },
+  })
+}
+
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
 const VALID_QUICK_ACTIONS = ['mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
@@ -388,6 +400,97 @@ export async function updatePreferencesFormAction(
   }
 }
 
+export async function awardTenderInviteAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const tenderId = String(formData.get('tenderId') ?? '')
+  const inviteId = String(formData.get('inviteId') ?? '')
+
+  try {
+    const invite = await prisma.tenderInvite.findFirst({
+      where: {
+        id: inviteId,
+        tenderId,
+        requestId,
+        request: { property: { ownerId: session.userId } },
+      },
+      include: { vendor: true },
+    })
+    if (!invite) return { error: 'Tender invite not found.' }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.tenderInvite.updateMany({
+        where: { tenderId, id: { not: inviteId }, status: { in: ['invited', 'viewed', 'bid_submitted', 'declined', 'withdrawn'] } },
+        data: { status: 'not_awarded' },
+      })
+
+      await tx.tenderInvite.update({
+        where: { id: inviteId },
+        data: { status: 'awarded', awardedAt: new Date() },
+      })
+
+      await tx.requestTender.update({
+        where: { id: tenderId },
+        data: { status: 'awarded', awardedAt: new Date(), closedAt: new Date() },
+      })
+
+      await tx.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          assignedVendorId: invite.vendorId,
+          assignedVendorName: invite.vendor.name,
+          assignedVendorEmail: invite.vendor.email ?? null,
+          assignedVendorPhone: invite.vendor.phone ?? null,
+          dispatchStatus: 'accepted',
+          vendorScheduledStart: invite.proposedStart,
+          vendorScheduledEnd: invite.proposedEnd,
+          reviewState: 'none',
+          reviewNote: null,
+          status: 'scheduled',
+        },
+      })
+
+      await tx.statusEvent.create({
+        data: { requestId, toStatus: 'scheduled', actorUserId: session.userId },
+      })
+
+      await tx.vendorDispatchEvent.create({
+        data: {
+          requestId,
+          vendorId: invite.vendorId,
+          actorUserId: session.userId,
+          status: 'accepted',
+          note: 'Vendor bid awarded from tender workflow.',
+          scheduledStart: invite.proposedStart,
+          scheduledEnd: invite.proposedEnd,
+        },
+      })
+    })
+
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.tenderAwarded',
+      summary: `Awarded tender to vendor ${invite.vendor.name}.`,
+      metadata: { tenderId, inviteId, vendorId: invite.vendorId },
+    })
+
+    await applyRequestAutomation(requestId)
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    return { error: null, success: true, message: 'Tender awarded.' }
+  } catch {
+    return { error: 'Could not award tender invite.' }
+  }
+}
+
 export async function updateDispatchFormAction(
   _prev: RequestActionState,
   formData: FormData,
@@ -417,9 +520,16 @@ export async function updateDispatchFormAction(
     })
     if (!request) return { error: 'Request not found.' }
 
+    const awardedInvite = await getAwardedInvite(requestId, session.userId)
+    const vendorId = awardedInvite?.vendorId ?? request.assignedVendorId ?? null
+
     await prisma.maintenanceRequest.update({
       where: { id: requestId },
       data: {
+        assignedVendorId: awardedInvite?.vendorId ?? request.assignedVendorId ?? null,
+        assignedVendorName: awardedInvite?.vendor.name ?? undefined,
+        assignedVendorEmail: awardedInvite?.vendor.email ?? null,
+        assignedVendorPhone: awardedInvite?.vendor.phone ?? null,
         dispatchStatus,
         vendorScheduledStart: scheduledStart,
         vendorScheduledEnd: scheduledEnd,
@@ -429,7 +539,7 @@ export async function updateDispatchFormAction(
     await prisma.vendorDispatchEvent.create({
       data: {
         requestId,
-        vendorId: request.assignedVendorId ?? null,
+        vendorId,
         actorUserId: session.userId,
         status: dispatchStatus,
         note: note || null,

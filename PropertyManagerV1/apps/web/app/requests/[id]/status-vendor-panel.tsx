@@ -1,10 +1,11 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, Vendor } from '@/lib/types'
+import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { RequestOperatorPresets } from '@/components/request-operator-presets'
 import { StatusBadge } from '@/components/status-badge'
 import {
+  awardTenderInviteAction,
   reviewVendorUpdateFormAction,
   updateDispatchFormAction,
   updatePreferencesFormAction,
@@ -42,14 +43,16 @@ interface Props {
   currentTriageTags?: string[]
   recommendedVendors: Vendor[]
   assignedVendorNames?: string[]
+  tenders: RequestTenderView[]
 }
 
-export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentReviewState, currentReviewNote, currentSlaBucket, currentTriageTags, recommendedVendors, assignedVendorNames }: Props) {
+export function StatusVendorPanel({ requestId, currentStatus, currentVendor, currentVendorEmail, currentVendorPhone, currentCurrency, currentLanguage, currentDispatchStatus, currentScheduledStart, currentScheduledEnd, currentReviewState, currentReviewNote, currentSlaBucket, currentTriageTags, recommendedVendors, assignedVendorNames, tenders }: Props) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [preferencesState, preferencesAction, preferencesPending] = useActionState(updatePreferencesFormAction, INITIAL_STATE)
   const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
   const [reviewState, reviewAction, reviewPending] = useActionState(reviewVendorUpdateFormAction, INITIAL_STATE)
+  const [awardState, awardAction, awardPending] = useActionState(awardTenderInviteAction, INITIAL_STATE)
 
   const nextStatuses = STATUS_OPTIONS.filter((s) => s !== currentStatus)
   const bestMatch = recommendedVendors[0]
@@ -145,6 +148,28 @@ export function StatusVendorPanel({ requestId, currentStatus, currentVendor, cur
             {reviewPending ? 'Applying…' : 'Apply review action'}
           </button>
         </form>
+        {tenders.length ? (
+          <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 0 }}>Award a bid</h3>
+            {tenders.flatMap((tender) => tender.invites.filter((invite) => invite.status === 'bid_submitted' || invite.status === 'viewed' || invite.status === 'awarded').map((invite) => ({ tender, invite }))).map(({ tender, invite }) => (
+              <form key={invite.id} action={awardAction} className="row" style={{ gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+                <input type="hidden" name="requestId" value={requestId} />
+                <input type="hidden" name="tenderId" value={tender.id} />
+                <input type="hidden" name="inviteId" value={invite.id} />
+                <div>
+                  <strong>{invite.vendorName}</strong>
+                  <div className="muted">{invite.bidAmountCents != null ? `USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid yet'}{invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}</div>
+                </div>
+                <button type="submit" className="button" disabled={awardPending || invite.status === 'awarded'}>
+                  {invite.status === 'awarded' ? 'Awarded' : awardPending ? 'Awarding…' : 'Award bid'}
+                </button>
+              </form>
+            ))}
+            {awardState.error && <div className="notice error">{awardState.error}</div>}
+            {awardState.success && <div className="notice success">Bid awarded.</div>}
+          </div>
+        ) : null}
+
         <form action={dispatchAction} className="stack" style={{ gap: 8, marginBottom: 12 }}>
           <input type="hidden" name="requestId" value={requestId} />
           <label className="field">
