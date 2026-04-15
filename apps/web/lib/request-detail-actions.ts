@@ -11,6 +11,13 @@ import { writeAuditLog } from '@/lib/audit-log'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
+function parseVendorIds(formData: FormData): string[] {
+  return formData
+    .getAll('vendorIds')
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+}
+
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
 const VALID_QUICK_ACTIONS = ['mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
@@ -113,7 +120,9 @@ export async function updateVendorFormAction(
   if (!session) return { error: 'Not authenticated.' }
 
   const requestId = formData.get('requestId') as string
-  const vendorId = ((formData.get('vendorId') as string) ?? '').trim()
+  const selectedVendorIds = parseVendorIds(formData)
+  const singleVendorId = ((formData.get('vendorId') as string) ?? '').trim()
+  const mode = String(formData.get('mode') ?? 'assign').trim()
   let vendorName = ((formData.get('vendorName') as string) ?? '').trim()
   let vendorEmail = ((formData.get('vendorEmail') as string) ?? '').trim().toLowerCase()
   let vendorPhone = ((formData.get('vendorPhone') as string) ?? '').trim()
@@ -122,6 +131,95 @@ export async function updateVendorFormAction(
   if (vendorEmail.length > 254) return { error: 'Vendor email must be 254 characters or fewer.' }
   if (vendorPhone.length > 40) return { error: 'Vendor phone must be 40 characters or fewer.' }
   if (vendorEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendorEmail)) return { error: 'Vendor email is invalid.' }
+
+  const tenderVendorIds = Array.from(new Set([singleVendorId, ...selectedVendorIds].filter(Boolean)))
+  const shouldTender = mode === 'tender'
+
+  if (shouldTender && tenderVendorIds.length === 0) {
+    return { error: 'Select at least one vendor to send for tender.' }
+  }
+
+  if (shouldTender) {
+    try {
+      const request = await prisma.maintenanceRequest.findFirst({
+        where: { id: requestId, property: { ownerId: session.userId } },
+        include: { property: true, unit: true },
+      })
+      if (!request) return { error: 'Request not found.' }
+
+      const vendors = await prisma.vendor.findMany({
+        where: { id: { in: tenderVendorIds }, orgId: session.userId, isActive: true },
+        orderBy: { name: 'asc' },
+      })
+      if (vendors.length !== tenderVendorIds.length) return { error: 'One or more selected vendors were not found.' }
+
+      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+
+      for (const vendor of vendors) {
+        await prisma.vendorDispatchEvent.create({
+          data: {
+            requestId,
+            vendorId: vendor.id,
+            actorUserId: session.userId,
+            status: 'assigned',
+            note: 'Vendor invited to tender this request.',
+          },
+        })
+
+        if (vendor.email) {
+          const dispatchLink = await createVendorDispatchLink(requestId, vendor.id).catch(() => null)
+          await sendNotification(buildVendorAssignedMessage({
+            requestId,
+            title: request.title,
+            propertyName: request.property.name,
+            unitLabel: request.unit.label,
+            vendorName: vendor.name,
+            vendorEmail: vendor.email,
+            tenantName: request.submittedByName ?? undefined,
+            tenantEmail: request.submittedByEmail ?? undefined,
+            urgency: request.urgency,
+            category: request.category,
+            preferredCurrency: request.preferredCurrency,
+            preferredLanguage: request.preferredLanguage,
+            responseLink: dispatchLink ? `${appUrl}/vendor/respond/${dispatchLink.rawToken}` : undefined,
+          }))
+        }
+      }
+
+      const firstVendor = vendors[0]
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          assignedVendorId: firstVendor?.id ?? null,
+          assignedVendorName: vendors.map((vendor) => vendor.name).join(', ') || null,
+          assignedVendorEmail: firstVendor?.email ?? null,
+          assignedVendorPhone: firstVendor?.phone ?? null,
+          dispatchStatus: 'assigned',
+          reviewState: 'none',
+          reviewNote: null,
+        },
+      })
+
+      await writeAuditLog({
+        orgId: session.userId,
+        actorUserId: session.userId,
+        entityType: 'request',
+        entityId: requestId,
+        action: 'request.tenderSent',
+        summary: `Sent request to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'} for tender.`,
+        metadata: { vendorIds: vendors.map((vendor) => vendor.id), vendorNames: vendors.map((vendor) => vendor.name) },
+      })
+
+      await applyRequestAutomation(requestId)
+      revalidatePath(`/requests/${requestId}`)
+      revalidatePath('/dashboard')
+      return { error: null, success: true, message: `Tender sent to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'}.` }
+    } catch {
+      return { error: 'Could not send tender invitations.' }
+    }
+  }
+
+  const vendorId = singleVendorId
 
   if (vendorId) {
     const selectedVendor = await prisma.vendor.findFirst({
@@ -232,7 +330,7 @@ export async function updatePreferencesFormAction(
   const preferredCurrency = ((formData.get('preferredCurrency') as string) ?? '').trim() as CurrencyOption
   const preferredLanguage = ((formData.get('preferredLanguage') as string) ?? '').trim() as LanguageOption
 
-  if (!['usd', 'peso', 'pound', 'euro'].includes(preferredCurrency)) {
+  if (!['usd'].includes(preferredCurrency)) {
     return { error: 'Invalid currency.' }
   }
 
