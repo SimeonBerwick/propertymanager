@@ -19,6 +19,8 @@ export async function submitVendorResponse(
   const token = String(formData.get('token') ?? '')
   const dispatchStatus = String(formData.get('dispatchStatus') ?? '') as DispatchStatus
   const note = String(formData.get('note') ?? '').trim()
+  const bidAmountRaw = String(formData.get('bidAmount') ?? '').trim()
+  const availabilityNote = String(formData.get('availabilityNote') ?? '').trim()
   const scheduledStartRaw = String(formData.get('scheduledStart') ?? '').trim()
   const scheduledEndRaw = String(formData.get('scheduledEnd') ?? '').trim()
   const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
@@ -37,10 +39,12 @@ export async function submitVendorResponse(
 
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
   const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
+  const bidAmountCents = bidAmountRaw ? Math.round(Number(bidAmountRaw) * 100) : null
 
   if (scheduledStart && Number.isNaN(scheduledStart.getTime())) return { error: 'Invalid scheduled start.' }
   if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Invalid scheduled end.' }
   if (scheduledStart && scheduledEnd && scheduledEnd < scheduledStart) return { error: 'Scheduled end must be after start.' }
+  if (bidAmountRaw && (!Number.isFinite(Number(bidAmountRaw)) || Number(bidAmountRaw) < 0)) return { error: 'Invalid bid amount.' }
 
   const savedPhotoPaths = await savePhotos(photoFiles)
   let tenantNotification:
@@ -57,6 +61,22 @@ export async function submitVendorResponse(
 
   try {
     await prisma.$transaction(async (tx) => {
+      if (validation.tenderInviteId) {
+        await tx.tenderInvite.update({
+          where: { id: validation.tenderInviteId },
+          data: {
+            status: dispatchStatus === 'declined' ? 'declined' : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled' ? 'bid_submitted' : 'viewed',
+            bidAmountCents,
+            bidCurrency: bidAmountRaw ? 'usd' : null,
+            availabilityNote: availabilityNote || null,
+            proposedStart: scheduledStart,
+            proposedEnd: scheduledEnd,
+            viewedAt: new Date(),
+            respondedAt: new Date(),
+          },
+        })
+      }
+
       const reviewState = dispatchStatus === 'completed'
         ? 'vendor_completed_pending_review'
         : dispatchStatus === 'declined'
@@ -104,7 +124,7 @@ export async function submitVendorResponse(
           requestId: validation.requestId,
           vendorId: validation.vendorId,
           status: dispatchStatus,
-          note: note || null,
+          note: [note, availabilityNote, bidAmountCents != null ? `Bid: USD ${(bidAmountCents / 100).toFixed(2)}` : null].filter(Boolean).join(' · ') || null,
           scheduledStart,
           scheduledEnd,
         },

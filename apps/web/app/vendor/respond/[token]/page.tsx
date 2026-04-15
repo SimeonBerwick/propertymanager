@@ -26,7 +26,7 @@ export default async function VendorRespondPage({
       </div>
       {submitted ? <div className="notice success">Response submitted. The operator can now see your update.</div> : null}
       <p className="muted" style={{ margin: 0 }}>
-        Hello {result.vendorName}. Use this page to confirm whether you accepted the job, declined it, scheduled it, or completed it.
+        Hello {result.vendorName}. Use this page to submit a real tender response, including your USD bid and availability, then update dispatch as the work progresses.
       </p>
       <VendorResponseForm token={token} />
     </div>

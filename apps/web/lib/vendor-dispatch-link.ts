@@ -11,7 +11,7 @@ function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
 }
 
-export async function createVendorDispatchLink(requestId: string, vendorId: string) {
+export async function createVendorDispatchLink(requestId: string, vendorId: string, tenderInviteId?: string) {
   const rawToken = randomBytes(24).toString('hex')
   const tokenHash = sha256(rawToken)
 
@@ -25,6 +25,7 @@ export async function createVendorDispatchLink(requestId: string, vendorId: stri
       data: {
         requestId,
         vendorId,
+        tenderInviteId: tenderInviteId ?? null,
         tokenHash,
         expiresAt: addDays(new Date(), DISPATCH_LINK_TTL_DAYS),
       },
@@ -67,6 +68,7 @@ export async function validateVendorDispatchToken(rawToken: string) {
     requestTitle: link.request.title,
     propertyName: link.request.property.name,
     unitLabel: link.request.unit.label,
+    tenderInviteId: link.tenderInviteId ?? undefined,
   }
 }
 

@@ -72,6 +72,23 @@ enum DispatchStatus {
   completed
 }
 
+enum TenderStatus {
+  open
+  awarded
+  canceled
+  closed
+}
+
+enum TenderInviteStatus {
+  invited
+  viewed
+  declined
+  bid_submitted
+  withdrawn
+  awarded
+  not_awarded
+}
+
 enum PhotoSource {
   tenant
   landlord
@@ -186,10 +203,61 @@ model MaintenanceRequest {
   events            StatusEvent[]
   dispatchHistory   VendorDispatchEvent[]
   dispatchLinks     VendorDispatchLink[]
+  tenders           RequestTender[]
+  tenderInvites     TenderInvite[]
   billingDocuments  BillingDocument[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model RequestTender {
+  id                String               @id @default(cuid())
+  requestId         String
+  status            TenderStatus         @default(open)
+  title             String?
+  note              String?
+  sentAt            DateTime?
+  awardedAt         DateTime?
+  canceledAt        DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  request           MaintenanceRequest   @relation(fields: [requestId], references: [id])
+  invites           TenderInvite[]
+
+  @@index([requestId, status])
+}
+
+model TenderInvite {
+  id                String               @id @default(cuid())
+  tenderId          String
+  requestId         String
+  vendorId          String
+  status            TenderInviteStatus   @default(invited)
+  message           String?
+  scopeNote         String?
+  bidAmountCents    Int?
+  bidCurrency       CurrencyOption?
+  availabilityNote  String?
+  proposedStart     DateTime?
+  proposedEnd       DateTime?
+  invitedAt         DateTime             @default(now())
+  viewedAt          DateTime?
+  respondedAt       DateTime?
+  awardedAt         DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  tender            RequestTender        @relation(fields: [tenderId], references: [id])
+  request           MaintenanceRequest   @relation(fields: [requestId], references: [id])
+  vendor            Vendor               @relation(fields: [vendorId], references: [id])
+  dispatchLinks     VendorDispatchLink[]
+
+  @@unique([tenderId, vendorId])
+  @@index([requestId, status])
+  @@index([vendorId, status])
 }
 
 model Vendor {
@@ -208,6 +276,7 @@ model Vendor {
   assignedRequests      MaintenanceRequest[]
   dispatchEvents        VendorDispatchEvent[]
   dispatchLinks         VendorDispatchLink[]
+  tenderInvites         TenderInvite[]
 
   @@index([orgId, isActive])
 }
@@ -235,6 +304,7 @@ model VendorDispatchLink {
   id          String        @id @default(cuid())
   requestId   String
   vendorId    String
+  tenderInviteId String?
   tokenHash   String        @unique
   expiresAt   DateTime
   revokedAt   DateTime?
@@ -243,6 +313,7 @@ model VendorDispatchLink {
 
   request     MaintenanceRequest @relation(fields: [requestId], references: [id])
   vendor      Vendor             @relation(fields: [vendorId], references: [id])
+  tenderInvite TenderInvite?     @relation(fields: [tenderInviteId], references: [id])
 
   @@index([requestId, vendorId])
 }

@@ -154,6 +154,23 @@ export async function updateVendorFormAction(
       if (vendors.length !== tenderVendorIds.length) return { error: 'One or more selected vendors were not found.' }
 
       const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      const tender = await prisma.requestTender.create({
+        data: {
+          requestId,
+          status: 'open',
+          title: `Tender round ${new Date().toLocaleDateString('en-US')}`,
+          note: 'Operator opened multi-vendor tender round.',
+          sentAt: new Date(),
+          invites: {
+            create: vendors.map((vendor) => ({
+              requestId,
+              vendorId: vendor.id,
+              status: 'invited',
+            })),
+          },
+        },
+        include: { invites: true },
+      })
 
       for (const vendor of vendors) {
         await prisma.vendorDispatchEvent.create({
@@ -167,7 +184,8 @@ export async function updateVendorFormAction(
         })
 
         if (vendor.email) {
-          const dispatchLink = await createVendorDispatchLink(requestId, vendor.id).catch(() => null)
+          const invite = tender.invites.find((entry) => entry.vendorId === vendor.id)
+          const dispatchLink = invite ? await createVendorDispatchLink(requestId, vendor.id, invite.id).catch(() => null) : null
           await sendNotification(buildVendorAssignedMessage({
             requestId,
             title: request.title,
@@ -186,14 +204,13 @@ export async function updateVendorFormAction(
         }
       }
 
-      const firstVendor = vendors[0]
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
         data: {
-          assignedVendorId: firstVendor?.id ?? null,
+          assignedVendorId: null,
           assignedVendorName: vendors.map((vendor) => vendor.name).join(', ') || null,
-          assignedVendorEmail: firstVendor?.email ?? null,
-          assignedVendorPhone: firstVendor?.phone ?? null,
+          assignedVendorEmail: null,
+          assignedVendorPhone: null,
           dispatchStatus: 'assigned',
           reviewState: 'none',
           reviewNote: null,

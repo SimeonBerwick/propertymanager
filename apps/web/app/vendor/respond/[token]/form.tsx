@@ -26,6 +26,17 @@ export function VendorResponseForm({ token }: { token: string }) {
 
       <div className="grid cols-2">
         <label className="field">
+          <span className="field-label">Bid amount (USD)</span>
+          <input className="input" type="number" step="0.01" min="0" name="bidAmount" placeholder="250.00" />
+        </label>
+        <label className="field">
+          <span className="field-label">Availability note</span>
+          <input className="input" type="text" name="availabilityNote" placeholder="Can attend Thursday morning" />
+        </label>
+      </div>
+
+      <div className="grid cols-2">
+        <label className="field">
           <span className="field-label">Scheduled start</span>
           <input className="input" type="datetime-local" name="scheduledStart" />
         </label>
@@ -37,7 +48,7 @@ export function VendorResponseForm({ token }: { token: string }) {
 
       <label className="field">
         <span className="field-label">Note</span>
-        <textarea className="input" name="note" rows={4} placeholder="Optional note for scheduling or completion details" />
+        <textarea className="input" name="note" rows={4} placeholder="Optional note for scope, scheduling, or completion details" />
       </label>
 
       <label className="field">
