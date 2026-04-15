@@ -8,6 +8,12 @@ import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } fro
 import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 
+function logAuthError(stage: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`[auth:${stage}]`, message)
+  console.error(error)
+}
+
 export type LoginState = { error: string } | null
 
 function isDatabaseUnavailable(error: unknown) {
@@ -80,6 +86,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     authenticatedUser = await authenticateAgainstDatabase(normalizedEmail, password)
   } catch (error) {
     if (!isDatabaseUnavailable(error)) {
+      logAuthError('authenticateAgainstDatabase', error)
       throw error
     }
   }
@@ -90,12 +97,18 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: 'Invalid email or password' }
   }
 
-  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
-  session.isLoggedIn = true
-  session.userId = authenticatedUser.userId
-  session.email = authenticatedUser.email
-  session.role = authenticatedUser.role
-  await session.save()
+  try {
+    const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
+    session.isLoggedIn = true
+    session.userId = authenticatedUser.userId
+    session.email = authenticatedUser.email
+    session.role = authenticatedUser.role
+    await session.save()
+  } catch (error) {
+    logAuthError('session.save', error)
+    throw error
+  }
+
   redirect('/dashboard')
 }
 
