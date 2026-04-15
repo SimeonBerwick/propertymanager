@@ -5,7 +5,7 @@ import { login } from '@/lib/auth-actions'
 import type { LoginState } from '@/lib/auth-actions'
 
 export function LoginForm() {
-  const [state, formAction, isPending] = useActionState<LoginState, FormData>(login, null)
+  const [state, formAction, isPending] = useActionState<LoginState, FormData>(login, { error: '' })
 
   return (
     <form action={formAction} className="stack">
