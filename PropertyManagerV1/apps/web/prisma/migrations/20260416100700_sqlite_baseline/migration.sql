@@ -2,6 +2,7 @@
 CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
+    "displayName" TEXT,
     "passwordHash" TEXT NOT NULL,
     "role" TEXT NOT NULL,
     "slug" TEXT,
