@@ -13,7 +13,7 @@ import { formatDateTime, formatRelativeAge, formatClaimStatus, isStaleClaim } fr
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; language?: string; queue?: string; sort?: string }>
+  searchParams?: Promise<{ currency?: string; language?: string; queue?: string; sort?: string; claimedBy?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
@@ -23,6 +23,7 @@ export default async function DashboardPage({
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
+  const selectedClaimedBy = params?.claimedBy ?? ''
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -44,7 +45,9 @@ export default async function DashboardPage({
       || (selectedQueue === 'stale-claimed' && isStaleClaim(request))
       || (selectedQueue === 'my-claims' && request.claimedByUserId === session.userId)
 
-    return currencyMatch && languageMatch && queueMatch
+    const claimedByMatch = !selectedClaimedBy || request.claimedByUserId === selectedClaimedBy
+
+    return currencyMatch && languageMatch && queueMatch && claimedByMatch
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -165,6 +168,7 @@ export default async function DashboardPage({
       >
         <form method="get" className="filtersRow">
           <input type="hidden" name="queue" value={selectedQueue} />
+          <input type="hidden" name="claimedBy" value={selectedClaimedBy} />
           <label className="field" style={{ minWidth: 180 }}>
             <span className="field-label">Currency</span>
             <select className="input" name="currency" defaultValue={selectedCurrency}>
@@ -205,7 +209,7 @@ export default async function DashboardPage({
           <Link href="/dashboard?queue=my-claims" className="filterChip" style={selectedQueue === 'my-claims' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>My claims</Link>
         </div>
 
-        {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
+        {selectedQueue !== 'all' || selectedClaimedBy ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue !== 'all' ? selectedQueue : 'all'}{selectedClaimedBy ? ` · operator ${selectedClaimedBy}` : ''}</div> : null}
         <div className="notice">
           Showing the top {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work is prioritized first, then sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}

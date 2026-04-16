@@ -199,9 +199,21 @@ export default async function ReportsPage() {
             <tbody>
               {data.operatorMetrics.map((operator) => (
                 <tr key={operator.operatorId}>
-                  <td style={{ fontWeight: 600 }}>{operator.operatorName}</td>
-                  <td>{operator.openClaims}</td>
-                  <td>{operator.staleClaims}</td>
+                  <td>
+                    <Link href={`/dashboard?queue=my-claims&claimedBy=${operator.operatorId}`} style={{ fontWeight: 600 }}>
+                      {operator.operatorName}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/dashboard?queue=my-claims&claimedBy=${operator.operatorId}`}>
+                      {operator.openClaims}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/dashboard?queue=stale-claimed&claimedBy=${operator.operatorId}`}>
+                      {operator.staleClaims}
+                    </Link>
+                  </td>
                   <td>{operator.avgClaimAgeHours ? `${operator.avgClaimAgeHours.toFixed(1)}h` : '—'}</td>
                   <td>{operator.completedClaims}</td>
                 </tr>
