@@ -40,6 +40,9 @@ export default async function DashboardPage({
       || (selectedQueue === 'follow-up' && (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review'))
       || (selectedQueue === 'scheduled-today' && !!request.vendorScheduledStart && new Date(request.vendorScheduledStart) >= todayStart && new Date(request.vendorScheduledStart) < todayEnd)
       || (selectedQueue === 'overdue-scheduled' && !!request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done')
+      || (selectedQueue === 'unclaimed' && !request.claimedAt)
+      || (selectedQueue === 'stale-claimed' && isStaleClaim(request))
+      || (selectedQueue === 'my-claims' && request.claimedByUserId === session.userId)
 
     return currencyMatch && languageMatch && queueMatch
   })
@@ -182,6 +185,9 @@ export default async function DashboardPage({
           <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue scheduled</Link>
           <Link href="/dashboard?queue=non-usd" className="filterChip" style={selectedQueue === 'non-usd' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Non-USD</Link>
           <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
+          <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Unclaimed</Link>
+          <Link href="/dashboard?queue=stale-claimed" className="filterChip" style={selectedQueue === 'stale-claimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Stale claimed</Link>
+          <Link href="/dashboard?queue=my-claims" className="filterChip" style={selectedQueue === 'my-claims' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>My claims</Link>
         </div>
 
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}

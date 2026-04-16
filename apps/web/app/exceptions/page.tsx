@@ -40,7 +40,7 @@ export default async function ExceptionsPage() {
           <h2 style={{ margin: '4px 0 0' }}>Exceptions</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure with unclaimed work first.
+          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure with unclaimed work first. Use the main dashboard for claim-state slices like unclaimed, stale claimed, and my claims.
         </p>
         <SendSummaryForm />
       </section>
