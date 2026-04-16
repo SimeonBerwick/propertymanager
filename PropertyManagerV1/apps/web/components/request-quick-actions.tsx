@@ -29,7 +29,10 @@ export function RequestQuickActions({
 
   const actions = [
     request.status === 'new'
-      ? { key: 'mark-scheduled', label: 'Mark ready to schedule', tone: 'button primary', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
+      ? { key: 'claim-for-review', label: 'Claim for review', tone: 'button primary', title: 'Claim this request as the next item being reviewed and notify the tenant that it is being looked at.' }
+      : null,
+    request.status === 'new'
+      ? { key: 'mark-scheduled', label: 'Mark ready to schedule', tone: 'button', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
       : null,
     request.status === 'new' || request.status === 'scheduled'
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
