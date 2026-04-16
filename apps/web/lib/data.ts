@@ -78,7 +78,7 @@ function mapUnit(u: any): Unit {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapRequestRow(r: any): DashboardRequestRow {
+function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow {
   return {
     id: r.id,
     propertyId: r.propertyId,
@@ -108,6 +108,7 @@ function mapRequestRow(r: any): DashboardRequestRow {
     firstReviewedAt: r.firstReviewedAt ? new Date(r.firstReviewedAt).toISOString() : undefined,
     claimedAt: r.claimedAt ? new Date(r.claimedAt).toISOString() : undefined,
     claimedByUserId: r.claimedByUserId ?? undefined,
+    claimedByUserName: claimedByUserName ?? undefined,
     slaBucket: r.slaBucket ?? undefined,
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
@@ -158,6 +159,15 @@ function queueCounts(rows: DashboardRequestRow[]) {
   }
 }
 
+function buildUserNameMap(users: Array<{ id: string, email: string }>) {
+  return new Map(users.map((user) => [user.id, user.email]))
+}
+
+function mapRequestsWithClaimOwners(rows: any[], users: Array<{ id: string, email: string }>) {
+  const userMap = buildUserNameMap(users)
+  return rows.map((row) => mapRequestRow(row, row.claimedByUserId ? userMap.get(row.claimedByUserId) : undefined))
+}
+
 function csvToList(value: unknown): string[] {
   return typeof value === 'string'
     ? value.split(',').map((item) => item.trim()).filter(Boolean)
@@ -188,7 +198,7 @@ function vendorMatchScore(request: DashboardRequestRow, vendor: Vendor): number 
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
-    const [dbProperties, dbRequests] = await Promise.all([
+    const [dbProperties, dbRequests, claimUsers] = await Promise.all([
       prisma.property.findMany({
         where: { ownerId: userId, isActive: true },
         include: { _count: { select: { units: true } } },
@@ -198,8 +208,12 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         include: { property: true, unit: true },
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.user.findMany({
+        where: { id: { in: (await prisma.maintenanceRequest.findMany({ where: { property: { ownerId: userId }, claimedByUserId: { not: null } }, select: { claimedByUserId: true } })).map((r) => r.claimedByUserId!).filter(Boolean) } },
+        select: { id: true, email: true },
+      }),
     ])
-    const requestRows = dbRequests.map(mapRequestRow)
+    const requestRows = mapRequestsWithClaimOwners(dbRequests, claimUsers)
     return {
       properties: dbProperties.map(mapProperty),
       requestRows,
@@ -264,7 +278,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
     return {
       property: mapProperty(dbProperty),
       units: dbProperty.units.map(mapUnit),
-      requests: dbProperty.requests.map(mapRequestRow),
+      requests: mapRequestsWithClaimOwners(dbProperty.requests, await prisma.user.findMany({ where: { id: { in: dbProperty.requests.map((r) => r.claimedByUserId).filter(Boolean) as string[] } }, select: { id: true, email: true } })),
     }
   } catch {
     return null
@@ -322,7 +336,11 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       createdAt: e.createdAt.toISOString(),
     }))
 
-    const request = mapRequestRow(dbRequest)
+    const claimUsers = dbRequest.claimedByUserId
+      ? await prisma.user.findMany({ where: { id: dbRequest.claimedByUserId }, select: { id: true, email: true } })
+      : []
+
+    const request = mapRequestsWithClaimOwners([dbRequest], claimUsers)[0]
 
     const vendorRows = await prisma.vendor.findMany({
       where: { orgId: userId, isActive: true },
@@ -548,12 +566,18 @@ export async function getReportData(userId: string): Promise<ReportData> {
       closedCount: p.requests.filter((r) => r.status === 'done').length,
     }))
 
+    const claimUsers = await prisma.user.findMany({
+      where: { id: { in: Array.from(new Set(allDbRequests.map((r) => r.claimedByUserId).filter(Boolean))) as string[] } },
+      select: { id: true, email: true },
+    })
+    const claimUserMap = buildUserNameMap(claimUsers)
+
     const agingRequests: AgingRequest[] = openDbRequests.map((r) => ({
-      ...mapRequestRow(r),
+      ...mapRequestRow(r, r.claimedByUserId ? claimUserMap.get(r.claimedByUserId) : undefined),
       ageDays: Math.floor((now.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
     }))
 
-    const allRows = allDbRequests.map(mapRequestRow)
+    const allRows = allDbRequests.map((r) => mapRequestRow(r, r.claimedByUserId ? claimUserMap.get(r.claimedByUserId) : undefined))
     const totalOpen = allRows.filter((r) => r.status !== 'done').length
     const totalClosed = allRows.filter((r) => r.status === 'done').length
     const repeatIssues = groupRepeatIssues(allRows)
@@ -641,7 +665,7 @@ export async function getVendorDetailData(vendorId: string, userId: string): Pro
 
     return {
       vendor: mapVendor(vendorRecord),
-      requests: requestRows.map(mapRequestRow),
+      requests: requestRows.map((row) => mapRequestRow(row)),
       scorecard: reportData.vendorScorecards.find((item) => item.vendorId === vendorId) ?? null,
     }
   } catch {
@@ -659,7 +683,7 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
       },
     })
     if (!dbUnit) return null
-    const requests = dbUnit.requests.map(mapRequestRow)
+    const requests = dbUnit.requests.map((row) => mapRequestRow(row))
     return {
       unit: mapUnit(dbUnit),
       property: mapProperty(dbUnit.property),
