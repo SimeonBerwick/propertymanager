@@ -50,6 +50,11 @@ export default async function ReportsPage() {
           <div className="muted">Average from intake to assignment</div>
         </div>
         <div className="card">
+          <div className="kicker">Time to first review</div>
+          <h2>{data.avgTimeToFirstReviewHours ? `${data.avgTimeToFirstReviewHours.toFixed(1)}h` : '—'}</h2>
+          <div className="muted">Average from intake to first operator review</div>
+        </div>
+        <div className="card">
           <div className="kicker">Time to schedule</div>
           <h2>{data.avgTimeToScheduleHours ? `${data.avgTimeToScheduleHours.toFixed(1)}h` : '—'}</h2>
           <div className="muted">Average from intake to visit window</div>
@@ -59,6 +64,27 @@ export default async function ReportsPage() {
           <h2>{data.avgTimeToCompleteDays ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '—'}</h2>
           <div className="muted">Average request cycle time</div>
         </div>
+      </section>
+
+      <section className="grid cols-3">
+        <Link href="/dashboard?queue=unclaimed" className="card" style={{ textDecoration: 'none' }}>
+          <div className="kicker">Unclaimed open</div>
+          <h2>{data.unclaimedOpenCount}</h2>
+          <div className="muted">Open requests still waiting for an owner</div>
+        </Link>
+        <Link href="/dashboard?queue=stale-claimed" className="card" style={{ textDecoration: 'none' }}>
+          <div className="kicker">Stale claimed open</div>
+          <h2>{data.staleClaimedOpenCount}</h2>
+          <div className="muted">Claimed open requests drifting past 24 hours</div>
+        </Link>
+        <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
+          <div className="kicker">Avg open claim age</div>
+          <h2>{data.avgClaimAgeHoursOpen ? `${data.avgClaimAgeHoursOpen.toFixed(1)}h` : '—'}</h2>
+          <div className="muted">Average age of currently claimed open requests</div>
+        </Link>
+      </section>
+
+      <section className="grid cols-1">
         <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Reopened</div>
           <h2>{data.reopenCount}</h2>
