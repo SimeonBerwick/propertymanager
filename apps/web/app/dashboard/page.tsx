@@ -8,7 +8,7 @@ import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
-import { formatDateTime, formatRelativeAge } from '@/lib/ui-utils'
+import { formatDateTime, formatRelativeAge, formatClaimStatus } from '@/lib/ui-utils'
 
 export default async function DashboardPage({
   searchParams,
@@ -196,6 +196,7 @@ export default async function DashboardPage({
                     <RequestFlowBadge request={request} />
                     <span className="muted">{request.category}</span>
                     <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
+                    <span className="muted">{formatClaimStatus(request)}</span>
                   </div>
                 </div>
                 <RequestSignalStrip request={request} />
