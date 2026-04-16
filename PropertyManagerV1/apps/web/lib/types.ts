@@ -60,6 +60,7 @@ export interface MaintenanceRequest {
   firstReviewedAt?: string
   claimedAt?: string
   claimedByUserId?: string
+  claimedByUserName?: string
   slaBucket?: string
   triageTags: string[]
   createdAt: string

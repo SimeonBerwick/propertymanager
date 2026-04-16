@@ -63,9 +63,10 @@ export function reviewStateLabel(value?: string) {
   }
 }
 
-export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' | 'firstReviewedAt' | 'claimedByUserId'>) {
+export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' | 'firstReviewedAt' | 'claimedByUserId' | 'claimedByUserName'>) {
   if (request.claimedAt) {
-    return `Claimed ${formatRelativeAge(request.claimedAt)}`
+    const owner = request.claimedByUserName ?? request.claimedByUserId ?? 'operator'
+    return `Claimed by ${owner} ${formatRelativeAge(request.claimedAt)}`
   }
 
   if (request.firstReviewedAt) {
