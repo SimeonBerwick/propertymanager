@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
-import { reviewStateLabel } from '@/lib/ui-utils'
+import { reviewStateLabel, formatClaimStatus, formatDateTime } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -94,6 +94,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div><strong>Preferences</strong><div className="muted">{currencyLabel(data.request.preferredCurrency)} · {languageLabel(data.request.preferredLanguage)}</div></div>
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` · ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
+                <div><strong>Queue claim</strong><div className="muted">{formatClaimStatus(data.request)}</div></div>
+                <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : 'Not yet reviewed'}</div></div>
               </div>
               <RequestSignalStrip request={data.request} />
               {data.request.reviewState && data.request.reviewState !== 'none' ? (

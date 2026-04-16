@@ -62,3 +62,15 @@ export function reviewStateLabel(value?: string) {
       return value.replaceAll('_', ' ')
   }
 }
+
+export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' | 'firstReviewedAt' | 'claimedByUserId'>) {
+  if (request.claimedAt) {
+    return `Claimed ${formatRelativeAge(request.claimedAt)}`
+  }
+
+  if (request.firstReviewedAt) {
+    return `First reviewed ${formatRelativeAge(request.firstReviewedAt)}`
+  }
+
+  return 'Unclaimed'
+}
