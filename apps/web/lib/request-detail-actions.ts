@@ -692,6 +692,9 @@ export async function quickRequestAction(
         submittedByName: true,
         submittedByEmail: true,
         title: true,
+        firstReviewedAt: true,
+        claimedAt: true,
+        claimedByUserId: true,
         property: { select: { name: true } },
         unit: { select: { label: true } },
       },
@@ -701,25 +704,27 @@ export async function quickRequestAction(
     let message = 'Quick action applied.'
 
     if (quickAction === 'claim-for-review') {
-      const recentClaim = await prisma.auditLog.findFirst({
-        where: {
-          entityType: 'request',
-          entityId: requestId,
-          action: 'request.queueClaimed',
+      const now = new Date()
+      const alreadyClaimedRecently = request.claimedAt && now.getTime() - request.claimedAt.getTime() < 1000 * 60 * 60 * 12
+      const shouldNotifyTenant = !alreadyClaimedRecently && !!request.submittedByEmail && !!request.submittedByName
+
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          claimedAt: now,
+          claimedByUserId: session.userId,
+          firstReviewedAt: request.firstReviewedAt ?? now,
         },
-        orderBy: { createdAt: 'desc' },
-      }).catch(() => null)
+      })
 
-      const alreadyClaimedRecently = recentClaim && Date.now() - recentClaim.createdAt.getTime() < 1000 * 60 * 60 * 12
-
-      if (!alreadyClaimedRecently && request.submittedByEmail && request.submittedByName) {
+      if (shouldNotifyTenant) {
         await sendNotification(buildTenantQueueViewedMessage({
           requestId,
           title: request.title,
           propertyName: request.property.name,
           unitLabel: request.unit.label,
-          tenantEmail: request.submittedByEmail,
-          tenantName: request.submittedByName,
+          tenantEmail: request.submittedByEmail!,
+          tenantName: request.submittedByName!,
         }))
       }
 
@@ -730,7 +735,11 @@ export async function quickRequestAction(
         entityId: requestId,
         action: 'request.queueClaimed',
         summary: 'Operator claimed request from queue for review.',
-        metadata: { notifiedTenant: !alreadyClaimedRecently && !!request.submittedByEmail && !!request.submittedByName },
+        metadata: {
+          notifiedTenant: shouldNotifyTenant,
+          claimedAt: now.toISOString(),
+          firstReviewedAt: (request.firstReviewedAt ?? now).toISOString(),
+        },
       })
 
       message = 'Request claimed for review.'
