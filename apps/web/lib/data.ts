@@ -491,6 +491,12 @@ export interface TrendPoint {
   completed: number
 }
 
+export interface TrendAlert {
+  kind: 'review_backlog' | 'completion_backlog'
+  message: string
+  severity: 'warn' | 'critical'
+}
+
 export interface ReportData {
   propertyStats: PropertyStats[]
   agingRequests: AgingRequest[]
@@ -508,6 +514,7 @@ export interface ReportData {
   vendorScorecards: VendorScorecard[]
   operatorMetrics: OperatorQueueMetric[]
   trends: TrendPoint[]
+  trendAlerts: TrendAlert[]
 }
 
 export interface UnitDetailData {
@@ -546,6 +553,33 @@ function buildDailyTrends(rows: DashboardRequestRow[], days = 14): TrendPoint[] 
   }
 
   return points
+}
+
+function buildTrendAlerts(trends: TrendPoint[]): TrendAlert[] {
+  const recent = trends.slice(-3)
+  if (recent.length < 3) return []
+
+  const createdBeatsReviewed = recent.every((point) => point.created > point.firstReviewed)
+  const createdBeatsCompleted = recent.every((point) => point.created > point.completed)
+  const alerts: TrendAlert[] = []
+
+  if (createdBeatsReviewed) {
+    alerts.push({
+      kind: 'review_backlog',
+      severity: 'warn',
+      message: 'New request intake has exceeded first reviews for 3 straight days.',
+    })
+  }
+
+  if (createdBeatsCompleted) {
+    alerts.push({
+      kind: 'completion_backlog',
+      severity: 'critical',
+      message: 'New request intake has exceeded completions for 3 straight days.',
+    })
+  }
+
+  return alerts
 }
 
 function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
@@ -697,6 +731,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       }
     }).sort((a, b) => b.openClaims - a.openClaims || b.staleClaims - a.staleClaims || a.operatorName.localeCompare(b.operatorName))
 
+    const trends = buildDailyTrends(allRows)
     const reopenCount = allRows.filter((r) => r.reviewState === 'reopened_after_review').length
 
     return {
@@ -715,7 +750,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
       reopenCount,
       vendorScorecards,
       operatorMetrics,
-      trends: buildDailyTrends(allRows),
+      trends,
+      trendAlerts: buildTrendAlerts(trends),
     }
   } catch {
     return {
@@ -735,6 +771,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       vendorScorecards: [],
       operatorMetrics: [],
       trends: [],
+      trendAlerts: [],
     }
   }
 }
