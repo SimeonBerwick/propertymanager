@@ -22,7 +22,7 @@ export function RequestQuickActions({
   request,
   compact = false,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'reviewState' | 'assignedVendorName'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'reviewState' | 'assignedVendorName' | 'claimedAt' | 'claimedByUserId'>
   compact?: boolean
 }) {
   const [state, action, pending] = useActionState(quickRequestAction, INITIAL_STATE)
@@ -42,6 +42,9 @@ export function RequestQuickActions({
       : null,
     request.assignedVendorName
       ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and dispatch state, then marks reassignment needed.' }
+      : null,
+    request.claimedAt && request.claimedByUserId
+      ? { key: 'take-over-claim', label: 'Take over claim', tone: 'button', title: 'Reassign queue claim ownership to yourself and keep this request moving.' }
       : null,
   ].filter(Boolean) as { key: string; label: string; tone: string; title: string }[]
 
