@@ -339,6 +339,15 @@ export interface TenantVendorUpdateParams {
   photoCount?: number
 }
 
+export interface TenantQueueViewedParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  tenantEmail: string
+  tenantName: string
+}
+
 export interface BillingDocumentNotificationParams {
   to: string
   title: string
@@ -385,6 +394,34 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
         ${p.photoCount ? dtRow('Photos', `${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}`) : ''}
       </table>
       ${p.note ? `<p><strong>Note:</strong> ${esc(p.note)}</p>` : ''}
+    `),
+  }
+}
+
+export function buildTenantQueueViewedMessage(p: TenantQueueViewedParams): NotificationMessage {
+  return {
+    to: p.tenantEmail,
+    subject: `Your maintenance request is now being reviewed — ${p.title}`,
+    text: [
+      `Hi ${p.tenantName},`,
+      ``,
+      `A property manager has opened your maintenance request and it is now being reviewed.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      ``,
+      `We’ll send another update when scheduling or work status changes.`,
+    ].join('\n'),
+    html: htmlEmail(`
+      <p>Hi ${esc(p.tenantName)},</p>
+      <p>A property manager has opened your maintenance request and it is now being reviewed.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+      </table>
+      <p>We&rsquo;ll send another update when scheduling or work status changes.</p>
     `),
   }
 }
