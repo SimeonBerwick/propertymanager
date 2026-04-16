@@ -4,18 +4,25 @@ import { useActionState } from 'react'
 import type React from 'react'
 import type { MaintenanceRequest } from '@/lib/types'
 import { quickRequestAction, type RequestActionState } from '@/lib/request-detail-actions'
+import { isStaleClaim } from '@/lib/ui-utils'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
 function confirmQuickAction(event: React.MouseEvent<HTMLButtonElement>) {
   const action = event.currentTarget.dataset.action
-  if (action !== 'mark-reassignment-needed') return
+  if (action === 'mark-reassignment-needed') {
+    const confirmed = window.confirm(
+      'Clear this vendor assignment and mark reassignment needed? This removes current vendor contact details and dispatch state.',
+    )
 
-  const confirmed = window.confirm(
-    'Clear this vendor assignment and mark reassignment needed? This removes current vendor contact details and dispatch state.',
-  )
+    if (!confirmed) event.preventDefault()
+    return
+  }
 
-  if (!confirmed) event.preventDefault()
+  if (action === 'release-claim') {
+    const confirmed = window.confirm('Release this queue claim and return the request to the unclaimed pool?')
+    if (!confirmed) event.preventDefault()
+  }
 }
 
 export function RequestQuickActions({
@@ -43,8 +50,11 @@ export function RequestQuickActions({
     request.assignedVendorName
       ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and dispatch state, then marks reassignment needed.' }
       : null,
+    request.claimedAt && request.claimedByUserId && isStaleClaim(request)
+      ? { key: 'take-over-claim', label: 'Take over claim', tone: 'button', title: 'Reassign stale queue claim ownership to yourself and keep this request moving.' }
+      : null,
     request.claimedAt && request.claimedByUserId
-      ? { key: 'take-over-claim', label: 'Take over claim', tone: 'button', title: 'Reassign queue claim ownership to yourself and keep this request moving.' }
+      ? { key: 'release-claim', label: 'Release claim', tone: 'button', title: 'Clear queue claim ownership and return this request to the unclaimed pool.' }
       : null,
   ].filter(Boolean) as { key: string; label: string; tone: string; title: string }[]
 
