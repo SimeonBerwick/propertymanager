@@ -24,6 +24,9 @@ export default async function DashboardPage({
   const selectedQueue = params?.queue ?? 'all'
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
   const selectedClaimedBy = params?.claimedBy ?? ''
+  const selectedOperatorName = selectedClaimedBy
+    ? data.requestRows.find((request) => request.claimedByUserId === selectedClaimedBy)?.claimedByUserName ?? selectedClaimedBy
+    : ''
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -209,7 +212,7 @@ export default async function DashboardPage({
           <Link href="/dashboard?queue=my-claims" className="filterChip" style={selectedQueue === 'my-claims' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>My claims</Link>
         </div>
 
-        {selectedQueue !== 'all' || selectedClaimedBy ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue !== 'all' ? selectedQueue : 'all'}{selectedClaimedBy ? ` · operator ${selectedClaimedBy}` : ''}</div> : null}
+        {selectedQueue !== 'all' || selectedClaimedBy ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue !== 'all' ? selectedQueue : 'all'}{selectedOperatorName ? ` · operator ${selectedOperatorName}` : ''}</div> : null}
         <div className="notice">
           Showing the top {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work is prioritized first, then sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
