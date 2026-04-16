@@ -32,7 +32,7 @@ async function getAwardedInvite(requestId: string, userId: string) {
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
-const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
+const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed', 'take-over-claim'] as const
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -797,6 +797,37 @@ export async function quickRequestAction(
         },
       })
       message = 'Vendor cleared and reassignment needed flagged.'
+    }
+
+    if (quickAction === 'take-over-claim') {
+      if (!request.claimedAt || !request.claimedByUserId) return { error: 'This request is not currently claimed.' }
+      if (request.claimedByUserId === session.userId) return { error: 'You already own this claim.' }
+
+      const now = new Date()
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          claimedAt: now,
+          claimedByUserId: session.userId,
+          firstReviewedAt: request.firstReviewedAt ?? now,
+        },
+      })
+
+      await writeAuditLog({
+        orgId: session.userId,
+        actorUserId: session.userId,
+        entityType: 'request',
+        entityId: requestId,
+        action: 'request.queueClaimTakenOver',
+        summary: 'Operator took over queue claim ownership.',
+        metadata: {
+          previousClaimedByUserId: request.claimedByUserId,
+          previousClaimedAt: request.claimedAt.toISOString(),
+          claimedAt: now.toISOString(),
+        },
+      })
+
+      message = 'Queue claim taken over.'
     }
 
     await writeAuditLog({
