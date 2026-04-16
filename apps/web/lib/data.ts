@@ -473,6 +473,15 @@ export interface VendorScorecard {
   avgCompletionDays: number | null
 }
 
+export interface OperatorQueueMetric {
+  operatorId: string
+  operatorName: string
+  openClaims: number
+  staleClaims: number
+  avgClaimAgeHours: number | null
+  completedClaims: number
+}
+
 export interface ReportData {
   propertyStats: PropertyStats[]
   agingRequests: AgingRequest[]
@@ -488,6 +497,7 @@ export interface ReportData {
   staleClaimedOpenCount: number
   reopenCount: number
   vendorScorecards: VendorScorecard[]
+  operatorMetrics: OperatorQueueMetric[]
 }
 
 export interface UnitDetailData {
@@ -635,6 +645,24 @@ export async function getReportData(userId: string): Promise<ReportData> {
       }
     })
 
+    const operatorMetrics: OperatorQueueMetric[] = claimUsers.map((user) => {
+      const claimedRows = allRows.filter((row) => row.claimedByUserId === user.id)
+      const openClaims = claimedRows.filter((row) => row.status !== 'done')
+      const staleClaims = openClaims.filter((row) => row.claimedAt && now.getTime() - new Date(row.claimedAt).getTime() >= 1000 * 60 * 60 * 24)
+      const avgClaimAgeHours = openClaims.length
+        ? openClaims.reduce((sum, row) => sum + (row.claimedAt ? (now.getTime() - new Date(row.claimedAt).getTime()) / (1000 * 60 * 60) : 0), 0) / openClaims.length
+        : null
+
+      return {
+        operatorId: user.id,
+        operatorName: user.displayName ?? user.email,
+        openClaims: openClaims.length,
+        staleClaims: staleClaims.length,
+        avgClaimAgeHours,
+        completedClaims: claimedRows.filter((row) => row.status === 'done').length,
+      }
+    }).sort((a, b) => b.openClaims - a.openClaims || b.staleClaims - a.staleClaims || a.operatorName.localeCompare(b.operatorName))
+
     const reopenCount = allRows.filter((r) => r.reviewState === 'reopened_after_review').length
 
     return {
@@ -652,6 +680,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       staleClaimedOpenCount: allRows.filter((r) => r.status !== 'done' && r.claimedAt && now.getTime() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
       reopenCount,
       vendorScorecards,
+      operatorMetrics,
     }
   } catch {
     return {
@@ -669,6 +698,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       staleClaimedOpenCount: 0,
       reopenCount: 0,
       vendorScorecards: [],
+      operatorMetrics: [],
     }
   }
 }
