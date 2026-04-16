@@ -64,6 +64,7 @@ export interface MaintenanceRequest {
   slaBucket?: string
   triageTags: string[]
   createdAt: string
+  closedAt?: string
 }
 
 export interface Vendor {

@@ -115,6 +115,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     slaBucket: r.slaBucket ?? undefined,
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+    closedAt: r.closedAt ? new Date(r.closedAt).toISOString() : undefined,
     propertyName: r.property?.name ?? 'Unknown property',
     propertyAddress: r.property?.address ?? 'Unknown address',
     unitLabel: r.unit?.label ?? 'Unknown unit',
@@ -482,6 +483,14 @@ export interface OperatorQueueMetric {
   completedClaims: number
 }
 
+export interface TrendPoint {
+  day: string
+  created: number
+  firstReviewed: number
+  claimed: number
+  completed: number
+}
+
 export interface ReportData {
   propertyStats: PropertyStats[]
   agingRequests: AgingRequest[]
@@ -498,6 +507,7 @@ export interface ReportData {
   reopenCount: number
   vendorScorecards: VendorScorecard[]
   operatorMetrics: OperatorQueueMetric[]
+  trends: TrendPoint[]
 }
 
 export interface UnitDetailData {
@@ -512,6 +522,30 @@ export interface VendorDetailData {
   vendor: Vendor
   requests: DashboardRequestRow[]
   scorecard: VendorScorecard | null
+}
+
+function buildDailyTrends(rows: DashboardRequestRow[], days = 14): TrendPoint[] {
+  const points: TrendPoint[] = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const start = new Date(today)
+    start.setDate(today.getDate() - offset)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 1)
+    const inWindow = (value?: string) => !!value && new Date(value) >= start && new Date(value) < end
+
+    points.push({
+      day: start.toISOString().slice(0, 10),
+      created: rows.filter((row) => inWindow(row.createdAt)).length,
+      firstReviewed: rows.filter((row) => inWindow(row.firstReviewedAt)).length,
+      claimed: rows.filter((row) => inWindow(row.claimedAt)).length,
+      completed: rows.filter((row) => row.status === 'done' && inWindow(row.closedAt)).length,
+    })
+  }
+
+  return points
 }
 
 function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
@@ -681,6 +715,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       reopenCount,
       vendorScorecards,
       operatorMetrics,
+      trends: buildDailyTrends(allRows),
     }
   } catch {
     return {
@@ -699,6 +734,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       reopenCount: 0,
       vendorScorecards: [],
       operatorMetrics: [],
+      trends: [],
     }
   }
 }
