@@ -135,6 +135,21 @@ export default async function DashboardPage({
           <div className="queueValue">{data.queueCounts.needsFollowUp}</div>
           <div className="muted">Vendor updates need operator action.</div>
         </Link>
+        <Link href="/dashboard?queue=unclaimed" className="card queueCard">
+          <div className="kicker">Unclaimed</div>
+          <div className="queueValue">{data.queueCounts.unclaimedOpen}</div>
+          <div className="muted">Open requests still without an owner.</div>
+        </Link>
+        <Link href="/dashboard?queue=stale-claimed" className="card queueCard">
+          <div className="kicker">Stale claimed</div>
+          <div className="queueValue">{data.queueCounts.staleClaimedOpen}</div>
+          <div className="muted">Claims older than 24 hours without closure.</div>
+        </Link>
+        <Link href="/dashboard?queue=my-claims" className="card queueCard">
+          <div className="kicker">My claims</div>
+          <div className="queueValue">{data.queueCounts.myClaimsOpen}</div>
+          <div className="muted">Open requests currently assigned to you.</div>
+        </Link>
         <Link href="/dashboard?queue=non-english" className="card queueCard">
           <div className="kicker">Non-English</div>
           <div className="queueValue">{data.queueCounts.nonEnglishOpen}</div>
