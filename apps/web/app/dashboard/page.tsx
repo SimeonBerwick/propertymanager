@@ -232,6 +232,7 @@ export default async function DashboardPage({
                     <span className="muted">{request.category}</span>
                     <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
                     <span className="muted">{formatClaimStatus(request)}</span>
+                    {request.claimedByUserName ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Owner: {request.claimedByUserName}</span> : null}
                     {isStaleClaim(request) ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Stale claim</span> : null}
                   </div>
                 </div>
