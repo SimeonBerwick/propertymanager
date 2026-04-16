@@ -25,6 +25,17 @@ export default async function ReportsPage() {
         <h2 style={{ margin: '4px 0 0' }}>History &amp; reporting</h2>
       </section>
 
+      {data.trendAlerts.length ? (
+        <section className="stack">
+          {data.trendAlerts.map((alert) => (
+            <div key={alert.kind} className={`notice ${alert.severity === 'critical' ? 'error' : ''}`}>
+              <strong>{alert.severity === 'critical' ? 'Critical trend alert' : 'Trend alert'}</strong>
+              <div>{alert.message}</div>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
       {/* ── Summary stat row ── */}
       <section className="grid cols-3">
         <div className="card">
