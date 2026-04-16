@@ -4,6 +4,9 @@ import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { reviewStateLabel } from '@/lib/ui-utils'
+import { prisma } from '@/lib/prisma'
+import { sendNotification, buildTenantQueueViewedMessage } from '@/lib/notify'
+import { writeAuditLog } from '@/lib/audit-log'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -41,6 +44,40 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   if (!data) {
     notFound()
+  }
+
+  const queueViewedAt = new Date()
+  if (data.request.submittedByEmail && data.request.submittedByName) {
+    const recentView = await prisma.auditLog.findFirst({
+      where: {
+        entityType: 'request',
+        entityId: data.request.id,
+        action: 'request.queueViewed',
+      },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => null)
+
+    const alreadyRecentlyViewed = recentView && queueViewedAt.getTime() - recentView.createdAt.getTime() < 1000 * 60 * 60 * 12
+
+    if (!alreadyRecentlyViewed) {
+      await writeAuditLog({
+        orgId: session.userId,
+        actorUserId: session.userId,
+        entityType: 'request',
+        entityId: data.request.id,
+        action: 'request.queueViewed',
+        summary: 'Operator opened request from the queue for review.',
+      })
+
+      await sendNotification(buildTenantQueueViewedMessage({
+        requestId: data.request.id,
+        title: data.request.title,
+        propertyName: data.request.propertyName,
+        unitLabel: data.request.unitLabel,
+        tenantEmail: data.request.submittedByEmail,
+        tenantName: data.request.submittedByName,
+      }))
+    }
   }
 
   const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
