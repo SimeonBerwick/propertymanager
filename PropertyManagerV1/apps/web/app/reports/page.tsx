@@ -92,6 +92,39 @@ export default async function ReportsPage() {
         </Link>
       </section>
 
+      <section className="card stack">
+        <div>
+          <div className="kicker">Trends</div>
+          <h3 style={{ marginTop: 4 }}>Daily workflow trend, last 14 days</h3>
+        </div>
+        {data.trends.length ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Created</th>
+                <th>First reviewed</th>
+                <th>Claimed</th>
+                <th>Completed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.trends.map((point) => (
+                <tr key={point.day}>
+                  <td>{point.day}</td>
+                  <td>{point.created}</td>
+                  <td>{point.firstReviewed}</td>
+                  <td>{point.claimed}</td>
+                  <td>{point.completed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted">No trend data yet.</div>
+        )}
+      </section>
+
       {/* ── Open vs closed by property ── */}
       <section className="card stack">
         <div>
