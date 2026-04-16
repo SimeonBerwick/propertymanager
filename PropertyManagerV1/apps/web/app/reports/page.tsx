@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getReportData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
+import { TrendChart } from '@/components/trend-chart'
 import { currencyLabel, languageLabel } from '@/lib/types'
 
 function ageBadgeClass(days: number) {
@@ -98,28 +99,31 @@ export default async function ReportsPage() {
           <h3 style={{ marginTop: 4 }}>Daily workflow trend, last 14 days</h3>
         </div>
         {data.trends.length ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Created</th>
-                <th>First reviewed</th>
-                <th>Claimed</th>
-                <th>Completed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.trends.map((point) => (
-                <tr key={point.day}>
-                  <td>{point.day}</td>
-                  <td>{point.created}</td>
-                  <td>{point.firstReviewed}</td>
-                  <td>{point.claimed}</td>
-                  <td>{point.completed}</td>
+          <>
+            <TrendChart points={data.trends} />
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Created</th>
+                  <th>First reviewed</th>
+                  <th>Claimed</th>
+                  <th>Completed</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.trends.map((point) => (
+                  <tr key={point.day}>
+                    <td>{point.day}</td>
+                    <td>{point.created}</td>
+                    <td>{point.firstReviewed}</td>
+                    <td>{point.claimed}</td>
+                    <td>{point.completed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         ) : (
           <div className="muted">No trend data yet.</div>
         )}

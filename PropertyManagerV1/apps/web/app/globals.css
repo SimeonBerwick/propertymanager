@@ -253,6 +253,45 @@ body { min-height: 100vh; }
   font-size: 13px;
   font-weight: 600;
 }
+.trendChartWrap {
+  display: grid;
+  gap: 10px;
+}
+.trendChart {
+  width: 100%;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+.trendGridLine {
+  stroke: #e5edf7;
+  stroke-width: 0.8;
+}
+.trendLegend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.trendLegendItem {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.trendLegendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+.trendAxisLabels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 12px;
+}
 .inboxList { display: grid; gap: 12px; }
 .inboxRow {
   display: grid;
