@@ -32,6 +32,9 @@ export interface DashboardData {
     needsFollowUp: number
     scheduledToday: number
     overdueScheduled: number
+    unclaimedOpen: number
+    staleClaimedOpen: number
+    myClaimsOpen: number
   }
 }
 
@@ -139,7 +142,7 @@ function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, numbe
   }
 }
 
-function queueCounts(rows: DashboardRequestRow[]) {
+function queueCounts(rows: DashboardRequestRow[], currentUserId?: string) {
   const openRows = rows.filter((r) => r.status !== 'done')
   const now = new Date()
   const todayStart = new Date(now)
@@ -156,6 +159,9 @@ function queueCounts(rows: DashboardRequestRow[]) {
     needsFollowUp: rows.filter((r) => r.reviewState === 'needs_follow_up' || r.reviewState === 'vendor_update_pending_review').length,
     scheduledToday: rows.filter((r) => r.vendorScheduledStart && new Date(r.vendorScheduledStart) >= todayStart && new Date(r.vendorScheduledStart) < todayEnd).length,
     overdueScheduled: rows.filter((r) => r.vendorScheduledEnd && new Date(r.vendorScheduledEnd) < now && r.status !== 'done').length,
+    unclaimedOpen: openRows.filter((r) => !r.claimedAt).length,
+    staleClaimedOpen: openRows.filter((r) => r.claimedAt && Date.now() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
+    myClaimsOpen: currentUserId ? openRows.filter((r) => r.claimedByUserId === currentUserId).length : 0,
   }
 }
 
@@ -218,10 +224,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       properties: dbProperties.map(mapProperty),
       requestRows,
       statusCounts: countStatuses(requestRows),
-      queueCounts: queueCounts(requestRows),
+      queueCounts: queueCounts(requestRows, userId),
     }
   } catch {
-    return { properties: [], requestRows: [], statusCounts: countStatuses([]), queueCounts: queueCounts([]) }
+    return { properties: [], requestRows: [], statusCounts: countStatuses([]), queueCounts: queueCounts([], userId) }
   }
 }
 
