@@ -57,6 +57,9 @@ export interface MaintenanceRequest {
   reviewNote?: string
   autoFlag?: string
   autoFlaggedAt?: string
+  firstReviewedAt?: string
+  claimedAt?: string
+  claimedByUserId?: string
   slaBucket?: string
   triageTags: string[]
   createdAt: string
