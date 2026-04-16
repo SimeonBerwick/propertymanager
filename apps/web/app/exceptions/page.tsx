@@ -18,6 +18,7 @@ export default async function ExceptionsPage() {
     .sort((a, b) => {
       const score = (request: typeof a) => {
         let value = 0
+        if (!request.claimedAt) value += 3
         if (request.urgency === 'urgent') value += 5
         if (request.urgency === 'high') value += 4
         if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') value += 5
@@ -39,7 +40,7 @@ export default async function ExceptionsPage() {
           <h2 style={{ margin: '4px 0 0' }}>Exceptions</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure.
+          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure with unclaimed work first.
         </p>
         <SendSummaryForm />
       </section>
