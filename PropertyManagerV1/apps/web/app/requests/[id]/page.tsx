@@ -95,6 +95,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` · ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
                 <div><strong>Queue claim</strong><div className="muted">{formatClaimStatus(data.request)}</div></div>
+                <div><strong>Claim owner</strong><div className="muted">{data.request.claimedByUserName ?? 'Unassigned'}</div></div>
                 <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : 'Not yet reviewed'}</div></div>
               </div>
               <RequestSignalStrip request={data.request} />

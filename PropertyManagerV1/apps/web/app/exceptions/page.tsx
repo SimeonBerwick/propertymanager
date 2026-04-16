@@ -72,6 +72,7 @@ export default async function ExceptionsPage() {
                       {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {reviewStateLabel(request.reviewState)}</span> : null}
                       {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
                       <span className="muted">{formatClaimStatus(request)}</span>
+                      {request.claimedByUserName ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Owner: {request.claimedByUserName}</span> : null}
                       {isStaleClaim(request) ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Stale claim</span> : null}
                     </div>
                     <RequestSignalStrip request={request} />
