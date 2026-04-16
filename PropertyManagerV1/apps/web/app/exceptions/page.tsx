@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { reviewStateLabel, formatClaimStatus } from '@/lib/ui-utils'
+import { reviewStateLabel, formatClaimStatus, isStaleClaim } from '@/lib/ui-utils'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestQuickActions } from '@/components/request-quick-actions'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -72,6 +72,7 @@ export default async function ExceptionsPage() {
                       {request.reviewState && request.reviewState !== 'none' ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Review: {reviewStateLabel(request.reviewState)}</span> : null}
                       {request.assignedVendorName ? <span className="muted">Vendor: {request.assignedVendorName}</span> : <span className="muted">No vendor assigned</span>}
                       <span className="muted">{formatClaimStatus(request)}</span>
+                      {isStaleClaim(request) ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Stale claim</span> : null}
                     </div>
                     <RequestSignalStrip request={request} />
                     {request.reviewNote ? <div className="notice">{request.reviewNote}</div> : null}
