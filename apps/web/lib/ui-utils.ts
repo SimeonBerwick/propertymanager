@@ -74,3 +74,13 @@ export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' 
 
   return 'Unclaimed'
 }
+
+export function isStaleClaim(request: Pick<MaintenanceRequest, 'claimedAt' | 'status' | 'reviewState'>) {
+  if (!request.claimedAt) return false
+  if (request.status === 'done') return false
+  if (request.reviewState === 'approved') return false
+
+  const diffMs = Date.now() - new Date(request.claimedAt).getTime()
+  const hours = diffMs / (1000 * 60 * 60)
+  return hours >= 24
+}

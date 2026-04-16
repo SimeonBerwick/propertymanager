@@ -8,7 +8,7 @@ import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
-import { formatDateTime, formatRelativeAge, formatClaimStatus } from '@/lib/ui-utils'
+import { formatDateTime, formatRelativeAge, formatClaimStatus, isStaleClaim } from '@/lib/ui-utils'
 
 export default async function DashboardPage({
   searchParams,
@@ -204,6 +204,7 @@ export default async function DashboardPage({
                     <span className="muted">{request.category}</span>
                     <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
                     <span className="muted">{formatClaimStatus(request)}</span>
+                    {isStaleClaim(request) ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Stale claim</span> : null}
                   </div>
                 </div>
                 <RequestSignalStrip request={request} />
