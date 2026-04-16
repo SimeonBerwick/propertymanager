@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } from '@/lib/types'
-import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage } from '@/lib/notify'
+import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
@@ -32,7 +32,7 @@ async function getAwardedInvite(requestId: string, userId: string) {
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
-const VALID_QUICK_ACTIONS = ['mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
+const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed'] as const
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -689,11 +689,52 @@ export async function quickRequestAction(
         status: true,
         assignedVendorId: true,
         assignedVendorName: true,
+        submittedByName: true,
+        submittedByEmail: true,
+        title: true,
+        property: { select: { name: true } },
+        unit: { select: { label: true } },
       },
     })
     if (!request) return { error: 'Request not found.' }
 
     let message = 'Quick action applied.'
+
+    if (quickAction === 'claim-for-review') {
+      const recentClaim = await prisma.auditLog.findFirst({
+        where: {
+          entityType: 'request',
+          entityId: requestId,
+          action: 'request.queueClaimed',
+        },
+        orderBy: { createdAt: 'desc' },
+      }).catch(() => null)
+
+      const alreadyClaimedRecently = recentClaim && Date.now() - recentClaim.createdAt.getTime() < 1000 * 60 * 60 * 12
+
+      if (!alreadyClaimedRecently && request.submittedByEmail && request.submittedByName) {
+        await sendNotification(buildTenantQueueViewedMessage({
+          requestId,
+          title: request.title,
+          propertyName: request.property.name,
+          unitLabel: request.unit.label,
+          tenantEmail: request.submittedByEmail,
+          tenantName: request.submittedByName,
+        }))
+      }
+
+      await writeAuditLog({
+        orgId: session.userId,
+        actorUserId: session.userId,
+        entityType: 'request',
+        entityId: requestId,
+        action: 'request.queueClaimed',
+        summary: 'Operator claimed request from queue for review.',
+        metadata: { notifiedTenant: !alreadyClaimedRecently && !!request.submittedByEmail && !!request.submittedByName },
+      })
+
+      message = 'Request claimed for review.'
+    }
 
     if (quickAction === 'mark-scheduled') {
       if (!['new', 'in_progress'].includes(request.status)) return { error: 'Only new or active requests can be marked scheduled from the queue.' }
