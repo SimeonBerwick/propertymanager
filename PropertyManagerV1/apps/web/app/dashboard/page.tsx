@@ -45,6 +45,13 @@ export default async function DashboardPage({
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
+    const aClaimed = !!a.claimedAt
+    const bClaimed = !!b.claimedAt
+
+    if (aClaimed !== bClaimed) {
+      return aClaimed ? 1 : -1
+    }
+
     if (selectedSort === 'oldest') {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     }
@@ -179,7 +186,7 @@ export default async function DashboardPage({
 
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing the top {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+          Showing the top {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work is prioritized first, then sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
         </div>
 
