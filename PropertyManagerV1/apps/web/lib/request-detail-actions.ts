@@ -32,7 +32,7 @@ async function getAwardedInvite(requestId: string, userId: string) {
 
 const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
 const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
-const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed', 'take-over-claim'] as const
+const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed', 'take-over-claim', 'release-claim'] as const
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -802,6 +802,7 @@ export async function quickRequestAction(
     if (quickAction === 'take-over-claim') {
       if (!request.claimedAt || !request.claimedByUserId) return { error: 'This request is not currently claimed.' }
       if (request.claimedByUserId === session.userId) return { error: 'You already own this claim.' }
+      if (Date.now() - request.claimedAt.getTime() < 1000 * 60 * 60 * 24) return { error: 'Only stale claims can be taken over.' }
 
       const now = new Date()
       await prisma.maintenanceRequest.update({
@@ -819,7 +820,7 @@ export async function quickRequestAction(
         entityType: 'request',
         entityId: requestId,
         action: 'request.queueClaimTakenOver',
-        summary: 'Operator took over queue claim ownership.',
+        summary: 'Operator took over stale queue claim ownership.',
         metadata: {
           previousClaimedByUserId: request.claimedByUserId,
           previousClaimedAt: request.claimedAt.toISOString(),
@@ -827,7 +828,34 @@ export async function quickRequestAction(
         },
       })
 
-      message = 'Queue claim taken over.'
+      message = 'Stale queue claim taken over.'
+    }
+
+    if (quickAction === 'release-claim') {
+      if (!request.claimedAt || !request.claimedByUserId) return { error: 'This request is not currently claimed.' }
+
+      await prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          claimedAt: null,
+          claimedByUserId: null,
+        },
+      })
+
+      await writeAuditLog({
+        orgId: session.userId,
+        actorUserId: session.userId,
+        entityType: 'request',
+        entityId: requestId,
+        action: 'request.queueClaimReleased',
+        summary: 'Operator released queue claim ownership.',
+        metadata: {
+          previousClaimedByUserId: request.claimedByUserId,
+          previousClaimedAt: request.claimedAt.toISOString(),
+        },
+      })
+
+      message = 'Queue claim released.'
     }
 
     await writeAuditLog({
