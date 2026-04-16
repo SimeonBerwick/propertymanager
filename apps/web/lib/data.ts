@@ -165,11 +165,11 @@ function queueCounts(rows: DashboardRequestRow[], currentUserId?: string) {
   }
 }
 
-function buildUserNameMap(users: Array<{ id: string, email: string }>) {
-  return new Map(users.map((user) => [user.id, user.email]))
+function buildUserNameMap(users: Array<{ id: string, email: string, displayName: string | null }>) {
+  return new Map(users.map((user) => [user.id, user.displayName ?? user.email]))
 }
 
-function mapRequestsWithClaimOwners(rows: any[], users: Array<{ id: string, email: string }>) {
+function mapRequestsWithClaimOwners(rows: any[], users: Array<{ id: string, email: string, displayName: string | null }>) {
   const userMap = buildUserNameMap(users)
   return rows.map((row) => mapRequestRow(row, row.claimedByUserId ? userMap.get(row.claimedByUserId) : undefined))
 }
@@ -216,7 +216,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       }),
       prisma.user.findMany({
         where: { id: { in: (await prisma.maintenanceRequest.findMany({ where: { property: { ownerId: userId }, claimedByUserId: { not: null } }, select: { claimedByUserId: true } })).map((r) => r.claimedByUserId!).filter(Boolean) } },
-        select: { id: true, email: true },
+        select: { id: true, email: true, displayName: true },
       }),
     ])
     const requestRows = mapRequestsWithClaimOwners(dbRequests, claimUsers)
@@ -284,7 +284,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
     return {
       property: mapProperty(dbProperty),
       units: dbProperty.units.map(mapUnit),
-      requests: mapRequestsWithClaimOwners(dbProperty.requests, await prisma.user.findMany({ where: { id: { in: dbProperty.requests.map((r) => r.claimedByUserId).filter(Boolean) as string[] } }, select: { id: true, email: true } })),
+      requests: mapRequestsWithClaimOwners(dbProperty.requests, await prisma.user.findMany({ where: { id: { in: dbProperty.requests.map((r) => r.claimedByUserId).filter(Boolean) as string[] } }, select: { id: true, email: true, displayName: true } })),
     }
   } catch {
     return null
@@ -327,7 +327,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     const comments: RequestComment[] = dbRequest.comments.map((c) => ({
       id: c.id,
       requestId: c.requestId,
-      authorName: c.author?.email ?? 'System',
+      authorName: c.author?.displayName ?? c.author?.email ?? 'System',
       body: c.body,
       visibility: c.visibility as 'internal' | 'external',
       createdAt: c.createdAt.toISOString(),
@@ -338,12 +338,12 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       requestId: e.requestId,
       fromStatus: e.fromStatus as RequestStatus | undefined,
       toStatus: e.toStatus as RequestStatus,
-      actorName: e.actorUser?.email ?? 'System',
+      actorName: e.actorUser?.displayName ?? e.actorUser?.email ?? 'System',
       createdAt: e.createdAt.toISOString(),
     }))
 
     const claimUsers = dbRequest.claimedByUserId
-      ? await prisma.user.findMany({ where: { id: dbRequest.claimedByUserId }, select: { id: true, email: true } })
+      ? await prisma.user.findMany({ where: { id: dbRequest.claimedByUserId }, select: { id: true, email: true, displayName: true } })
       : []
 
     const request = mapRequestsWithClaimOwners([dbRequest], claimUsers)[0]
@@ -365,7 +365,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       id: entry.id,
       requestId: entry.requestId,
       vendorName: entry.vendor?.name ?? undefined,
-      actorName: entry.actorUser?.email ?? 'System',
+      actorName: entry.actorUser?.displayName ?? entry.actorUser?.email ?? 'System',
       status: entry.status as VendorDispatchEvent['status'],
       note: entry.note ?? undefined,
       scheduledStart: entry.scheduledStart?.toISOString() ?? undefined,
@@ -394,7 +394,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         billingDocumentId: event.billingDocumentId,
         eventType: event.eventType,
         note: event.note ?? undefined,
-        actorName: event.actorUser?.email ?? undefined,
+        actorName: event.actorUser?.displayName ?? event.actorUser?.email ?? undefined,
         createdAt: event.createdAt.toISOString(),
       })),
     }))
@@ -578,7 +578,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
 
     const claimUsers = await prisma.user.findMany({
       where: { id: { in: Array.from(new Set(allDbRequests.map((r) => r.claimedByUserId).filter(Boolean))) as string[] } },
-      select: { id: true, email: true },
+      select: { id: true, email: true, displayName: true },
     })
     const claimUserMap = buildUserNameMap(claimUsers)
 

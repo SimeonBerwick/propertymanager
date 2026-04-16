@@ -29,11 +29,13 @@ async function main() {
     where: { email: landlordEmail },
     update: {
       role: 'landlord',
+      displayName: 'Elon PM Ops',
       passwordHash: landlordPasswordHash,
       slug: landlordSlug,
     },
     create: {
       email: landlordEmail,
+      displayName: 'Elon PM Ops',
       role: 'landlord',
       passwordHash: landlordPasswordHash,
       slug: landlordSlug,
