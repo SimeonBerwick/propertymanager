@@ -182,6 +182,39 @@ export default async function ReportsPage() {
 
       <section className="card stack">
         <div>
+          <div className="kicker">Operator ownership</div>
+          <h3 style={{ marginTop: 4 }}>Queue load by operator</h3>
+        </div>
+        {data.operatorMetrics.length ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Operator</th>
+                <th>Open claims</th>
+                <th>Stale claims</th>
+                <th>Avg claim age</th>
+                <th>Completed claims</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.operatorMetrics.map((operator) => (
+                <tr key={operator.operatorId}>
+                  <td style={{ fontWeight: 600 }}>{operator.operatorName}</td>
+                  <td>{operator.openClaims}</td>
+                  <td>{operator.staleClaims}</td>
+                  <td>{operator.avgClaimAgeHours ? `${operator.avgClaimAgeHours.toFixed(1)}h` : '—'}</td>
+                  <td>{operator.completedClaims}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted">No operator claim data yet.</div>
+        )}
+      </section>
+
+      <section className="card stack">
+        <div>
           <div className="kicker">Vendor scorecards</div>
           <h3 style={{ marginTop: 4 }}>Assignment and completion performance</h3>
         </div>
