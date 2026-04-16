@@ -482,6 +482,10 @@ export interface ReportData {
   avgTimeToAssignHours: number | null
   avgTimeToScheduleHours: number | null
   avgTimeToCompleteDays: number | null
+  avgTimeToFirstReviewHours: number | null
+  avgClaimAgeHoursOpen: number | null
+  unclaimedOpenCount: number
+  staleClaimedOpenCount: number
   reopenCount: number
   vendorScorecards: VendorScorecard[]
 }
@@ -588,6 +592,14 @@ export async function getReportData(userId: string): Promise<ReportData> {
     const totalClosed = allRows.filter((r) => r.status === 'done').length
     const repeatIssues = groupRepeatIssues(allRows)
 
+    const firstReviewDelays = allDbRequests
+      .filter((r) => r.firstReviewedAt)
+      .map((r) => (r.firstReviewedAt!.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60))
+
+    const openClaimAges = openDbRequests
+      .filter((r) => r.claimedAt)
+      .map((r) => (now.getTime() - r.claimedAt!.getTime()) / (1000 * 60 * 60))
+
     const assignmentDelays = allDbRequests
       .filter((r) => r.assignedVendorName)
       .map((r) => (r.updatedAt.getTime() - r.createdAt.getTime()) / (1000 * 60 * 60))
@@ -634,6 +646,10 @@ export async function getReportData(userId: string): Promise<ReportData> {
       avgTimeToAssignHours: avg(assignmentDelays),
       avgTimeToScheduleHours: avg(scheduleDelays),
       avgTimeToCompleteDays: avg(completionDelays),
+      avgTimeToFirstReviewHours: avg(firstReviewDelays),
+      avgClaimAgeHoursOpen: avg(openClaimAges),
+      unclaimedOpenCount: allRows.filter((r) => r.status !== 'done' && !r.claimedAt).length,
+      staleClaimedOpenCount: allRows.filter((r) => r.status !== 'done' && r.claimedAt && now.getTime() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
       reopenCount,
       vendorScorecards,
     }
@@ -647,6 +663,10 @@ export async function getReportData(userId: string): Promise<ReportData> {
       avgTimeToAssignHours: null,
       avgTimeToScheduleHours: null,
       avgTimeToCompleteDays: null,
+      avgTimeToFirstReviewHours: null,
+      avgClaimAgeHoursOpen: null,
+      unclaimedOpenCount: 0,
+      staleClaimedOpenCount: 0,
       reopenCount: 0,
       vendorScorecards: [],
     }
