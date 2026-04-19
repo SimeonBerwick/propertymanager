@@ -104,8 +104,14 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     dispatchStatus: r.dispatchStatus ?? undefined,
     vendorScheduledStart: r.vendorScheduledStart ? new Date(r.vendorScheduledStart).toISOString() : undefined,
     vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
+    actualCompletedAt: r.actualCompletedAt ? new Date(r.actualCompletedAt).toISOString() : undefined,
     reviewState: r.reviewState ?? undefined,
     reviewNote: r.reviewNote ?? undefined,
+    declineReason: r.declineReason ?? undefined,
+    tenantBillbackDecision: r.tenantBillbackDecision ?? undefined,
+    tenantBillbackAmountCents: typeof r.tenantBillbackAmountCents === 'number' ? r.tenantBillbackAmountCents : undefined,
+    tenantBillbackReason: r.tenantBillbackReason ?? undefined,
+    tenantBillbackDecidedAt: r.tenantBillbackDecidedAt ? new Date(r.tenantBillbackDecidedAt).toISOString() : undefined,
     autoFlag: r.autoFlag ?? undefined,
     autoFlaggedAt: r.autoFlaggedAt ? new Date(r.autoFlaggedAt).toISOString() : undefined,
     firstReviewedAt: r.firstReviewedAt ? new Date(r.firstReviewedAt).toISOString() : undefined,
@@ -116,6 +122,8 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     triageTags: csvToList(r.triageTagsCsv),
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
     closedAt: r.closedAt ? new Date(r.closedAt).toISOString() : undefined,
+    cancelReason: r.cancelReason ?? undefined,
+    reopenedReason: r.reopenedReason ?? undefined,
     propertyName: r.property?.name ?? 'Unknown property',
     propertyAddress: r.property?.address ?? 'Unknown address',
     unitLabel: r.unit?.label ?? 'Unknown unit',
@@ -136,15 +144,21 @@ function mapPhoto(photo: any): MaintenancePhoto {
 
 function countStatuses(rows: DashboardRequestRow[]): Record<RequestStatus, number> {
   return {
-    new: rows.filter((r) => r.status === 'new').length,
+    requested: rows.filter((r) => r.status === 'requested').length,
+    approved: rows.filter((r) => r.status === 'approved').length,
+    declined: rows.filter((r) => r.status === 'declined').length,
+    vendor_selected: rows.filter((r) => r.status === 'vendor_selected').length,
     scheduled: rows.filter((r) => r.status === 'scheduled').length,
     in_progress: rows.filter((r) => r.status === 'in_progress').length,
-    done: rows.filter((r) => r.status === 'done').length,
+    completed: rows.filter((r) => r.status === 'completed').length,
+    closed: rows.filter((r) => r.status === 'closed').length,
+    canceled: rows.filter((r) => r.status === 'canceled').length,
+    reopened: rows.filter((r) => r.status === 'reopened').length,
   }
 }
 
 function queueCounts(rows: DashboardRequestRow[], currentUserId?: string) {
-  const openRows = rows.filter((r) => r.status !== 'done')
+  const openRows = rows.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status))
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -159,7 +173,7 @@ function queueCounts(rows: DashboardRequestRow[], currentUserId?: string) {
     completedPendingReview: rows.filter((r) => r.reviewState === 'vendor_completed_pending_review').length,
     needsFollowUp: rows.filter((r) => r.reviewState === 'needs_follow_up' || r.reviewState === 'vendor_update_pending_review').length,
     scheduledToday: rows.filter((r) => r.vendorScheduledStart && new Date(r.vendorScheduledStart) >= todayStart && new Date(r.vendorScheduledStart) < todayEnd).length,
-    overdueScheduled: rows.filter((r) => r.vendorScheduledEnd && new Date(r.vendorScheduledEnd) < now && r.status !== 'done').length,
+    overdueScheduled: rows.filter((r) => r.vendorScheduledEnd && new Date(r.vendorScheduledEnd) < now && !['closed', 'declined', 'canceled'].includes(r.status)).length,
     unclaimedOpen: openRows.filter((r) => !r.claimedAt).length,
     staleClaimedOpen: openRows.filter((r) => r.claimedAt && Date.now() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
     myClaimsOpen: currentUserId ? openRows.filter((r) => r.claimedByUserId === currentUserId).length : 0,
@@ -548,7 +562,7 @@ function buildDailyTrends(rows: DashboardRequestRow[], days = 14): TrendPoint[] 
       created: rows.filter((row) => inWindow(row.createdAt)).length,
       firstReviewed: rows.filter((row) => inWindow(row.firstReviewedAt)).length,
       claimed: rows.filter((row) => inWindow(row.claimedAt)).length,
-      completed: rows.filter((row) => row.status === 'done' && inWindow(row.closedAt)).length,
+      completed: rows.filter((row) => row.status === 'closed' && inWindow(row.closedAt)).length,
     })
   }
 
@@ -625,7 +639,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
         orderBy: { name: 'asc' },
       }),
       prisma.maintenanceRequest.findMany({
-        where: { status: { not: 'done' }, property: { ownerId: userId } },
+        where: { status: { notIn: ['closed', 'declined', 'canceled'] }, property: { ownerId: userId } },
         include: { property: true, unit: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -650,8 +664,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
       propertyName: p.name,
       propertyAddress: p.address,
       totalCount: p.requests.length,
-      openCount: p.requests.filter((r) => r.status !== 'done').length,
-      closedCount: p.requests.filter((r) => r.status === 'done').length,
+      openCount: p.requests.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status)).length,
+      closedCount: p.requests.filter((r) => ['closed', 'declined', 'canceled'].includes(r.status)).length,
     }))
 
     const claimUsers = await prisma.user.findMany({
@@ -666,8 +680,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
     }))
 
     const allRows = allDbRequests.map((r) => mapRequestRow(r, r.claimedByUserId ? claimUserMap.get(r.claimedByUserId) : undefined))
-    const totalOpen = allRows.filter((r) => r.status !== 'done').length
-    const totalClosed = allRows.filter((r) => r.status === 'done').length
+    const totalOpen = allRows.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status)).length
+    const totalClosed = allRows.filter((r) => ['closed', 'declined', 'canceled'].includes(r.status)).length
     const repeatIssues = groupRepeatIssues(allRows)
 
     const firstReviewDelays = allDbRequests
@@ -715,7 +729,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
 
     const operatorMetrics: OperatorQueueMetric[] = claimUsers.map((user) => {
       const claimedRows = allRows.filter((row) => row.claimedByUserId === user.id)
-      const openClaims = claimedRows.filter((row) => row.status !== 'done')
+      const openClaims = claimedRows.filter((row) => !['closed', 'declined', 'canceled'].includes(row.status))
       const staleClaims = openClaims.filter((row) => row.claimedAt && now.getTime() - new Date(row.claimedAt).getTime() >= 1000 * 60 * 60 * 24)
       const avgClaimAgeHours = openClaims.length
         ? openClaims.reduce((sum, row) => sum + (row.claimedAt ? (now.getTime() - new Date(row.claimedAt).getTime()) / (1000 * 60 * 60) : 0), 0) / openClaims.length
@@ -727,7 +741,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
         openClaims: openClaims.length,
         staleClaims: staleClaims.length,
         avgClaimAgeHours,
-        completedClaims: claimedRows.filter((row) => row.status === 'done').length,
+        completedClaims: claimedRows.filter((row) => row.status === 'closed').length,
       }
     }).sort((a, b) => b.openClaims - a.openClaims || b.staleClaims - a.staleClaims || a.operatorName.localeCompare(b.operatorName))
 
@@ -745,8 +759,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
       avgTimeToCompleteDays: avg(completionDelays),
       avgTimeToFirstReviewHours: avg(firstReviewDelays),
       avgClaimAgeHoursOpen: avg(openClaimAges),
-      unclaimedOpenCount: allRows.filter((r) => r.status !== 'done' && !r.claimedAt).length,
-      staleClaimedOpenCount: allRows.filter((r) => r.status !== 'done' && r.claimedAt && now.getTime() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
+      unclaimedOpenCount: allRows.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status) && !r.claimedAt).length,
+      staleClaimedOpenCount: allRows.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status) && r.claimedAt && now.getTime() - new Date(r.claimedAt).getTime() >= 1000 * 60 * 60 * 24).length,
       reopenCount,
       vendorScorecards,
       operatorMetrics,
@@ -817,8 +831,8 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
       unit: mapUnit(dbUnit),
       property: mapProperty(dbUnit.property),
       requests,
-      openCount: requests.filter((r) => r.status !== 'done').length,
-      closedCount: requests.filter((r) => r.status === 'done').length,
+      openCount: requests.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status)).length,
+      closedCount: requests.filter((r) => ['closed', 'declined', 'canceled'].includes(r.status)).length,
     }
   } catch {
     return null

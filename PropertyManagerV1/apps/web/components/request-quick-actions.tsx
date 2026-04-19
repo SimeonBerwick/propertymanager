@@ -35,13 +35,13 @@ export function RequestQuickActions({
   const [state, action, pending] = useActionState(quickRequestAction, INITIAL_STATE)
 
   const actions = [
-    request.status === 'new'
+    request.status === 'requested'
       ? { key: 'claim-for-review', label: 'Claim for review', tone: 'button primary', title: 'Claim this request as the next item being reviewed and notify the tenant that it is being looked at.' }
       : null,
-    request.status === 'new'
-      ? { key: 'mark-scheduled', label: 'Mark ready to schedule', tone: 'button', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
+    ['approved', 'vendor_selected', 'reopened'].includes(request.status)
+      ? { key: 'mark-scheduled', label: 'Mark scheduled', tone: 'button', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
       : null,
-    request.status === 'new' || request.status === 'scheduled'
+    ['scheduled', 'vendor_selected'].includes(request.status)
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
       : null,
     request.reviewState && request.reviewState !== 'none'

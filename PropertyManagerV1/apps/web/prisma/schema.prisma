@@ -8,10 +8,16 @@ datasource db {
 }
 
 enum RequestStatus {
-  new
+  requested
+  approved
+  declined
+  vendor_selected
   scheduled
   in_progress
-  done
+  completed
+  closed
+  canceled
+  reopened
 }
 
 enum Urgency {
@@ -67,9 +73,33 @@ enum DispatchStatus {
   assigned
   contacted
   accepted
-  declined
   scheduled
+  in_progress
   completed
+  declined
+  canceled
+}
+
+enum ReviewStatus {
+  none
+  needs_follow_up
+  vendor_update_pending_review
+  vendor_completed_pending_review
+  reassignment_needed
+  vendor_declined_reassignment_needed
+  approved
+  reopened_after_review
+}
+
+enum TenantBillbackDecision {
+  none
+  bill_tenant
+  waived
+}
+
+enum BidSource {
+  vendor_submitted
+  manager_entered
 }
 
 enum TenderStatus {
@@ -114,22 +144,23 @@ enum BillingDocumentStatus {
 }
 
 model User {
-  id                String               @id @default(cuid())
-  email             String               @unique
-  displayName       String?
-  passwordHash      String
-  role              String
-  slug              String?              @unique
-  createdAt         DateTime             @default(now())
+  id           String   @id @default(cuid())
+  email        String   @unique
+  displayName  String?
+  passwordHash String
+  role         String
+  slug         String?  @unique
+  createdAt    DateTime @default(now())
 
-  properties        Property[]
-  comments          RequestComment[]
-  submittedRequests MaintenanceRequest[] @relation("SubmittedRequests")
-  statusEvents      StatusEvent[]        @relation("StatusActor")
-  dispatchEvents    VendorDispatchEvent[]
-  billingDocuments  BillingDocument[]
-  billingEvents     BillingEvent[]
-  auditLogs         AuditLog[]
+  properties              Property[]
+  comments                RequestComment[]
+  submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
+  tenantBillbackDecisions MaintenanceRequest[]  @relation("TenantBillbackDecider")
+  statusEvents            StatusEvent[]         @relation("StatusActor")
+  dispatchEvents          VendorDispatchEvent[]
+  billingDocuments        BillingDocument[]
+  billingEvents           BillingEvent[]
+  auditLogs               AuditLog[]
 }
 
 model Property {
@@ -161,103 +192,116 @@ model Unit {
 }
 
 model MaintenanceRequest {
-  id                    String             @id @default(cuid())
-  propertyId            String
-  unitId                String
-  orgId                 String?
-  tenantIdentityId      String?
-  submittedByUserId     String?
-  submittedByName       String?
-  submittedByEmail      String?
-  preferredCurrency     CurrencyOption     @default(usd)
-  preferredLanguage     LanguageOption     @default(english)
-  title                 String
-  description           String
-  category              String
-  urgency               Urgency
-  status                RequestStatus      @default(new)
-  assignedVendorId      String?
-  assignedVendorName    String?
-  assignedVendorEmail   String?
-  assignedVendorPhone   String?
-  dispatchStatus        DispatchStatus?
-  vendorScheduledStart  DateTime?
-  vendorScheduledEnd    DateTime?
-  reviewState           String?            @default("none")
-  reviewNote            String?
-  autoFlag              String?
-  autoFlaggedAt         DateTime?
-  lastAutoAlertAt       DateTime?
-  firstReviewedAt       DateTime?
-  claimedAt             DateTime?
-  claimedByUserId       String?
-  slaBucket             String?            @default("standard")
-  triageTagsCsv         String?            @default("")
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  closedAt              DateTime?
+  id                            String                 @id @default(cuid())
+  propertyId                    String
+  unitId                        String
+  orgId                         String?
+  tenantIdentityId              String?
+  submittedByUserId             String?
+  submittedByName               String?
+  submittedByEmail              String?
+  preferredCurrency             CurrencyOption         @default(usd)
+  preferredLanguage             LanguageOption         @default(english)
+  title                         String
+  description                   String
+  category                      String
+  urgency                       Urgency
+  status                        RequestStatus          @default(requested)
+  assignedVendorId              String?
+  assignedVendorName            String?
+  assignedVendorEmail           String?
+  assignedVendorPhone           String?
+  dispatchStatus                DispatchStatus?
+  vendorScheduledStart          DateTime?
+  vendorScheduledEnd            DateTime?
+  reviewState                   ReviewStatus           @default(none)
+  reviewNote                    String?
+  declineReason                 String?
+  actualCompletedAt             DateTime?
+  tenantBillbackDecision        TenantBillbackDecision @default(none)
+  tenantBillbackAmountCents     Int                    @default(0)
+  tenantBillbackReason          String?
+  tenantBillbackDecidedAt       DateTime?
+  tenantBillbackDecidedByUserId String?
+  canceledByType                String?
+  canceledByUserId              String?
+  cancelReason                  String?
+  reopenedReason                String?
+  autoFlag                      String?
+  autoFlaggedAt                 DateTime?
+  lastAutoAlertAt               DateTime?
+  firstReviewedAt               DateTime?
+  claimedAt                     DateTime?
+  claimedByUserId               String?
+  slaBucket                     String?                @default("standard")
+  triageTagsCsv                 String?                @default("")
+  createdAt                     DateTime               @default(now())
+  updatedAt                     DateTime               @updatedAt
+  closedAt                      DateTime?
 
-  property          Property             @relation(fields: [propertyId], references: [id])
-  unit              Unit                 @relation(fields: [unitId], references: [id])
-  tenantIdentity    TenantIdentity?      @relation(fields: [tenantIdentityId], references: [id])
-  submittedByUser   User?                @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
-  assignedVendor    Vendor?              @relation(fields: [assignedVendorId], references: [id])
-  photos            MaintenancePhoto[]
-  comments          RequestComment[]
-  events            StatusEvent[]
-  dispatchHistory   VendorDispatchEvent[]
-  dispatchLinks     VendorDispatchLink[]
-  tenders           RequestTender[]
-  tenderInvites     TenderInvite[]
-  billingDocuments  BillingDocument[]
+  property                Property              @relation(fields: [propertyId], references: [id])
+  unit                    Unit                  @relation(fields: [unitId], references: [id])
+  tenantIdentity          TenantIdentity?       @relation(fields: [tenantIdentityId], references: [id])
+  submittedByUser         User?                 @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
+  tenantBillbackDecidedBy User?                 @relation("TenantBillbackDecider", fields: [tenantBillbackDecidedByUserId], references: [id])
+  assignedVendor          Vendor?               @relation(fields: [assignedVendorId], references: [id])
+  photos                  MaintenancePhoto[]
+  comments                RequestComment[]
+  events                  StatusEvent[]
+  dispatchHistory         VendorDispatchEvent[]
+  dispatchLinks           VendorDispatchLink[]
+  tenders                 RequestTender[]
+  tenderInvites           TenderInvite[]
+  billingDocuments        BillingDocument[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
 }
 
 model RequestTender {
-  id                String               @id @default(cuid())
-  requestId         String
-  status            TenderStatus         @default(open)
-  title             String?
-  note              String?
-  sentAt            DateTime?
-  awardedAt         DateTime?
-  canceledAt        DateTime?
-  closedAt          DateTime?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  id         String       @id @default(cuid())
+  requestId  String
+  status     TenderStatus @default(open)
+  title      String?
+  note       String?
+  sentAt     DateTime?
+  awardedAt  DateTime?
+  canceledAt DateTime?
+  closedAt   DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  request           MaintenanceRequest   @relation(fields: [requestId], references: [id])
-  invites           TenderInvite[]
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  invites TenderInvite[]
 
   @@index([requestId, status])
 }
 
 model TenderInvite {
-  id                String               @id @default(cuid())
-  tenderId          String
-  requestId         String
-  vendorId          String
-  status            TenderInviteStatus   @default(invited)
-  message           String?
-  scopeNote         String?
-  bidAmountCents    Int?
-  bidCurrency       CurrencyOption?
-  availabilityNote  String?
-  proposedStart     DateTime?
-  proposedEnd       DateTime?
-  invitedAt         DateTime             @default(now())
-  viewedAt          DateTime?
-  respondedAt       DateTime?
-  awardedAt         DateTime?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  id               String             @id @default(cuid())
+  tenderId         String
+  requestId        String
+  vendorId         String
+  status           TenderInviteStatus @default(invited)
+  message          String?
+  scopeNote        String?
+  bidAmountCents   Int?
+  bidCurrency      CurrencyOption?
+  bidSource        BidSource?
+  availabilityNote String?
+  proposedStart    DateTime?
+  proposedEnd      DateTime?
+  invitedAt        DateTime           @default(now())
+  viewedAt         DateTime?
+  respondedAt      DateTime?
+  awardedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  tender            RequestTender        @relation(fields: [tenderId], references: [id])
-  request           MaintenanceRequest   @relation(fields: [requestId], references: [id])
-  vendor            Vendor               @relation(fields: [vendorId], references: [id])
-  dispatchLinks     VendorDispatchLink[]
+  tender        RequestTender        @relation(fields: [tenderId], references: [id])
+  request       MaintenanceRequest   @relation(fields: [requestId], references: [id])
+  vendor        Vendor               @relation(fields: [vendorId], references: [id])
+  dispatchLinks VendorDispatchLink[]
 
   @@unique([tenderId, vendorId])
   @@index([requestId, status])
@@ -265,74 +309,74 @@ model TenderInvite {
 }
 
 model Vendor {
-  id                    String               @id @default(cuid())
-  orgId                 String?
-  name                  String
-  email                 String?
-  phone                 String?
-  categoriesCsv         String?              @default("")
-  supportedLanguagesCsv String?              @default("")
-  supportedCurrenciesCsv String?             @default("")
-  isActive              Boolean              @default(true)
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  id                     String   @id @default(cuid())
+  orgId                  String?
+  name                   String
+  email                  String?
+  phone                  String?
+  categoriesCsv          String?  @default("")
+  supportedLanguagesCsv  String?  @default("")
+  supportedCurrenciesCsv String?  @default("")
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  assignedRequests      MaintenanceRequest[]
-  dispatchEvents        VendorDispatchEvent[]
-  dispatchLinks         VendorDispatchLink[]
-  tenderInvites         TenderInvite[]
+  assignedRequests MaintenanceRequest[]
+  dispatchEvents   VendorDispatchEvent[]
+  dispatchLinks    VendorDispatchLink[]
+  tenderInvites    TenderInvite[]
 
   @@index([orgId, isActive])
 }
 
 model VendorDispatchEvent {
-  id                String          @id @default(cuid())
-  requestId         String
-  vendorId          String?
-  actorUserId       String?
-  status            DispatchStatus
-  note              String?
-  scheduledStart    DateTime?
-  scheduledEnd      DateTime?
-  createdAt         DateTime        @default(now())
+  id             String         @id @default(cuid())
+  requestId      String
+  vendorId       String?
+  actorUserId    String?
+  status         DispatchStatus
+  note           String?
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  createdAt      DateTime       @default(now())
 
-  request           MaintenanceRequest @relation(fields: [requestId], references: [id])
-  vendor            Vendor?            @relation(fields: [vendorId], references: [id])
-  actorUser         User?              @relation(fields: [actorUserId], references: [id])
-  photos            MaintenancePhoto[]
+  request   MaintenanceRequest @relation(fields: [requestId], references: [id])
+  vendor    Vendor?            @relation(fields: [vendorId], references: [id])
+  actorUser User?              @relation(fields: [actorUserId], references: [id])
+  photos    MaintenancePhoto[]
 
   @@index([requestId, createdAt])
 }
 
 model VendorDispatchLink {
-  id          String        @id @default(cuid())
-  requestId   String
-  vendorId    String
+  id             String    @id @default(cuid())
+  requestId      String
+  vendorId       String
   tenderInviteId String?
-  tokenHash   String        @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  lastUsedAt  DateTime?
-  createdAt   DateTime      @default(now())
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  lastUsedAt     DateTime?
+  createdAt      DateTime  @default(now())
 
-  request     MaintenanceRequest @relation(fields: [requestId], references: [id])
-  vendor      Vendor             @relation(fields: [vendorId], references: [id])
-  tenderInvite TenderInvite?     @relation(fields: [tenderInviteId], references: [id])
+  request      MaintenanceRequest @relation(fields: [requestId], references: [id])
+  vendor       Vendor             @relation(fields: [vendorId], references: [id])
+  tenderInvite TenderInvite?      @relation(fields: [tenderInviteId], references: [id])
 
   @@index([requestId, vendorId])
 }
 
 model MaintenancePhoto {
-  id                   String               @id @default(cuid())
-  requestId            String
-  dispatchEventId      String?
-  imageUrl             String
-  source               PhotoSource          @default(tenant)
-  sourceLabel          String?
-  createdAt            DateTime             @default(now())
+  id              String      @id @default(cuid())
+  requestId       String
+  dispatchEventId String?
+  imageUrl        String
+  source          PhotoSource @default(tenant)
+  sourceLabel     String?
+  createdAt       DateTime    @default(now())
 
-  request              MaintenanceRequest   @relation(fields: [requestId], references: [id])
-  dispatchEvent        VendorDispatchEvent? @relation(fields: [dispatchEventId], references: [id])
+  request       MaintenanceRequest   @relation(fields: [requestId], references: [id])
+  dispatchEvent VendorDispatchEvent? @relation(fields: [dispatchEventId], references: [id])
 }
 
 model RequestComment {
@@ -361,30 +405,30 @@ model StatusEvent {
 }
 
 model TenantIdentity {
-  id            String               @id @default(cuid())
-  orgId         String
-  propertyId    String
-  unitId        String
-  tenantName    String
-  phoneE164     String
-  email         String?
-  status        TenantIdentityStatus @default(pending_invite)
-  verifiedAt    DateTime?
-  lastLoginAt   DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id          String               @id @default(cuid())
+  orgId       String
+  propertyId  String
+  unitId      String
+  tenantName  String
+  phoneE164   String
+  email       String?
+  status      TenantIdentityStatus @default(pending_invite)
+  verifiedAt  DateTime?
+  lastLoginAt DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 
-  property  Property              @relation(fields: [propertyId], references: [id])
-  unit      Unit                  @relation(fields: [unitId], references: [id])
-  requests  MaintenanceRequest[]
-  invites   TenantInvite[]
+  property      Property             @relation(fields: [propertyId], references: [id])
+  unit          Unit                 @relation(fields: [unitId], references: [id])
+  requests      MaintenanceRequest[]
+  invites       TenantInvite[]
   otpChallenges TenantOtpChallenge[]
-  sessions  TenantSession[]
+  sessions      TenantSession[]
 
+  @@unique([orgId, phoneE164, unitId])
   @@index([orgId])
   @@index([propertyId])
   @@index([unitId])
-  @@unique([orgId, phoneE164, unitId])
 }
 
 model TenantInvite {
@@ -409,20 +453,20 @@ model TenantInvite {
 }
 
 model TenantOtpChallenge {
-  id               String           @id @default(cuid())
-  tenantIdentityId String
-  orgId            String
-  purpose          TenantOtpPurpose
-  channel          TenantOtpChannel
+  id                String           @id @default(cuid())
+  tenantIdentityId  String
+  orgId             String
+  purpose           TenantOtpPurpose
+  channel           TenantOtpChannel
   destinationMasked String
-  codeHash         String
-  codeSalt         String
-  expiresAt        DateTime
-  attemptCount     Int              @default(0)
-  maxAttempts      Int              @default(5)
-  lockedUntil      DateTime?
-  verifiedAt       DateTime?
-  createdAt        DateTime         @default(now())
+  codeHash          String
+  codeSalt          String
+  expiresAt         DateTime
+  attemptCount      Int              @default(0)
+  maxAttempts       Int              @default(5)
+  lockedUntil       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime         @default(now())
 
   tenantIdentity TenantIdentity @relation(fields: [tenantIdentityId], references: [id])
 
@@ -431,17 +475,17 @@ model TenantOtpChallenge {
 }
 
 model TenantSession {
-  id               String   @id @default(cuid())
-  tenantIdentityId String
-  orgId            String
-  propertyId       String
-  unitId           String
-  sessionSecretHash String  @unique
-  issuedAt         DateTime @default(now())
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  lastSeenAt       DateTime?
-  userAgent        String?
+  id                String    @id @default(cuid())
+  tenantIdentityId  String
+  orgId             String
+  propertyId        String
+  unitId            String
+  sessionSecretHash String    @unique
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  lastSeenAt        DateTime?
+  userAgent         String?
 
   tenantIdentity TenantIdentity @relation(fields: [tenantIdentityId], references: [id])
 
@@ -467,24 +511,24 @@ model BillingDocument {
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
-  request         MaintenanceRequest    @relation(fields: [requestId], references: [id])
-  createdByUser   User?                 @relation(fields: [createdByUserId], references: [id])
-  events          BillingEvent[]
+  request       MaintenanceRequest @relation(fields: [requestId], references: [id])
+  createdByUser User?              @relation(fields: [createdByUserId], references: [id])
+  events        BillingEvent[]
 
   @@index([requestId])
   @@index([status])
 }
 
 model BillingEvent {
-  id                String          @id @default(cuid())
+  id                String   @id @default(cuid())
   billingDocumentId String
   actorUserId       String?
   eventType         String
   note              String?
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  billingDocument   BillingDocument @relation(fields: [billingDocumentId], references: [id])
-  actorUser         User?           @relation(fields: [actorUserId], references: [id])
+  billingDocument BillingDocument @relation(fields: [billingDocumentId], references: [id])
+  actorUser       User?           @relation(fields: [actorUserId], references: [id])
 
   @@index([billingDocumentId, createdAt])
 }
@@ -500,7 +544,7 @@ model AuditLog {
   metadataJson String?
   createdAt    DateTime @default(now())
 
-  actorUser    User?    @relation(fields: [actorUserId], references: [id])
+  actorUser User? @relation(fields: [actorUserId], references: [id])
 
   @@index([orgId, createdAt])
   @@index([entityType, entityId, createdAt])

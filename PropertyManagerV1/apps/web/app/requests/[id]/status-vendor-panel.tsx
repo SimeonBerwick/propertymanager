@@ -16,15 +16,21 @@ import {
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
-const STATUS_OPTIONS: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
+const STATUS_OPTIONS: RequestStatus[] = ['requested', 'approved', 'declined', 'vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed', 'canceled', 'reopened']
 const STATUS_LABELS: Record<RequestStatus, string> = {
-  new: 'New',
+  requested: 'Requested',
+  approved: 'Approved',
+  declined: 'Declined',
+  vendor_selected: 'Vendor Selected',
   scheduled: 'Scheduled',
   in_progress: 'In Progress',
-  done: 'Done',
+  completed: 'Completed',
+  closed: 'Closed',
+  canceled: 'Canceled',
+  reopened: 'Reopened',
 }
 
-const DISPATCH_OPTIONS: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
+const DISPATCH_OPTIONS: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'scheduled', 'in_progress', 'completed', 'declined', 'canceled']
 
 interface Props {
   requestId: string

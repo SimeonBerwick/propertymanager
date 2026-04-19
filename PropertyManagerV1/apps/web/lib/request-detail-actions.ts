@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
-import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus } from '@/lib/types'
+import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
@@ -30,9 +30,22 @@ async function getAwardedInvite(requestId: string, userId: string) {
   })
 }
 
-const VALID_STATUSES: RequestStatus[] = ['new', 'scheduled', 'in_progress', 'done']
-const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'declined', 'scheduled', 'completed']
+const VALID_STATUSES: RequestStatus[] = ['requested', 'approved', 'declined', 'vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed', 'canceled', 'reopened']
+const VALID_DISPATCH_STATUSES: DispatchStatus[] = ['assigned', 'contacted', 'accepted', 'scheduled', 'in_progress', 'completed', 'declined', 'canceled']
 const VALID_QUICK_ACTIONS = ['claim-for-review', 'mark-scheduled', 'start-work', 'needs-follow-up', 'mark-reassignment-needed', 'take-over-claim', 'release-claim'] as const
+
+const ALLOWED_STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
+  requested: ['approved', 'declined', 'canceled'],
+  approved: ['vendor_selected', 'declined', 'canceled', 'scheduled'],
+  declined: ['reopened'],
+  vendor_selected: ['approved', 'scheduled', 'canceled'],
+  scheduled: ['vendor_selected', 'in_progress', 'canceled'],
+  in_progress: ['completed', 'vendor_selected'],
+  completed: ['closed', 'reopened'],
+  closed: ['reopened'],
+  canceled: ['reopened'],
+  reopened: ['approved', 'vendor_selected', 'scheduled'],
+}
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -48,6 +61,10 @@ function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) 
   return { triageTags, slaBucket: 'standard' }
 }
 
+function toClosedTerminal(status: RequestStatus) {
+  return ['closed', 'declined', 'canceled'].includes(status)
+}
+
 export async function updateStatusFormAction(
   _prev: RequestActionState,
   formData: FormData,
@@ -55,12 +72,15 @@ export async function updateStatusFormAction(
   const session = await getLandlordSession()
   if (!session) return { error: 'Not authenticated.' }
 
-  const requestId = formData.get('requestId') as string
+  const requestId = String(formData.get('requestId') ?? '')
   const fromStatus = formData.get('fromStatus') as RequestStatus
   const toStatus = formData.get('toStatus') as RequestStatus
+  const reason = String(formData.get('reason') ?? '').trim()
 
   if (!VALID_STATUSES.includes(toStatus)) return { error: 'Invalid status.' }
   if (toStatus === fromStatus) return { error: 'Request is already in that status.' }
+  if (!ALLOWED_STATUS_TRANSITIONS[fromStatus]?.includes(toStatus)) return { error: `Cannot move request from ${fromStatus} to ${toStatus}.` }
+  if (['declined', 'canceled', 'reopened'].includes(toStatus) && !reason) return { error: 'A reason is required for this status change.' }
 
   let tenantEmail: string | undefined
   let tenantName: string | undefined
@@ -74,7 +94,13 @@ export async function updateStatusFormAction(
         where: { id: requestId, property: { ownerId: session.userId } },
         data: {
           status: toStatus,
-          closedAt: toStatus === 'done' ? new Date() : null,
+          declineReason: toStatus === 'declined' ? reason : null,
+          cancelReason: toStatus === 'canceled' ? reason : null,
+          reopenedReason: toStatus === 'reopened' ? reason : null,
+          closedAt: toStatus === 'closed' ? new Date() : toClosedTerminal(toStatus) ? null : undefined,
+          actualCompletedAt: toStatus === 'completed' ? new Date() : undefined,
+          reviewState: toStatus === 'completed' ? 'vendor_completed_pending_review' : toStatus === 'closed' ? 'approved' : toStatus === 'reopened' ? 'reopened_after_review' : undefined,
+          reviewNote: reason || undefined,
         },
         include: { property: true, unit: true },
       })
@@ -94,18 +120,17 @@ export async function updateStatusFormAction(
 
   await writeAuditLog({
     orgId: session.userId,
-      actorUserId: session.userId,
+    actorUserId: session.userId,
     entityType: 'request',
     entityId: requestId,
     action: 'request.statusChanged',
     summary: `Changed request status from ${fromStatus} to ${toStatus}.`,
-    metadata: { fromStatus, toStatus },
+    metadata: { fromStatus, toStatus, reason: reason || null },
   })
 
   revalidatePath(`/requests/${requestId}`)
   revalidatePath('/dashboard')
 
-  // Notify tenant if we have their email (best-effort, never throws).
   if (tenantEmail && tenantName && title && propertyName && unitLabel) {
     await sendNotification(
       buildStatusChangedMessage({
@@ -147,9 +172,7 @@ export async function updateVendorFormAction(
   const tenderVendorIds = Array.from(new Set([singleVendorId, ...selectedVendorIds].filter(Boolean)))
   const shouldTender = mode === 'tender'
 
-  if (shouldTender && tenderVendorIds.length === 0) {
-    return { error: 'Select at least one vendor to send for tender.' }
-  }
+  if (shouldTender && tenderVendorIds.length === 0) return { error: 'Select at least one vendor to send for tender.' }
 
   if (shouldTender) {
     try {
@@ -174,11 +197,7 @@ export async function updateVendorFormAction(
           note: 'Operator opened multi-vendor tender round.',
           sentAt: new Date(),
           invites: {
-            create: vendors.map((vendor) => ({
-              requestId,
-              vendorId: vendor.id,
-              status: 'invited',
-            })),
+            create: vendors.map((vendor) => ({ requestId, vendorId: vendor.id, status: 'invited' })),
           },
         },
         include: { invites: true },
@@ -226,6 +245,7 @@ export async function updateVendorFormAction(
           dispatchStatus: 'assigned',
           reviewState: 'none',
           reviewNote: null,
+          status: 'approved',
         },
       })
 
@@ -262,23 +282,21 @@ export async function updateVendorFormAction(
     vendorPhone = selectedVendor.phone ?? ''
   }
 
-  let notificationPayload:
-    | {
-        requestId: string
-        title: string
-        propertyName: string
-        unitLabel: string
-        vendorName: string
-        vendorEmail: string
-        tenantName?: string
-        tenantEmail?: string
-        urgency: string
-        category: string
-        preferredCurrency?: string
-        preferredLanguage?: string
-        responseLink?: string
-      }
-    | undefined
+  let notificationPayload: {
+    requestId: string
+    title: string
+    propertyName: string
+    unitLabel: string
+    vendorName: string
+    vendorEmail: string
+    tenantName?: string
+    tenantEmail?: string
+    urgency: string
+    category: string
+    preferredCurrency?: string
+    preferredLanguage?: string
+    responseLink?: string
+  } | undefined
 
   try {
     const updated = await prisma.maintenanceRequest.update({
@@ -289,6 +307,7 @@ export async function updateVendorFormAction(
         assignedVendorEmail: vendorEmail || null,
         assignedVendorPhone: vendorPhone || null,
         dispatchStatus: vendorName ? 'assigned' : null,
+        status: vendorName ? 'vendor_selected' : 'approved',
       },
       include: { property: true, unit: true },
     })
@@ -359,13 +378,8 @@ export async function updatePreferencesFormAction(
   const preferredCurrency = ((formData.get('preferredCurrency') as string) ?? '').trim() as CurrencyOption
   const preferredLanguage = ((formData.get('preferredLanguage') as string) ?? '').trim() as LanguageOption
 
-  if (!['usd'].includes(preferredCurrency)) {
-    return { error: 'Invalid currency.' }
-  }
-
-  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) {
-    return { error: 'Invalid language.' }
-  }
+  if (!['usd'].includes(preferredCurrency)) return { error: 'Invalid currency.' }
+  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) return { error: 'Invalid language.' }
 
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
   const triageTagsCsv = triageTags.join(',')
@@ -439,6 +453,8 @@ export async function awardTenderInviteAction(
         data: { status: 'awarded', awardedAt: new Date(), closedAt: new Date() },
       })
 
+      const awardedStatus: RequestStatus = invite.proposedStart ? 'scheduled' : 'vendor_selected'
+
       await tx.maintenanceRequest.update({
         where: { id: requestId },
         data: {
@@ -451,12 +467,12 @@ export async function awardTenderInviteAction(
           vendorScheduledEnd: invite.proposedEnd,
           reviewState: 'none',
           reviewNote: null,
-          status: 'scheduled',
+          status: awardedStatus,
         },
       })
 
       await tx.statusEvent.create({
-        data: { requestId, toStatus: 'scheduled', actorUserId: session.userId },
+        data: { requestId, toStatus: awardedStatus, actorUserId: session.userId },
       })
 
       await tx.vendorDispatchEvent.create({
@@ -518,10 +534,25 @@ export async function updateDispatchFormAction(
       where: { id: requestId, property: { ownerId: session.userId } },
       select: { id: true, assignedVendorId: true },
     })
+
     if (!request) return { error: 'Request not found.' }
 
     const awardedInvite = await getAwardedInvite(requestId, session.userId)
     const vendorId = awardedInvite?.vendorId ?? request.assignedVendorId ?? null
+    const requestStatus: RequestStatus | undefined = dispatchStatus === 'scheduled'
+      ? 'scheduled'
+      : dispatchStatus === 'in_progress'
+        ? 'in_progress'
+        : dispatchStatus === 'completed'
+          ? 'completed'
+          : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
+            ? 'approved'
+            : undefined
+    const reviewState: ReviewStatus | undefined = dispatchStatus === 'completed'
+      ? 'vendor_completed_pending_review'
+      : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
+        ? 'vendor_declined_reassignment_needed'
+        : undefined
 
     await prisma.maintenanceRequest.update({
       where: { id: requestId },
@@ -533,8 +564,17 @@ export async function updateDispatchFormAction(
         dispatchStatus,
         vendorScheduledStart: scheduledStart,
         vendorScheduledEnd: scheduledEnd,
+        status: requestStatus,
+        reviewState,
+        actualCompletedAt: dispatchStatus === 'completed' ? new Date() : undefined,
       },
     })
+
+    if (requestStatus) {
+      await prisma.statusEvent.create({
+        data: { requestId, toStatus: requestStatus, actorUserId: session.userId },
+      })
+    }
 
     await prisma.vendorDispatchEvent.create({
       data: {
@@ -581,6 +621,7 @@ export async function reviewVendorUpdateFormAction(
   if (!['approve-completion', 'reopen-request', 'needs-follow-up', 'mark-reassignment-needed'].includes(action)) {
     return { error: 'Invalid review action.' }
   }
+  if (['reopen-request'].includes(action) && !note) return { error: 'A reopen reason is required.' }
 
   try {
     const request = await prisma.maintenanceRequest.findFirst({
@@ -593,7 +634,7 @@ export async function reviewVendorUpdateFormAction(
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
         data: {
-          status: 'done',
+          status: 'closed',
           closedAt: new Date(),
           reviewState: 'approved',
           reviewNote: note || 'Landlord approved vendor completion.',
@@ -604,7 +645,7 @@ export async function reviewVendorUpdateFormAction(
         data: {
           requestId,
           fromStatus: request.status,
-          toStatus: 'done',
+          toStatus: 'closed',
           actorUserId: session.userId,
         },
       })
@@ -612,10 +653,11 @@ export async function reviewVendorUpdateFormAction(
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
         data: {
-          status: 'in_progress',
+          status: 'reopened',
           closedAt: null,
           reviewState: 'reopened_after_review',
-          reviewNote: note || 'Landlord reopened request after vendor update review.',
+          reviewNote: note,
+          reopenedReason: note,
         },
       })
 
@@ -623,7 +665,7 @@ export async function reviewVendorUpdateFormAction(
         data: {
           requestId,
           fromStatus: request.status,
-          toStatus: 'in_progress',
+          toStatus: 'reopened',
           actorUserId: session.userId,
         },
       })
@@ -643,7 +685,8 @@ export async function reviewVendorUpdateFormAction(
           assignedVendorName: null,
           assignedVendorEmail: null,
           assignedVendorPhone: null,
-          dispatchStatus: null,
+          dispatchStatus: 'canceled',
+          status: 'approved',
           reviewState: 'reassignment_needed',
           reviewNote: note || 'Vendor declined or was removed; reassignment required.',
         },
@@ -746,8 +789,7 @@ export async function quickRequestAction(
     }
 
     if (quickAction === 'mark-scheduled') {
-      if (!['new', 'in_progress'].includes(request.status)) return { error: 'Only new or active requests can be marked scheduled from the queue.' }
-      if (request.status === 'scheduled') return { error: 'Request is already scheduled.' }
+      if (!['approved', 'vendor_selected', 'reopened'].includes(request.status)) return { error: 'Only approved, selected, or reopened requests can be marked scheduled from the queue.' }
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
         data: { status: 'scheduled' },
@@ -759,11 +801,10 @@ export async function quickRequestAction(
     }
 
     if (quickAction === 'start-work') {
-      if (!['new', 'scheduled'].includes(request.status)) return { error: 'Only new or scheduled requests can be started from the queue.' }
-      if (request.status === 'in_progress') return { error: 'Request is already in progress.' }
+      if (!['vendor_selected', 'scheduled'].includes(request.status)) return { error: 'Only selected or scheduled requests can be started from the queue.' }
       await prisma.maintenanceRequest.update({
         where: { id: requestId },
-        data: { status: 'in_progress' },
+        data: { status: 'in_progress', dispatchStatus: 'in_progress' },
       })
       await prisma.statusEvent.create({
         data: { requestId, fromStatus: request.status, toStatus: 'in_progress', actorUserId: session.userId },
@@ -791,7 +832,8 @@ export async function quickRequestAction(
           assignedVendorName: null,
           assignedVendorEmail: null,
           assignedVendorPhone: null,
-          dispatchStatus: null,
+          dispatchStatus: 'canceled',
+          status: 'approved',
           reviewState: 'reassignment_needed',
           reviewNote: 'Operator marked reassignment needed from queue view.',
         },
@@ -893,7 +935,6 @@ export async function addCommentFormAction(
   if (body.length > 2000) return { error: 'Comment must be 2 000 characters or fewer.' }
   if (visibility !== 'internal' && visibility !== 'external') return { error: 'Invalid visibility.' }
 
-  // Verify the request belongs to this org before writing the comment.
   const request = await prisma.maintenanceRequest.findFirst({
     where: { id: requestId, property: { ownerId: session.userId } },
     select: { id: true },

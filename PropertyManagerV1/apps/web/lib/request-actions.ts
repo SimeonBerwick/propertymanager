@@ -208,7 +208,7 @@ export async function submitMaintenanceRequest(
           description,
           category,
           urgency,
-          status: 'new',
+          status: 'requested',
           photos: {
             create: savedPhotoPaths.map((imageUrl) => ({ imageUrl })),
           },
@@ -221,7 +221,7 @@ export async function submitMaintenanceRequest(
             ],
           },
           events: {
-            create: [{ toStatus: 'new' }],
+            create: [{ toStatus: 'requested' }],
           },
         },
       })

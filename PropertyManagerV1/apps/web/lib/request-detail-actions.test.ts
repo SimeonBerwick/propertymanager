@@ -51,7 +51,7 @@ describe('updateStatusFormAction', () => {
 
     const result = await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'new', toStatus: 'bogus' }),
+      formData({ requestId: request.id, fromStatus: 'requested', toStatus: 'bogus' }),
     )
     expect(result.error).toMatch(/invalid status/i)
   })
@@ -63,7 +63,7 @@ describe('updateStatusFormAction', () => {
 
     const result = await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'new', toStatus: 'new' }),
+      formData({ requestId: request.id, fromStatus: 'requested', toStatus: 'requested' }),
     )
     expect(result.error).toMatch(/already in that status/i)
   })
@@ -76,7 +76,7 @@ describe('updateStatusFormAction', () => {
 
     const result = await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'new', toStatus: 'scheduled' }),
+      formData({ requestId: request.id, fromStatus: 'requested', toStatus: 'approved' }),
     )
     expect(result.error).toBeTruthy()
   })
@@ -88,43 +88,43 @@ describe('updateStatusFormAction', () => {
 
     const result = await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'new', toStatus: 'scheduled' }),
+      formData({ requestId: request.id, fromStatus: 'requested', toStatus: 'approved' }),
     )
 
     expect(result.error).toBeNull()
     expect(result.success).toBe(true)
 
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
-    expect(updated?.status).toBe('scheduled')
+    expect(updated?.status).toBe('approved')
 
     const events = await prisma.statusEvent.findMany({ where: { requestId: request.id } })
     expect(events).toHaveLength(1)
-    expect(events[0].fromStatus).toBe('new')
-    expect(events[0].toStatus).toBe('scheduled')
+    expect(events[0].fromStatus).toBe('requested')
+    expect(events[0].toStatus).toBe('approved')
   })
 
-  test('sets closedAt when transitioning to done', async () => {
+  test('sets closedAt when transitioning to closed', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const request = await createMaintenanceRequest(property.id, unit.id)
 
     await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'new', toStatus: 'done' }),
+      formData({ requestId: request.id, fromStatus: 'completed', toStatus: 'closed' }),
     )
 
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
     expect(updated?.closedAt).not.toBeNull()
   })
 
-  test('clears closedAt when transitioning away from done', async () => {
+  test('clears closedAt when transitioning away from closed', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
-    const request = await createMaintenanceRequest(property.id, unit.id, { status: 'done' })
+    const request = await createMaintenanceRequest(property.id, unit.id, { status: 'closed' })
 
     await updateStatusFormAction(
       PREV,
-      formData({ requestId: request.id, fromStatus: 'done', toStatus: 'in_progress' }),
+      formData({ requestId: request.id, fromStatus: 'closed', toStatus: 'reopened', reason: 'Need follow-up' }),
     )
 
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })

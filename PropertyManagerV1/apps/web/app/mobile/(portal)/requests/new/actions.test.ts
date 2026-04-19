@@ -180,7 +180,7 @@ describe('submitTenantMobileRequestAction', () => {
     })
     expect(requests).toHaveLength(1)
     expect(requests[0].title).toBe('Leaky faucet')
-    expect(requests[0].status).toBe('new')
+    expect(requests[0].status).toBe('requested')
     expect(requests[0].comments).toHaveLength(1)
     expect(requests[0].events).toHaveLength(1)
   })
