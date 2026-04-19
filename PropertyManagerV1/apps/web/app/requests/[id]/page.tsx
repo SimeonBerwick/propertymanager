@@ -12,6 +12,7 @@ import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
 import { BillingEventList } from '@/components/billing-event-list'
 import { BillingSummaryCards } from '@/components/billing-summary-cards'
+import { RequestBillbackForm } from '@/components/request-billback-form'
 import { StatusVendorPanel } from './status-vendor-panel'
 import { AddCommentForm } from './add-comment-form'
 import { AuditLogList } from '@/components/audit-log-list'
@@ -110,6 +111,23 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
           <SectionCard kicker="Billing" title="Charges and remittances" subtitle="Use only when the request creates a tenant chargeback or vendor payment record.">
             <div className="stack" style={{ gap: 16 }}>
+              <div className="card" style={{ padding: 16, background: 'var(--panel)' }}>
+                <div className="kicker">Tenant responsibility</div>
+                <h3 style={{ marginTop: 4 }}>Bill-back decision</h3>
+                <div className="muted" style={{ marginBottom: 12 }}>
+                  Current: {data.request.tenantBillbackDecision ?? 'none'}
+                  {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
+                    ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
+                    : ''}
+                  {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
+                </div>
+                <RequestBillbackForm
+                  requestId={data.request.id}
+                  decision={data.request.tenantBillbackDecision}
+                  amountCents={data.request.tenantBillbackAmountCents}
+                  reason={data.request.tenantBillbackReason}
+                />
+              </div>
               <BillingSummaryCards documents={data.billingDocuments} />
               <div className="billingLayout">
                 <div className="stack">

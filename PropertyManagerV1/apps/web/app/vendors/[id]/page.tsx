@@ -34,16 +34,16 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
               <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.assignmentCount}</div>
             </div>
             <div>
-              <div className="kicker">Accepted</div>
-              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.acceptedCount}</div>
+              <div className="kicker">Avg response</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.avgResponseHours != null ? `${scorecard.avgResponseHours.toFixed(1)}h` : '—'}</div>
             </div>
             <div>
-              <div className="kicker">Declined</div>
-              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.declinedCount}</div>
+              <div className="kicker">Completion rate</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.completionRate != null ? `${(scorecard.completionRate * 100).toFixed(0)}%` : '—'}</div>
             </div>
             <div>
-              <div className="kicker">Avg completion</div>
-              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.avgCompletionDays ? `${scorecard.avgCompletionDays.toFixed(1)}d` : '—'}</div>
+              <div className="kicker">On-time rate</div>
+              <div style={{ fontWeight: 700, fontSize: 24 }}>{scorecard.onTimeCompletionRate != null ? `${(scorecard.onTimeCompletionRate * 100).toFixed(0)}%` : '—'}</div>
             </div>
           </div>
         ) : null}

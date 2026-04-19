@@ -284,9 +284,9 @@ export default async function ReportsPage() {
               <tr>
                 <th>Vendor</th>
                 <th>Assignments</th>
-                <th>Accepted</th>
-                <th>Declined</th>
-                <th>Completed</th>
+                <th>Avg response</th>
+                <th>Completion rate</th>
+                <th>On-time rate</th>
                 <th>Avg completion</th>
               </tr>
             </thead>
@@ -305,17 +305,17 @@ export default async function ReportsPage() {
                   </td>
                   <td>
                     <Link href={`/vendors/${vendor.vendorId}`}>
-                      {vendor.acceptedCount}
+                      {vendor.avgResponseHours != null ? `${vendor.avgResponseHours.toFixed(1)}h` : '—'}
                     </Link>
                   </td>
                   <td>
                     <Link href={`/vendors/${vendor.vendorId}`}>
-                      {vendor.declinedCount}
+                      {vendor.completionRate != null ? `${(vendor.completionRate * 100).toFixed(0)}%` : '—'}
                     </Link>
                   </td>
                   <td>
                     <Link href={`/vendors/${vendor.vendorId}`}>
-                      {vendor.completedCount}
+                      {vendor.onTimeCompletionRate != null ? `${(vendor.onTimeCompletionRate * 100).toFixed(0)}%` : '—'}
                     </Link>
                   </td>
                   <td>{vendor.avgCompletionDays ? `${vendor.avgCompletionDays.toFixed(1)}d` : '—'}</td>
