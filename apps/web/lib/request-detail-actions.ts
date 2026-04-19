@@ -960,3 +960,61 @@ export async function addCommentFormAction(
     return { error: 'Could not save comment. Database may not be connected.' }
   }
 }
+
+function centsFromDollarsInput(raw: string) {
+  const value = raw.trim()
+  if (!value) return 0
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) return null
+  return Math.round(Number(value) * 100)
+}
+
+export async function updateTenantBillbackAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const decision = String(formData.get('tenantBillbackDecision') ?? 'none').trim() as 'none' | 'bill_tenant' | 'waived'
+  const amountRaw = String(formData.get('tenantBillbackAmount') ?? '')
+  const reason = String(formData.get('tenantBillbackReason') ?? '').trim()
+
+  if (!['none', 'bill_tenant', 'waived'].includes(decision)) return { error: 'Invalid bill-back decision.' }
+
+  const amountCents = centsFromDollarsInput(amountRaw)
+  if (amountCents == null) return { error: 'Invalid tenant bill-back amount.' }
+  if (amountCents < 0) return { error: 'Bill-back amount cannot be negative.' }
+  if (decision === 'bill_tenant' && amountCents <= 0) return { error: 'Bill tenant requires an amount greater than zero.' }
+  if (decision !== 'none' && !reason) return { error: 'A reason is required for bill-back decisions.' }
+
+  try {
+    await prisma.maintenanceRequest.update({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      data: {
+        tenantBillbackDecision: decision,
+        tenantBillbackAmountCents: decision === 'none' ? 0 : amountCents,
+        tenantBillbackReason: decision === 'none' ? null : reason,
+        tenantBillbackDecidedAt: decision === 'none' ? null : new Date(),
+        tenantBillbackDecidedByUserId: decision === 'none' ? null : session.userId,
+      },
+    })
+
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.billbackUpdated',
+      summary: `Updated tenant bill-back decision to ${decision}.`,
+      metadata: { decision, amountCents: decision === 'none' ? 0 : amountCents, reason: reason || null },
+    })
+
+    await applyRequestAutomation(requestId)
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/reports')
+    return { error: null, success: true }
+  } catch {
+    return { error: 'Could not update tenant bill-back decision.' }
+  }
+}

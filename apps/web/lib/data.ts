@@ -485,6 +485,10 @@ export interface VendorScorecard {
   acceptedCount: number
   declinedCount: number
   completedCount: number
+  responseRate: number | null
+  avgResponseHours: number | null
+  completionRate: number | null
+  onTimeCompletionRate: number | null
   avgCompletionDays: number | null
 }
 
@@ -712,6 +716,22 @@ export async function getReportData(userId: string): Promise<ReportData> {
       const completedRequestIds = new Set(vendorEvents.filter((event) => event.status === 'completed').map((event) => event.requestId))
       const acceptedCount = vendorEvents.filter((event) => event.status === 'accepted').length
       const declinedCount = vendorEvents.filter((event) => event.status === 'declined').length
+      const respondedRequestIds = new Set(vendorEvents.filter((event) => ['accepted', 'declined', 'scheduled', 'in_progress', 'completed'].includes(event.status)).map((event) => event.requestId))
+      const firstResponseHours = Array.from(assignedRequestIds).map((requestId) => {
+        const assignedEvent = vendorEvents.find((event) => event.requestId === requestId && event.status === 'assigned')
+        const firstResponseEvent = vendorEvents
+          .filter((event) => event.requestId === requestId && ['accepted', 'declined', 'scheduled', 'in_progress', 'completed'].includes(event.status))
+          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0]
+
+        if (!assignedEvent || !firstResponseEvent) return null
+        return (firstResponseEvent.createdAt.getTime() - assignedEvent.createdAt.getTime()) / (1000 * 60 * 60)
+      }).filter((value): value is number => value != null)
+
+      const assignedRequests = allDbRequests.filter((request) => request.assignedVendorId === vendor.id)
+      const completedAssignedRequests = assignedRequests.filter((request) => request.status === 'closed')
+      const onTimeCompletedRequests = completedAssignedRequests.filter((request) =>
+        request.vendorScheduledEnd && request.actualCompletedAt && request.actualCompletedAt.getTime() <= request.vendorScheduledEnd.getTime(),
+      )
       const completedDurations = allDbRequests
         .filter((request) => request.assignedVendorId === vendor.id && request.closedAt)
         .map((request) => (request.closedAt!.getTime() - request.createdAt.getTime()) / (1000 * 60 * 60 * 24))
@@ -723,6 +743,10 @@ export async function getReportData(userId: string): Promise<ReportData> {
         acceptedCount,
         declinedCount,
         completedCount: completedRequestIds.size,
+        responseRate: assignedRequestIds.size ? respondedRequestIds.size / assignedRequestIds.size : null,
+        avgResponseHours: avg(firstResponseHours),
+        completionRate: assignedRequestIds.size ? completedAssignedRequests.length / assignedRequestIds.size : null,
+        onTimeCompletionRate: completedAssignedRequests.length ? onTimeCompletedRequests.length / completedAssignedRequests.length : null,
         avgCompletionDays: avg(completedDurations),
       }
     })
