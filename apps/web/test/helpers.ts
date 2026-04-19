@@ -92,6 +92,7 @@ export async function createMaintenanceRequest(
       description: 'Kitchen tap drips',
       category: 'plumbing',
       urgency: 'medium',
+      status: 'requested',
       ...overrides,
     },
   })

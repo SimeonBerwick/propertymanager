@@ -1,9 +1,12 @@
-export type RequestStatus = 'new' | 'scheduled' | 'in_progress' | 'done'
+export type RequestStatus = 'requested' | 'approved' | 'declined' | 'vendor_selected' | 'scheduled' | 'in_progress' | 'completed' | 'closed' | 'canceled' | 'reopened'
 export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
 export type CurrencyOption = 'usd' | 'peso' | 'pound' | 'euro'
 export type LanguageOption = 'english' | 'spanish' | 'french'
-export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed'
+export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'scheduled' | 'in_progress' | 'completed' | 'declined' | 'canceled'
 export type PhotoSource = 'tenant' | 'landlord' | 'vendor'
+export type ReviewStatus = 'none' | 'needs_follow_up' | 'vendor_update_pending_review' | 'vendor_completed_pending_review' | 'reassignment_needed' | 'vendor_declined_reassignment_needed' | 'approved' | 'reopened_after_review'
+export type TenantBillbackDecision = 'none' | 'bill_tenant' | 'waived'
+export type BidSource = 'vendor_submitted' | 'manager_entered'
 
 export interface Property {
   id: string
@@ -53,8 +56,14 @@ export interface MaintenanceRequest {
   dispatchStatus?: DispatchStatus
   vendorScheduledStart?: string
   vendorScheduledEnd?: string
-  reviewState?: string
+  actualCompletedAt?: string
+  reviewState?: ReviewStatus
   reviewNote?: string
+  declineReason?: string
+  tenantBillbackDecision?: TenantBillbackDecision
+  tenantBillbackAmountCents?: number
+  tenantBillbackReason?: string
+  tenantBillbackDecidedAt?: string
   autoFlag?: string
   autoFlaggedAt?: string
   firstReviewedAt?: string
@@ -65,6 +74,8 @@ export interface MaintenanceRequest {
   triageTags: string[]
   createdAt: string
   closedAt?: string
+  cancelReason?: string
+  reopenedReason?: string
 }
 
 export interface Vendor {
@@ -108,6 +119,7 @@ export interface TenderInviteView {
   status: string
   bidAmountCents?: number
   bidCurrency?: CurrencyOption
+  bidSource?: BidSource
   availabilityNote?: string
   proposedStart?: string
   proposedEnd?: string

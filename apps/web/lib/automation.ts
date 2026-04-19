@@ -14,7 +14,7 @@ export async function applyRequestAutomation(requestId: string) {
 
   if (request.reviewState === 'vendor_declined_reassignment_needed' || request.reviewState === 'reassignment_needed') {
     autoFlag = 'reassignment_needed'
-  } else if (request.vendorScheduledEnd && request.vendorScheduledEnd < now && request.status !== 'done') {
+  } else if (request.vendorScheduledEnd && request.vendorScheduledEnd < now && !['closed', 'declined', 'canceled'].includes(request.status)) {
     autoFlag = 'overdue_scheduled'
   } else if (request.reviewState === 'vendor_completed_pending_review') {
     autoFlag = 'completion_review'

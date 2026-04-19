@@ -155,7 +155,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
                     <td className="muted">{currencyLabel(r.preferredCurrency)} · {languageLabel(r.preferredLanguage)}</td>
                     <td className="muted">{r.urgency}</td>
                     <td>
-                      {r.status !== 'done' ? (
+                      {!['closed', 'declined', 'canceled'].includes(r.status) ? (
                         <span className={ageBadgeClass(days)}>{days}d open</span>
                       ) : (
                         <span className="muted">—</span>

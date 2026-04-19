@@ -13,7 +13,7 @@ export default async function TenantMobileDashboardPage() {
     orderBy: { createdAt: 'desc' },
   })
 
-  const openRequests = requests.filter((request) => request.status !== 'done')
+  const openRequests = requests.filter((request) => !['closed', 'declined', 'canceled'].includes(request.status))
 
   return (
     <div className="stack">

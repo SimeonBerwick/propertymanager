@@ -224,10 +224,16 @@ export interface StatusChangedParams {
 }
 
 const STATUS_LABELS: Record<RequestStatus, string> = {
-  new: 'New — awaiting triage',
-  scheduled: 'Scheduled — a vendor has been booked',
-  in_progress: 'In Progress — work is underway',
-  done: 'Done — work is complete',
+  requested: 'Requested, awaiting triage',
+  approved: 'Approved, work can move forward',
+  declined: 'Declined',
+  vendor_selected: 'Vendor selected',
+  scheduled: 'Scheduled, a vendor has been booked',
+  in_progress: 'In progress, work is underway',
+  completed: 'Completed, pending final closure',
+  closed: 'Closed, work is complete',
+  canceled: 'Canceled',
+  reopened: 'Reopened for more work or review',
 }
 
 /**
@@ -235,7 +241,7 @@ const STATUS_LABELS: Record<RequestStatus, string> = {
  * Only call when tenantEmail is known.
  */
 export function buildStatusChangedMessage(p: StatusChangedParams): NotificationMessage {
-  const closingText = p.toStatus === 'done'
+  const closingText = p.toStatus === 'closed'
     ? 'The work is complete. Please reply if you have any concerns.'
     : "We'll keep you updated as the work progresses."
 

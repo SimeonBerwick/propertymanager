@@ -37,13 +37,13 @@ export default async function DashboardPage({
     const currencyMatch = selectedCurrency === 'all' || request.preferredCurrency === selectedCurrency
     const languageMatch = selectedLanguage === 'all' || request.preferredLanguage === selectedLanguage
     const queueMatch = selectedQueue === 'all'
-      || (selectedQueue === 'non-english' && request.status !== 'done' && request.preferredLanguage !== 'english')
-      || (selectedQueue === 'non-usd' && request.status !== 'done' && request.preferredCurrency !== 'usd')
+      || (selectedQueue === 'non-english' && !['closed', 'declined', 'canceled'].includes(request.status) && request.preferredLanguage !== 'english')
+      || (selectedQueue === 'non-usd' && !['closed', 'declined', 'canceled'].includes(request.status) && request.preferredCurrency !== 'usd')
       || (selectedQueue === 'reassignment-needed' && (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed'))
       || (selectedQueue === 'completion-review' && request.reviewState === 'vendor_completed_pending_review')
       || (selectedQueue === 'follow-up' && (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review'))
       || (selectedQueue === 'scheduled-today' && !!request.vendorScheduledStart && new Date(request.vendorScheduledStart) >= todayStart && new Date(request.vendorScheduledStart) < todayEnd)
-      || (selectedQueue === 'overdue-scheduled' && !!request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done')
+      || (selectedQueue === 'overdue-scheduled' && !!request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && !['closed', 'declined', 'canceled'].includes(request.status))
       || (selectedQueue === 'unclaimed' && !request.claimedAt)
       || (selectedQueue === 'stale-claimed' && isStaleClaim(request))
       || (selectedQueue === 'my-claims' && request.claimedByUserId === session.userId)
@@ -98,7 +98,7 @@ export default async function DashboardPage({
         <div className="card metricCard metricDanger">
           <div>
             <div className="kicker">Needs triage</div>
-            <div className="metricValue">{data.statusCounts.new}</div>
+            <div className="metricValue">{data.statusCounts.requested + data.statusCounts.reopened}</div>
           </div>
           <div className="muted">Fresh requests still waiting on operator attention.</div>
         </div>

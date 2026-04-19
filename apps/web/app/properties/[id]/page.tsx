@@ -18,8 +18,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     notFound()
   }
 
-  const openCount = data.requests.filter((r) => r.status !== 'done').length
-  const closedCount = data.requests.filter((r) => r.status === 'done').length
+  const openCount = data.requests.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status)).length
+  const closedCount = data.requests.filter((r) => ['closed', 'declined', 'canceled'].includes(r.status)).length
   const auditLogs = await getAuditLogs('property', data.property.id)
 
   return (

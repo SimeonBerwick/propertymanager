@@ -27,7 +27,7 @@ export const requests: MaintenanceRequest[] = [
     description: 'Tenant reports active drip under sink and warped base panel starting.',
     category: 'Plumbing',
     urgency: 'high',
-    status: 'new',
+    status: 'requested',
     createdAt: '2026-03-11T17:30:00Z',
   },
   {

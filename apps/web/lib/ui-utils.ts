@@ -1,4 +1,4 @@
-import type { MaintenanceRequest, RequestStatus } from '@/lib/types'
+import type { MaintenanceRequest, RequestStatus, ReviewStatus } from '@/lib/types'
 
 export function formatDateTime(value?: string) {
   if (!value) return 'Not scheduled'
@@ -19,7 +19,6 @@ export function formatRelativeAge(value: string) {
 }
 
 export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' | 'reviewState' | 'vendorScheduledEnd' | 'vendorScheduledStart'>):
-  | 'new'
   | 'scheduled-today'
   | 'overdue'
   | 'follow-up'
@@ -33,7 +32,7 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
 
   if (request.reviewState === 'vendor_completed_pending_review') return 'review'
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') return 'follow-up'
-  if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && request.status !== 'done') return 'overdue'
+  if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) return 'overdue'
   if (request.vendorScheduledStart) {
     const start = new Date(request.vendorScheduledStart)
     if (start >= todayStart && start < todayEnd) return 'scheduled-today'
@@ -41,7 +40,7 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
   return request.status
 }
 
-export function reviewStateLabel(value?: string) {
+export function reviewStateLabel(value?: ReviewStatus) {
   switch (value) {
     case 'vendor_completed_pending_review':
       return 'Completion needs review'
@@ -55,11 +54,13 @@ export function reviewStateLabel(value?: string) {
       return 'Vendor declined, reassign needed'
     case 'reopened_after_review':
       return 'Reopened after review'
+    case 'approved':
+      return 'Approved'
     case 'none':
     case undefined:
       return 'Clear'
     default:
-      return value.replaceAll('_', ' ')
+      return String(value).replaceAll('_', ' ')
   }
 }
 
@@ -78,7 +79,7 @@ export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' 
 
 export function isStaleClaim(request: Pick<MaintenanceRequest, 'claimedAt' | 'status' | 'reviewState'>) {
   if (!request.claimedAt) return false
-  if (request.status === 'done') return false
+  if (request.status === 'closed') return false
   if (request.reviewState === 'approved') return false
 
   const diffMs = Date.now() - new Date(request.claimedAt).getTime()

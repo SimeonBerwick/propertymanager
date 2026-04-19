@@ -2,10 +2,16 @@ import { getRequestFlowState } from '@/lib/ui-utils'
 import type { MaintenanceRequest } from '@/lib/types'
 
 const LABELS: Record<string, string> = {
-  new: 'Needs triage',
+  requested: 'Needs triage',
+  approved: 'Approved',
+  declined: 'Declined',
+  vendor_selected: 'Vendor selected',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
-  done: 'Done',
+  completed: 'Completed',
+  closed: 'Closed',
+  canceled: 'Canceled',
+  reopened: 'Reopened',
   'scheduled-today': 'Today',
   overdue: 'Overdue',
   'follow-up': 'Follow up',

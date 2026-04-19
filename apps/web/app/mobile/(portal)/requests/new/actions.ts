@@ -145,7 +145,7 @@ export async function submitTenantMobileRequestAction(
       description,
       category,
       urgency: urgency as 'low' | 'medium' | 'high' | 'urgent',
-      status: 'new',
+      status: 'requested',
       photos: {
         create: photoPaths.map((imageUrl) => ({ imageUrl })),
       },
@@ -153,7 +153,7 @@ export async function submitTenantMobileRequestAction(
         create: [{ body: `Submitted from tenant mobile portal by ${session.tenantName}.`, visibility: 'external' }],
       },
       events: {
-        create: [{ toStatus: 'new', visibility: 'tenant_visible' }],
+        create: [{ toStatus: 'requested', visibility: 'tenant_visible' }],
       },
     },
   })
