@@ -1,7 +1,7 @@
 /**
  * Seed the database from the canonical seed-data used in development fallback.
  * Run: npx tsx prisma/seed.ts   (or: npx prisma db seed)
- * Safe to re-run — all upserts are idempotent.
+ * Safe to re-run - all upserts are idempotent.
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -109,15 +109,19 @@ async function main() {
     ]
     const triageTagsCsv = triageTags.join(',')
     const slaBucket = 'standard'
-    const dispatchStatus = req.status === 'done'
+    const dispatchStatus = req.status === 'closed'
       ? 'completed'
       : req.status === 'scheduled'
         ? 'scheduled'
-        : req.assignedVendorName
-          ? 'accepted'
-          : null
+        : req.status === 'in_progress'
+          ? 'in_progress'
+          : req.assignedVendorName
+            ? 'accepted'
+            : null
     const vendorScheduledStart = req.id === 'req-1002' ? new Date('2026-03-13T16:00:00Z') : null
     const vendorScheduledEnd = req.id === 'req-1002' ? new Date('2026-03-13T18:00:00Z') : null
+    const closedAt = req.status === 'closed' ? new Date('2026-03-10T15:45:00Z') : null
+    const actualCompletedAt = req.status === 'closed' || req.status === 'completed' ? new Date('2026-03-10T15:45:00Z') : null
 
     await prisma.maintenanceRequest.upsert({
       where: { id: req.id },
@@ -134,14 +138,16 @@ async function main() {
         description: req.description,
         category: req.category,
         urgency: req.urgency as 'low' | 'medium' | 'high' | 'urgent',
-        status: req.status as 'new' | 'scheduled' | 'in_progress' | 'done',
+        status: req.status,
         assignedVendorId: vendor?.id,
         assignedVendorName: req.assignedVendorName,
         assignedVendorEmail: req.assignedVendorEmail,
         assignedVendorPhone: req.assignedVendorPhone,
-        dispatchStatus: dispatchStatus as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed' | null,
+        dispatchStatus,
         vendorScheduledStart,
         vendorScheduledEnd,
+        closedAt,
+        actualCompletedAt,
         createdAt: new Date(req.createdAt),
       },
       create: {
@@ -158,14 +164,16 @@ async function main() {
         description: req.description,
         category: req.category,
         urgency: req.urgency as 'low' | 'medium' | 'high' | 'urgent',
-        status: req.status as 'new' | 'scheduled' | 'in_progress' | 'done',
+        status: req.status,
         assignedVendorId: vendor?.id,
         assignedVendorName: req.assignedVendorName,
         assignedVendorEmail: req.assignedVendorEmail,
         assignedVendorPhone: req.assignedVendorPhone,
-        dispatchStatus: dispatchStatus as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed' | null,
+        dispatchStatus,
         vendorScheduledStart,
         vendorScheduledEnd,
+        closedAt,
+        actualCompletedAt,
         createdAt: new Date(req.createdAt),
       },
     })
@@ -229,7 +237,7 @@ async function main() {
       note: 'Southwest Plumbing accepted the job and is in progress.',
       createdAt: new Date('2026-03-16T10:30:00Z'),
     },
-  ]
+  ] as const
 
   for (const dispatch of dispatchEvents) {
     await prisma.vendorDispatchEvent.upsert({
@@ -238,7 +246,7 @@ async function main() {
         requestId: dispatch.requestId,
         vendorId: dispatch.vendorId,
         actorUserId: landlord.id,
-        status: dispatch.status as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed',
+        status: dispatch.status,
         note: dispatch.note,
         scheduledStart: dispatch.scheduledStart ?? null,
         scheduledEnd: dispatch.scheduledEnd ?? null,
@@ -249,7 +257,7 @@ async function main() {
         requestId: dispatch.requestId,
         vendorId: dispatch.vendorId,
         actorUserId: landlord.id,
-        status: dispatch.status as 'assigned' | 'contacted' | 'accepted' | 'declined' | 'scheduled' | 'completed',
+        status: dispatch.status,
         note: dispatch.note,
         scheduledStart: dispatch.scheduledStart ?? null,
         scheduledEnd: dispatch.scheduledEnd ?? null,
@@ -265,16 +273,16 @@ async function main() {
       where: { id: event.id },
       update: {
         requestId: event.requestId,
-        fromStatus: event.fromStatus as 'new' | 'scheduled' | 'in_progress' | 'done' | undefined,
-        toStatus: event.toStatus as 'new' | 'scheduled' | 'in_progress' | 'done',
+        fromStatus: event.fromStatus,
+        toStatus: event.toStatus,
         actorUserId,
         createdAt: new Date(event.createdAt),
       },
       create: {
         id: event.id,
         requestId: event.requestId,
-        fromStatus: event.fromStatus as 'new' | 'scheduled' | 'in_progress' | 'done' | undefined,
-        toStatus: event.toStatus as 'new' | 'scheduled' | 'in_progress' | 'done',
+        fromStatus: event.fromStatus,
+        toStatus: event.toStatus,
         actorUserId,
         createdAt: new Date(event.createdAt),
       },
