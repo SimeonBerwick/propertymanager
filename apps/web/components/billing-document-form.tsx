@@ -34,13 +34,20 @@ export function BillingDocumentForm({
   requestId,
   tenantEmail,
   vendorEmail,
+  tenantBillbackDecision,
+  tenantBillbackAmountCents,
+  tenantBillbackReason,
 }: {
   requestId: string
   tenantEmail?: string
   vendorEmail?: string
+  tenantBillbackDecision?: 'none' | 'bill_tenant' | 'waived'
+  tenantBillbackAmountCents?: number
+  tenantBillbackReason?: string
 }) {
   const [state, action, pending] = useActionState(createBillingDocumentAction, INITIAL_STATE)
-  const [presetKey, setPresetKey] = useState<BillingPresetKey>('tenant_damage')
+  const initialPreset: BillingPresetKey = tenantBillbackDecision === 'bill_tenant' ? 'tenant_damage' : 'tenant_damage'
+  const [presetKey, setPresetKey] = useState<BillingPresetKey>(initialPreset)
   const preset = PRESETS[presetKey]
   const defaultSentTo = useMemo(() => {
     return preset.recipientType === 'tenant' ? (tenantEmail || '') : (vendorEmail || '')
@@ -78,7 +85,7 @@ export function BillingDocumentForm({
       <div className="grid cols-3">
         <label className="field">
           <span className="field-label">Amount</span>
-          <input className="input" name="amount" placeholder="250.00" required />
+          <input className="input" name="amount" placeholder="250.00" defaultValue={tenantBillbackDecision === 'bill_tenant' && typeof tenantBillbackAmountCents === 'number' ? (tenantBillbackAmountCents / 100).toFixed(2) : ''} required />
         </label>
         <label className="field">
           <span className="field-label">Already paid</span>
@@ -94,7 +101,7 @@ export function BillingDocumentForm({
       </div>
       <label className="field">
         <span className="field-label">Description</span>
-        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={preset.description} placeholder="What this bill or remittance covers" rows={4} />
+        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="What this bill or remittance covers" rows={4} />
       </label>
       {state.error ? <div className="notice error">{state.error}</div> : null}
       {state.success ? <div className="notice success">Billing document created.</div> : null}

@@ -89,9 +89,15 @@ export async function updateStatusFormAction(
   let unitLabel: string | undefined
 
   try {
+    const ownedRequest = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestId, property: { ownerId: session.userId } },
+      select: { id: true },
+    })
+    if (!ownedRequest) return { error: 'Request not found.' }
+
     await prisma.$transaction(async (tx) => {
       const updated = await tx.maintenanceRequest.update({
-        where: { id: requestId, property: { ownerId: session.userId } },
+        where: { id: requestId },
         data: {
           status: toStatus,
           declineReason: toStatus === 'declined' ? reason : null,
@@ -299,8 +305,14 @@ export async function updateVendorFormAction(
   } | undefined
 
   try {
-    const updated = await prisma.maintenanceRequest.update({
+    const ownedRequest = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
+      select: { id: true },
+    })
+    if (!ownedRequest) return { error: 'Request not found.' }
+
+    const updated = await prisma.maintenanceRequest.update({
+      where: { id: requestId },
       data: {
         assignedVendorId: vendorId || null,
         assignedVendorName: vendorName || null,
@@ -385,8 +397,14 @@ export async function updatePreferencesFormAction(
   const triageTagsCsv = triageTags.join(',')
 
   try {
-    await prisma.maintenanceRequest.update({
+    const ownedRequest = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
+      select: { id: true },
+    })
+    if (!ownedRequest) return { error: 'Request not found.' }
+
+    await prisma.maintenanceRequest.update({
+      where: { id: requestId },
       data: {
         preferredCurrency,
         preferredLanguage,
