@@ -131,11 +131,14 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <BillingSummaryCards documents={data.billingDocuments} />
               <div className="billingLayout">
                 <div className="stack">
-                  <BillingDocumentForm
-                    requestId={data.request.id}
-                    tenantEmail={data.request.submittedByEmail}
-                    vendorEmail={data.request.assignedVendorEmail}
-                  />
+                <BillingDocumentForm
+                  requestId={data.request.id}
+                  tenantEmail={data.request.submittedByEmail}
+                  vendorEmail={data.request.assignedVendorEmail}
+                  tenantBillbackDecision={data.request.tenantBillbackDecision}
+                  tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
+                  tenantBillbackReason={data.request.tenantBillbackReason}
+                />
                 </div>
                 <div className="stack">
                   <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
