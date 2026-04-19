@@ -2,12 +2,19 @@ import { notFound } from 'next/navigation'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { TenantRequestCancelForm } from './cancel-form'
 
 const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
+  requested: 'Requested',
+  approved: 'Approved',
+  declined: 'Declined',
+  vendor_selected: 'Vendor selected',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
-  done: 'Done',
+  completed: 'Completed',
+  closed: 'Closed',
+  canceled: 'Canceled',
+  reopened: 'Reopened',
 }
 
 export default async function TenantMobileRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,6 +64,17 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div className="muted">No vendor has been assigned yet.</div>
         )}
       </section>
+
+      {['requested', 'approved', 'reopened'].includes(request.status) ? (
+        <section className="card stack">
+          <div>
+            <div className="kicker">Need to stop this request?</div>
+            <h3 style={{ marginTop: 4 }}>Cancel request</h3>
+          </div>
+          <div className="muted">You can cancel before the work is fully underway.</div>
+          <TenantRequestCancelForm requestId={request.id} />
+        </section>
+      ) : null}
 
       <section className="card stack">
         <div>

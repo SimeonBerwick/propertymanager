@@ -6,11 +6,11 @@ import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/v
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
 import { applyRequestAutomation } from '@/lib/automation'
-import type { DispatchStatus } from '@/lib/types'
+import type { DispatchStatus, RequestStatus } from '@/lib/types'
 
 export type VendorResponseState = { error: string | null }
 
-const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', 'scheduled', 'completed']
+const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', 'scheduled', 'completed', 'canceled']
 
 export async function submitVendorResponse(
   _prev: VendorResponseState,
@@ -79,18 +79,27 @@ export async function submitVendorResponse(
 
       const reviewState = dispatchStatus === 'completed'
         ? 'vendor_completed_pending_review'
-        : dispatchStatus === 'declined'
+        : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
           ? 'vendor_declined_reassignment_needed'
           : savedPhotoPaths.length > 0
             ? 'vendor_update_pending_review'
             : 'none'
       const reviewNote = dispatchStatus === 'completed'
         ? 'Vendor marked work complete. Awaiting landlord review.'
-        : dispatchStatus === 'declined'
-          ? 'Vendor declined assignment. Reassignment needed.'
+        : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
+          ? 'Vendor cannot continue with this assignment. Reassignment needed.'
           : savedPhotoPaths.length > 0
             ? 'Vendor provided photo evidence. Review if tenant-visible follow-up is needed.'
             : null
+      const requestStatus: RequestStatus | undefined = dispatchStatus === 'scheduled'
+        ? 'scheduled'
+        : dispatchStatus === 'completed'
+          ? 'completed'
+          : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
+            ? 'approved'
+            : dispatchStatus === 'accepted'
+              ? 'vendor_selected'
+              : undefined
 
       const updatedRequest = await tx.maintenanceRequest.update({
         where: { id: validation.requestId },
@@ -98,6 +107,7 @@ export async function submitVendorResponse(
           dispatchStatus,
           vendorScheduledStart: scheduledStart,
           vendorScheduledEnd: scheduledEnd,
+          status: requestStatus,
           reviewState,
           reviewNote,
         },
@@ -139,6 +149,17 @@ export async function submitVendorResponse(
             source: 'vendor',
             sourceLabel: validation.vendorName,
           })),
+        })
+      }
+
+      if (requestStatus && requestStatus !== updatedRequest.status) {
+        await tx.statusEvent.create({
+          data: {
+            requestId: validation.requestId,
+            fromStatus: updatedRequest.status,
+            toStatus: requestStatus,
+            visibility: dispatchStatus === 'scheduled' || dispatchStatus === 'completed' ? 'tenant_visible' : 'internal',
+          },
         })
       }
     })
