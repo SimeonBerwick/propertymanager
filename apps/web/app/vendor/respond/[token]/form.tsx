@@ -19,6 +19,7 @@ export function VendorResponseForm({ token }: { token: string }) {
           <option value="contacted">Contacted</option>
           <option value="accepted">Accepted</option>
           <option value="declined">Declined</option>
+          <option value="canceled">Canceled after acceptance</option>
           <option value="scheduled">Scheduled</option>
           <option value="completed">Completed</option>
         </select>
