@@ -72,6 +72,7 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Added media tests for unsafe path rejection and aligned real-file tests with private upload storage.
 - Deduplicated upload logic through shared helpers and fixed tenant mobile upload cleanup on DB failure.
 - Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
+- Added auth abuse resistance on highest-risk flows: landlord login rate limiting and tenant OTP issuance throttling. Current implementation is intentionally single-node/in-memory, which is appropriate for present packaging but will need a shared store for multi-instance deployment.
 
 ## Next
 - Run the Playwright browser workflow through CI/container and treat that as the final browser gate receipt.

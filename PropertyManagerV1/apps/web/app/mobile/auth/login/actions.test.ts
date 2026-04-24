@@ -1,5 +1,6 @@
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { startReturningLoginAction } from '@/app/mobile/auth/login/actions'
+import { clearRateLimitState } from '@/lib/rate-limit'
 import { scaffoldTenant, scaffoldLandlord, createActiveTenantIdentity } from '@/test/helpers'
 
 // Prevent real OTP delivery during tests
@@ -19,6 +20,9 @@ function formData(fields: Record<string, string>) {
 }
 
 describe('startReturningLoginAction', () => {
+  beforeEach(() => {
+    clearRateLimitState()
+  })
   test('returns error when identifier is empty', async () => {
     const result = await startReturningLoginAction(PREV, formData({ identifier: '' }))
     expect(result.error).toMatch(/required/i)
@@ -68,5 +72,18 @@ describe('startReturningLoginAction', () => {
       // NODE_ENV is 'test' (not 'production') so devCode should be present
       expect(params.get('devCode')).toBeTruthy()
     }
+  })
+
+  test('rate limits repeated OTP issuance requests for the same identifier', async () => {
+    const { identity } = await scaffoldTenant()
+
+    for (let i = 0; i < 2; i++) {
+      await expect(
+        startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
+      ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
+    }
+
+    const blocked = await startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 }))
+    expect(blocked.error).toMatch(/too many code requests/i)
   })
 })

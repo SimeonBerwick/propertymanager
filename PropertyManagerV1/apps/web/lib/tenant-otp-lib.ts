@@ -2,10 +2,16 @@ import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
+import { takeRateLimitHit } from '@/lib/rate-limit'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
 const OTP_LOCKOUT_MINUTES = 15
+const OTP_ISSUE_RATE_LIMIT = {
+  limit: 3,
+  windowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+}
 
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000)
@@ -17,6 +23,13 @@ function hashOtp(code: string, salt: string) {
 
 function makeCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
+}
+
+export class OtpRateLimitError extends Error {
+  constructor(message = 'Too many code requests. Try again later.') {
+    super(message)
+    this.name = 'OtpRateLimitError'
+  }
 }
 
 function maskDestination(value: string) {
@@ -42,6 +55,11 @@ export async function createOtpChallenge(
   const destination = channel === 'sms' ? tenantIdentity.phoneE164 : (tenantIdentity.email ?? '')
   if (!destination) {
     throw new Error(`Tenant identity is missing a ${channel === 'sms' ? 'phone number' : 'delivery email'}.`)
+  }
+
+  const issueLimit = takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
+  if (!issueLimit.ok) {
+    throw new OtpRateLimitError()
   }
 
   const code = makeCode()

@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createOtpChallenge } from '@/lib/tenant-otp-lib'
+import { createOtpChallenge, OtpRateLimitError } from '@/lib/tenant-otp-lib'
 import { findReturningTenantIdentityByIdentifier } from '@/lib/tenant-portal-data'
 import { writeAuditLog } from '@/lib/audit-log'
 
@@ -36,7 +36,15 @@ export async function startReturningLoginAction(
     summary: `Started returning tenant login via ${channel}.`,
     metadata: { channel },
   })
-  const otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel)
+  let otp
+  try {
+    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel)
+  } catch (error) {
+    if (error instanceof OtpRateLimitError) {
+      return { error: 'Too many code requests. Try again later.' }
+    }
+    throw error
+  }
   const paramsString = new URLSearchParams({
     challengeId: otp.challengeId,
     mode: 'returning',

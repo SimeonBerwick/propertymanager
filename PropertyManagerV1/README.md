@@ -42,6 +42,20 @@ From `apps/web`:
   - tenant: `/api/tenant/media/[id]`
 - Legacy public-path support exists only for older rows that still point at `/uploads/requests/...`
 
+## Auth abuse resistance truth
+- Landlord password login is rate-limited per email on the server
+- Tenant OTP issuance is rate-limited per identity/purpose/channel
+- OTP verification still has per-challenge attempt caps + lockout in the DB
+- Current limiter is in-memory, so it is real for single-node/local deployments but not yet shared across multiple app instances
+
+## Companion-app / packaging prep
+For any companion-app or remote-node packaging path, treat these as required truth:
+- use a real `SESSION_SECRET`
+- run `npm run setup:local` or the equivalent migrate + seed/bootstrap flow before first login test
+- keep uploaded media on private storage, never under `public/`
+- run browser coverage through CI/container, not by assuming the target host already has Playwright libs
+- if deployment becomes multi-node, replace the in-memory auth limiter with a shared store
+
 ## Browser test truth
 - `npm run test` covers server actions and DB-backed workflow integration
 - `npm run test:e2e` runs the Playwright browser workflow harness
