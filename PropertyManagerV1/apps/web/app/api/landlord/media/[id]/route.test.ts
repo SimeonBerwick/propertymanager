@@ -78,24 +78,35 @@ describe('GET /api/landlord/media/[id]', () => {
     expect(res.headers.get('Content-Type')).toBe('image/png')
   })
 
-  test('falls back to legacy public/ path when primary path fails', async () => {
+  test('reads legacy public upload path when imageUrl is a legacy public URL', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const request = await createMaintenanceRequest(property.id, unit.id)
-    // Legacy photos have a leading slash URL
     const photo = await prisma.maintenancePhoto.create({
       data: { requestId: request.id, imageUrl: '/uploads/requests/legacy.jpg' },
     })
 
     vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
-    vi.mocked(readFile)
-      .mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
-      .mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
   })
 
-  test('returns 404 when both primary and legacy disk paths fail', async () => {
+  test('returns 404 for unsafe image paths outside uploads storage', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const request = await createMaintenanceRequest(property.id, unit.id)
+    const photo = await prisma.maintenancePhoto.create({
+      data: { requestId: request.id, imageUrl: '../../secrets.txt' },
+    })
+
+    vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
+
+    const res = await GET(new Request('http://localhost'), makeParams(photo.id))
+    expect(res.status).toBe(404)
+    expect(readFile).not.toHaveBeenCalled()
+  })
+
+  test('returns 404 when disk path fails', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const request = await createMaintenanceRequest(property.id, unit.id)
     const photo = await prisma.maintenancePhoto.create({

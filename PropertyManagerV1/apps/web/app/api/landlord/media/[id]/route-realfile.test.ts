@@ -16,7 +16,7 @@ import { scaffoldLandlord, createMaintenanceRequest } from '@/test/helpers'
 
 vi.mock('@/lib/landlord-session')
 
-const TEST_UPLOAD_DIR = path.join(process.cwd(), 'test-uploads-landlord')
+const TEST_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'requests')
 
 function makeParams(id: string) {
   return { params: Promise.resolve({ id }) }
@@ -34,7 +34,7 @@ describe('GET /api/landlord/media/[id] — real files', () => {
     // Write a real PNG file to disk
     const imageBytes = randomBytes(128)
     const filename = `${randomBytes(8).toString('hex')}.png`
-    const relPath = `test-uploads-landlord/${filename}`
+    const relPath = `uploads/requests/${filename}`
     await mkdir(TEST_UPLOAD_DIR, { recursive: true })
     await writeFile(path.join(process.cwd(), relPath), imageBytes)
 
@@ -57,7 +57,7 @@ describe('GET /api/landlord/media/[id] — real files', () => {
 
     const imageBytes = randomBytes(64)
     const filename = `${randomBytes(8).toString('hex')}.jpg`
-    const relPath = `test-uploads-landlord/${filename}`
+    const relPath = `uploads/requests/${filename}`
     await mkdir(TEST_UPLOAD_DIR, { recursive: true })
     await writeFile(path.join(process.cwd(), relPath), imageBytes)
 
@@ -81,14 +81,14 @@ describe('GET /api/landlord/media/[id] — real files', () => {
     // Legacy photos have a leading-slash imageUrl; handler strips it and prepends public/
     const imageBytes = randomBytes(64)
     const filename = `${randomBytes(8).toString('hex')}.jpg`
-    const legacyDir = path.join(process.cwd(), 'public', 'test-uploads-landlord')
+    const legacyDir = path.join(process.cwd(), 'public', 'uploads', 'requests')
     await mkdir(legacyDir, { recursive: true })
     await writeFile(path.join(legacyDir, filename), imageBytes)
 
     const request = await createMaintenanceRequest(property.id, unit.id)
     const photo = await prisma.maintenancePhoto.create({
       // Leading slash triggers the legacy fallback in the route handler
-      data: { requestId: request.id, imageUrl: `/test-uploads-landlord/${filename}` },
+      data: { requestId: request.id, imageUrl: `/uploads/requests/${filename}` },
     })
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
@@ -97,7 +97,7 @@ describe('GET /api/landlord/media/[id] — real files', () => {
     const body = Buffer.from(await res.arrayBuffer())
     expect(body).toEqual(imageBytes)
 
-    // Clean up public/test-uploads-landlord
+    // Clean up public/uploads/requests
     await rm(legacyDir, { recursive: true, force: true })
   })
 
@@ -107,7 +107,7 @@ describe('GET /api/landlord/media/[id] — real files', () => {
 
     const request = await createMaintenanceRequest(property.id, unit.id)
     const photo = await prisma.maintenancePhoto.create({
-      data: { requestId: request.id, imageUrl: 'test-uploads-landlord/nonexistent.jpg' },
+      data: { requestId: request.id, imageUrl: 'uploads/requests/nonexistent.jpg' },
     })
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))

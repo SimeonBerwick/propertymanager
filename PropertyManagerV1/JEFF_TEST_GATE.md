@@ -33,12 +33,12 @@ Jeff should be able to:
 
 Before running the walk-through, confirm:
 
-- [ ] App is running (`npm run dev` in `apps/web`)
-- [ ] **DB connected** (`DATABASE_URL` set, `npx prisma migrate deploy`, `npm run prisma:seed`)
+- [ ] App is running (`npm run dev:local` in `apps/web`)
+- [ ] **DB connected** (`npm run setup:local` or equivalent migrate + seed flow)
   — Sections 3, 5, 6, 7 require a live DB. Without it, write actions show an error.
-- [ ] `public/uploads/requests/` directory exists (photo upload target)
+- [ ] Upload storage path `uploads/requests/` is writable (not `public/`)
 - [ ] Login credentials ready: `landlord@example.com` / `changeme` (or set `LANDLORD_EMAIL` + `LANDLORD_PASSWORD`)
-- [ ] Note: property/unit creation UI does not exist — properties come from the DB seed
+- [ ] Playwright/browser checks require host browser libs; unit/integration tests do not
 
 ---
 

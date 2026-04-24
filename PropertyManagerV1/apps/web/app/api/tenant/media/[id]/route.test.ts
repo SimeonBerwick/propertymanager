@@ -91,7 +91,7 @@ describe('GET /api/tenant/media/[id]', () => {
     expect(res.headers.get('Cache-Control')).toBe('private, max-age=3600')
   })
 
-  test('falls back to legacy path when primary path fails', async () => {
+  test('reads legacy public upload path when imageUrl is a legacy public URL', async () => {
     const { property, unit, identity } = await scaffoldTenant()
     const request = await createMaintenanceRequest(property.id, unit.id, {
       tenantIdentityId: identity.id,
@@ -101,15 +101,29 @@ describe('GET /api/tenant/media/[id]', () => {
     })
 
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
-    vi.mocked(readFile)
-      .mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
-      .mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
   })
 
-  test('returns 404 when both disk paths fail', async () => {
+  test('returns 404 for unsafe image paths outside uploads storage', async () => {
+    const { property, unit, identity } = await scaffoldTenant()
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      tenantIdentityId: identity.id,
+    })
+    const photo = await prisma.maintenancePhoto.create({
+      data: { requestId: request.id, imageUrl: '../../secrets.txt' },
+    })
+
+    vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
+
+    const res = await GET(new Request('http://localhost'), makeParams(photo.id))
+    expect(res.status).toBe(404)
+    expect(readFile).not.toHaveBeenCalled()
+  })
+
+  test('returns 404 when disk path fails', async () => {
     const { property, unit, identity } = await scaffoldTenant()
     const request = await createMaintenanceRequest(property.id, unit.id, {
       tenantIdentityId: identity.id,

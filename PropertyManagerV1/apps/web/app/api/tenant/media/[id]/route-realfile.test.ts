@@ -20,7 +20,7 @@ vi.mock('@/lib/tenant-mobile-session', async (importOriginal) => {
   return { ...actual, getTenantMobileSession: vi.fn() }
 })
 
-const TEST_UPLOAD_DIR = path.join(process.cwd(), 'test-uploads-tenant')
+const TEST_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'requests')
 
 function makeParams(id: string) {
   return { params: Promise.resolve({ id }) }
@@ -57,7 +57,7 @@ describe('GET /api/tenant/media/[id] — real files', () => {
 
     const imageBytes = randomBytes(128)
     const filename = `${randomBytes(8).toString('hex')}.webp`
-    const relPath = `test-uploads-tenant/${filename}`
+    const relPath = `uploads/requests/${filename}`
     await mkdir(TEST_UPLOAD_DIR, { recursive: true })
     await writeFile(path.join(process.cwd(), relPath), imageBytes)
 
@@ -82,7 +82,7 @@ describe('GET /api/tenant/media/[id] — real files', () => {
 
     const imageBytes = randomBytes(256)
     const filename = `${randomBytes(8).toString('hex')}.jpg`
-    const relPath = `test-uploads-tenant/${filename}`
+    const relPath = `uploads/requests/${filename}`
     await mkdir(TEST_UPLOAD_DIR, { recursive: true })
     await writeFile(path.join(process.cwd(), relPath), imageBytes)
 
@@ -107,7 +107,7 @@ describe('GET /api/tenant/media/[id] — real files', () => {
 
     const imageBytes = randomBytes(64)
     const filename = `${randomBytes(8).toString('hex')}.png`
-    const legacyDir = path.join(process.cwd(), 'public', 'test-uploads-tenant')
+    const legacyDir = path.join(process.cwd(), 'public', 'uploads', 'requests')
     await mkdir(legacyDir, { recursive: true })
     await writeFile(path.join(legacyDir, filename), imageBytes)
 
@@ -115,7 +115,7 @@ describe('GET /api/tenant/media/[id] — real files', () => {
       tenantIdentityId: identity.id,
     })
     const photo = await prisma.maintenancePhoto.create({
-      data: { requestId: request.id, imageUrl: `/test-uploads-tenant/${filename}` },
+      data: { requestId: request.id, imageUrl: `/uploads/requests/${filename}` },
     })
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
@@ -135,7 +135,7 @@ describe('GET /api/tenant/media/[id] — real files', () => {
       tenantIdentityId: identity.id,
     })
     const photo = await prisma.maintenancePhoto.create({
-      data: { requestId: request.id, imageUrl: 'test-uploads-tenant/nonexistent.jpg' },
+      data: { requestId: request.id, imageUrl: 'uploads/requests/nonexistent.jpg' },
     })
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))

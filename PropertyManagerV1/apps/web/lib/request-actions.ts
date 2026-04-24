@@ -1,7 +1,5 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
-import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -10,7 +8,7 @@ import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options
 import { getLandlordEmail } from '@/lib/auth-config'
 import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
 import { getLandlordBySlug } from '@/lib/data'
-import { validateImageMagicBytes, readImageHeader } from '@/lib/image-validation'
+import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -28,10 +26,6 @@ function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) 
   return { triageTags, slaBucket: 'standard' }
 }
 
-const MAX_PHOTO_COUNT = 5
-const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
-const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
-
 function getString(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''
@@ -39,50 +33,6 @@ function getString(formData: FormData, key: string) {
 
 function isUrgency(value: string): value is (typeof REQUEST_URGENCIES)[number] {
   return REQUEST_URGENCIES.includes(value as (typeof REQUEST_URGENCIES)[number])
-}
-
-function getFileExtension(file: File) {
-  const extensionFromType = file.type.split('/')[1]?.toLowerCase()
-  const extensionFromName = file.name.split('.').pop()?.toLowerCase()
-  return extensionFromType || extensionFromName || 'jpg'
-}
-
-async function savePhotos(files: File[]) {
-  if (!files.length) {
-    return [] as string[]
-  }
-
-  const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
-  await mkdir(diskDirectory, { recursive: true })
-
-  const savedPaths: string[] = []
-
-  for (const file of files) {
-    const extension = getFileExtension(file)
-    const filename = `${Date.now()}-${randomUUID()}.${extension}`
-    const diskPath = path.join(diskDirectory, filename)
-    // Store as a relative path from cwd — not a public URL.
-    const storagePath = `${UPLOAD_SUBDIRECTORY}/${filename}`
-    const bytes = Buffer.from(await file.arrayBuffer())
-
-    await writeFile(diskPath, bytes)
-    savedPaths.push(storagePath)
-  }
-
-  return savedPaths
-}
-
-async function cleanupPhotos(photoPaths: string[]) {
-  await Promise.all(
-    photoPaths.map(async (photoPath) => {
-      const diskPath = path.join(process.cwd(), photoPath)
-      try {
-        await unlink(diskPath)
-      } catch {
-        // Best effort cleanup only.
-      }
-    }),
-  )
 }
 
 export async function submitMaintenanceRequest(
@@ -133,23 +83,9 @@ export async function submitMaintenanceRequest(
     return { error: 'Choose a valid urgency level.' }
   }
 
-  if (photoFiles.length > MAX_PHOTO_COUNT) {
-    return { error: `Upload up to ${MAX_PHOTO_COUNT} photos.` }
-  }
-
-  for (const file of photoFiles) {
-    if (!file.type.startsWith('image/')) {
-      return { error: 'Photos must be image files.' }
-    }
-
-    if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      return { error: 'Each photo must be 5 MB or smaller.' }
-    }
-
-    const header = await readImageHeader(file)
-    if (!validateImageMagicBytes(header)) {
-      return { error: 'Photos must be valid image files.' }
-    }
+  const photoError = await validatePhotoFiles(photoFiles)
+  if (photoError) {
+    return { error: photoError }
   }
 
   let verifiedLandlordId: string | undefined

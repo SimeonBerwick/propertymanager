@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:local": "SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-changeme} next dev",
     "build": "next build",
     "start": "next start",
     "start:prod-local": "NODE_ENV=production SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-local-prod-password-2026} next start",
@@ -14,6 +15,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "./node_modules/.bin/tsx prisma/seed.ts",
+    "setup:local": "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
