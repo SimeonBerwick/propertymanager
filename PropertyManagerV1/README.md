@@ -53,5 +53,13 @@ Example container run from repo root:
 - `docker build -f PropertyManagerV1/apps/web/Dockerfile.playwright -t pm-playwright PropertyManagerV1/apps/web`
 - `docker run --rm pm-playwright`
 
-## Current execution status
-Core workflow, integration coverage, and browser harness are in place. Remaining work is deployment hardening and running browser coverage in an environment with Playwright system libraries.
+## Gate status
+- Jeff app gate: effectively passed at the application layer
+- `npm test`: passing
+- `npm run build`: passing
+- Browser workflow harness: implemented
+- Browser execution: still needs a Playwright-capable CI/container run for final proof
+
+## Next
+- Run the browser workflow in CI/container and capture the first green artifact
+- Then focus on deployment/runtime hardening, SLA policy, and recommendation quality

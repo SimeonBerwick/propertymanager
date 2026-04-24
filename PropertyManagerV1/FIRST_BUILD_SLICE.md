@@ -1,21 +1,31 @@
 # First Build Slice
 
-## Goal
+## Status
+Complete.
+
+## What this slice needed to prove
 Reach a usable internal build fast enough for Jeff to test the real maintenance workflow.
 
-## Build slice
-1. Create web app scaffold
-2. Add landlord auth shell
-3. Add property and unit CRUD
-4. Add maintenance request schema
-5. Build landlord dashboard inbox with seeded requests
-6. Add request detail page with status updates
+## What is now true
+1. Web app scaffold exists
+2. Landlord auth shell exists
+3. Property and unit creation exist in-app
+4. Maintenance request schema and flows exist
+5. Landlord dashboard inbox is live
+6. Request detail page supports status, vendor, and comments
+7. Tenant issue submission exists
+8. Photo upload exists and is privately served
+9. Property and unit history views exist
+10. DB-backed workflow integration test exists
+11. Playwright browser harness exists
 
-## Immediate next slice after that
-7. Add tenant issue submission form
-8. Add photo upload
-9. Add vendor assignment field
-10. Add request comment trail
+## Gate result
+The product core is proven at the app level. Jeff gate logic is now a verification/runtime problem, not a missing-feature problem.
+
+## Actual next slice
+1. Run the browser workflow in CI/container consistently
+2. Harden deployment/runtime infrastructure
+3. Improve vendor recommendation and SLA policy
 
 ## Why this order
-The first thing to prove is that a landlord can actually operate from one maintenance inbox. That is the product core.
+The first thing to prove was that a landlord can actually operate from one maintenance inbox. That proof now exists. The next leverage is turning it into repeatable browser validation and cleaner production infrastructure.
