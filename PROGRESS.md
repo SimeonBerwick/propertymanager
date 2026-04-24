@@ -64,7 +64,16 @@
 ## Current state
 All milestones M1–M5 complete. App is ready for Jeff test gate walk-through.
 
+## 2026-04-24
+- Added a DB-backed workflow integration test covering login, property/unit creation, request submission, dispatch, status flow, comments, and property/unit history views.
+- Added Playwright browser harness: config, boot script, fixture, and end-to-end landlord workflow spec.
+- Fixed login form wiring to use the real server action path.
+- Hardened private media access: guarded media routes now only resolve `uploads/requests/...` and legacy `/uploads/requests/...` paths, rejecting unsafe paths.
+- Added media tests for unsafe path rejection and aligned real-file tests with private upload storage.
+- Deduplicated upload logic through shared helpers and fixed tenant mobile upload cleanup on DB failure.
+- Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
+
 ## Known limitations / post-V1 work
-- Photo URLs are served from `public/uploads/` — no auth check on direct URL access. For V2: move uploads behind an authenticated API route.
-- No property/unit creation UI — currently managed via DB seed or direct Postgres. Jeff's test gate step 2 ("create a property and unit") requires a seeded DB.
+- Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.
+- No property/unit creation UI beyond current landlord workflow pages and DB-backed flows; broader admin tooling can still improve.
 - Email notifications require `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` env vars; dev uses log sink.
