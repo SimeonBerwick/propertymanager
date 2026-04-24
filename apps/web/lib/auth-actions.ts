@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } from '@/lib/auth-config'
 import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
+import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
 
 function logAuthError(stage: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -15,6 +16,12 @@ function logAuthError(stage: string, error: unknown) {
 }
 
 export type LoginState = { error: string } | null
+
+const LANDLORD_LOGIN_RATE_LIMIT = {
+  limit: 5,
+  windowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+}
 
 function isDatabaseUnavailable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -80,6 +87,12 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
     return { error: 'Email and password are required' }
   }
 
+  const rateLimitKey = `landlord-login:${normalizedEmail}`
+  const rateLimit = getRateLimitStatus(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
+  if (!rateLimit.ok) {
+    return { error: 'Too many login attempts. Try again later.' }
+  }
+
   let authenticatedUser: { userId: string; email: string; role: string } | null = null
 
   try {
@@ -94,9 +107,11 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
   authenticatedUser ??= authenticateAgainstDevFallback(normalizedEmail, password)
 
   if (!authenticatedUser) {
-    return { error: 'Invalid email or password' }
+    const failureLimit = takeRateLimitHit(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
+    return { error: failureLimit.ok ? 'Invalid email or password' : 'Too many login attempts. Try again later.' }
   }
 
+  resetRateLimit(rateLimitKey)
   return { error: null, user: authenticatedUser }
 }
 

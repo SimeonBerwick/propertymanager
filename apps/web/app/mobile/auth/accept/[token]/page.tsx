@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { validateTenantInviteToken } from '@/lib/tenant-invite-lib'
-import { createOtpChallenge } from '@/lib/tenant-otp-lib'
+import { createOtpChallenge, OtpRateLimitError } from '@/lib/tenant-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 
 export default async function MobileAcceptInvitePage({ params }: { params: Promise<{ token: string }> }) {
@@ -27,7 +27,21 @@ export default async function MobileAcceptInvitePage({ params }: { params: Promi
     metadata: { inviteId: result.inviteId },
   })
 
-  const otp = await createOtpChallenge(result.tenantIdentityId, 'invite_login', 'email')
+  let otp
+  try {
+    otp = await createOtpChallenge(result.tenantIdentityId, 'invite_login', 'email')
+  } catch (error) {
+    if (error instanceof OtpRateLimitError) {
+      return (
+        <div className="card stack" style={{ maxWidth: 560, margin: '48px auto' }}>
+          <div className="kicker">Invite</div>
+          <h2 style={{ marginTop: 4 }}>Too many code requests</h2>
+          <div className="muted">We already sent several codes recently. Wait a bit, then open the invite again.</div>
+        </div>
+      )
+    }
+    throw error
+  }
   const paramsString = new URLSearchParams({
     challengeId: otp.challengeId,
     inviteId: result.inviteId,
