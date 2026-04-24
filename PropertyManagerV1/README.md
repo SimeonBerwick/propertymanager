@@ -46,6 +46,12 @@ From `apps/web`:
 - `npm run test` covers server actions and DB-backed workflow integration
 - `npm run test:e2e` runs the Playwright browser workflow harness
 - The browser harness requires Playwright Linux dependencies on the host/container
+- CI runner: `.github/workflows/property-manager-playwright.yml`
+- Container path: `apps/web/Dockerfile.playwright`
+
+Example container run from repo root:
+- `docker build -f PropertyManagerV1/apps/web/Dockerfile.playwright -t pm-playwright PropertyManagerV1/apps/web`
+- `docker run --rm pm-playwright`
 
 ## Current execution status
 Core workflow, integration coverage, and browser harness are in place. Remaining work is deployment hardening and running browser coverage in an environment with Playwright system libraries.
