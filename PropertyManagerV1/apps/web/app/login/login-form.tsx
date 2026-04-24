@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormStatus } from 'react-dom'
+import { loginRouteAction } from './actions'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -14,7 +15,7 @@ function SubmitButton() {
 
 export function LoginForm({ error }: { error?: string }) {
   return (
-    <form action="/api/login" method="post" className="stack">
+    <form action={loginRouteAction} className="stack">
       {error ? <div className="notice error">{error}</div> : null}
 
       <label className="field">

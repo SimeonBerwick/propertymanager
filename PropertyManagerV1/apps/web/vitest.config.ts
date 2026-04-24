@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    include: ['app/**/*.test.ts', 'app/**/*.test.tsx', 'lib/**/*.test.ts', 'lib/**/*.test.tsx'],
+    exclude: ['tests/e2e/**'],
     // Run test files sequentially to avoid SQLite write conflicts
     fileParallelism: false,
     env: {
