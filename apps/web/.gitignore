@@ -11,3 +11,7 @@ public/uploads/
 # Local SQLite database
 prisma/*.db
 prisma/*.db-journal
+e2e.db
+e2e.db-journal
+playwright-report/
+test-results/
