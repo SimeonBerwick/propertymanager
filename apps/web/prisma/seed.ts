@@ -202,7 +202,16 @@ async function main() {
     })
   }
 
-  const dispatchEvents = [
+  const dispatchEvents: Array<{
+    id: string
+    requestId: string
+    vendorId: string
+    status: 'assigned' | 'scheduled' | 'completed' | 'accepted'
+    note: string
+    scheduledStart?: Date
+    scheduledEnd?: Date
+    createdAt: Date
+  }> = [
     {
       id: 'dispatch-1',
       requestId: 'req-1002',
@@ -237,7 +246,7 @@ async function main() {
       note: 'Southwest Plumbing accepted the job and is in progress.',
       createdAt: new Date('2026-03-16T10:30:00Z'),
     },
-  ] as const
+  ]
 
   for (const dispatch of dispatchEvents) {
     await prisma.vendorDispatchEvent.upsert({
