@@ -1,19 +1,18 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
+import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
-import { validateImageMagicBytes, readImageHeader } from '@/lib/image-validation'
-
-const MAX_PHOTO_COUNT = 5
-const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
-const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
 
 export type MobileRequestState = { error: string | null }
+
+function isRedirectLikeError(error: unknown) {
+  if (!(error instanceof Error)) return false
+  const digest = 'digest' in error ? String((error as Error & { digest?: string }).digest ?? '') : ''
+  return error.message.startsWith('NEXT_REDIRECT:') || digest.startsWith('NEXT_REDIRECT:')
+}
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
   const triageTags: string[] = []
@@ -32,33 +31,6 @@ function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''
-}
-
-function getFileExtension(file: File) {
-  const extensionFromType = file.type.split('/')[1]?.toLowerCase()
-  const extensionFromName = file.name.split('.').pop()?.toLowerCase()
-  return extensionFromType || extensionFromName || 'jpg'
-}
-
-async function savePhotos(files: File[]) {
-  if (!files.length) return [] as string[]
-
-  const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
-  await mkdir(diskDirectory, { recursive: true })
-  const savedPaths: string[] = []
-
-  for (const file of files) {
-    const extension = getFileExtension(file)
-    const filename = `${Date.now()}-${randomUUID()}.${extension}`
-    const diskPath = path.join(diskDirectory, filename)
-    // Store as a relative path from cwd — not a public URL.
-    const storagePath = `${UPLOAD_SUBDIRECTORY}/${filename}`
-    const bytes = Buffer.from(await file.arrayBuffer())
-    await writeFile(diskPath, bytes)
-    savedPaths.push(storagePath)
-  }
-
-  return savedPaths
 }
 
 export async function submitTenantMobileRequestAction(
@@ -94,21 +66,9 @@ export async function submitTenantMobileRequestAction(
     return { error: 'Choose a valid urgency level.' }
   }
 
-  if (photoFiles.length > MAX_PHOTO_COUNT) {
-    return { error: `Upload up to ${MAX_PHOTO_COUNT} photos.` }
-  }
-
-  for (const file of photoFiles) {
-    if (!file.type.startsWith('image/')) {
-      return { error: 'Photos must be image files.' }
-    }
-    if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      return { error: 'Each photo must be 5 MB or smaller.' }
-    }
-    const header = await readImageHeader(file)
-    if (!validateImageMagicBytes(header)) {
-      return { error: 'Photos must be valid image files.' }
-    }
+  const photoError = await validatePhotoFiles(photoFiles)
+  if (photoError) {
+    return { error: photoError }
   }
 
   const photoPaths = await savePhotos(photoFiles)
@@ -129,34 +89,42 @@ export async function submitTenantMobileRequestAction(
     return { error: 'This unit is no longer active for new requests. Contact your property manager.' }
   }
 
-  const request = await prisma.maintenanceRequest.create({
-    data: {
-      propertyId: session.propertyId,
-      unitId: session.unitId,
-      orgId: session.orgId,
-      tenantIdentityId: session.tenantIdentityId,
-      submittedByName: session.tenantName,
-      submittedByEmail: session.email ?? undefined,
-      preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
-      preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
-      slaBucket,
-      triageTagsCsv,
-      title,
-      description,
-      category,
-      urgency: urgency as 'low' | 'medium' | 'high' | 'urgent',
-      status: 'requested',
-      photos: {
-        create: photoPaths.map((imageUrl) => ({ imageUrl })),
+  try {
+    const request = await prisma.maintenanceRequest.create({
+      data: {
+        propertyId: session.propertyId,
+        unitId: session.unitId,
+        orgId: session.orgId,
+        tenantIdentityId: session.tenantIdentityId,
+        submittedByName: session.tenantName,
+        submittedByEmail: session.email ?? undefined,
+        preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
+        preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
+        slaBucket,
+        triageTagsCsv,
+        title,
+        description,
+        category,
+        urgency: urgency as 'low' | 'medium' | 'high' | 'urgent',
+        status: 'requested',
+        photos: {
+          create: photoPaths.map((imageUrl) => ({ imageUrl })),
+        },
+        comments: {
+          create: [{ body: `Submitted from tenant mobile portal by ${session.tenantName}.`, visibility: 'external' }],
+        },
+        events: {
+          create: [{ toStatus: 'requested', visibility: 'tenant_visible' }],
+        },
       },
-      comments: {
-        create: [{ body: `Submitted from tenant mobile portal by ${session.tenantName}.`, visibility: 'external' }],
-      },
-      events: {
-        create: [{ toStatus: 'requested', visibility: 'tenant_visible' }],
-      },
-    },
-  })
+    })
 
-  redirect(`/mobile/requests/${request.id}` as never)
+    redirect(`/mobile/requests/${request.id}` as never)
+  } catch (error) {
+    if (isRedirectLikeError(error)) {
+      throw error
+    }
+    await cleanupPhotos(photoPaths)
+    return { error: 'Could not submit your request. Please try again or contact the property manager.' }
+  }
 }
