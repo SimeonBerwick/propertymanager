@@ -9,6 +9,7 @@ afterEach(async () => {
   await prisma.tenantInvite.deleteMany()
   await prisma.billingEvent.deleteMany()
   await prisma.billingDocument.deleteMany()
+  await prisma.auditLog.deleteMany()
   await prisma.maintenancePhoto.deleteMany()
   await prisma.statusEvent.deleteMany()
   await prisma.requestComment.deleteMany()
