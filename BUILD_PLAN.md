@@ -13,18 +13,21 @@
 ## 2. Mission control surfaces
 
 ### Landlord mission control
-- dashboard inbox with request filters for language and currency
-- queue cards for non-English and non-USD requests
-- request detail page with status, comments, photos, preferences, triage tags, and vendor assignment
+Current truth:
+- dashboard inbox with queue cards, claim state, quick actions, and language/currency filters
+- request detail page with status flow, comments, photos, preferences, triage tags, vendor assignment, and audit context
 - property detail history
 - unit detail history
 - reports page with aging and repeat-issue visibility
+- exceptions view and ops surface
 - vendor directory with in-app create/edit capability management
 
 ### Tenant-facing surfaces
+Current truth:
 - public maintenance submission form
 - tenant mobile portal dashboard
 - tenant mobile request detail and status trail
+- tenant-facing status/comment visibility where appropriate
 
 ## 3. Current workflow
 
@@ -32,18 +35,16 @@
 1. tenant submits a maintenance request from public submit or tenant mobile portal
 2. request stores preferred language and preferred currency
 3. system derives triage tags from those preferences
-4. request lands in landlord dashboard inbox and queue views
+4. photos are stored privately under `uploads/requests/`
+5. request lands in landlord dashboard inbox and queue views
 
 ### Landlord operating workflow
-1. landlord reviews inbox / request detail
-2. landlord sees handling preferences and recommended vendors
-3. landlord can assign:
-   - one-click best-match vendor
-   - selected recommended vendor
-   - manual vendor details
-4. vendor assignment notification includes tenant preference context
-5. landlord updates status and adds internal or tenant-visible comments
-6. tenant sees updates in the portal trail
+1. landlord logs in and lands in dashboard mission control
+2. landlord can create a property and unit in-app
+3. landlord reviews inbox / request detail
+4. landlord updates status, assigns vendor details, and adds comments
+5. request history is visible from request, property, and unit views
+6. tenant sees allowed updates in the portal trail
 
 ### Vendor management workflow
 1. landlord opens vendor directory
@@ -53,7 +54,7 @@
    - supported languages
    - supported currencies
    - active/inactive state
-4. recommendation engine uses that capability data for request matching
+4. recommendation and dispatch flows use that capability data where applicable
 
 ## 4. Current data model truth
 - User
@@ -83,7 +84,17 @@
 - notification transport is still simple and may need stronger delivery guarantees
 - recommendation logic is heuristic, not capacity-aware or schedule-aware
 
-## 7. Next build targets
+## 7. Gate status and next targets
+
+### Jeff gate status
+- Core landlord workflow is implemented
+- DB-backed integration gate is passing
+- App build is passing
+- Playwright browser harness exists and has a CI/container execution path
+- Remaining browser proof is environmental, not a missing app flow
+
+### Next targets
+- run Playwright browser workflow in CI/container and treat that as the final browser gate
 - add explicit SLA policy model instead of defaulting everything to standard
 - improve vendor recommendation with availability / category normalization / performance history
 - add vendor deletion/deactivation safeguards and assignment history

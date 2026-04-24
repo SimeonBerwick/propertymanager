@@ -1,5 +1,8 @@
 # Jeff Test Gate
 
+## Status
+App gate passed pending final browser-environment execution.
+
 ## Goal of first finished build
 Jeff should be able to:
 1. log in as landlord
@@ -28,6 +31,12 @@ Jeff should be able to:
 - landlord cannot manage the workflow from one place
 
 ---
+
+## Current truth
+- The workflow itself is implemented.
+- `npm test` and `npm run build` are green.
+- A Playwright browser workflow exists.
+- The remaining open item is running that browser workflow in CI/container or another Playwright-capable environment.
 
 ## Pre-demo Setup Checklist
 

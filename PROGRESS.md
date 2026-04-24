@@ -62,7 +62,7 @@
 - TypeScript check: zero errors.
 
 ## Current state
-All milestones M1–M5 complete. App is ready for Jeff test gate walk-through.
+All milestones M1–M5 are complete and the app-level Jeff gate is effectively passed. The remaining unclosed proof point is executing the Playwright browser workflow in a Playwright-capable environment and keeping that path green.
 
 ## 2026-04-24
 - Added a DB-backed workflow integration test covering login, property/unit creation, request submission, dispatch, status flow, comments, and property/unit history views.
@@ -73,7 +73,11 @@ All milestones M1–M5 complete. App is ready for Jeff test gate walk-through.
 - Deduplicated upload logic through shared helpers and fixed tenant mobile upload cleanup on DB failure.
 - Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
 
+## Next
+- Run the Playwright browser workflow through CI/container and treat that as the final browser gate receipt.
+- Harden deployment/runtime infrastructure.
+- Improve SLA modeling and vendor recommendation quality.
+
 ## Known limitations / post-V1 work
 - Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.
-- No property/unit creation UI beyond current landlord workflow pages and DB-backed flows; broader admin tooling can still improve.
 - Email notifications require `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` env vars; dev uses log sink.

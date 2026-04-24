@@ -46,3 +46,20 @@ Status: Complete
 - [x] Empty states
 - [x] Demo seed data
 - [x] QA checklist
+- [x] DB-backed workflow integration test
+- [x] Playwright browser harness
+- [x] Private media route hardening
+- [x] Local ops flow cleanup
+
+## Gate status
+Status: App gate passed
+- [x] Core landlord workflow exists end-to-end
+- [x] Unit/integration gate passes locally
+- [x] Build passes locally
+- [x] Browser gate has CI/container execution path
+- [ ] Browser gate executed in a Playwright-capable environment
+
+## Next milestone focus
+- [ ] Run Playwright gate in CI/container and collect the first green browser artifact
+- [ ] Deployment/runtime hardening
+- [ ] SLA policy and vendor recommendation improvements
