@@ -90,10 +90,15 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
   - Upload flows now store opaque media references through that abstraction instead of assuming direct disk writes forever.
   - Guarded landlord/tenant media routes now read bytes via the storage abstraction, so hosted R2-backed media can slot in without route-surface changes.
   - Verified `npm run build` and the full Postgres-backed Vitest suite after the storage refactor (24 files / 240 tests passing).
+- Shared rate-limit migration started:
+  - Replaced the process-local limiter with an async abstraction that uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are present.
+  - Preserved in-memory fallback for local/test environments so the suite stays deterministic without external infra.
+  - Wired landlord login and tenant OTP issuance through the shared async limiter paths.
+  - Verified `npm run build` and the full Postgres-backed Vitest suite after the Upstash refactor (24 files / 240 tests passing).
 
 ## Next
-- Move request media fully onto Cloudflare R2 in hosted environments while preserving local fallback for tests/dev.
-- Then replace in-memory rate limiting with Upstash Redis.
+- Harden Cloudflare R2 with explicit hosted env verification and any required legacy-media migration.
+- Then validate Upstash-backed rate limiting in Vercel with real envs.
 - Then harden hosted automation, env validation, and deployment runbooks.
 
 ## Known limitations / post-V1 work

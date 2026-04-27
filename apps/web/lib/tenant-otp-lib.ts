@@ -57,7 +57,7 @@ export async function createOtpChallenge(
     throw new Error(`Tenant identity is missing a ${channel === 'sms' ? 'phone number' : 'delivery email'}.`)
   }
 
-  const issueLimit = takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
+  const issueLimit = await takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
   if (!issueLimit.ok) {
     throw new OtpRateLimitError()
   }
