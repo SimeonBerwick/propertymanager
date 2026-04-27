@@ -85,10 +85,14 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
   - Test/e2e harness was converted from file-backed DB URLs to Postgres-backed env URLs.
   - Generated a fresh Postgres baseline migration and retired the old SQLite baseline.
   - Verified `prisma migrate deploy`, seed, and the full Vitest suite against a temporary PostgreSQL 16 cluster via `pg_virtualenv` (24 files / 240 tests passing).
+- Media storage migration started:
+  - Introduced a storage abstraction that reads/writes either local private files or Cloudflare R2 depending on env configuration.
+  - Upload flows now store opaque media references through that abstraction instead of assuming direct disk writes forever.
+  - Guarded landlord/tenant media routes now read bytes via the storage abstraction, so hosted R2-backed media can slot in without route-surface changes.
+  - Verified `npm run build` and the full Postgres-backed Vitest suite after the storage refactor (24 files / 240 tests passing).
 
 ## Next
-- Finish the SQLite -> Postgres migration and verify it against a real Postgres instance.
-- Then move request media to Cloudflare R2.
+- Move request media fully onto Cloudflare R2 in hosted environments while preserving local fallback for tests/dev.
 - Then replace in-memory rate limiting with Upstash Redis.
 - Then harden hosted automation, env validation, and deployment runbooks.
 
