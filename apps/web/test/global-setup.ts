@@ -6,7 +6,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TEST_DB_URL =
   process.env.TEST_DATABASE_URL ??
   process.env.DATABASE_URL ??
-  'postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_test?schema=public'
+  'postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_dev?schema=test'
 
 export async function setup() {
   // Push schema to the test Postgres database and reset it before the suite.

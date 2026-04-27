@@ -81,9 +81,10 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Hosted production target is now explicitly locked to Vercel + Neon Postgres + Cloudflare R2 + Upstash Redis.
 - Mission control / workflow docs updated to reflect hosted-production reality instead of local-only SQLite assumptions.
 - Postgres migration started:
-  - Prisma datasource moved off SQLite assumptions and CI workflow is being rewired around Postgres service infrastructure.
-  - Test/e2e harness is being converted from file-backed DB URLs to Postgres-backed env URLs.
-  - Remaining blocker for full runtime verification here is lack of a local Postgres service or Neon connection string in this environment.
+  - Prisma datasource moved off SQLite assumptions and CI workflow was rewired around Postgres service infrastructure.
+  - Test/e2e harness was converted from file-backed DB URLs to Postgres-backed env URLs.
+  - Generated a fresh Postgres baseline migration and retired the old SQLite baseline.
+  - Verified `prisma migrate deploy`, seed, and the full Vitest suite against a temporary PostgreSQL 16 cluster via `pg_virtualenv` (24 files / 240 tests passing).
 
 ## Next
 - Finish the SQLite -> Postgres migration and verify it against a real Postgres instance.
