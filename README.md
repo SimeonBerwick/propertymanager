@@ -64,7 +64,7 @@ For any companion-app or remote-node packaging path, treat these as required tru
 - Container path: `apps/web/Dockerfile.playwright`
 
 Example container run from repo root:
-- `docker build -f PropertyManagerV1/apps/web/Dockerfile.playwright -t pm-playwright PropertyManagerV1/apps/web`
+- `docker build -f apps/web/Dockerfile.playwright -t pm-playwright apps/web`
 - `docker run --rm pm-playwright`
 
 ## Gate status

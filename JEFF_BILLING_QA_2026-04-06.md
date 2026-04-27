@@ -1,7 +1,7 @@
 # Jeff QA - Billing Slice
 
 Date: 2026-04-06
-App: `PropertyManagerV1/apps/web`
+App: `apps/web`
 Scope: Request detail billing pass
 
 ## Goal
