@@ -8,7 +8,7 @@ node_modules/
 tsconfig.tsbuildinfo
 # Tenant-uploaded photos (served from public/ but should not be committed)
 public/uploads/
-# Local SQLite database
+# Legacy local DB artifacts from the pre-Postgres phase
 prisma/*.db
 prisma/*.db-journal
 e2e.db

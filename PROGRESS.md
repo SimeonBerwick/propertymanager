@@ -74,10 +74,22 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
 - Added auth abuse resistance on highest-risk flows: landlord login rate limiting and tenant OTP issuance throttling. Current implementation is intentionally single-node/in-memory, which is appropriate for present packaging but will need a shared store for multi-instance deployment.
 
+## 2026-04-27
+- Split `PropertyManagerV1` into the standalone `propertymanager` repo and repaired standalone repo packaging/path drift.
+- Added standalone root `.gitignore`, restored GitHub Actions workflow wiring, and verified fresh-clone integrity.
+- Hardened dependency baseline: Next.js 15.5.15, nodemailer 8.0.7, Vitest 4.1.5, plus package overrides for safe Vite/PostCSS versions. `npm audit` now reports 0 vulnerabilities.
+- Hosted production target is now explicitly locked to Vercel + Neon Postgres + Cloudflare R2 + Upstash Redis.
+- Mission control / workflow docs updated to reflect hosted-production reality instead of local-only SQLite assumptions.
+- Postgres migration started:
+  - Prisma datasource moved off SQLite assumptions and CI workflow is being rewired around Postgres service infrastructure.
+  - Test/e2e harness is being converted from file-backed DB URLs to Postgres-backed env URLs.
+  - Remaining blocker for full runtime verification here is lack of a local Postgres service or Neon connection string in this environment.
+
 ## Next
-- Run the Playwright browser workflow through CI/container and treat that as the final browser gate receipt.
-- Harden deployment/runtime infrastructure.
-- Improve SLA modeling and vendor recommendation quality.
+- Finish the SQLite -> Postgres migration and verify it against a real Postgres instance.
+- Then move request media to Cloudflare R2.
+- Then replace in-memory rate limiting with Upstash Redis.
+- Then harden hosted automation, env validation, and deployment runbooks.
 
 ## Known limitations / post-V1 work
 - Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.

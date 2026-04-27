@@ -25,22 +25,23 @@ Move maintenance coordination out of ad hoc texts, calls, and memory into one tr
 This is not a full property management suite.
 This is a maintenance workflow system with a narrow, useful wedge.
 
-## Local operator runbook
+## Operator runbook
 
 From `apps/web`:
 
 1. `npm install`
 2. `cp .env.example .env` (or set real env vars)
-3. `npm run setup:local`
-4. `npm run dev:local`
-5. Sign in with `landlord@example.com / changeme` unless overridden in env
+3. point `DATABASE_URL` at Postgres (Neon dev branch or local Postgres)
+4. `npm run setup:local`
+5. `npm run dev:local`
+6. Sign in with `landlord@example.com / changeme` unless overridden in env
 
 ## Storage + media truth
-- New uploads are stored under `uploads/requests/` outside `public/`
-- Media is served only through guarded routes:
+- Current app code still resolves private uploads through guarded media routes:
   - landlord: `/api/landlord/media/[id]`
   - tenant: `/api/tenant/media/[id]`
-- Legacy public-path support exists only for older rows that still point at `/uploads/requests/...`
+- Hosted-production target is Cloudflare R2, not local disk
+- Any remaining local-path semantics are migration work, not the intended end state
 
 ## Auth abuse resistance truth
 - Landlord password login is rate-limited per email on the server
@@ -59,13 +60,9 @@ For any companion-app or remote-node packaging path, treat these as required tru
 ## Browser test truth
 - `npm run test` covers server actions and DB-backed workflow integration
 - `npm run test:e2e` runs the Playwright browser workflow harness
-- The browser harness requires Playwright Linux dependencies on the host/container
-- CI runner: `.github/workflows/property-manager-playwright.yml`
-- Container path: `apps/web/Dockerfile.playwright`
-
-Example container run from repo root:
-- `docker build -f apps/web/Dockerfile.playwright -t pm-playwright apps/web`
-- `docker run --rm pm-playwright`
+- The browser harness now targets Postgres-backed execution, not SQLite files
+- Primary CI runner: `.github/workflows/property-manager-playwright.yml` (GitHub Actions + Postgres service)
+- Container path: `apps/web/Dockerfile.playwright` now assumes an external Postgres endpoint if used
 
 ## Gate status
 - Jeff app gate: effectively passed at the application layer
@@ -74,6 +71,14 @@ Example container run from repo root:
 - Browser workflow harness: implemented
 - Browser execution: still needs a Playwright-capable CI/container run for final proof
 
+## Hosted production target
+- Vercel for app/runtime
+- Neon Postgres for relational data
+- Cloudflare R2 for private media
+- Upstash Redis for shared rate limiting / OTP throttling
+
 ## Next
-- Run the browser workflow in CI/container and capture the first green artifact
+- Finish the SQLite -> Postgres migration first
+- Then move media to R2
+- Then replace in-memory throttling with Upstash
 - Then focus on deployment/runtime hardening, SLA policy, and recommendation quality

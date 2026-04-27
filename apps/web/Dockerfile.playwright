@@ -7,7 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ENV DATABASE_URL=file:./prisma/e2e.db \
+ENV DATABASE_URL=postgresql://postgres:postgres@postgres:5432/propertymanager_e2e?schema=public \
+    E2E_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/propertymanager_e2e?schema=public \
     SESSION_SECRET=e2e-session-secret-2026-abcdefghijklmnopqrstuvwxyz \
     LANDLORD_EMAIL=landlord@example.com \
     LANDLORD_PASSWORD=changeme \
@@ -15,6 +16,6 @@ ENV DATABASE_URL=file:./prisma/e2e.db \
     NOTIFY_TRANSPORT=log \
     SMS_TRANSPORT=log
 
-RUN npm run setup:local && npx playwright install chromium
+RUN npx playwright install chromium
 
-CMD ["npm", "run", "test:e2e"]
+CMD ["sh", "-lc", "npm run setup:local && npm run test:e2e"]

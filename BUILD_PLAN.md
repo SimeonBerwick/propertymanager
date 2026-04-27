@@ -1,14 +1,15 @@
 # Property Manager V1 - Build Plan
 
 ## 1. Current platform / stack truth
-- Frontend: Next.js + TypeScript
-- Backend: Next.js server actions + route handlers
-- Database: SQLite via Prisma
+- Frontend: Next.js + TypeScript on Vercel
+- Backend: Next.js server actions + route handlers on Vercel
+- Database target: Neon Postgres via Prisma
 - ORM: Prisma
 - Auth: custom landlord session + tenant mobile session flow
-- File storage: local file-backed uploads for issue photos in current build
-- Notifications: provider-agnostic notification layer, email/log transport first
-- Hosting reality: local/dev-first SQLite app today; move to a networked DB later if multi-node deployment matters
+- File/media target: Cloudflare R2 for private request photos
+- Rate-limit target: Upstash Redis for shared login / OTP throttling
+- Notifications: provider-agnostic notification layer, SMTP/Twilio capable
+- Current migration truth: the repo has been split into its own standalone GitHub repo, app/test/build gates are green, and the first hosted-production migration now in flight is SQLite -> Postgres
 
 ## 2. Mission control surfaces
 
@@ -35,7 +36,7 @@ Current truth:
 1. tenant submits a maintenance request from public submit or tenant mobile portal
 2. request stores preferred language and preferred currency
 3. system derives triage tags from those preferences
-4. photos are stored privately under `uploads/requests/`
+4. photos are currently stored through a private-storage abstraction that still needs to be migrated from local disk paths to R2 object keys
 5. request lands in landlord dashboard inbox and queue views
 
 ### Landlord operating workflow
@@ -69,18 +70,26 @@ Current truth:
 - TenantOtpChallenge
 - TenantSession
 - Vendor
+- VendorDispatchEvent
+- VendorDispatchLink
+- RequestTender
+- TenderInvite
+- BillingDocument
+- BillingEvent
+- AuditLog
 
 ## 5. Important product rules
 - preferred language is handling context, not urgency
 - preferred currency is handling/billing context, not urgency
 - SLA should be explicit policy, not inferred from language alone
 - vendor recommendation should assist assignment, not hide manual override
-- SQLite constraints matter: primitive list fields are stored via CSV-backed columns where needed in this build
+- hosted production cannot rely on SQLite files, local uploads, or in-memory rate limits
 
 ## 6. Near-term risks
 - landlord request panel can get cluttered as more controls are added
 - CSV-backed capability storage is workable now but not ideal long-term
-- local file upload/storage is not durable enough for serious production deployment
+- local file upload/storage is not durable enough for Vercel-hosted production and must move to R2
+- in-memory rate limiting is not durable enough for multi-instance deployment and must move to Redis
 - notification transport is still simple and may need stronger delivery guarantees
 - recommendation logic is heuristic, not capacity-aware or schedule-aware
 
@@ -90,31 +99,32 @@ Current truth:
 - Core landlord workflow is implemented
 - DB-backed integration gate is passing
 - App build is passing
-- Playwright browser harness exists and has a CI/container execution path
-- Remaining browser proof is environmental, not a missing app flow
+- Browser workflow path exists in CI
+- Remaining work is no longer app-surface completeness; it is hosted-production substrate hardening
 
 ### Next targets
-- run Playwright browser workflow in CI/container and treat that as the final browser gate
-- add explicit SLA policy model instead of defaulting everything to standard
+- complete SQLite -> Postgres migration for Neon
+- move request media from local disk semantics to Cloudflare R2
+- replace in-memory auth throttling with Upstash Redis
+- productionize automation path on Vercel cron against the internal automation endpoint
+- add production env validation and deployment runbook
 - improve vendor recommendation with availability / category normalization / performance history
-- add vendor deletion/deactivation safeguards and assignment history
-- move media + database architecture to production-safe infrastructure when deployment scope expands
-- productionize automation path:
-  - set INTERNAL_AUTOMATION_SECRET in deployment config, not just local .env
-  - add automation failure reporting / last-run visibility
-  - run daily automation from a reliable scheduler against the internal automation endpoint
 
 ## 8. Success metric for this version
-A landlord should be able to create properties and units, accept tenant maintenance requests, see communication preferences, assign a best-fit vendor directly from the request panel, manage vendor capabilities in-app, and track the request to completion without ambiguity.
+A landlord should be able to create properties and units, accept tenant maintenance requests, see communication preferences, assign a best-fit vendor directly from the request panel, manage vendor capabilities in-app, and track the request to completion without ambiguity, on a hosted stack that survives multi-user production reality.
 
 ## 9. Current ops wiring
-- OpenClaw cron job created for daily automation sweep:
-  - name: `PropertyManagerV1 daily automation sweep`
-  - job id: `e6e7ca87-ab38-4c48-9df0-54609a58fa4c`
-  - schedule: 8:00 AM America/Phoenix
+- Standalone repo: `github.com/SimeonBerwick/propertymanager`
+- Hosted target:
+  - Vercel for app/runtime
+  - Neon Postgres for relational data
+  - Cloudflare R2 for media
+  - Upstash Redis for shared rate limiting
 - Internal automation endpoint:
   - `POST /api/internal/automation`
   - requires `Authorization: Bearer ${INTERNAL_AUTOMATION_SECRET}`
-- Deployment requirement:
+- Deployment requirements:
+  - `DATABASE_URL` must point at Postgres, not SQLite
+  - `SESSION_SECRET` must be production-grade
   - `INTERNAL_AUTOMATION_SECRET` must be set in runtime config / hosting secrets
-  - do not rely on local ignored `.env` state for production
+  - do not rely on local ignored `.env` state for hosted production
