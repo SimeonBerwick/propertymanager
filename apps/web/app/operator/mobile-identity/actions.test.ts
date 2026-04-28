@@ -94,7 +94,18 @@ describe('setupMobileIdentityAction', () => {
       PREV,
       formData({ unitId: unit.id, tenantName: 'Test Tenant', phoneE164: 'not-a-phone' }),
     )
-    expect(result.error).toMatch(/required/i)
+    expect(result.error).toMatch(/valid phone number/i)
+  })
+
+  test('returns error for a too-short E.164 phone number', async () => {
+    const { user, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+
+    const result = await setupMobileIdentityAction(
+      PREV,
+      formData({ unitId: unit.id, tenantName: 'Test Tenant', phoneE164: '+16025512' }),
+    )
+    expect(result.error).toMatch(/valid phone number/i)
   })
 
   test('creates tenant identity and returns success', async () => {
@@ -153,7 +164,7 @@ describe('setupMobileIdentityAction', () => {
       PREV,
       formData({ unitId: unit.id, tenantName: 'Dave', phoneE164: '07911 123456', phoneRegion: 'US' }),
     )
-    expect(result.error).toMatch(/required/i)
+    expect(result.error).toMatch(/valid phone number/i)
   })
 })
 

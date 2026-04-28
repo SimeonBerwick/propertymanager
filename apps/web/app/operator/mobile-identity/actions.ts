@@ -21,8 +21,8 @@ function getString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function normalizePhone(raw: string, region?: string): string {
-  return normalizePhoneToE164(raw, (region as CountryCode) || 'US') ?? ''
+function normalizePhone(raw: string, region?: string): string | null {
+  return normalizePhoneToE164(raw, (region as CountryCode) || 'US')
 }
 
 export async function setupMobileIdentityAction(
@@ -35,11 +35,16 @@ export async function setupMobileIdentityAction(
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')
   const phoneRegion = getString(formData, 'phoneRegion') || 'US'
-  const phone = normalizePhone(getString(formData, 'phoneE164'), phoneRegion)
+  const phoneRaw = getString(formData, 'phoneE164')
+  const phone = normalizePhone(phoneRaw, phoneRegion)
   const email = getString(formData, 'email').toLowerCase() || null
 
-  if (!unitId || !tenantName || !phone) {
+  if (!unitId || !tenantName || !phoneRaw) {
     return { error: 'Unit, tenant name, and phone are required.' }
+  }
+
+  if (!phone) {
+    return { error: 'Enter a valid phone number in E.164 or local format with the correct region.' }
   }
 
   const unit = await prisma.unit.findUnique({
