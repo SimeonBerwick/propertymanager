@@ -24,6 +24,7 @@ interface MobileIdentityPanelProps {
     status: string
     verifiedAt?: string | null
     lastLoginAt?: string | null
+    issues?: string[]
   } | null
 }
 
@@ -52,6 +53,17 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         </div>
       ) : (
         <div className="muted">No mobile identity configured yet.</div>
+      )}
+
+      {tenantIdentity?.issues && tenantIdentity.issues.length > 0 && (
+        <div className="notice error">
+          <strong>Mobile identity needs attention.</strong>
+          <ul style={{ margin: '8px 0 0 18px' }}>
+            {tenantIdentity.issues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {isArchived && (

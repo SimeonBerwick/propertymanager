@@ -74,6 +74,28 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
 - Added auth abuse resistance on highest-risk flows: landlord login rate limiting and tenant OTP issuance throttling. Current implementation is intentionally single-node/in-memory, which is appropriate for present packaging but will need a shared store for multi-instance deployment.
 
+## 2026-04-27
+- Split `PropertyManagerV1` into the standalone `propertymanager` repo and repaired standalone repo packaging/path drift.
+- Added standalone root `.gitignore`, restored GitHub Actions workflow wiring, and verified fresh-clone integrity.
+- Hardened dependency baseline: Next.js 15.5.15, nodemailer 8.0.7, Vitest 4.1.5, plus package overrides for safe Vite/PostCSS versions. `npm audit` now reports 0 vulnerabilities.
+- Hosted production target is now explicitly locked to Vercel + Neon Postgres + Cloudflare R2 + Upstash Redis.
+- Mission control / workflow docs updated to reflect hosted-production reality instead of local-only SQLite assumptions.
+- Postgres migration started:
+  - Prisma datasource moved off SQLite assumptions and CI workflow was rewired around Postgres service infrastructure.
+  - Test/e2e harness was converted from file-backed DB URLs to Postgres-backed env URLs.
+  - Generated a fresh Postgres baseline migration and retired the old SQLite baseline.
+  - Verified `prisma migrate deploy`, seed, and the full Vitest suite against a temporary PostgreSQL 16 cluster via `pg_virtualenv` (24 files / 240 tests passing).
+- Media storage migration started:
+  - Introduced a storage abstraction that reads/writes either local private files or Cloudflare R2 depending on env configuration.
+  - Upload flows now store opaque media references through that abstraction instead of assuming direct disk writes forever.
+  - Guarded landlord/tenant media routes now read bytes via the storage abstraction, so hosted R2-backed media can slot in without route-surface changes.
+  - Verified `npm run build` and the full Postgres-backed Vitest suite after the storage refactor (24 files / 240 tests passing).
+- Shared rate-limit migration started:
+  - Replaced the process-local limiter with an async abstraction that uses Upstash Redis when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are present.
+  - Preserved in-memory fallback for local/test environments so the suite stays deterministic without external infra.
+  - Wired landlord login and tenant OTP issuance through the shared async limiter paths.
+  - Verified `npm run build` and the full Postgres-backed Vitest suite after the Upstash refactor (24 files / 240 tests passing).
+
 ## 2026-04-29
 - Product decision locked: Property Manager V1.0 will be email-only for tenant access and notifications where tenant delivery is required.
 - SMS/Twilio is removed as a V1.0 launch dependency.
@@ -87,6 +109,9 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Lock V1.0 to email-only tenant access and remove SMS/Twilio as a launch dependency.
 - Harden deployment/runtime infrastructure.
 - Improve SLA modeling and vendor recommendation quality.
+- Harden Cloudflare R2 with explicit hosted env verification and any required legacy-media migration.
+- Validate Upstash-backed rate limiting in Vercel with real envs.
+- Harden hosted automation, env validation, and deployment runbooks.
 
 ## Known limitations / post-V1 work
 - Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.

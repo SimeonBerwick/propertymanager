@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getOpsActivity } from '@/lib/ops-activity'
 import { OpsActivityFeed } from '@/components/ops-activity-feed'
+import { getTenantIdentityHealthSummary } from '@/lib/tenant-identity-health'
 
 export default async function OpsPage({
   searchParams,
@@ -13,10 +14,22 @@ export default async function OpsPage({
   if (!session) redirect('/login')
 
   const { entity, action } = await searchParams
-  const activity = await getOpsActivity(session.userId, 50, {
-    entityType: entity || undefined,
-    actionPrefix: action || undefined,
-  })
+  const [activity, identityHealth] = await Promise.all([
+    getOpsActivity(session.userId, 50, {
+      entityType: entity || undefined,
+      actionPrefix: action || undefined,
+    }),
+    getTenantIdentityHealthSummary(session.userId),
+  ])
+
+  const appUrl = process.env.APP_URL?.replace(/\/$/, '') || null
+  const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || null
+  const smsTransport = process.env.SMS_TRANSPORT || 'log'
+  const smsReady = smsTransport !== 'twilio'
+    ? false
+    : !!process.env.TWILIO_ACCOUNT_SID
+      && !!process.env.TWILIO_AUTH_TOKEN
+      && (!!process.env.TWILIO_FROM_NUMBER || !!process.env.TWILIO_MESSAGING_SERVICE_SID)
 
   const checks = [
     {
@@ -25,9 +38,34 @@ export default async function OpsPage({
       detail: process.env.INTERNAL_AUTOMATION_SECRET ? 'Configured in runtime environment.' : 'Missing INTERNAL_AUTOMATION_SECRET.',
     },
     {
-      label: 'App URL configured',
-      ok: !!process.env.APP_URL,
-      detail: process.env.APP_URL ? process.env.APP_URL : 'APP_URL not set; local fallback URLs may be used in messages.',
+      label: 'App URL consistency',
+      ok: !!appUrl && !!publicAppUrl && appUrl === publicAppUrl,
+      detail: !appUrl || !publicAppUrl
+        ? `APP_URL=${appUrl ?? 'missing'} · NEXT_PUBLIC_APP_URL=${publicAppUrl ?? 'missing'}`
+        : appUrl === publicAppUrl
+          ? appUrl
+          : `Mismatch: APP_URL=${appUrl} · NEXT_PUBLIC_APP_URL=${publicAppUrl}`,
+    },
+    {
+      label: 'Shared rate limit store',
+      ok: !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN,
+      detail: process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+        ? 'Upstash Redis env vars are configured.'
+        : 'Missing Upstash Redis env vars. Rate limiting may fall back to in-memory.',
+    },
+    {
+      label: 'SMS transport readiness',
+      ok: smsReady,
+      detail: smsTransport !== 'twilio'
+        ? `SMS_TRANSPORT=${smsTransport}. OTP SMS delivery is not production-ready.`
+        : smsReady
+          ? 'Twilio transport is configured.'
+          : 'SMS_TRANSPORT=twilio but Twilio credentials/sender are incomplete.',
+    },
+    {
+      label: 'Mobile identity health',
+      ok: identityHealth.malformedPhone === 0 && identityHealth.inactive === 0,
+      detail: `${identityHealth.total} identities · ${identityHealth.malformedPhone} malformed phones · ${identityHealth.missingEmail} missing emails · ${identityHealth.inactive} inactive`,
     },
     {
       label: 'Notification transport',

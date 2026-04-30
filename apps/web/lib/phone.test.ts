@@ -59,6 +59,7 @@ describe('normalizePhoneToE164', () => {
       [''],                           // empty string
       ['   '],                        // whitespace only
       ['555-1212'],                   // 7 digits, no area code
+      ['+16025512'],                  // truncated E.164
       ['not-a-phone'],                // alphabetic garbage
       ['test@example.com'],           // email address
       ['12345'],                      // too short

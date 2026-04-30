@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-changeme} next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "start:prod-local": "NODE_ENV=production SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-local-prod-password-2026} next start",
     "lint": "next lint",
@@ -24,6 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.901.0",
     "@prisma/client": "^6.9.0",
+    "@upstash/redis": "^1.35.6",
     "iron-session": "^8.0.4",
     "libphonenumber-js": "^1.12.40",
     "next": "^15.5.15",

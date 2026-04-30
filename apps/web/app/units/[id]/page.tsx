@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuditLogs } from '@/lib/audit-log'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
 import { AuditLogList } from '@/components/audit-log-list'
+import { getTenantIdentityIssues } from '@/lib/tenant-identity-health'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -107,6 +108,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
           status: tenantIdentity.status,
           verifiedAt: tenantIdentity.verifiedAt?.toISOString() ?? null,
           lastLoginAt: tenantIdentity.lastLoginAt?.toISOString() ?? null,
+          issues: getTenantIdentityIssues(tenantIdentity),
         } : null}
       />
 
