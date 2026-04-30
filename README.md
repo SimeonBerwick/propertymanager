@@ -70,8 +70,8 @@ For any companion-app or remote-node packaging path, treat these as required tru
 - Container path: `apps/web/Dockerfile.playwright`
 
 Example container run from repo root:
-- `docker build -f PropertyManagerV1/apps/web/Dockerfile.playwright -t pm-playwright PropertyManagerV1/apps/web`
-- `docker run --rm pm-playwright`
+- `docker build -f apps/web/Dockerfile.playwright -t pm-playwright apps/web`
+- `docker run --rm --add-host=host.docker.internal:host-gateway -e DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/propertymanager_e2e?schema=public pm-playwright`
 
 ## Gate status
 - Jeff app gate: effectively passed at the application layer
