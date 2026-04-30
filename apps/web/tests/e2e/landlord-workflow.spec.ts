@@ -44,7 +44,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await expect(page.getByRole('heading', { name: 'Request received' })).toBeVisible()
 
   await page.goto('/dashboard')
-  const requestRow = page.locator('.inboxRow').filter({ hasText: requestTitle })
+  const requestRow = page.locator('.inboxRow').filter({ has: page.getByText(requestTitle, { exact: true }) }).first()
   await expect(requestRow).toBeVisible()
   await requestRow.getByRole('link', { name: 'Open request' }).click()
 
@@ -84,7 +84,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await statusForm.getByRole('combobox').selectOption('closed')
   await page.getByRole('button', { name: 'Update status manually' }).click()
   await expect(page.getByText('Status updated.')).toBeVisible()
-  await expect(page.getByText('ACME Plumbing')).toBeVisible()
+  await expect(page.getByText('ACME Plumbing', { exact: true })).toBeVisible()
   await expect(page.getByText('Requested → Approved')).toBeVisible()
   await expect(page.getByText('Completed → Closed')).toBeVisible()
 
