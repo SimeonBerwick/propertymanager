@@ -24,10 +24,16 @@ const VISIBILITY_LABELS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
+  requested: 'Requested',
+  approved: 'Approved',
+  declined: 'Declined',
+  vendor_selected: 'Vendor Selected',
   scheduled: 'Scheduled',
   in_progress: 'In Progress',
-  done: 'Done',
+  completed: 'Completed',
+  closed: 'Closed',
+  canceled: 'Canceled',
+  reopened: 'Reopened',
 }
 
 function statusLabel(s: string) {
