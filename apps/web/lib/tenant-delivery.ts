@@ -1,64 +1,39 @@
 import { sendNotification } from '@/lib/notify'
-import { sendSms } from '@/lib/sms'
 
 export interface TenantDeliveryAdapter {
-  sendOtp(input: { to: string; channel: 'sms' | 'email'; code: string; tenantName: string }): Promise<void>
-  sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }>
+  sendOtp(input: { to: string; code: string; tenantName: string }): Promise<void>
+  sendInviteLink(input: { to: string; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }>
 }
 
 class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
-  async sendOtp(input: { to: string; channel: 'sms' | 'email'; code: string; tenantName: string }) {
-    if (input.channel === 'sms') {
-      await sendSms({
-        to: input.to,
-        body: [
-          `Hi ${input.tenantName}, your verification code is: ${input.code}`,
-          ``,
-          `If you did not request this, ignore this message.`,
-        ].join('\n'),
-      })
-    } else {
-      await sendNotification({
-        to: input.to,
-        subject: 'Your tenant portal verification code',
-        text: [
-          `Hi ${input.tenantName},`,
-          ``,
-          `Your verification code is: ${input.code}`,
-          ``,
-          `If you did not request this code, ignore this message.`,
-        ].join('\n'),
-      })
-    }
+  async sendOtp(input: { to: string; code: string; tenantName: string }) {
+    await sendNotification({
+      to: input.to,
+      subject: 'Your tenant portal verification code',
+      text: [
+        `Hi ${input.tenantName},`,
+        ``,
+        `Your verification code is: ${input.code}`,
+        ``,
+        `If you did not request this code, ignore this message.`,
+      ].join('\n'),
+    })
   }
 
-  async sendInviteLink(input: { to: string; channel: 'sms' | 'email'; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }> {
-    if (input.channel === 'sms') {
-      const result = await sendSms({
-        to: input.to,
-        body: [
-          `Hi ${input.tenantName}, use this secure link to access the tenant portal:`,
-          input.inviteLink,
-          ``,
-          `If you did not expect this invite, ignore this message.`,
-        ].join('\n'),
-      })
-      return { delivered: result.ok }
-    } else {
-      const result = await sendNotification({
-        to: input.to,
-        subject: 'Your tenant portal invite link',
-        text: [
-          `Hi ${input.tenantName},`,
-          ``,
-          `Use this secure link to access the tenant portal:`,
-          input.inviteLink,
-          ``,
-          `If you did not expect this invite, ignore this message.`,
-        ].join('\n'),
-      })
-      return { delivered: result.ok }
-    }
+  async sendInviteLink(input: { to: string; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }> {
+    const result = await sendNotification({
+      to: input.to,
+      subject: 'Your tenant portal invite link',
+      text: [
+        `Hi ${input.tenantName},`,
+        ``,
+        `Use this secure link to access the tenant portal:`,
+        input.inviteLink,
+        ``,
+        `If you did not expect this invite, ignore this message.`,
+      ].join('\n'),
+    })
+    return { delivered: result.ok }
   }
 }
 

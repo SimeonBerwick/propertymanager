@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
-import { normalizePhoneToE164 } from '@/lib/phone'
 
 export function buildTenantRequestOwnershipWhere(session: TenantMobileScope) {
   const ownershipClauses: Array<{ tenantIdentityId: string } | { tenantIdentityId: null; submittedByEmail: string }> = [
@@ -56,23 +55,12 @@ export async function getTenantOwnedPhotoById(photoId: string, session: TenantMo
 }
 
 export async function findReturningTenantIdentityByIdentifier(identifier: string) {
-  const trimmed = identifier.trim()
-  if (!trimmed) {
+  const trimmed = identifier.trim().toLowerCase()
+  if (!trimmed || !trimmed.includes('@')) {
     return { ok: false as const, code: 'invalid' as const }
   }
 
-  let where: { email: string; status: 'active' } | { phoneE164: string; status: 'active' }
-
-  if (trimmed.includes('@')) {
-    where = { email: trimmed.toLowerCase(), status: 'active' as const }
-  } else {
-    const e164 = normalizePhoneToE164(trimmed)
-    if (!e164) {
-      return { ok: false as const, code: 'invalid' as const }
-    }
-    where = { phoneE164: e164, status: 'active' as const }
-  }
-
+  const where = { email: trimmed, status: 'active' as const }
   const matches = await prisma.tenantIdentity.findMany({ where })
 
   if (matches.length !== 1) {

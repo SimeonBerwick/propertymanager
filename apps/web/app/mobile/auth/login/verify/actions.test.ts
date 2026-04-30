@@ -32,8 +32,8 @@ describe('verifyReturningLoginAction', () => {
   })
 
   test('returns error for wrong code', async () => {
-    const { identity } = await scaffoldTenant()
-    const otp = await createOtpChallenge(identity.id, 'returning_login', 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const otp = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
     const result = await verifyReturningLoginAction(
       PREV,
@@ -43,8 +43,8 @@ describe('verifyReturningLoginAction', () => {
   })
 
   test('returns locked error after max wrong attempts', async () => {
-    const { identity } = await scaffoldTenant()
-    const otp = await createOtpChallenge(identity.id, 'returning_login', 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const otp = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
     // Exhaust the max attempts (5)
     for (let i = 0; i < 5; i++) {
@@ -59,8 +59,8 @@ describe('verifyReturningLoginAction', () => {
   })
 
   test('returns expired error for an expired challenge', async () => {
-    const { identity } = await scaffoldTenant()
-    const otp = await createOtpChallenge(identity.id, 'returning_login', 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const otp = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
     // Manually expire the challenge
     await prisma.tenantOtpChallenge.update({
@@ -76,8 +76,8 @@ describe('verifyReturningLoginAction', () => {
   })
 
   test('redirects to /mobile on valid code', async () => {
-    const { identity } = await scaffoldTenant()
-    const otp = await createOtpChallenge(identity.id, 'returning_login', 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const otp = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
     await expect(
       verifyReturningLoginAction(PREV, formData({ challengeId: otp.challengeId, code: otp.code })),
@@ -85,8 +85,8 @@ describe('verifyReturningLoginAction', () => {
   })
 
   test('creates a tenant session record on successful verify', async () => {
-    const { identity } = await scaffoldTenant()
-    const otp = await createOtpChallenge(identity.id, 'returning_login', 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const otp = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
     try {
       await verifyReturningLoginAction(PREV, formData({ challengeId: otp.challengeId, code: otp.code }))

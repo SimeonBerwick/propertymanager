@@ -3,47 +3,30 @@ name: Property Manager Playwright
 on:
   push:
     paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - 'JEFF_TEST_GATE.md'
+      - 'PropertyManagerV1/apps/web/**'
+      - 'PropertyManagerV1/README.md'
+      - 'PropertyManagerV1/JEFF_TEST_GATE.md'
       - '.github/workflows/property-manager-playwright.yml'
   pull_request:
     paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - 'JEFF_TEST_GATE.md'
+      - 'PropertyManagerV1/apps/web/**'
+      - 'PropertyManagerV1/README.md'
+      - 'PropertyManagerV1/JEFF_TEST_GATE.md'
       - '.github/workflows/property-manager-playwright.yml'
 
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: propertymanager_ci
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres -d propertymanager_ci"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     defaults:
       run:
-        working-directory: apps/web
+        working-directory: PropertyManagerV1/apps/web
     env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_ci?schema=public
-      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_ci?schema=test
-      E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_ci?schema=e2e
+      DATABASE_URL: file:./prisma/ci.db
       SESSION_SECRET: ci-session-secret-2026-abcdefghijklmnopqrstuvwxyz
       LANDLORD_EMAIL: landlord@example.com
       LANDLORD_PASSWORD: changeme
       LANDLORD_SLUG: landlord
       NOTIFY_TRANSPORT: log
-      SMS_TRANSPORT: log
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,12 +36,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: PropertyManagerV1/apps/web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Prepare app database
+      - name: Prepare database
         run: npm run setup:local
 
       - name: Install Playwright Chromium
@@ -76,6 +59,6 @@ jobs:
         with:
           name: property-manager-playwright-artifacts
           path: |
-            apps/web/playwright-report
-            apps/web/test-results
+            PropertyManagerV1/apps/web/playwright-report
+            PropertyManagerV1/apps/web/test-results
           if-no-files-found: ignore

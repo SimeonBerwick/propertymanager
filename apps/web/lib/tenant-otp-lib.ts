@@ -44,7 +44,7 @@ function maskDestination(value: string) {
 export async function createOtpChallenge(
   tenantIdentityId: string,
   purpose: 'invite_login' | 'returning_login',
-  channel: 'sms' | 'email',
+  channel: 'email',
 ) {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId } })
 
@@ -52,9 +52,9 @@ export async function createOtpChallenge(
     throw new Error('Tenant identity not found.')
   }
 
-  const destination = channel === 'sms' ? tenantIdentity.phoneE164 : (tenantIdentity.email ?? '')
+  const destination = tenantIdentity.email ?? ''
   if (!destination) {
-    throw new Error(`Tenant identity is missing a ${channel === 'sms' ? 'phone number' : 'delivery email'}.`)
+    throw new Error('Tenant identity is missing a delivery email.')
   }
 
   const issueLimit = takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
@@ -89,7 +89,6 @@ export async function createOtpChallenge(
 
   await getTenantDeliveryAdapter().sendOtp({
     to: destination,
-    channel,
     code,
     tenantName: tenantIdentity.tenantName,
   })

@@ -266,11 +266,12 @@ describe('tenant data scoping', () => {
       const { user, property, unit } = await scaffoldLandlord()
       const identity = await createTenantIdentity(user.id, property.id, unit.id, {
         status: 'inactive',
+        email: 'inactive@example.com',
       })
 
       // Verify the identity is not discoverable via the returning-login path
       const { findReturningTenantIdentityByIdentifier } = await import('@/lib/tenant-portal-data')
-      const result = await findReturningTenantIdentityByIdentifier(identity.phoneE164)
+      const result = await findReturningTenantIdentityByIdentifier(identity.email!)
       expect(result.ok).toBe(false)
     })
   })

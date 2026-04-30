@@ -12,8 +12,8 @@ export function ReturningLoginForm() {
     <form action={formAction} className="stack">
       {state.error && <div className="notice error">{state.error}</div>}
       <label className="field">
-        <span className="field-label">Phone or email</span>
-        <input className="input" type="text" name="identifier" placeholder="+16025551212 or tenant@example.com" required />
+        <span className="field-label">Email</span>
+        <input className="input" type="email" name="identifier" placeholder="tenant@example.com" required />
       </label>
       <button type="submit" className="button primary" disabled={isPending}>
         {isPending ? 'Sending code…' : 'Send login code'}

@@ -25,7 +25,7 @@ export default async function ReturningLoginVerifyPage({
         <div className="kicker">Tenant portal</div>
         <h2 style={{ marginTop: 4 }}>Enter your verification code</h2>
       </div>
-      <div className="muted">We sent a code to {masked ?? 'your configured contact method'}.</div>
+      <div className="muted">We sent a code to {masked ?? 'your email address'}.</div>
       {devCode && process.env.NODE_ENV !== 'production' && (
         <div className="notice" style={{ background: '#fff8e1', borderColor: '#ffe082' }}>
           Dev code: <strong>{devCode}</strong>
@@ -33,7 +33,7 @@ export default async function ReturningLoginVerifyPage({
       )}
       <ReturningLoginVerifyForm challengeId={challengeId} />
       <div className="muted" style={{ fontSize: '0.875rem' }}>
-        <a href="/mobile/auth/login">Use a different phone or email</a>
+        <a href="/mobile/auth/login">Use a different email</a>
       </div>
     </div>
   )

@@ -28,6 +28,12 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/required/i)
   })
 
+  test('rejects phone login because V1 is email-only', async () => {
+    const { identity } = await scaffoldTenant()
+    const result = await startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 }))
+    expect(result.error).toMatch(/email-only/i)
+  })
+
   test('returns error when identifier matches no tenant', async () => {
     const result = await startReturningLoginAction(PREV, formData({ identifier: 'nobody@example.com' }))
     expect(result.error).toBeTruthy()
@@ -45,13 +51,6 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/more than one/i)
   })
 
-  test('redirects to verify page with correct params on valid phone login', async () => {
-    const { identity } = await scaffoldTenant()
-    await expect(
-      startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
-  })
-
   test('redirects with email channel params on valid email login', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const email = 'tenant@example.com'
@@ -63,9 +62,11 @@ describe('startReturningLoginAction', () => {
   })
 
   test('includes devCode param in non-production environment', async () => {
-    const { identity } = await scaffoldTenant()
+    const { user, property, unit } = await scaffoldLandlord()
+    const email = 'tenant@example.com'
+    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
     try {
-      await startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 }))
+      await startReturningLoginAction(PREV, formData({ identifier: email }))
     } catch (err: unknown) {
       const url = (err as Error).message.replace('NEXT_REDIRECT:', '')
       const params = new URLSearchParams(url.split('?')[1])
@@ -75,15 +76,17 @@ describe('startReturningLoginAction', () => {
   })
 
   test('rate limits repeated OTP issuance requests for the same identifier', async () => {
-    const { identity } = await scaffoldTenant()
+    const { user, property, unit } = await scaffoldLandlord()
+    const email = 'tenant@example.com'
+    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
 
     for (let i = 0; i < 2; i++) {
       await expect(
-        startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
+        startReturningLoginAction(PREV, formData({ identifier: email })),
       ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
     }
 
-    const blocked = await startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 }))
+    const blocked = await startReturningLoginAction(PREV, formData({ identifier: email }))
     expect(blocked.error).toMatch(/too many code requests/i)
   })
 })

@@ -11,7 +11,7 @@
  *  - Expired challenge returns 'expired'
  *  - Already-verified challenge returns 'invalid' (replay-attack prevention)
  *  - Non-existent challengeId returns 'invalid'
- *  - Missing phone or email for the requested channel throws
+ *  - Missing delivery email throws
  */
 import { describe, test, expect, vi } from 'vitest'
 import { prisma } from '@/lib/prisma'
@@ -30,7 +30,7 @@ vi.mock('@/lib/tenant-delivery', () => ({
 
 /** Create a challenge and return the result plus the plaintext code. */
 async function issueChallenge(identityId: string) {
-  return createOtpChallenge(identityId, 'returning_login', 'sms')
+  return createOtpChallenge(identityId, 'returning_login', 'email')
 }
 
 /** Directly write a challenge row with controlled timestamps/counts via Prisma. */
@@ -59,8 +59,8 @@ async function seedChallenge(
         tenantIdentityId: identityId,
         orgId,
         purpose: 'returning_login',
-        channel: 'sms',
-        destinationMasked: '***1212',
+        channel: 'email',
+        destinationMasked: 'te***@example.com',
         codeSalt: overrides.codeSalt ?? salt,
         codeHash: overrides.codeHash ?? codeHash,
         expiresAt: overrides.expiresAt ?? new Date(Date.now() + 10 * 60 * 1000),
@@ -77,7 +77,7 @@ async function seedChallenge(
 
 describe('createOtpChallenge', () => {
   test('creates a challenge row with a hashed code, not plaintext', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId, code } = await issueChallenge(identity.id)
 
     const row = await prisma.tenantOtpChallenge.findUnique({ where: { id: challengeId } })
@@ -91,15 +91,15 @@ describe('createOtpChallenge', () => {
   })
 
   test('returns a 6-digit code and masked destination', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const result = await issueChallenge(identity.id)
 
     expect(result.code).toMatch(/^\d{6}$/)
-    expect(result.destinationMasked).toMatch(/^\*{3}\d{4}$/) // ***NNNN for phone
+    expect(result.destinationMasked).toMatch(/^te\*{3}@example\.com$/)
   })
 
   test('revokes previous unverified challenges for the same purpose on new issuance', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
 
     const first = await issueChallenge(identity.id)
     const second = await issueChallenge(identity.id)
@@ -114,17 +114,17 @@ describe('createOtpChallenge', () => {
   })
 
   test('throws when tenant identity does not exist', async () => {
-    await expect(createOtpChallenge('nonexistent-id', 'returning_login', 'sms')).rejects.toThrow()
+    await expect(createOtpChallenge('nonexistent-id', 'returning_login', 'email')).rejects.toThrow()
   })
 
-  test('throws when requesting email channel but identity has no email', async () => {
+  test('throws when identity has no email', async () => {
     const { identity } = await scaffoldTenant({ email: null })
     await expect(createOtpChallenge(identity.id, 'returning_login', 'email')).rejects.toThrow(
       /missing a.*delivery email/i,
     )
   })
 
-  test('uses email channel when identity has an email', async () => {
+  test('stores email channel when identity has an email', async () => {
     const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const result = await createOtpChallenge(identity.id, 'returning_login', 'email')
 
@@ -136,7 +136,7 @@ describe('createOtpChallenge', () => {
 
 describe('verifyOtpChallenge', () => {
   test('returns ok:true on correct code and sets verifiedAt', async () => {
-    const { identity, user } = await scaffoldTenant()
+    const { identity, user } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId, code } = await issueChallenge(identity.id)
 
     const result = await verifyOtpChallenge(challengeId, code)
@@ -149,7 +149,7 @@ describe('verifyOtpChallenge', () => {
   })
 
   test('returns invalid for wrong code and increments attemptCount', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId } = await issueChallenge(identity.id)
 
     const result = await verifyOtpChallenge(challengeId, '000000')
@@ -160,7 +160,7 @@ describe('verifyOtpChallenge', () => {
   })
 
   test('locks after 5 wrong attempts and returns locked', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId } = await issueChallenge(identity.id)
 
     for (let i = 0; i < 4; i++) {
@@ -204,7 +204,7 @@ describe('verifyOtpChallenge', () => {
   })
 
   test('already-verified challenge returns invalid (replay-attack prevention)', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId, code } = await issueChallenge(identity.id)
 
     // First use: succeeds
@@ -220,7 +220,7 @@ describe('verifyOtpChallenge', () => {
   })
 
   test('correct code after some wrong attempts still succeeds', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const { challengeId, code } = await issueChallenge(identity.id)
 
     // Two wrong attempts
