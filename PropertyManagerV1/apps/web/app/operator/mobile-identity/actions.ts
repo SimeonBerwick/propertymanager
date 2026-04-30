@@ -147,7 +147,6 @@ export async function sendMobileInviteAction(
 
     const delivery = await getTenantDeliveryAdapter().sendInviteLink({
       to: invite.sentTo,
-      channel: 'email',
       inviteLink,
       tenantName: tenantIdentity.tenantName,
     })

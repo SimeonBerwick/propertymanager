@@ -23,16 +23,16 @@ function maskDestination(value: string) {
   return `***${tail}`
 }
 
-export async function createTenantInvite(tenantIdentityId: string, sentVia: 'sms' | 'email' = 'email') {
+export async function createTenantInvite(tenantIdentityId: string, sentVia: 'email' = 'email') {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId } })
 
   if (!tenantIdentity) {
     throw new Error('Tenant identity not found.')
   }
 
-  const destination = sentVia === 'sms' ? tenantIdentity.phoneE164 : (tenantIdentity.email ?? '')
+  const destination = tenantIdentity.email ?? ''
   if (!destination) {
-    throw new Error(`Tenant identity is missing a ${sentVia === 'sms' ? 'phone number' : 'delivery email'}.`)
+    throw new Error('Tenant identity is missing a delivery email.')
   }
 
   const rawToken = randomBytes(24).toString('hex')

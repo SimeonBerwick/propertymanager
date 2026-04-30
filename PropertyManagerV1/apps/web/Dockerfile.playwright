@@ -12,8 +12,7 @@ ENV DATABASE_URL=file:./prisma/e2e.db \
     LANDLORD_EMAIL=landlord@example.com \
     LANDLORD_PASSWORD=changeme \
     LANDLORD_SLUG=landlord \
-    NOTIFY_TRANSPORT=log \
-    SMS_TRANSPORT=log
+    NOTIFY_TRANSPORT=log
 
 RUN npm run setup:local && npx playwright install chromium
 

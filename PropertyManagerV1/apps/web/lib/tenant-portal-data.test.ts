@@ -4,13 +4,12 @@
  * Covers:
  *  - buildTenantRequestOwnershipWhere: correct WHERE shape with/without email
  *  - findReturningTenantIdentityByIdentifier:
- *      - phone (various formats) → finds active identity
  *      - email → finds active identity
- *      - unknown phone/email → invalid
+ *      - unknown email → invalid
  *      - non-active (inactive) identity → invalid
  *      - multiple matches → ambiguous
  *      - empty identifier → invalid
- *      - bad phone format → invalid
+ *      - phone input rejected in email-only V1
  *  - getTenantOwnedPhotoById:
  *      - tenant can access their own photo
  *      - tenant CANNOT access another tenant's photo (unit scoping)
@@ -76,38 +75,12 @@ describe('buildTenantRequestOwnershipWhere', () => {
 // ─── findReturningTenantIdentityByIdentifier ──────────────────────────────────
 
 describe('findReturningTenantIdentityByIdentifier', () => {
-  test('finds active identity by E.164 phone', async () => {
-    const { identity } = await scaffoldTenant()
-    const result = await findReturningTenantIdentityByIdentifier(identity.phoneE164)
-    expect(result.ok).toBe(true)
-    if (!result.ok) throw new Error('expected ok')
-    expect(result.tenantIdentity.id).toBe(identity.id)
-  })
-
-  test('finds active identity by formatted phone (auto-normalizes)', async () => {
-    const { user, property, unit } = await scaffoldLandlord()
-    const identity = await createTenantIdentity(user.id, property.id, unit.id, {
-      phoneE164: '+16025551212',
-      status: 'active',
-    })
-    // Pass in local format — should be normalized to E.164 before lookup
-    const result = await findReturningTenantIdentityByIdentifier('(602) 555-1212')
-    expect(result.ok).toBe(true)
-    if (!result.ok) throw new Error('expected ok')
-    expect(result.tenantIdentity.id).toBe(identity.id)
-  })
-
   test('finds active identity by email (case-insensitive)', async () => {
     const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
     const result = await findReturningTenantIdentityByIdentifier('TENANT@EXAMPLE.COM')
     expect(result.ok).toBe(true)
     if (!result.ok) throw new Error('expected ok')
     expect(result.tenantIdentity.id).toBe(identity.id)
-  })
-
-  test('returns invalid for unknown phone', async () => {
-    const result = await findReturningTenantIdentityByIdentifier('+16025559999')
-    expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 
   test('returns invalid for unknown email', async () => {
@@ -118,32 +91,32 @@ describe('findReturningTenantIdentityByIdentifier', () => {
   test('returns invalid for inactive identity', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const identity = await createTenantIdentity(user.id, property.id, unit.id, {
-      phoneE164: '+16025557777',
+      email: 'inactive@example.com',
       status: 'inactive',
     })
-    const result = await findReturningTenantIdentityByIdentifier(identity.phoneE164)
+    const result = await findReturningTenantIdentityByIdentifier(identity.email!)
     expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 
   test('returns invalid for moved_out identity', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const identity = await createTenantIdentity(user.id, property.id, unit.id, {
-      phoneE164: '+16025556666',
+      email: 'moved@example.com',
       status: 'moved_out',
     })
-    const result = await findReturningTenantIdentityByIdentifier(identity.phoneE164)
+    const result = await findReturningTenantIdentityByIdentifier(identity.email!)
     expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 
-  test('returns ambiguous when multiple active identities share a phone', async () => {
+  test('returns ambiguous when multiple active identities share an email', async () => {
     const { user: u1, property: p1, unit: un1 } = await scaffoldLandlord()
     const { user: u2, property: p2, unit: un2 } = await scaffoldLandlord()
-    const sharedPhone = '+16025553333'
+    const sharedEmail = 'shared@example.com'
 
-    await createTenantIdentity(u1.id, p1.id, un1.id, { phoneE164: sharedPhone, status: 'active' })
-    await createTenantIdentity(u2.id, p2.id, un2.id, { phoneE164: sharedPhone, status: 'active' })
+    await createTenantIdentity(u1.id, p1.id, un1.id, { email: sharedEmail, status: 'active' })
+    await createTenantIdentity(u2.id, p2.id, un2.id, { email: sharedEmail, status: 'active' })
 
-    const result = await findReturningTenantIdentityByIdentifier(sharedPhone)
+    const result = await findReturningTenantIdentityByIdentifier(sharedEmail)
     expect(result).toEqual({ ok: false, code: 'ambiguous' })
   })
 
@@ -157,8 +130,8 @@ describe('findReturningTenantIdentityByIdentifier', () => {
     expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 
-  test('returns invalid for malformed phone', async () => {
-    const result = await findReturningTenantIdentityByIdentifier('not-a-number')
+  test('returns invalid for phone input because V1 is email-only', async () => {
+    const result = await findReturningTenantIdentityByIdentifier('+16025551212')
     expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 })

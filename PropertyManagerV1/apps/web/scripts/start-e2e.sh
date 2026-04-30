@@ -9,7 +9,6 @@ export LANDLORD_EMAIL="landlord@example.com"
 export LANDLORD_PASSWORD="changeme"
 export LANDLORD_SLUG="landlord"
 export NOTIFY_TRANSPORT="log"
-export SMS_TRANSPORT="log"
 export NODE_ENV="development"
 
 rm -f prisma/e2e.db prisma/e2e.db-journal prisma/prisma/e2e.db prisma/prisma/e2e.db-journal e2e.db e2e.db-journal

@@ -59,8 +59,8 @@ async function seedInvite(
       tokenHash: sha256(rawToken),
       status: overrides.status ?? 'pending',
       expiresAt: overrides.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      sentVia: 'sms',
-      sentTo: '+16025551212',
+      sentVia: 'email',
+      sentTo: 'tenant@example.com',
       revokedAt: overrides.status === 'revoked' ? new Date() : null,
     },
   })
@@ -71,8 +71,8 @@ async function seedInvite(
 
 describe('createTenantInvite', () => {
   test('returns rawToken that is not stored as-is in the database', async () => {
-    const { identity, property, unit, user } = await scaffoldTenant()
-    const result = await createTenantInvite(identity.id, 'sms')
+    const { identity, property, unit, user } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const result = await createTenantInvite(identity.id, 'email')
 
     const row = await prisma.tenantInvite.findFirst({
       where: { tenantIdentityId: identity.id },
@@ -86,11 +86,11 @@ describe('createTenantInvite', () => {
   })
 
   test('revokes all previous pending invites when creating a new one', async () => {
-    const { identity, property, unit, user } = await scaffoldTenant()
-    const first = await createTenantInvite(identity.id, 'sms')
+    const { identity, property, unit, user } = await scaffoldTenant({ email: 'tenant@example.com' })
+    const first = await createTenantInvite(identity.id, 'email')
 
     // Create a second invite
-    await createTenantInvite(identity.id, 'sms')
+    await createTenantInvite(identity.id, 'email')
 
     const firstRow = await prisma.tenantInvite.findFirst({
       where: { id: first.inviteId },
@@ -100,10 +100,10 @@ describe('createTenantInvite', () => {
   })
 
   test('only one pending invite exists after creating multiple', async () => {
-    const { identity } = await scaffoldTenant()
-    await createTenantInvite(identity.id, 'sms')
-    await createTenantInvite(identity.id, 'sms')
-    await createTenantInvite(identity.id, 'sms')
+    const { identity } = await scaffoldTenant({ email: 'tenant@example.com' })
+    await createTenantInvite(identity.id, 'email')
+    await createTenantInvite(identity.id, 'email')
+    await createTenantInvite(identity.id, 'email')
 
     const pendingCount = await prisma.tenantInvite.count({
       where: { tenantIdentityId: identity.id, status: 'pending' },
@@ -112,10 +112,10 @@ describe('createTenantInvite', () => {
   })
 
   test('throws when identity does not exist', async () => {
-    await expect(createTenantInvite('nonexistent', 'sms')).rejects.toThrow()
+    await expect(createTenantInvite('nonexistent', 'email')).rejects.toThrow()
   })
 
-  test('throws when email channel requested but identity has no email', async () => {
+  test('throws when identity has no email', async () => {
     const { identity } = await scaffoldTenant({ email: null })
     await expect(createTenantInvite(identity.id, 'email')).rejects.toThrow(/missing.*delivery email/i)
   })

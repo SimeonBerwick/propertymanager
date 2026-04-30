@@ -14,7 +14,11 @@ export async function startReturningLoginAction(
   const identifier = String(formData.get('identifier') ?? '').trim().toLowerCase()
 
   if (!identifier) {
-    return { error: 'Phone or email is required.' }
+    return { error: 'Email is required.' }
+  }
+
+  if (!identifier.includes('@')) {
+    return { error: 'V1 sign-in is email-only. Use the email attached to your tenant access.' }
   }
 
   const match = await findReturningTenantIdentityByIdentifier(identifier)
@@ -26,7 +30,7 @@ export async function startReturningLoginAction(
     }
   }
 
-  const channel = identifier.includes('@') ? 'email' : 'sms'
+  const channel = 'email'
   await writeAuditLog({
     orgId: match.tenantIdentity.orgId,
     actorUserId: null,

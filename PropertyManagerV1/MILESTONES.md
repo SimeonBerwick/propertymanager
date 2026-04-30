@@ -61,5 +61,10 @@ Status: App gate passed
 
 ## Next milestone focus
 - [ ] Run Playwright gate in CI/container and collect the first green browser artifact
+- [ ] Lock V1.0 scope to email-only tenant access and remove SMS/Twilio as a launch dependency
 - [ ] Deployment/runtime hardening
 - [ ] SLA policy and vendor recommendation improvements
+
+## V1.1 follow-on
+- [ ] Add SMS/phone login and OTP delivery after LLC/business setup is complete
+- [ ] Evaluate Twilio vs other SMS providers once business registration exists

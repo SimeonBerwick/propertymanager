@@ -74,11 +74,21 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Added `setup:local` and `dev:local` scripts plus CI/container paths for Playwright execution in environments with browser libs.
 - Added auth abuse resistance on highest-risk flows: landlord login rate limiting and tenant OTP issuance throttling. Current implementation is intentionally single-node/in-memory, which is appropriate for present packaging but will need a shared store for multi-instance deployment.
 
+## 2026-04-29
+- Product decision locked: Property Manager V1.0 will be email-only for tenant access and notifications where tenant delivery is required.
+- SMS/Twilio is removed as a V1.0 launch dependency.
+- SMS/phone login is deferred to V1.1 after LLC/business setup is complete.
+- Removed the dormant SMS/Twilio transport and simplified tenant delivery, OTP, invite, and browser-gate runtime paths to email-only behavior.
+- Verified the non-browser CI path locally: `npm test` passes with 237/237 tests green.
+- Attempted local Playwright browser execution; app harness starts, but this host is missing Playwright system libraries (`libnspr4.so`). CI/container remains the correct browser proof path.
+
 ## Next
 - Run the Playwright browser workflow through CI/container and treat that as the final browser gate receipt.
+- Lock V1.0 to email-only tenant access and remove SMS/Twilio as a launch dependency.
 - Harden deployment/runtime infrastructure.
 - Improve SLA modeling and vendor recommendation quality.
 
 ## Known limitations / post-V1 work
 - Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.
 - Email notifications require `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` env vars; dev uses log sink.
+- SMS/phone login is intentionally deferred from V1.0 to V1.1 until LLC/business setup exists for telecom registration.

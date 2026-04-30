@@ -20,6 +20,12 @@ Move maintenance coordination out of ad hoc texts, calls, and memory into one tr
 - tenant updates / communication trail
 - property / unit issue history
 - basic reporting
+- email-only tenant access for V1.0
+
+## Communications truth
+- V1.0 is email-first and email-only for tenant access and delivery
+- SMS/phone login is deferred to V1.1
+- Twilio or another SMS provider should only be added after LLC/business setup is in place
 
 ## Product truth
 This is not a full property management suite.
@@ -76,4 +82,9 @@ Example container run from repo root:
 
 ## Next
 - Run the browser workflow in CI/container and capture the first green artifact
+- Keep V1.0 email-only and remove SMS as a launch dependency
 - Then focus on deployment/runtime hardening, SLA policy, and recommendation quality
+
+## V1.1 candidates
+- Add SMS/phone-based tenant login and OTP delivery
+- Wire Twilio or another SMS provider after LLC/business setup is complete
