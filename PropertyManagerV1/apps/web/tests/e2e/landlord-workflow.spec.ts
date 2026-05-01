@@ -84,7 +84,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await statusForm.getByRole('combobox').selectOption('closed')
   await page.getByRole('button', { name: 'Update status manually' }).click()
   await expect(page.getByText('Status updated.')).toBeVisible()
-  await expect(page.getByText('ACME Plumbing')).toBeVisible()
+  await expect(page.getByText('ACME Plumbing', { exact: true })).toBeVisible()
   await expect(page.getByText('Requested → Approved')).toBeVisible()
   await expect(page.getByText('Completed → Closed')).toBeVisible()
 
