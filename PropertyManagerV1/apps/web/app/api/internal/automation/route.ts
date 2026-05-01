@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runAutomationSweep, sendDailyExceptionSummaryToLandlord } from '@/lib/automation'
 import { prisma } from '@/lib/prisma'
+import { assertHostedRuntimeReady } from '@/lib/runtime-env'
 
 function isAuthorized(request: NextRequest) {
   const expected = process.env.INTERNAL_AUTOMATION_SECRET
@@ -10,6 +11,8 @@ function isAuthorized(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  assertHostedRuntimeReady('internal automation route', ['base', 'notifications'])
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

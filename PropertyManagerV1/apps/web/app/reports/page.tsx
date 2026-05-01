@@ -21,8 +21,8 @@ export default async function ReportsPage() {
   return (
     <div className="stack">
       <section className="card">
-        <div className="kicker">Reporting</div>
-        <h2 style={{ margin: '4px 0 0' }}>History &amp; reporting</h2>
+        <div className="kicker">Reports</div>
+        <h2 style={{ margin: '4px 0 0' }}>Performance</h2>
       </section>
 
       {data.trendAlerts.length ? (
@@ -82,17 +82,17 @@ export default async function ReportsPage() {
         <Link href="/dashboard?queue=unclaimed" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Unclaimed open</div>
           <h2>{data.unclaimedOpenCount}</h2>
-          <div className="muted">Open requests still waiting for an owner</div>
+          <div className="muted">Still waiting for an owner</div>
         </Link>
         <Link href="/dashboard?queue=stale-claimed" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Stale claimed open</div>
           <h2>{data.staleClaimedOpenCount}</h2>
-          <div className="muted">Claimed open requests drifting past 24 hours</div>
+          <div className="muted">Claims older than 24 hours</div>
         </Link>
         <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Avg open claim age</div>
           <h2>{data.avgClaimAgeHoursOpen ? `${data.avgClaimAgeHoursOpen.toFixed(1)}h` : '—'}</h2>
-          <div className="muted">Average age of currently claimed open requests</div>
+          <div className="muted">Average age of open claims</div>
         </Link>
       </section>
 
@@ -100,14 +100,14 @@ export default async function ReportsPage() {
         <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
           <div className="kicker">Reopened</div>
           <h2>{data.reopenCount}</h2>
-          <div className="muted">Requests reopened after review</div>
+          <div className="muted">Reopened after review</div>
         </Link>
       </section>
 
       <section className="card stack">
         <div>
           <div className="kicker">Trends</div>
-          <h3 style={{ marginTop: 4 }}>Daily workflow trend, last 14 days</h3>
+          <h3 style={{ marginTop: 4 }}>Last 14 days</h3>
         </div>
         {data.trends.length ? (
           <>
@@ -117,7 +117,7 @@ export default async function ReportsPage() {
                 <tr>
                   <th>Day</th>
                   <th>Created</th>
-                  <th>First reviewed</th>
+                  <th>Reviewed</th>
                   <th>Claimed</th>
                   <th>Completed</th>
                 </tr>
@@ -144,7 +144,7 @@ export default async function ReportsPage() {
       <section className="card stack">
         <div>
           <div className="kicker">By property</div>
-          <h3 style={{ marginTop: 4 }}>Open vs closed breakdown</h3>
+          <h3 style={{ marginTop: 4 }}>Open vs closed</h3>
         </div>
         {data.propertyStats.length ? (
           <table className="table">
@@ -186,14 +186,14 @@ export default async function ReportsPage() {
       <section className="card stack">
         <div>
           <div className="kicker">Aging</div>
-          <h3 style={{ marginTop: 4 }}>Open requests by age</h3>
+          <h3 style={{ marginTop: 4 }}>Open request age</h3>
         </div>
         {data.agingRequests.length ? (
           <table className="table">
             <thead>
               <tr>
                 <th>Request</th>
-                <th>Property · Unit</th>
+                <th>Property / Unit</th>
                 <th>Category</th>
                 <th>Preferences</th>
                 <th>Urgency</th>

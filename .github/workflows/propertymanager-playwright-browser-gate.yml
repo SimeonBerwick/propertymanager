@@ -1,0 +1,49 @@
+name: PropertyManager Playwright Browser Gate
+
+on:
+  push:
+    paths:
+      - 'PropertyManagerV1/apps/web/**'
+      - '.github/workflows/propertymanager-playwright-browser-gate.yml'
+  pull_request:
+    paths:
+      - 'PropertyManagerV1/apps/web/**'
+      - '.github/workflows/propertymanager-playwright-browser-gate.yml'
+  workflow_dispatch:
+
+jobs:
+  e2e-browser-gate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: PropertyManagerV1/apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: PropertyManagerV1/apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser workflow
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: propertymanager-playwright-report
+          path: |
+            PropertyManagerV1/apps/web/playwright-report
+            PropertyManagerV1/apps/web/test-results
+          if-no-files-found: ignore

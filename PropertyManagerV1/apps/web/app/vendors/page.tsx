@@ -25,7 +25,7 @@ export default async function VendorsPage() {
       <div className="row">
         <div>
           <div className="kicker">Vendors</div>
-          <h2 style={{ margin: '4px 0 0' }}>Vendor capability directory</h2>
+          <h2 style={{ margin: '4px 0 0' }}>Vendor directory</h2>
         </div>
         <Link href="/vendors/new" className="button primary">Add vendor</Link>
       </div>
@@ -56,8 +56,8 @@ export default async function VendorsPage() {
       ) : (
         <div className="card stack" style={{ maxWidth: 520 }}>
           <h3 style={{ margin: 0 }}>No vendors yet</h3>
-          <p className="muted" style={{ margin: 0 }}>Create vendors here so request matching and assignment can be managed in-app.</p>
-          <Link href="/vendors/new" className="button primary" style={{ alignSelf: 'flex-start' }}>Create first vendor</Link>
+          <p className="muted" style={{ margin: 0 }}>Add vendors to manage matching and assignment.</p>
+          <Link href="/vendors/new" className="button primary" style={{ alignSelf: 'flex-start' }}>Add vendor</Link>
         </div>
       )}
     </div>

@@ -23,7 +23,7 @@ export default async function ReturningLoginVerifyPage({
     <div className="card stack" style={{ maxWidth: 560, margin: '48px auto' }}>
       <div>
         <div className="kicker">Tenant portal</div>
-        <h2 style={{ marginTop: 4 }}>Enter your verification code</h2>
+        <h2 style={{ marginTop: 4 }}>Enter code</h2>
       </div>
       <div className="muted">We sent a code to {masked ?? 'your email address'}.</div>
       {devCode && process.env.NODE_ENV !== 'production' && (

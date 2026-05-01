@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { createTenantInvite } from '@/lib/tenant-invite-lib'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
@@ -142,7 +143,7 @@ export async function sendMobileInviteAction(
     }
 
     const invite = await createTenantInvite(tenantIdentityId, 'email')
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = getAppBaseUrl('tenant invite links')
     const inviteLink = `${appUrl}/mobile/auth/accept/${invite.rawToken}`
 
     const delivery = await getTenantDeliveryAdapter().sendInviteLink({

@@ -88,7 +88,7 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
   }
 
   const rateLimitKey = `landlord-login:${normalizedEmail}`
-  const rateLimit = getRateLimitStatus(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
+  const rateLimit = await getRateLimitStatus(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
   if (!rateLimit.ok) {
     return { error: 'Too many login attempts. Try again later.' }
   }
@@ -107,11 +107,11 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
   authenticatedUser ??= authenticateAgainstDevFallback(normalizedEmail, password)
 
   if (!authenticatedUser) {
-    const failureLimit = takeRateLimitHit(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
+    const failureLimit = await takeRateLimitHit(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
     return { error: failureLimit.ok ? 'Invalid email or password' : 'Too many login attempts. Try again later.' }
   }
 
-  resetRateLimit(rateLimitKey)
+  await resetRateLimit(rateLimitKey)
   return { error: null, user: authenticatedUser }
 }
 

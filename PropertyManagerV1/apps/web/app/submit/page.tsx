@@ -37,7 +37,7 @@ export default async function SubmitPage({
             <h2 style={{ margin: '4px 0 0' }}>Request received</h2>
           </div>
           <p style={{ margin: 0 }}>
-            Your maintenance request has been submitted. The property manager has been notified and will be in touch.
+            Your request is in. The property manager has been notified.
           </p>
           <a href="/submit" className="button" style={{ alignSelf: 'flex-start' }}>Submit another request</a>
         </section>
@@ -53,7 +53,7 @@ export default async function SubmitPage({
           <h2 style={{ margin: '4px 0 0' }}>Report a maintenance issue</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Fill out this form to report an issue in your unit. Include as much detail as possible so we can respond quickly.
+          Report the issue and add photos if needed.
         </p>
       </section>
 

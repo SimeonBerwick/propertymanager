@@ -82,13 +82,33 @@ All milestones M1–M5 are complete and the app-level Jeff gate is effectively p
 - Verified the non-browser CI path locally: `npm test` passes with 237/237 tests green.
 - Attempted local Playwright browser execution; app harness starts, but this host is missing Playwright system libraries (`libnspr4.so`). CI/container remains the correct browser proof path.
 
+## 2026-05-01
+- Added central hosted-runtime validation in `apps/web/lib/runtime-env.ts`.
+- `/ops` now shows real hosted-production readiness instead of soft advisory checks.
+- Hosted production now fails fast instead of silently falling back on:
+  - log-based notifications
+  - localhost app URLs in generated links
+  - local-disk private media access
+  - in-memory rate limiting
+  - under-configured internal automation
+- Added `HOSTED_RUNTIME_RUNBOOK.md` covering Vercel / Neon / R2 / Upstash rollout expectations.
+- Validation proof: targeted Vitest runtime/auth checks green, `npm run build` green.
+- Completed the two remaining hosted substrate migrations:
+  - private media now uses R2 automatically when R2 env is configured
+  - rate limiting now uses Upstash-backed shared state automatically when Upstash env is configured
+- Important remaining truth: hosted production still depends on real infra env being set correctly, but the app no longer needs more code changes for those two substrate paths.
+
 ## Next
-- Run the Playwright browser workflow through CI/container and treat that as the final browser gate receipt.
+- Push the new GitHub Actions workflow at `.github/workflows/propertymanager-playwright-browser-gate.yml` and use that run as the final browser gate receipt.
+- Provision and verify hosted substrate env in the real deployment using `apps/web/.env.hosted.example`:
+  - R2 credentials/bucket
+  - Upstash REST URL/token
+  - SMTP URL/from
+  - app URL + session/automation secrets
 - Lock V1.0 to email-only tenant access and remove SMS/Twilio as a launch dependency.
-- Harden deployment/runtime infrastructure.
 - Improve SLA modeling and vendor recommendation quality.
 
 ## Known limitations / post-V1 work
-- Local browser E2E still cannot run on this host without Playwright system libraries; use CI or the Playwright container path.
+- Local browser E2E still cannot run on this host without Playwright system libraries (`libnspr4.so` missing); use the new GitHub Actions workflow or the Playwright container path.
 - Email notifications require `NOTIFY_TRANSPORT=smtp` + `SMTP_URL` env vars; dev uses log sink.
 - SMS/phone login is intentionally deferred from V1.0 to V1.1 until LLC/business setup exists for telecom registration.

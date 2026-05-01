@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { readFile } from 'node:fs/promises'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { getMediaContentType, resolveStoredMediaPath } from '@/lib/media-storage'
+import { readStoredMedia } from '@/lib/media-storage'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
@@ -24,23 +23,14 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
-  const diskPath = resolveStoredMediaPath(photo.imageUrl)
-  if (!diskPath) {
-    return new NextResponse('Not found', { status: 404 })
-  }
-
-  let fileBytes: Buffer
-  try {
-    fileBytes = await readFile(diskPath)
-  } catch {
+  const media = await readStoredMedia(photo.imageUrl)
+  if (!media) {
     return new NextResponse('File not found', { status: 404 })
   }
 
-  const contentType = getMediaContentType(photo.imageUrl)
-
-  return new NextResponse(new Uint8Array(fileBytes), {
+  return new NextResponse(new Uint8Array(media.bytes), {
     headers: {
-      'Content-Type': contentType,
+      'Content-Type': media.contentType,
       'Cache-Control': 'private, max-age=3600',
     },
   })

@@ -75,16 +75,16 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
         <div className="requestHeroAside">
           <div className="requestSignalCard">
-            <div className="kicker">Operator focus</div>
-            <div className="signalTitle">Move this request forward with one decisive update.</div>
-            <div className="muted">Assign vendor, set dispatch state, handle review, close the work, then handle billing if needed.</div>
+            <div className="kicker">Next move</div>
+            <div className="signalTitle">Push the request forward.</div>
+            <div className="muted">Assign, update, close, then bill if needed.</div>
           </div>
         </div>
       </section>
 
       <div className="requestDetailGrid">
         <div className="stack">
-          <SectionCard kicker="Summary" title="Decision context" subtitle="Everything the operator needs before taking action.">
+          <SectionCard kicker="Summary" title="Decision context" subtitle="What matters before you act.">
             <div className="stack" style={{ gap: 14 }}>
               <div>
                 <strong>Description</strong>
@@ -109,11 +109,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
-          <SectionCard kicker="Billing" title="Charges and remittances" subtitle="Use only when the request creates a tenant chargeback or vendor payment record.">
+          <SectionCard kicker="Billing" title="Charges and payments" subtitle="Use when the request creates a chargeback or vendor payment.">
             <div className="stack" style={{ gap: 16 }}>
               <div className="card" style={{ padding: 16, background: 'var(--panel)' }}>
                 <div className="kicker">Tenant responsibility</div>
-                <h3 style={{ marginTop: 4 }}>Bill-back decision</h3>
+                <h3 style={{ marginTop: 4 }}>Bill-back</h3>
                 <div className="muted" style={{ marginBottom: 12 }}>
                   Current: {data.request.tenantBillbackDecision ?? 'none'}
                   {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
@@ -148,7 +148,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
-          <SectionCard kicker="Tender" title="Vendor bids and invitations" subtitle="Real tender state, not fake single-vendor assignment.">
+          <SectionCard kicker="Tender" title="Vendor bids and invites" subtitle="Tender state for this request.">
             {data.tenders.length ? data.tenders.map((tender) => (
               <div key={tender.id} className="stack" style={{ gap: 10, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                 <div>
@@ -174,10 +174,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   ))}
                 </div>
               </div>
-            )) : <div className="muted">No tender rounds yet.</div>}
+            )) : <div className="muted">No tenders yet.</div>}
           </SectionCard>
 
-          <SectionCard kicker="Dispatch" title="Vendor execution history" subtitle="What has happened in the field so far.">
+          <SectionCard kicker="Dispatch" title="Vendor execution" subtitle="Field activity so far.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>
@@ -192,7 +192,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 ) : null}
                 <div className="muted">{entry.actorName} · {new Date(entry.createdAt).toLocaleString()}</div>
               </div>
-            )) : <div className="muted">No dispatch activity yet.</div>}
+            )) : <div className="muted">No dispatch activity.</div>}
           </SectionCard>
 
           <AuditLogList
@@ -208,7 +208,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               }))}
           />
 
-          <SectionCard kicker="Timeline" title="Status activity" subtitle="How the request has moved.">
+          <SectionCard kicker="Timeline" title="Status activity" subtitle="How it has moved.">
             {data.events.length ? data.events.map((event) => (
               <div key={event.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>
@@ -216,16 +216,16 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="muted">{event.actorName} · {new Date(event.createdAt).toLocaleString()}</div>
               </div>
-            )) : <div className="muted">No status changes yet.</div>}
+            )) : <div className="muted">No status changes.</div>}
           </SectionCard>
         </div>
 
         <div className="stack">
-          <SectionCard kicker="Control" title="Operator actions" subtitle="The core decision surface for this request.">
+          <SectionCard kicker="Control" title="Actions" subtitle="Core controls for this request.">
             {data.recommendedVendors.length ? (
               <div className="notice success">Recommended vendors: {data.recommendedVendors.map((vendor) => vendor.name).join(', ')}</div>
             ) : (
-              <div className="muted">No strong vendor match yet for this request profile.</div>
+              <div className="muted">No strong vendor match yet.</div>
             )}
             <StatusVendorPanel
               requestId={data.request.id}
@@ -261,7 +261,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             ) : <div className="muted">No issue intake photos uploaded.</div>}
           </SectionCard>
 
-          <SectionCard kicker="Vendor evidence" title="Field photos from vendor updates">
+          <SectionCard kicker="Vendor evidence" title="Field photos">
             {vendorPhotos.length ? (
               <div className="photo-grid">
                 {vendorPhotos.map((photo) => (
@@ -271,10 +271,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   </a>
                 ))}
               </div>
-            ) : <div className="muted">No vendor evidence photos yet.</div>}
+            ) : <div className="muted">No vendor photos yet.</div>}
           </SectionCard>
 
-          <SectionCard kicker="Communication" title="Comments and updates">
+          <SectionCard kicker="Communication" title="Comments">
             {data.comments.length ? data.comments.map((comment) => (
               <div key={comment.id} className="commentRow">
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
@@ -286,7 +286,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div>{comment.body}</div>
                 <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
               </div>
-            )) : <div className="muted">No comments yet.</div>}
+            )) : <div className="muted">No comments.</div>}
             <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
               <AddCommentForm requestId={data.request.id} />
             </div>

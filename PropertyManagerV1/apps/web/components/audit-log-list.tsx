@@ -18,7 +18,7 @@ export function AuditLogList({ title, items }: { title: string; items: AuditLogI
           <div style={{ fontWeight: 600 }}>{item.summary}</div>
           <div className="muted">{item.actorName ?? 'System'} · {new Date(item.createdAt).toLocaleString()}</div>
         </div>
-      )) : <div className="muted">No audit events yet.</div>}
+      )) : <div className="muted">No activity yet.</div>}
     </section>
   )
 }

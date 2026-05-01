@@ -15,7 +15,7 @@ export default async function LoginPage({
           <h2 style={{ margin: '4px 0 0' }}>Landlord sign in</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Sign in to manage your properties, maintenance requests, and tenant communications.
+          Sign in to manage maintenance work.
         </p>
         <LoginForm error={error} />
       </div>

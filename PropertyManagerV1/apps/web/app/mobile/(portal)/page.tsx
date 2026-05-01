@@ -21,20 +21,20 @@ export default async function TenantMobileDashboardPage() {
         <div className="card">
           <div className="kicker">Open requests</div>
           <h2>{openRequests.length}</h2>
-          <div className="muted">Currently active</div>
+          <div className="muted">Active now</div>
         </div>
         <div className="card">
           <div className="kicker">All requests</div>
           <h2>{requests.length}</h2>
-          <div className="muted">Request history for your unit</div>
+          <div className="muted">Full history</div>
         </div>
       </section>
 
       <section className="card stack">
         <div className="row">
           <div>
-            <div className="kicker">Your maintenance history</div>
-            <h3 style={{ marginTop: 4 }}>Requests for this unit</h3>
+            <div className="kicker">Requests</div>
+            <h3 style={{ marginTop: 4 }}>This unit</h3>
           </div>
         </div>
         {requests.length ? requests.map((request) => (
@@ -51,7 +51,7 @@ export default async function TenantMobileDashboardPage() {
             </div>
           </Link>
         )) : (
-          <div className="muted">No maintenance requests yet.</div>
+          <div className="muted">No requests yet.</div>
         )}
       </section>
     </div>

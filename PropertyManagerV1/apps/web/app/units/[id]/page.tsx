@@ -168,7 +168,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             </tbody>
           </table>
         ) : (
-          <div className="muted">No maintenance requests for this unit yet.</div>
+          <div className="muted">No requests for this unit yet.</div>
         )}
       </section>
     </div>

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage } from '@/lib/notify'
@@ -194,7 +195,7 @@ export async function updateVendorFormAction(
       })
       if (vendors.length !== tenderVendorIds.length) return { error: 'One or more selected vendors were not found.' }
 
-      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      const appUrl = getAppBaseUrl('vendor tender notifications')
       const tender = await prisma.requestTender.create({
         data: {
           requestId,
@@ -338,7 +339,7 @@ export async function updateVendorFormAction(
 
     if (vendorName && vendorEmail) {
       const dispatchLink = vendorId ? await createVendorDispatchLink(requestId, vendorId).catch(() => null) : null
-      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      const appUrl = getAppBaseUrl('vendor dispatch notifications')
       notificationPayload = {
         requestId,
         title: updated.title,

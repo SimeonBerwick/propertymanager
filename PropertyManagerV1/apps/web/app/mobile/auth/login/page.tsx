@@ -7,7 +7,7 @@ export default function ReturningLoginPage() {
         <div className="kicker">Tenant portal</div>
         <h2 style={{ marginTop: 4 }}>Sign back in</h2>
       </div>
-      <div className="muted">Enter the email attached to your tenant access. Phone login is deferred from V1.</div>
+      <div className="muted">Enter the email tied to your access.</div>
       <ReturningLoginForm />
     </div>
   )

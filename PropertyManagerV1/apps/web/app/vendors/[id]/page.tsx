@@ -99,7 +99,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
             </tbody>
           </table>
         ) : (
-          <div className="muted">No assigned request history for this vendor yet.</div>
+          <div className="muted">No request history for this vendor yet.</div>
         )}
       </section>
     </div>

@@ -17,7 +17,7 @@ export default async function PropertiesPage() {
         <div className="kicker">Properties</div>
         <h2 style={{ margin: '4px 0 0' }}>No properties yet</h2>
         <p className="muted" style={{ margin: 0 }}>
-          No properties have been added yet.
+          Add your first property to start tracking work.
         </p>
         <Link href="/properties/new" className="button primary" style={{ alignSelf: 'flex-start' }}>
           Add first property

@@ -43,7 +43,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Appointment</div>
-          <h3 style={{ marginTop: 4 }}>Vendor schedule and contact</h3>
+          <h3 style={{ marginTop: 4 }}>Schedule and contact</h3>
         </div>
         {request.assignedVendorName ? (
           <div className="stack" style={{ gap: 6 }}>
@@ -69,9 +69,9 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         <section className="card stack">
           <div>
             <div className="kicker">Need to stop this request?</div>
-            <h3 style={{ marginTop: 4 }}>Cancel request</h3>
+            <h3 style={{ marginTop: 4 }}>Cancel</h3>
           </div>
-          <div className="muted">You can cancel before the work is fully underway.</div>
+          <div className="muted">You can cancel before work is underway.</div>
           <TenantRequestCancelForm requestId={request.id} />
         </section>
       ) : null}
@@ -79,7 +79,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Vendor updates</div>
-          <h3 style={{ marginTop: 4 }}>Dispatch timeline</h3>
+          <h3 style={{ marginTop: 4 }}>Vendor timeline</h3>
         </div>
         {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
           <div key={entry.id}>
@@ -116,7 +116,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Comments</div>
-          <h3 style={{ marginTop: 4 }}>Tenant-visible notes</h3>
+          <h3 style={{ marginTop: 4 }}>Visible notes</h3>
         </div>
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id}>
@@ -129,7 +129,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Photos</div>
-          <h3 style={{ marginTop: 4 }}>Uploaded images</h3>
+          <h3 style={{ marginTop: 4 }}>Images</h3>
         </div>
         {request.photos.length ? (
           <div className="photo-grid">

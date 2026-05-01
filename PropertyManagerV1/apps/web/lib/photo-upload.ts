@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
+import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
+import { hasR2StorageConfig } from '@/lib/runtime-env'
 
 export const MAX_PHOTO_COUNT = 5
 export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
@@ -51,7 +53,12 @@ export async function savePhotos(files: File[]) {
     const storagePath = `${UPLOAD_SUBDIRECTORY}/${filename}`
     const bytes = Buffer.from(await file.arrayBuffer())
 
-    await writeFile(diskPath, bytes)
+    await saveStoredMedia(storagePath, bytes, file.type || 'application/octet-stream')
+
+    if (!hasR2StorageConfig()) {
+      await writeFile(diskPath, bytes)
+    }
+
     savedPaths.push(storagePath)
   }
 
@@ -61,6 +68,8 @@ export async function savePhotos(files: File[]) {
 export async function cleanupPhotos(photoPaths: string[]) {
   await Promise.all(
     photoPaths.map(async (photoPath) => {
+      await deleteStoredMedia(photoPath)
+
       const diskPath = path.join(process.cwd(), photoPath)
       try {
         await unlink(diskPath)

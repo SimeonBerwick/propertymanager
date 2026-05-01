@@ -10,6 +10,7 @@
  * propagate back to the caller so a failed email never breaks a user action.
  */
 
+import { getRuntimeFailures, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
@@ -60,9 +61,19 @@ export async function sendNotification(msg: NotificationMessage): Promise<{ ok: 
   try {
     if (process.env.NOTIFY_TRANSPORT === 'smtp') {
       await sendViaSmtp(msg)
-    } else {
-      sendViaLog(msg)
+      return { ok: true }
     }
+
+    if (isHostedRuntimeEnforced()) {
+      const failures = getRuntimeFailures(['notifications'])
+      console.error(
+        '[NOTIFY] Hosted runtime is not allowed to fall back to log delivery:',
+        failures.map((failure) => `${failure.label} — ${failure.detail}`).join(' | '),
+      )
+      return { ok: false }
+    }
+
+    sendViaLog(msg)
     return { ok: true }
   } catch (err) {
     console.error('[NOTIFY] Transport error — notification was not delivered:', err)

@@ -6,6 +6,7 @@ import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { logout } from '@/lib/auth-actions'
 import { isDatabaseAvailable } from '@/lib/db-status'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export const metadata = {
   title: 'Property Manager V1',
@@ -17,7 +18,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const dbAvailable = await isDatabaseAvailable()
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body>
         <div className="page">
           {!dbAvailable && (
@@ -39,21 +40,24 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <header className="header">
             <div>
               <div className="kicker">Property Manager V1</div>
-              <h1 style={{ margin: '4px 0 0' }}>Maintenance Mission Control</h1>
+              <h1 style={{ margin: '4px 0 0' }}>Maintenance Ops</h1>
             </div>
-            {session.isLoggedIn && (
-              <nav className="nav">
-                <Link href="/dashboard">Dashboard</Link>
-                <Link href="/exceptions">Exceptions</Link>
-                <Link href="/ops">Ops</Link>
-                <Link href="/properties">Properties</Link>
-                <Link href="/vendors">Vendors</Link>
-                <Link href="/reports">Reports</Link>
-                <form action={logout}>
-                  <button type="submit" className="button">Sign out</button>
-                </form>
-              </nav>
-            )}
+            <div className="nav">
+              <ThemeToggle />
+              {session.isLoggedIn && (
+                <>
+                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href="/exceptions">Exceptions</Link>
+                  <Link href="/ops">Ops</Link>
+                  <Link href="/properties">Properties</Link>
+                  <Link href="/vendors">Vendors</Link>
+                  <Link href="/reports">Reports</Link>
+                  <form action={logout}>
+                    <button type="submit" className="button">Sign out</button>
+                  </form>
+                </>
+              )}
+            </div>
           </header>
           {children}
         </div>

@@ -36,11 +36,11 @@ export default async function ExceptionsPage() {
     <div className="stack">
       <section className="card stack">
         <div>
-          <div className="kicker">Mission Control</div>
-          <h2 style={{ margin: '4px 0 0' }}>Exceptions</h2>
+          <div className="kicker">Exceptions</div>
+          <h2 style={{ margin: '4px 0 0' }}>Needs attention</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          This is the operator queue for auto-flagged and review-blocked requests, sorted by pressure with unclaimed work first. Use the main dashboard for claim-state slices like unclaimed, stale claimed, and my claims.
+          Auto-flagged and review-blocked work, sorted by pressure.
         </p>
         <SendSummaryForm />
       </section>
@@ -48,7 +48,7 @@ export default async function ExceptionsPage() {
       <section className="card stack">
         <div>
           <div className="kicker">Exception queue</div>
-          <h3 style={{ marginTop: 4 }}>Requests needing active operator attention</h3>
+          <h3 style={{ marginTop: 4 }}>Active queue</h3>
         </div>
         {exceptionRequests.length ? (
           <div className="stack" style={{ gap: 12 }}>

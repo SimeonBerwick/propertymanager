@@ -6,7 +6,7 @@ import { BillingDocumentActions } from '@/components/billing-document-actions'
 
 export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
-    return <div className="muted">No billing documents yet.</div>
+    return <div className="muted">No billing docs yet.</div>
   }
 
   return (
@@ -31,7 +31,7 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               </div>
             </div>
             <div className="billingActionsRow">
-              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open document</Link>
+              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open doc</Link>
               <BillingStatusForm document={doc} />
               <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} status={doc.status} />
             </div>

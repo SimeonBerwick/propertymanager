@@ -75,9 +75,9 @@ export default async function DashboardPage({
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
-            <div className="kicker">Mission control</div>
-            <h1 className="pageTitle">Maintenance triage, not spreadsheet theater.</h1>
-            <div className="muted">Surface what needs action now, what is drifting, and what can be cleared fastest.</div>
+            <div className="kicker">Dashboard</div>
+            <h1 className="pageTitle">Maintenance queue</h1>
+            <div className="muted">See what needs action now and clear it fast.</div>
           </div>
           <div className="requestHeroMeta">
             <Link href="/submit" className="button primary">Tenant issue form</Link>
@@ -165,9 +165,9 @@ export default async function DashboardPage({
 
       <SectionCard
         kicker="Inbox"
-        title="Operator request queue"
-        subtitle="Scan fast. Open the right request. Move it forward without guessing."
-        action={<Link href="/dashboard" className="button">Reset view</Link>}
+        title="Request queue"
+        subtitle="Scan fast and move the right request forward."
+        action={<Link href="/dashboard" className="button">Clear filters</Link>}
       >
         <form method="get" className="filtersRow">
           <input type="hidden" name="queue" value={selectedQueue} />
@@ -198,7 +198,7 @@ export default async function DashboardPage({
               <option value="oldest">Oldest to newest</option>
             </select>
           </label>
-          <button type="submit" className="button">Apply filters</button>
+          <button type="submit" className="button">Filter</button>
         </form>
 
         <div className="filterChipRow">
@@ -214,8 +214,8 @@ export default async function DashboardPage({
 
         {selectedQueue !== 'all' || selectedClaimedBy ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue !== 'all' ? selectedQueue : 'all'}{selectedOperatorName ? ` · operator ${selectedOperatorName}` : ''}</div> : null}
         <div className="notice">
-          Showing the top {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work is prioritized first, then sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
-          {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
+          Showing {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work comes first, then {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+          {filteredRequests.length > focusNow.length ? ' Narrow the filters to see the rest.' : ''}
         </div>
 
         <div className="inboxList">
@@ -245,7 +245,7 @@ export default async function DashboardPage({
                   <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
                   <div className="muted">Scheduled start</div>
                 </div>
-                <Link href={`/requests/${request.id}`} className="button primary">Open request</Link>
+                <Link href={`/requests/${request.id}`} className="button primary">Open</Link>
               </div>
             </div>
           ))}
