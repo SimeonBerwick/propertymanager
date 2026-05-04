@@ -10,6 +10,7 @@ import {
   recordRateLimitFailure,
 } from '@/lib/auth-rate-limit';
 import type { AppRole } from '@/lib/permissions';
+import { getRequestClientContext } from '@/lib/request-client';
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -35,9 +36,10 @@ export async function login(formData: FormData) {
       redirect('/auth?error=Choose%20a%20valid%20role%20to%20continue.');
     }
 
+    const client = await getRequestClientContext();
     const rateLimit = {
       scope: `password-login:${role}`,
-      bucket: buildRateLimitBucket([role, email]),
+      bucket: buildRateLimitBucket([client.clientHint, role, email]),
       maxAttempts: 5,
       windowMs: 1000 * 60 * 15,
       blockMs: 1000 * 60 * 15,
@@ -60,9 +62,10 @@ export async function login(formData: FormData) {
     }
 
     if (['operator', 'tenant', 'vendor'].includes(role) && email) {
+      const client = await getRequestClientContext();
       await recordRateLimitFailure({
         scope: `password-login:${role}`,
-        bucket: buildRateLimitBucket([role, email]),
+        bucket: buildRateLimitBucket([client.clientHint, role, email]),
         maxAttempts: 5,
         windowMs: 1000 * 60 * 15,
         blockMs: 1000 * 60 * 15,

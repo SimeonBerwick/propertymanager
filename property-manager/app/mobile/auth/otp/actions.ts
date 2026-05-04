@@ -11,16 +11,17 @@ import {
   enforceRateLimit,
   recordRateLimitFailure,
 } from '@/lib/auth-rate-limit';
+import { getRequestClientContext } from '@/lib/request-client';
 
 function getString(formData: FormData, key: string) {
   const v = formData.get(key);
   return typeof v === 'string' ? v.trim() : '';
 }
 
-function getOtpVerifyRateLimit(challengeId: string) {
+function getOtpVerifyRateLimit(challengeId: string, clientHint: string) {
   return {
     scope: 'mobile-otp-verify',
-    bucket: buildRateLimitBucket([challengeId]),
+    bucket: buildRateLimitBucket([clientHint, challengeId]),
     maxAttempts: 10,
     windowMs: 1000 * 60 * 15,
     blockMs: 1000 * 60 * 15,
@@ -36,7 +37,8 @@ export async function submitOtp(formData: FormData) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&inviteId=${encodeURIComponent(inviteId)}&error=${encodeURIComponent('Enter the 6-digit code.')}` as never);
   }
 
-  const rateLimit = getOtpVerifyRateLimit(challengeId);
+  const client = await getRequestClientContext();
+  const rateLimit = getOtpVerifyRateLimit(challengeId, client.clientHint);
   const decision = await enforceRateLimit(rateLimit);
   if (!decision.ok) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&inviteId=${encodeURIComponent(inviteId)}&error=${encodeURIComponent('Too many verification attempts. Please wait a few minutes and try again.')}` as never);
@@ -82,6 +84,7 @@ export async function submitOtp(formData: FormData) {
     invite.tenantId,
     invite.propertyId,
     invite.unitId,
+    { ip: client.ip, userAgent: client.userAgent },
   );
 
   await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
@@ -97,7 +100,8 @@ export async function submitReturningOtp(formData: FormData) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&error=${encodeURIComponent('Enter the 6-digit code.')}` as never);
   }
 
-  const rateLimit = getOtpVerifyRateLimit(challengeId);
+  const client = await getRequestClientContext();
+  const rateLimit = getOtpVerifyRateLimit(challengeId, client.clientHint);
   const decision = await enforceRateLimit(rateLimit);
   if (!decision.ok) {
     redirect(`/mobile/auth/otp?challengeId=${encodeURIComponent(challengeId)}&error=${encodeURIComponent('Too many verification attempts. Please wait a few minutes and try again.')}` as never);
@@ -149,6 +153,7 @@ export async function submitReturningOtp(formData: FormData) {
     identity.tenantId,
     identity.propertyId,
     identity.unitId,
+    { ip: client.ip, userAgent: client.userAgent },
   );
 
   await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);

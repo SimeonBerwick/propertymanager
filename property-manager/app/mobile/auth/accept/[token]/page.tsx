@@ -9,6 +9,7 @@ import {
 } from '@/lib/auth-rate-limit';
 import { deliverOtp } from '@/lib/otp-transport';
 import { prisma } from '@/lib/prisma';
+import { getRequestClientContext } from '@/lib/request-client';
 
 interface Props {
   params: Promise<{ token: string }>;
@@ -16,10 +17,11 @@ interface Props {
 
 export default async function AcceptInvitePage({ params }: Props) {
   const { token } = await params;
+  const client = await getRequestClientContext();
 
   const rateLimit = {
     scope: 'mobile-invite-accept',
-    bucket: buildRateLimitBucket([token]),
+    bucket: buildRateLimitBucket([client.clientHint, token]),
     maxAttempts: 5,
     windowMs: 1000 * 60 * 10,
     blockMs: 1000 * 60 * 10,
@@ -60,9 +62,23 @@ export default async function AcceptInvitePage({ params }: Props) {
     redirect(`/mobile/auth?error=${encodeURIComponent('No contact address on file. Contact your property manager.')}` as never);
   }
 
+  const otpCreateRateLimit = {
+    scope: 'mobile-otp-create',
+    bucket: buildRateLimitBucket([client.clientHint, result.tenantIdentityId]),
+    maxAttempts: 5,
+    windowMs: 1000 * 60 * 10,
+    blockMs: 1000 * 60 * 10,
+  };
+
+  const otpCreateDecision = await enforceRateLimit(otpCreateRateLimit);
+  if (!otpCreateDecision.ok) {
+    redirect(`/mobile/auth?error=${encodeURIComponent('Too many verification attempts. Please wait a few minutes and try again.')}` as never);
+  }
+
   const rateCheck = await checkOtpCreationRateLimit(result.tenantIdentityId);
   if (rateCheck.limited) {
     await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
+    await clearRateLimitFailures(otpCreateRateLimit.scope, otpCreateRateLimit.bucket);
     const params_ = new URLSearchParams({
       challengeId: rateCheck.existingChallengeId,
       inviteId: result.inviteId,
@@ -83,11 +99,13 @@ export default async function AcceptInvitePage({ params }: Props) {
   try {
     await deliverOtp(channel, destination, otp.rawCode);
     await clearRateLimitFailures(rateLimit.scope, rateLimit.bucket);
+    await clearRateLimitFailures(otpCreateRateLimit.scope, otpCreateRateLimit.bucket);
     if (process.env.NODE_ENV !== 'production') {
       deliveryStatus = channel === 'SMS' ? 'sms-dev' : 'email-dev';
     }
   } catch (err) {
     await recordRateLimitFailure(rateLimit);
+    await recordRateLimitFailure(otpCreateRateLimit);
     console.error('[accept] OTP delivery failed:', err);
     redirect(`/mobile/auth?error=${encodeURIComponent('Could not send verification code. Please try again in a moment or contact your property manager.')}` as never);
   }
