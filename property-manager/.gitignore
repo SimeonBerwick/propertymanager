@@ -4,6 +4,8 @@ node_modules
 .env.local
 coverage
 prisma/dev.db
-prisma/prisma/dev.db-journal
+prisma/prisma/*.db
+prisma/prisma/*.db-journal
 public/uploads
 *.tsbuildinfo
+.vercel
