@@ -1,4 +1,5 @@
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { headers } from 'next/headers'
 import { authenticateLogin } from '@/lib/auth-actions'
 import { clearRateLimitState } from '@/lib/rate-limit'
 import { createUser } from '@/test/helpers'
@@ -13,6 +14,9 @@ function formData(fields: Record<string, string>) {
 describe('authenticateLogin', () => {
   beforeEach(() => {
     clearRateLimitState()
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => (name === 'x-forwarded-for' ? '198.51.100.10' : null)),
+    } as never)
   })
 
   test('authenticates a landlord with valid database credentials', async () => {
@@ -42,6 +46,26 @@ describe('authenticateLogin', () => {
 
     const blocked = await authenticateLogin(formData({ email: 'blocked-landlord@example.com', password: 'wrong-password' }))
     expect(blocked.error).toMatch(/too many login attempts/i)
+  })
+
+  test('failed attempts on one client do not block another client', async () => {
+    await createUser({
+      email: 'split-client-landlord@example.com',
+      passwordHash: hashPassword('right-password'),
+      role: 'landlord',
+    })
+
+    for (let i = 0; i < 4; i++) {
+      const result = await authenticateLogin(formData({ email: 'split-client-landlord@example.com', password: 'wrong-password' }))
+      expect(result.error).toMatch(/invalid email or password/i)
+    }
+
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => (name === 'x-forwarded-for' ? '203.0.113.20' : null)),
+    } as never)
+
+    const result = await authenticateLogin(formData({ email: 'split-client-landlord@example.com', password: 'wrong-password' }))
+    expect(result.error).toMatch(/invalid email or password/i)
   })
 
   test('successful login clears prior failed-attempt bucket', async () => {

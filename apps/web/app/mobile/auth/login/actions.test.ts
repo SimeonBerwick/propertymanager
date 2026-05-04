@@ -1,4 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { headers } from 'next/headers'
 import { startReturningLoginAction } from '@/app/mobile/auth/login/actions'
 import { clearRateLimitState } from '@/lib/rate-limit'
 import { scaffoldTenant, scaffoldLandlord, createActiveTenantIdentity } from '@/test/helpers'
@@ -22,6 +23,9 @@ function formData(fields: Record<string, string>) {
 describe('startReturningLoginAction', () => {
   beforeEach(() => {
     clearRateLimitState()
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => (name === 'x-forwarded-for' ? '198.51.100.10' : null)),
+    } as never)
   })
   test('returns error when identifier is empty', async () => {
     const result = await startReturningLoginAction(PREV, formData({ identifier: '' }))
@@ -88,5 +92,28 @@ describe('startReturningLoginAction', () => {
 
     const blocked = await startReturningLoginAction(PREV, formData({ identifier: email }))
     expect(blocked.error).toMatch(/too many code requests/i)
+  })
+
+  test('otp issuance throttle is isolated by client hint', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const email = 'tenant@example.com'
+    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
+
+    for (let i = 0; i < 2; i++) {
+      await expect(
+        startReturningLoginAction(PREV, formData({ identifier: email })),
+      ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
+    }
+
+    const blocked = await startReturningLoginAction(PREV, formData({ identifier: email }))
+    expect(blocked.error).toMatch(/too many code requests/i)
+
+    vi.mocked(headers).mockResolvedValue({
+      get: vi.fn().mockImplementation((name: string) => (name === 'x-forwarded-for' ? '203.0.113.20' : null)),
+    } as never)
+
+    await expect(
+      startReturningLoginAction(PREV, formData({ identifier: email })),
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
   })
 })
