@@ -45,6 +45,7 @@ export async function createOtpChallenge(
   tenantIdentityId: string,
   purpose: 'invite_login' | 'returning_login',
   channel: 'email',
+  options?: { clientHint?: string },
 ) {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId } })
 
@@ -57,7 +58,10 @@ export async function createOtpChallenge(
     throw new Error('Tenant identity is missing a delivery email.')
   }
 
-  const issueLimit = await takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
+  const issueLimit = await takeRateLimitHit(
+    `tenant-otp-issue:${options?.clientHint ?? 'unknown-client'}:${tenantIdentityId}:${purpose}:${channel}`,
+    OTP_ISSUE_RATE_LIMIT,
+  )
   if (!issueLimit.ok) {
     throw new OtpRateLimitError()
   }

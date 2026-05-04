@@ -8,6 +8,7 @@ import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } fro
 import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
+import { getRequestClientContext } from '@/lib/request-client'
 
 function logAuthError(stage: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -87,7 +88,8 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
     return { error: 'Email and password are required' }
   }
 
-  const rateLimitKey = `landlord-login:${normalizedEmail}`
+  const client = await getRequestClientContext()
+  const rateLimitKey = `landlord-login:${client.clientHint}:${normalizedEmail}`
   const rateLimit = await getRateLimitStatus(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
   if (!rateLimit.ok) {
     return { error: 'Too many login attempts. Try again later.' }
