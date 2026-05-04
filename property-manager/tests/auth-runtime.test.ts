@@ -141,7 +141,7 @@ before(async () => {
     return;
   }
 
-  await execFile('npm', ['run', 'prisma:db:push', '--', '--skip-generate'], {
+  await execFile('npm', ['run', 'prisma:db:push', '--', '--skip-generate', '--force-reset'], {
     env: {
       ...process.env,
       DATABASE_URL: runtimeDbUrl,

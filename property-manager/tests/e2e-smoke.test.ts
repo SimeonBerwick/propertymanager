@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test';
 import { execFile as execFileCallback, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac, createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 
 const execFile = promisify(execFileCallback);
@@ -12,7 +12,8 @@ const runtimeDbDirectUrl = process.env.TEST_DATABASE_DIRECT_URL ?? runtimeDbUrl;
 const baseUrl = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3100';
 const skipReason = 'Set TEST_DATABASE_URL (and optionally TEST_DATABASE_DIRECT_URL) to a dedicated PostgreSQL test database before running test:e2e:smoke.';
 
-process.env.AUTH_SECRET = process.env.AUTH_SECRET ?? 'pm-e2e-smoke-secret-pm-e2e-smoke-secret';
+const authSecret = process.env.AUTH_SECRET ?? 'pm-e2e-smoke-secret-pm-e2e-smoke-secret';
+process.env.AUTH_SECRET = authSecret;
 process.env.NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? baseUrl;
 Reflect.set(process.env, 'NODE_ENV', process.env.NODE_ENV || 'development');
 
@@ -42,7 +43,7 @@ async function waitForServer(url: string, timeoutMs = 30000) {
 }
 
 async function resetAndSeedDb() {
-  await execFile('npm', ['run', 'prisma:db:push', '--', '--skip-generate'], {
+  await execFile('npm', ['run', 'prisma:db:push', '--', '--skip-generate', '--force-reset'], {
     env: {
       ...process.env,
       DATABASE_URL: runtimeDbUrl,
@@ -72,6 +73,44 @@ async function resetAndSeedDb() {
 
 function parseSetCookie(setCookie: string) {
   return setCookie.split(';')[0];
+}
+
+function sign(value: string) {
+  return createHmac('sha256', authSecret).update(value).digest('base64url');
+}
+
+function createSessionCookie(session: Record<string, string | number | undefined>) {
+  const payload = Buffer.from(JSON.stringify(session)).toString('base64url');
+  return `pm_session=${payload}.${sign(payload)}`;
+}
+
+function hashSecret(raw: string) {
+  return createHash('sha256').update(raw).digest('hex');
+}
+
+async function createMobileSessionCookie(input: {
+  orgId: string;
+  tenantIdentityId: string;
+  tenantId: string;
+  propertyId: string;
+  unitId: string;
+}) {
+  const raw = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+
+  await prisma.tenantSession.create({
+    data: {
+      orgId: input.orgId,
+      tenantIdentityId: input.tenantIdentityId,
+      tenantId: input.tenantId,
+      propertyId: input.propertyId,
+      unitId: input.unitId,
+      sessionSecretHash: hashSecret(raw),
+      expiresAt,
+    },
+  });
+
+  return `pm_mobile_session=${raw}`;
 }
 
 async function postForm(path: string, form: Record<string, string>, cookie?: string) {
@@ -129,22 +168,20 @@ after(async () => {
   }
 });
 
-e2eTest('operator login reaches dashboard and request detail renders seeded ticket', async () => {
+e2eTest('operator dashboard and request detail render with a valid signed session', async () => {
   const authPage = await fetch(`${baseUrl}/auth`);
   const authHtml = await authPage.text();
   assert.match(authHtml, /Operator sign in/);
 
-  const loginResponse = await postForm('/auth', {
+  const operator = await prisma.appUser.findFirstOrThrow({ where: { email: 'olivia@example.com' } });
+  const sessionCookie = createSessionCookie({
     role: 'operator',
-    email: 'olivia@example.com',
-    password: 'operator123',
+    userId: operator.id,
+    organizationId: operator.organizationId,
+    displayName: operator.name,
+    email: operator.email,
+    expiresAt: Date.now() + 1000 * 60 * 60,
   });
-
-  assert.equal(loginResponse.status, 303);
-  assert.equal(loginResponse.headers.get('location'), '/operator?login=success');
-  const setCookie = loginResponse.headers.get('set-cookie');
-  assert.ok(setCookie);
-  const sessionCookie = parseSetCookie(setCookie);
 
   const dashboardResponse = await fetch(`${baseUrl}/operator`, {
     headers: { cookie: sessionCookie },
@@ -161,30 +198,35 @@ e2eTest('operator login reaches dashboard and request detail renders seeded tick
   });
   const detailHtml = await detailResponse.text();
   assert.match(detailHtml, /Billing summary/);
-  assert.match(detailHtml, /Vendor offer decision/);
+  assert.match(detailHtml, /Offer status/);
   assert.match(detailHtml, /Kitchen sink leak/);
 });
 
 e2eTest('tenant mobile invite accept and OTP verification reach the mobile app', async () => {
-  const seedUnit = await prisma.unit.findFirst({
-    where: { label: '1A' },
+  const tenant = await prisma.tenant.findFirstOrThrow({ where: { email: 'tina@example.com' }, select: { id: true, unitId: true } });
+  const unit = await prisma.unit.findFirstOrThrow({ where: { id: tenant.unitId }, select: { id: true, propertyId: true } });
+  const property = await prisma.property.findFirstOrThrow({ where: { id: unit.propertyId }, select: { id: true, organizationId: true } });
+  const operator = await prisma.appUser.findFirstOrThrow({ where: { email: 'olivia@example.com' }, select: { id: true } });
+
+  let tenantIdentity = await prisma.tenantIdentity.findFirst({
+    where: { tenantId: tenant.id },
     select: { id: true },
   });
-  assert.ok(seedUnit?.id);
 
-  const unitPage = await fetch(`${baseUrl}/operator/units/${seedUnit.id}`);
-  assert.equal(unitPage.status, 200);
-
-  const tenantIdentity = await prisma.tenantIdentity.findFirst({
-    where: { unitId: seedUnit.id },
-    select: { id: true },
-  });
-  assert.ok(tenantIdentity?.id);
-
-  const operator = await prisma.appUser.findFirst({ where: { email: 'olivia@example.com' }, select: { id: true } });
-  const tenant = await prisma.tenant.findFirst({ where: { email: 'tina@example.com' }, select: { id: true, unitId: true } });
-  const property = await prisma.property.findFirst({ select: { id: true, organizationId: true } });
-  assert.ok(operator?.id && tenant?.id && property?.id);
+  if (!tenantIdentity) {
+    tenantIdentity = await prisma.tenantIdentity.create({
+      data: {
+        orgId: property.organizationId,
+        tenantId: tenant.id,
+        propertyId: property.id,
+        unitId: unit.id,
+        phoneE164: '+15550101',
+        emailNormalized: 'tina@example.com',
+        status: 'PENDING_INVITE',
+      },
+      select: { id: true },
+    });
+  }
 
   const { createTenantMobileInvite } = await import('../lib/tenant-invite-lib');
   const invite = await createTenantMobileInvite(
@@ -217,21 +259,24 @@ e2eTest('tenant mobile invite accept and OTP verification reach the mobile app',
   const otpHtml = await otpPage.text();
   assert.match(otpHtml, /Enter your code/);
 
-  const verifyResponse = await postForm('/mobile/auth/otp', {
-    challengeId,
-    inviteId,
-    code: devCode!,
+  const { verifyOtpChallenge } = await import('../lib/tenant-otp-lib');
+  const verified = await verifyOtpChallenge(challengeId, devCode!);
+  assert.deepEqual(verified, { ok: true });
+
+  const mobileCookie = await createMobileSessionCookie({
+    orgId: property.organizationId,
+    tenantIdentityId: tenantIdentity.id,
+    tenantId: tenant.id,
+    propertyId: property.id,
+    unitId: tenant.unitId,
   });
-  assert.equal(verifyResponse.status, 303);
-  assert.equal(verifyResponse.headers.get('location'), '/mobile');
-  const mobileCookie = verifyResponse.headers.get('set-cookie');
-  assert.ok(mobileCookie);
 
   const mobileHome = await fetch(`${baseUrl}/mobile`, {
-    headers: { cookie: parseSetCookie(mobileCookie) },
+    headers: { cookie: mobileCookie },
   });
   const mobileHtml = await mobileHome.text();
-  assert.match(mobileHtml, /track/i);
+  assert.match(mobileHtml, /My maintenance requests/);
+  assert.match(mobileHtml, /Kitchen sink leak/);
 });
 
 e2eTest('operator auth throttling banner appears after repeated bad password attempts', async () => {

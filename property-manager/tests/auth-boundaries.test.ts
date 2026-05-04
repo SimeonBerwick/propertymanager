@@ -135,7 +135,7 @@ before(async () => {
   serverStartupLogs.length = 0;
 
   await run('npm', ['run', 'build']);
-  await run('npm', ['run', 'prisma:db:push', '--', '--skip-generate']);
+  await run('npm', ['run', 'prisma:db:push', '--', '--skip-generate', '--force-reset']);
   await run('npm', ['run', 'prisma:seed']);
 
   prisma = new PrismaClient({
