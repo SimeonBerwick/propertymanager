@@ -17,7 +17,7 @@ export async function GET() {
   }
 
   try {
-    await prisma.$queryRaw\`SELECT 1\`
+    await prisma.$queryRaw`SELECT 1`
     checks.database = true
   } catch (error) {
     return NextResponse.json({
