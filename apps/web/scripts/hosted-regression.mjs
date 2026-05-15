@@ -82,7 +82,11 @@ async function main() {
   const mobilePage = await fetchHtml('/mobile', { headers: { cookie: tenantCookie } })
   expectMatch(mobilePage.text, /Tenant portal|Request detail|Uploaded images|Cancel request|Vendor updates/, 'tenant mobile portal')
 
-  const firstRequestPath = findFirstHref(mobilePage.text, /href="(\/mobile\/requests\/[^\"]+)"/, 'tenant request link')
+  const firstRequestPath = findFirstHref(
+    mobilePage.text,
+    /href="(\/mobile\/requests\/(?!new(?:\"|\/|\?))[^\"?#]+(?:\?[^\"]*)?)"/,
+    'tenant request link',
+  )
   const requestPage = await fetchHtml(firstRequestPath, { headers: { cookie: tenantCookie } })
   expectMatch(requestPage.text, /Request detail/, 'tenant request detail')
   expectMatch(requestPage.text, /Uploaded images|No photos uploaded/, 'tenant request detail')
