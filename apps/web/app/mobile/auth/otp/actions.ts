@@ -8,6 +8,7 @@ import { verifyOtpChallenge } from '@/lib/tenant-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
 import { getRequestClientContext } from '@/lib/request-client'
+import { logAppEvent } from '@/lib/observability'
 
 export type OtpState = { error: string | null }
 
@@ -35,6 +36,7 @@ export async function verifyTenantOtpAction(_prev: OtpState, formData: FormData)
 
   const result = await verifyOtpChallenge(challengeId, code)
   if (!result.ok) {
+    await logAppEvent('warn', 'auth.mobile_otp.failed', { challengeId, code: result.code })
     const message = result.code === 'locked'
       ? 'Too many incorrect attempts. Try again later.'
       : result.code === 'expired'
@@ -67,6 +69,11 @@ export async function verifyTenantOtpAction(_prev: OtpState, formData: FormData)
     action: 'tenantIdentity.inviteOnboardingCompleted',
     summary: 'Completed invite-based tenant onboarding.',
     metadata: { inviteId, challengeId },
+  })
+  await logAppEvent('info', 'auth.mobile_otp.succeeded', {
+    challengeId,
+    inviteId,
+    tenantIdentityId: result.tenantIdentityId,
   })
   redirect('/mobile' as never)
 }

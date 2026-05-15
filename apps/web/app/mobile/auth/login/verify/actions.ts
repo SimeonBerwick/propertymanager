@@ -7,6 +7,7 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
 import { getRequestClientContext } from '@/lib/request-client'
+import { logAppEvent } from '@/lib/observability'
 
 export type ReturningVerifyState = { error: string | null }
 
@@ -36,6 +37,7 @@ export async function verifyReturningLoginAction(
 
   const result = await verifyOtpChallenge(challengeId, code)
   if (!result.ok) {
+    await logAppEvent('warn', 'auth.mobile_otp.failed', { challengeId, code: result.code, mode: 'returning' })
     const message = result.code === 'locked'
       ? 'Too many incorrect attempts. Try again later.'
       : result.code === 'expired'
@@ -56,6 +58,11 @@ export async function verifyReturningLoginAction(
     action: 'tenantIdentity.returningLoginCompleted',
     summary: 'Completed returning tenant login.',
     metadata: { challengeId },
+  })
+  await logAppEvent('info', 'auth.mobile_otp.succeeded', {
+    challengeId,
+    tenantIdentityId: result.tenantIdentityId,
+    mode: 'returning',
   })
   redirect('/mobile' as never)
 }
