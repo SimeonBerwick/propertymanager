@@ -8,7 +8,7 @@ import { logout } from '@/lib/auth-actions'
 import { isDatabaseAvailable } from '@/lib/db-status'
 
 export const metadata = {
-  title: 'Property Manager V1',
+  title: 'Property Manager',
   description: 'Maintenance command center for small landlords',
 }
 
@@ -38,8 +38,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           )}
           <header className="header">
             <div>
-              <div className="kicker">Property Manager V1</div>
-              <h1 style={{ margin: '4px 0 0' }}>Maintenance Mission Control</h1>
+              <div className="kicker">Property Manager</div>
+              <h1 style={{ margin: '4px 0 0' }}>Maintenance operations</h1>
             </div>
             {session.isLoggedIn && (
               <nav className="nav">

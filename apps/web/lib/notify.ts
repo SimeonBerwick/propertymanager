@@ -224,7 +224,7 @@ export interface StatusChangedParams {
 }
 
 const STATUS_LABELS: Record<RequestStatus, string> = {
-  requested: 'Requested, awaiting triage',
+  requested: 'Requested, awaiting review',
   approved: 'Approved, work can move forward',
   declined: 'Declined',
   vendor_selected: 'Vendor selected',
@@ -447,7 +447,7 @@ export interface LandlordExceptionSummaryParams {
 export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummaryParams): NotificationMessage {
   return {
     to: p.landlordEmail,
-    subject: `[Mission Control] Daily exception summary`,
+    subject: `[Operations] Daily exception summary`,
     text: [
       `Daily exception summary`,
       ``,

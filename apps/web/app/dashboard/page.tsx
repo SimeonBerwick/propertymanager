@@ -75,9 +75,9 @@ export default async function DashboardPage({
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
-            <div className="kicker">Mission control</div>
-            <h1 className="pageTitle">Maintenance triage, not spreadsheet theater.</h1>
-            <div className="muted">Surface what needs action now, what is drifting, and what can be cleared fastest.</div>
+            <div className="kicker">Operations overview</div>
+            <h1 className="pageTitle">Maintenance operations</h1>
+            <div className="muted">See what needs action now, what is drifting, and what can be cleared first.</div>
           </div>
           <div className="requestHeroMeta">
             <Link href="/submit" className="button primary">Tenant issue form</Link>
@@ -97,7 +97,7 @@ export default async function DashboardPage({
       <section className="grid cols-4">
         <div className="card metricCard metricDanger">
           <div>
-            <div className="kicker">Needs triage</div>
+            <div className="kicker">Needs review</div>
             <div className="metricValue">{data.statusCounts.requested + data.statusCounts.reopened}</div>
           </div>
           <div className="muted">Fresh requests still waiting on operator attention.</div>

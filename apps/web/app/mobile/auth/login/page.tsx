@@ -4,7 +4,7 @@ export default function ReturningLoginPage() {
   return (
     <div className="card stack" style={{ maxWidth: 560, margin: '48px auto' }}>
       <div>
-        <div className="kicker">Tenant portal</div>
+        <div className="kicker">Tenant access</div>
         <h2 style={{ marginTop: 4 }}>Sign back in</h2>
       </div>
       <div className="muted">Enter the email attached to your tenant access. Phone login is deferred from V1.</div>
