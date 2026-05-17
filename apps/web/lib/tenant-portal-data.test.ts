@@ -20,6 +20,8 @@ import { prisma } from '@/lib/prisma'
 import {
   buildTenantRequestOwnershipWhere,
   findReturningTenantIdentityByIdentifier,
+  getTenantOwnedRequestById,
+  getTenantOwnedRequestsForDashboard,
   getTenantOwnedPhotoById,
 } from '@/lib/tenant-portal-data'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
@@ -120,6 +122,26 @@ describe('findReturningTenantIdentityByIdentifier', () => {
     expect(result).toEqual({ ok: false, code: 'ambiguous' })
   })
 
+  test('finds active identity by current unit email when the identity email is stale and heals it', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const identity = await createTenantIdentity(user.id, property.id, unit.id, {
+      email: 'dummy@example.com',
+      status: 'active',
+    })
+    await prisma.unit.update({
+      where: { id: unit.id },
+      data: { tenantEmail: 'real@example.com' },
+    })
+
+    const result = await findReturningTenantIdentityByIdentifier('real@example.com')
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('expected ok')
+    expect(result.tenantIdentity.id).toBe(identity.id)
+
+    const healed = await prisma.tenantIdentity.findUnique({ where: { id: identity.id } })
+    expect(healed?.email).toBe('real@example.com')
+  })
+
   test('returns invalid for empty identifier', async () => {
     const result = await findReturningTenantIdentityByIdentifier('')
     expect(result).toEqual({ ok: false, code: 'invalid' })
@@ -213,5 +235,165 @@ describe('getTenantOwnedPhotoById', () => {
 
     const result = await getTenantOwnedPhotoById(photo.id, scope)
     expect(result).not.toBeNull()
+  })
+})
+
+describe('getTenantOwnedRequestById', () => {
+  function makeScope(
+    tenantIdentityId: string,
+    unitId: string,
+    email?: string,
+  ): TenantMobileScope {
+    return {
+      sessionId: 'sess1',
+      tenantIdentityId,
+      tenantId: tenantIdentityId,
+      orgId: 'org1',
+      propertyId: 'prop1',
+      unitId,
+      tenantName: 'Test',
+      phoneE164: '+16025551212',
+      email: email ?? null,
+      propertyName: 'Prop',
+      unitLabel: 'U1',
+    }
+  }
+
+  test('includes only tenant-visible active billing documents for the renter portal', async () => {
+    const { user, property, unit, identity } = await scaffoldTenant({
+      email: 'alice@example.com',
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      tenantIdentityId: identity.id,
+      submittedByEmail: 'alice@example.com',
+    })
+
+    await prisma.billingDocument.createMany({
+      data: [
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'sent',
+          currency: 'usd',
+          totalCents: 5000,
+          paidCents: 0,
+          title: 'Visible tenant invoice',
+        },
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'draft',
+          currency: 'usd',
+          totalCents: 6000,
+          paidCents: 0,
+          title: 'Hidden draft tenant invoice',
+        },
+        {
+          requestId: request.id,
+          recipientType: 'vendor',
+          documentType: 'vendor_remittance',
+          status: 'sent',
+          currency: 'usd',
+          totalCents: 7000,
+          paidCents: 0,
+          title: 'Hidden vendor remittance',
+        },
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'void',
+          currency: 'usd',
+          totalCents: 8000,
+          paidCents: 0,
+          title: 'Hidden voided invoice',
+        },
+      ],
+    })
+
+    const scope = makeScope(identity.id, unit.id, 'alice@example.com')
+    const result = await getTenantOwnedRequestById(request.id, scope)
+
+    expect(result).not.toBeNull()
+    expect(result?.billingDocuments.map((doc) => doc.title)).toEqual(['Visible tenant invoice'])
+  })
+})
+
+describe('getTenantOwnedRequestsForDashboard', () => {
+  function makeScope(
+    tenantIdentityId: string,
+    unitId: string,
+    email?: string,
+  ): TenantMobileScope {
+    return {
+      sessionId: 'sess1',
+      tenantIdentityId,
+      tenantId: tenantIdentityId,
+      orgId: 'org1',
+      propertyId: 'prop1',
+      unitId,
+      tenantName: 'Test',
+      phoneE164: '+16025551212',
+      email: email ?? null,
+      propertyName: 'Prop',
+      unitLabel: 'U1',
+    }
+  }
+
+  test('returns dashboard requests with only tenant-visible billing documents attached', async () => {
+    const { user, property, unit, identity } = await scaffoldTenant({
+      email: 'tenant@example.com',
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      tenantIdentityId: identity.id,
+      submittedByEmail: 'tenant@example.com',
+    })
+
+    await prisma.billingDocument.createMany({
+      data: [
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'sent',
+          currency: 'usd',
+          totalCents: 5000,
+          paidCents: 0,
+          title: 'Visible sent invoice',
+        },
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'partial',
+          currency: 'usd',
+          totalCents: 8000,
+          paidCents: 3000,
+          title: 'Visible partial invoice',
+        },
+        {
+          requestId: request.id,
+          recipientType: 'tenant',
+          documentType: 'tenant_invoice',
+          status: 'draft',
+          currency: 'usd',
+          totalCents: 6000,
+          paidCents: 0,
+          title: 'Hidden draft invoice',
+        },
+      ],
+    })
+
+    const results = await getTenantOwnedRequestsForDashboard(makeScope(identity.id, unit.id, 'tenant@example.com'))
+
+    expect(results).toHaveLength(1)
+    expect(results[0].billingDocuments.map((document) => document.title).sort()).toEqual([
+      'Visible partial invoice',
+      'Visible sent invoice',
+    ])
   })
 })

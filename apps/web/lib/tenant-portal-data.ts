@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
 
+const TENANT_VISIBLE_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
+
 export function buildTenantRequestOwnershipWhere(session: TenantMobileScope) {
   const ownershipClauses: Array<{ tenantIdentityId: string } | { tenantIdentityId: null; submittedByEmail: string }> = [
     { tenantIdentityId: session.tenantIdentityId },
@@ -14,6 +16,26 @@ export function buildTenantRequestOwnershipWhere(session: TenantMobileScope) {
     unitId: session.unitId,
     OR: ownershipClauses,
   }
+}
+
+function tenantBillingDocumentsInclude() {
+  return {
+    where: {
+      recipientType: 'tenant' as const,
+      status: { in: [...TENANT_VISIBLE_BILLING_STATUSES] },
+    },
+    orderBy: { createdAt: 'desc' as const },
+  }
+}
+
+export async function getTenantOwnedRequestsForDashboard(session: TenantMobileScope) {
+  return prisma.maintenanceRequest.findMany({
+    where: buildTenantRequestOwnershipWhere(session),
+    include: {
+      billingDocuments: tenantBillingDocumentsInclude(),
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 }
 
 export async function getTenantOwnedRequestById(requestId: string, session: TenantMobileScope) {
@@ -38,6 +60,7 @@ export async function getTenantOwnedRequestById(requestId: string, session: Tena
         orderBy: { createdAt: 'asc' },
         include: { vendor: true },
       },
+      billingDocuments: tenantBillingDocumentsInclude(),
     },
   })
 }
@@ -63,9 +86,37 @@ export async function findReturningTenantIdentityByIdentifier(identifier: string
   const where = { email: trimmed, status: 'active' as const }
   const matches = await prisma.tenantIdentity.findMany({ where })
 
-  if (matches.length !== 1) {
-    return { ok: false as const, code: matches.length > 1 ? 'ambiguous' as const : 'invalid' as const }
+  if (matches.length > 1) {
+    return { ok: false as const, code: 'ambiguous' as const }
   }
 
-  return { ok: true as const, tenantIdentity: matches[0] }
+  if (matches.length === 1) {
+    return { ok: true as const, tenantIdentity: matches[0] }
+  }
+
+  const fallbackMatches = await prisma.tenantIdentity.findMany({
+    where: {
+      status: 'active',
+      unit: { tenantEmail: trimmed },
+    },
+    include: {
+      unit: {
+        select: { tenantEmail: true },
+      },
+    },
+  })
+
+  if (fallbackMatches.length !== 1) {
+    return { ok: false as const, code: fallbackMatches.length > 1 ? 'ambiguous' as const : 'invalid' as const }
+  }
+
+  const fallbackMatch = fallbackMatches[0]
+  if (fallbackMatch.email !== trimmed) {
+    await prisma.tenantIdentity.update({
+      where: { id: fallbackMatch.id },
+      data: { email: trimmed },
+    })
+  }
+
+  return { ok: true as const, tenantIdentity: fallbackMatch }
 }

@@ -143,9 +143,6 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
           <span className="field-label">Preferred currency</span>
           <select className="input" name="preferredCurrency" defaultValue="usd" required>
             <option value="usd">US Dollar</option>
-            <option value="peso">Peso</option>
-            <option value="pound">Pound</option>
-            <option value="euro">Euro</option>
           </select>
         </label>
 

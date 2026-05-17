@@ -62,7 +62,7 @@ export async function submitMaintenanceRequest(
     return { error: 'All required fields must be filled in.' }
   }
 
-  if (!['usd', 'peso', 'pound', 'euro'].includes(preferredCurrency)) {
+  if (preferredCurrency !== 'usd') {
     return { error: 'Choose a valid preferred currency.' }
   }
 

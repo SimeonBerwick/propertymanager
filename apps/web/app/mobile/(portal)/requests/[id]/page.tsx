@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 import { currencyLabel, languageLabel } from '@/lib/types'
+import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { TenantRequestCancelForm } from './cancel-form'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -43,7 +44,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Appointment</div>
-          <h3 style={{ marginTop: 4 }}>Vendor schedule and contact</h3>
+          <h3 style={{ marginTop: 4 }}>Schedule and contact</h3>
         </div>
         {request.assignedVendorName ? (
           <div className="stack" style={{ gap: 6 }}>
@@ -69,9 +70,9 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         <section className="card stack">
           <div>
             <div className="kicker">Need to stop this request?</div>
-            <h3 style={{ marginTop: 4 }}>Cancel request</h3>
+            <h3 style={{ marginTop: 4 }}>Cancel</h3>
           </div>
-          <div className="muted">You can cancel before the work is fully underway.</div>
+          <div className="muted">You can cancel before work is underway.</div>
           <TenantRequestCancelForm requestId={request.id} />
         </section>
       ) : null}
@@ -79,7 +80,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Vendor updates</div>
-          <h3 style={{ marginTop: 4 }}>Dispatch timeline</h3>
+          <h3 style={{ marginTop: 4 }}>Vendor timeline</h3>
         </div>
         {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
           <div key={entry.id}>
@@ -116,7 +117,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Comments</div>
-          <h3 style={{ marginTop: 4 }}>Tenant-visible notes</h3>
+          <h3 style={{ marginTop: 4 }}>Visible notes</h3>
         </div>
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id}>
@@ -128,8 +129,36 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
 
       <section className="card stack">
         <div>
+          <div className="kicker">Billing</div>
+          <h3 style={{ marginTop: 4 }}>Charges for this request</h3>
+        </div>
+        {request.billingDocuments.length ? request.billingDocuments.map((document) => {
+          const balanceCents = document.totalCents - document.paidCents
+
+          return (
+            <div key={document.id} className="timelineRow">
+              <div style={{ fontWeight: 600 }}>{document.title}</div>
+              {document.description ? <div>{document.description}</div> : null}
+              <div className="muted">
+                {billingStatusLabel(document.status)} · {new Date(document.createdAt).toLocaleString()}
+              </div>
+              <div className="muted">
+                Total: {formatMoney(document.totalCents, document.currency)} · Paid: {formatMoney(document.paidCents, document.currency)} · Balance: {formatMoney(balanceCents, document.currency)}
+              </div>
+              {document.pdfUrl ? (
+                <div>
+                  <a href={`/api/billing/${document.id}`} target="_blank" rel="noreferrer">Open invoice</a>
+                </div>
+              ) : null}
+            </div>
+          )
+        }) : <div className="muted">No renter charges posted yet.</div>}
+      </section>
+
+      <section className="card stack">
+        <div>
           <div className="kicker">Photos</div>
-          <h3 style={{ marginTop: 4 }}>Uploaded images</h3>
+          <h3 style={{ marginTop: 4 }}>Images</h3>
         </div>
         {request.photos.length ? (
           <div className="photo-grid">

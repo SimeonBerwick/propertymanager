@@ -9,9 +9,11 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 export type MobileRequestState = { error: string | null }
 
 function isRedirectLikeError(error: unknown) {
-  if (!(error instanceof Error)) return false
-  const digest = 'digest' in error ? String((error as Error & { digest?: string }).digest ?? '') : ''
-  return error.message.startsWith('NEXT_REDIRECT:') || digest.startsWith('NEXT_REDIRECT:')
+  if (!error || typeof error !== 'object') return false
+  const maybe = error as { message?: unknown; digest?: unknown }
+  const message = typeof maybe.message === 'string' ? maybe.message : ''
+  const digest = typeof maybe.digest === 'string' ? maybe.digest : ''
+  return message.startsWith('NEXT_REDIRECT:') || digest.startsWith('NEXT_REDIRECT:')
 }
 
 function deriveTriageMeta(preferredCurrency: string, preferredLanguage: string) {
@@ -50,7 +52,7 @@ export async function submitTenantMobileRequestAction(
     return { error: 'All fields are required.' }
   }
 
-  if (!['usd', 'peso', 'pound', 'euro'].includes(preferredCurrency)) {
+  if (preferredCurrency !== 'usd') {
     return { error: 'Choose a valid preferred currency.' }
   }
 
@@ -89,6 +91,7 @@ export async function submitTenantMobileRequestAction(
     return { error: 'This unit is no longer active for new requests. Contact your property manager.' }
   }
 
+  let requestId: string
   try {
     const request = await prisma.maintenanceRequest.create({
       data: {
@@ -118,13 +121,15 @@ export async function submitTenantMobileRequestAction(
         },
       },
     })
-
-    redirect(`/mobile/requests/${request.id}` as never)
+    requestId = request.id
   } catch (error) {
-    if (isRedirectLikeError(error)) {
-      throw error
-    }
+    console.error('[tenant-mobile] request submit failed', error)
     await cleanupPhotos(photoPaths)
+    if (process.env.NODE_ENV !== 'production' && error instanceof Error) {
+      return { error: `Could not submit your request. ${error.message}` }
+    }
     return { error: 'Could not submit your request. Please try again or contact the property manager.' }
   }
+
+  redirect(`/mobile/requests/${requestId}` as never)
 }
