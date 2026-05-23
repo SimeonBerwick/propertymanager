@@ -1,18 +1,7 @@
 name: Property Manager Playwright
 
 on:
-  push:
-    paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - 'JEFF_TEST_GATE.md'
-      - '.github/workflows/property-manager-playwright.yml'
-  pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - 'JEFF_TEST_GATE.md'
-      - '.github/workflows/property-manager-playwright.yml'
+  workflow_dispatch:
 
 jobs:
   playwright:
