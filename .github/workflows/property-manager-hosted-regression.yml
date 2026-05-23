@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
       - name: Run hosted regression smoke
         run: npm run test:hosted
         env:
