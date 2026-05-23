@@ -1,0 +1,47 @@
+name: Property Manager Hosted Regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'README.md'
+      - '.github/workflows/property-manager-hosted-regression.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'README.md'
+      - '.github/workflows/property-manager-hosted-regression.yml'
+
+jobs:
+  hosted-regression:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run hosted regression smoke
+        run: npm run test:hosted
+        env:
+          HOSTED_BASE_URL: ${{ secrets.PM_HOSTED_BASE_URL }}
+          HOSTED_SMOKE_TOKEN: ${{ secrets.PM_HOSTED_SMOKE_TOKEN }}
+          HOSTED_SMOKE_LANDLORD_EMAIL: ${{ secrets.PM_HOSTED_SMOKE_LANDLORD_EMAIL }}
+          HOSTED_SMOKE_TENANT_EMAIL: ${{ secrets.PM_HOSTED_SMOKE_TENANT_EMAIL }}
