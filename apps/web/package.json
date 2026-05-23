@@ -6,6 +6,7 @@
     "seed": "./node_modules/.bin/tsx prisma/seed.ts"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "dev:local": "SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-changeme} next dev",
     "build": "next build",
