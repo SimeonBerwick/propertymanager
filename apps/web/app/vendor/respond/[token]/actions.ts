@@ -61,6 +61,31 @@ export async function submitVendorResponse(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const currentRequest = await tx.maintenanceRequest.findUnique({
+        where: { id: validation.requestId },
+        select: {
+          assignedVendorId: true,
+          status: true,
+          submittedByEmail: true,
+          submittedByName: true,
+          title: true,
+          property: { select: { name: true } },
+          unit: { select: { label: true } },
+        },
+      })
+
+      if (!currentRequest) {
+        throw new Error('Request not found.')
+      }
+
+      const currentInvite = validation.tenderInviteId
+        ? await tx.tenderInvite.findUnique({
+            where: { id: validation.tenderInviteId },
+            select: { status: true },
+          })
+        : null
+      const canControlDispatch = currentRequest.assignedVendorId === validation.vendorId || currentInvite?.status === 'awarded'
+
       if (validation.tenderInviteId) {
         await tx.tenderInvite.update({
           where: { id: validation.tenderInviteId },
@@ -101,46 +126,54 @@ export async function submitVendorResponse(
               ? 'vendor_selected'
               : undefined
 
-      const updatedRequest = await tx.maintenanceRequest.update({
-        where: { id: validation.requestId },
-        data: {
-          dispatchStatus,
-          vendorScheduledStart: scheduledStart,
-          vendorScheduledEnd: scheduledEnd,
-          status: requestStatus,
-          reviewState,
-          reviewNote,
-        },
-        include: {
-          property: true,
-          unit: true,
-        },
-      })
+      if (canControlDispatch) {
+        await tx.maintenanceRequest.update({
+          where: { id: validation.requestId },
+          data: {
+            assignedVendorId: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
+            assignedVendorName: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
+            assignedVendorEmail: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
+            assignedVendorPhone: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
+            dispatchStatus,
+            vendorScheduledStart: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledStart,
+            vendorScheduledEnd: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledEnd,
+            status: requestStatus,
+            reviewState,
+            reviewNote,
+          },
+        })
+      }
 
-      if (updatedRequest.submittedByEmail && updatedRequest.submittedByName) {
+      if (canControlDispatch && currentRequest.submittedByEmail && currentRequest.submittedByName) {
         tenantNotification = {
-          tenantEmail: updatedRequest.submittedByEmail,
-          tenantName: updatedRequest.submittedByName,
-          requestId: updatedRequest.id,
-          title: updatedRequest.title,
-          propertyName: updatedRequest.property.name,
-          unitLabel: updatedRequest.unit.label,
+          tenantEmail: currentRequest.submittedByEmail,
+          tenantName: currentRequest.submittedByName,
+          requestId: validation.requestId,
+          title: currentRequest.title,
+          propertyName: currentRequest.property.name,
+          unitLabel: currentRequest.unit.label,
           vendorName: validation.vendorName,
         }
       }
 
-      const dispatchEvent = await tx.vendorDispatchEvent.create({
-        data: {
-          requestId: validation.requestId,
-          vendorId: validation.vendorId,
-          status: dispatchStatus,
-          note: [note, availabilityNote, bidAmountCents != null ? `Bid: USD ${(bidAmountCents / 100).toFixed(2)}` : null].filter(Boolean).join(' · ') || null,
-          scheduledStart,
-          scheduledEnd,
-        },
-      })
+      if (!canControlDispatch && savedPhotoPaths.length) {
+        throw new Error('Photos are only allowed for the awarded or assigned vendor.')
+      }
 
-      if (savedPhotoPaths.length) {
+      const dispatchEvent = canControlDispatch
+        ? await tx.vendorDispatchEvent.create({
+            data: {
+              requestId: validation.requestId,
+              vendorId: validation.vendorId,
+              status: dispatchStatus,
+              note: [note, availabilityNote, bidAmountCents != null ? `Bid: USD ${(bidAmountCents / 100).toFixed(2)}` : null].filter(Boolean).join(' · ') || null,
+              scheduledStart,
+              scheduledEnd,
+            },
+          })
+        : null
+
+      if (dispatchEvent && savedPhotoPaths.length) {
         await tx.maintenancePhoto.createMany({
           data: savedPhotoPaths.map((imageUrl) => ({
             requestId: validation.requestId,
@@ -152,11 +185,11 @@ export async function submitVendorResponse(
         })
       }
 
-      if (requestStatus && requestStatus !== updatedRequest.status) {
+      if (canControlDispatch && requestStatus && requestStatus !== currentRequest.status) {
         await tx.statusEvent.create({
           data: {
             requestId: validation.requestId,
-            fromStatus: updatedRequest.status,
+            fromStatus: currentRequest.status,
             toStatus: requestStatus,
             visibility: dispatchStatus === 'scheduled' || dispatchStatus === 'completed' ? 'tenant_visible' : 'internal',
           },

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
+import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 
 const TENANT_VISIBLE_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
 
@@ -48,6 +49,15 @@ export async function getTenantOwnedRequestById(requestId: string, session: Tena
       comments: {
         where: { visibility: 'external' },
         orderBy: { createdAt: 'asc' },
+        include: {
+          author: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
+          },
+        },
       },
       events: {
         where: { visibility: 'tenant_visible' },
@@ -84,7 +94,7 @@ export async function findReturningTenantIdentityByIdentifier(identifier: string
   }
 
   const where = { email: trimmed, status: 'active' as const }
-  const matches = await prisma.tenantIdentity.findMany({ where })
+  const matches = (await prisma.tenantIdentity.findMany({ where })).filter((identity) => canTenantIdentityAccessPortal(identity))
 
   if (matches.length > 1) {
     return { ok: false as const, code: 'ambiguous' as const }
@@ -94,7 +104,7 @@ export async function findReturningTenantIdentityByIdentifier(identifier: string
     return { ok: true as const, tenantIdentity: matches[0] }
   }
 
-  const fallbackMatches = await prisma.tenantIdentity.findMany({
+  const fallbackMatches = (await prisma.tenantIdentity.findMany({
     where: {
       status: 'active',
       unit: { tenantEmail: trimmed },
@@ -104,7 +114,7 @@ export async function findReturningTenantIdentityByIdentifier(identifier: string
         select: { tenantEmail: true },
       },
     },
-  })
+  })).filter((identity) => canTenantIdentityAccessPortal(identity))
 
   if (fallbackMatches.length !== 1) {
     return { ok: false as const, code: fallbackMatches.length > 1 ? 'ambiguous' as const : 'invalid' as const }

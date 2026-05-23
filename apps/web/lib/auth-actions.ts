@@ -5,11 +5,9 @@ import { getIronSession } from 'iron-session'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } from '@/lib/auth-config'
-import { hashIdentifier, logAppError, logAppEvent } from '@/lib/observability'
 import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
-import { getRequestClientContext } from '@/lib/request-client'
 
 function logAuthError(stage: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -89,11 +87,9 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
     return { error: 'Email and password are required' }
   }
 
-  const client = await getRequestClientContext()
-  const rateLimitKey = `landlord-login:${client.clientHint}:${normalizedEmail}`
+  const rateLimitKey = `landlord-login:${normalizedEmail}`
   const rateLimit = await getRateLimitStatus(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
   if (!rateLimit.ok) {
-    await logAppEvent('warn', 'auth.login.throttled', { emailHash: hashIdentifier(normalizedEmail) })
     return { error: 'Too many login attempts. Try again later.' }
   }
 
@@ -103,7 +99,6 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
     authenticatedUser = await authenticateAgainstDatabase(normalizedEmail, password)
   } catch (error) {
     if (!isDatabaseUnavailable(error)) {
-      await logAppError('auth.login.database_failed', error, { emailHash: hashIdentifier(normalizedEmail) })
       logAuthError('authenticateAgainstDatabase', error)
       throw error
     }
@@ -113,18 +108,10 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
 
   if (!authenticatedUser) {
     const failureLimit = await takeRateLimitHit(rateLimitKey, LANDLORD_LOGIN_RATE_LIMIT)
-    await logAppEvent('warn', 'auth.login.failed', {
-      emailHash: hashIdentifier(normalizedEmail),
-      throttled: !failureLimit.ok,
-    })
     return { error: failureLimit.ok ? 'Invalid email or password' : 'Too many login attempts. Try again later.' }
   }
 
   await resetRateLimit(rateLimitKey)
-  await logAppEvent('info', 'auth.login.succeeded', {
-    emailHash: hashIdentifier(normalizedEmail),
-    userId: authenticatedUser.userId,
-  })
   return { error: null, user: authenticatedUser }
 }
 
@@ -142,10 +129,6 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.role = result.user.role
     await session.save()
   } catch (error) {
-    await logAppError('auth.session.save_failed', error, {
-      userId: result.user.userId,
-      emailHash: hashIdentifier(result.user.email),
-    })
     logAuthError('session.save', error)
     throw error
   }

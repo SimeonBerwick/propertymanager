@@ -1,6 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import path from 'node:path'
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
+import { Readable } from 'node:stream'
+import { assertHostedRuntimeReady, hasR2StorageConfig } from '@/lib/runtime-env'
 
 const CONTENT_TYPES: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -10,10 +12,8 @@ const CONTENT_TYPES: Record<string, string> = {
   webp: 'image/webp',
 }
 
-const LOCAL_UPLOAD_PREFIX = 'uploads/requests/'
-const LEGACY_PUBLIC_PREFIX = '/uploads/requests/'
-const R2_PREFIX = 'r2://'
-const R2_OBJECT_PREFIX = 'requests/'
+const PRIMARY_PREFIX = 'uploads/requests/'
+const LEGACY_PREFIX = '/uploads/requests/'
 
 function normalizeSlashes(value: string) {
   return value.replace(/\\/g, '/').trim()
@@ -23,190 +23,164 @@ function hasPathTraversal(value: string) {
   return value.split('/').some((segment) => segment === '..')
 }
 
-function getFileExtensionFromPath(value: string) {
-  return path.extname(value).toLowerCase().slice(1)
+function getR2Client() {
+  const accountId = process.env.R2_ACCOUNT_ID
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error('R2 storage is not configured.')
+  }
+
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  })
+}
+
+function getR2Bucket() {
+  const bucket = process.env.R2_BUCKET
+  if (!bucket) throw new Error('R2_BUCKET is not configured.')
+  return bucket
+}
+
+async function bodyToBuffer(body: unknown): Promise<Buffer> {
+  if (!body) return Buffer.alloc(0)
+  if (body instanceof Uint8Array) return Buffer.from(body)
+  if (body instanceof Readable) {
+    const chunks: Buffer[] = []
+    for await (const chunk of body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    }
+    return Buffer.concat(chunks)
+  }
+  if (typeof body === 'object' && body !== null && 'transformToByteArray' in body && typeof body.transformToByteArray === 'function') {
+    return Buffer.from(await body.transformToByteArray())
+  }
+  throw new Error('Unsupported object storage response body.')
 }
 
 export function getMediaContentType(imagePath: string) {
-  const ext = getFileExtensionFromPath(imagePath)
+  const ext = path.extname(imagePath).toLowerCase().slice(1)
   return CONTENT_TYPES[ext] ?? 'application/octet-stream'
 }
 
-function getLocalUploadDirectory() {
-  return path.join(process.cwd(), 'uploads', 'requests')
-}
-
-export function resolveStoredMediaPath(imagePath: string) {
+export function normalizeStoredMediaPath(imagePath: string) {
   const normalized = normalizeSlashes(imagePath)
 
   if (!normalized || hasPathTraversal(normalized)) {
     return null
   }
 
-  if (normalized.startsWith(LOCAL_UPLOAD_PREFIX)) {
+  if (normalized.startsWith(PRIMARY_PREFIX)) {
+    return normalized
+  }
+
+  if (normalized.startsWith(LEGACY_PREFIX)) {
+    return normalized.slice(1)
+  }
+
+  return null
+}
+
+function resolveLocalMediaPath(imagePath: string) {
+  const normalized = normalizeSlashes(imagePath)
+
+  if (!normalized || hasPathTraversal(normalized)) {
+    return null
+  }
+
+  if (normalized.startsWith(PRIMARY_PREFIX)) {
     return path.join(process.cwd(), normalized)
   }
 
-  if (normalized.startsWith(LEGACY_PUBLIC_PREFIX)) {
+  if (normalized.startsWith(LEGACY_PREFIX)) {
     return path.join(process.cwd(), 'public', normalized.slice(1))
   }
 
   return null
 }
 
-function getR2Config() {
-  const bucket = process.env.R2_BUCKET
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
-  const explicitEndpoint = process.env.R2_ENDPOINT
-  const accountId = process.env.R2_ACCOUNT_ID
-
-  const endpoint = explicitEndpoint || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : null)
-
-  if (!bucket || !accessKeyId || !secretAccessKey || !endpoint) {
-    return null
-  }
-
-  return {
-    bucket,
-    endpoint,
-    credentials: { accessKeyId, secretAccessKey },
-  }
+export function resolveStoredMediaPath(imagePath: string) {
+  return resolveLocalMediaPath(imagePath)
 }
 
-let s3ClientPromise: Promise<import('@aws-sdk/client-s3').S3Client> | null = null
+export async function readStoredMedia(imagePath: string): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const normalized = normalizeStoredMediaPath(imagePath)
+  if (!normalized) return null
 
-async function getR2Client() {
-  const config = getR2Config()
-  if (!config) return null
+  const contentType = getMediaContentType(normalized)
 
-  if (!s3ClientPromise) {
-    s3ClientPromise = import('@aws-sdk/client-s3').then(({ S3Client }) => new S3Client({
-      region: 'auto',
-      endpoint: config.endpoint,
-      credentials: config.credentials,
-    }))
-  }
-
-  return s3ClientPromise
-}
-
-export function isR2Configured() {
-  return !!getR2Config()
-}
-
-function makeR2ObjectKey(extension: string) {
-  const safeExtension = extension.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
-  return `${R2_OBJECT_PREFIX}${Date.now()}-${randomUUID()}.${safeExtension}`
-}
-
-export async function storeMediaObject(bytes: Buffer, extension: string, contentType?: string) {
-  const resolvedContentType = contentType ?? (CONTENT_TYPES[extension.toLowerCase()] ?? 'application/octet-stream')
-  const r2Config = getR2Config()
-
-  if (r2Config) {
-    const client = await getR2Client()
-    if (!client) throw new Error('R2 client unavailable')
-    const { PutObjectCommand } = await import('@aws-sdk/client-s3')
-    const objectKey = makeR2ObjectKey(extension)
-
-    await client.send(new PutObjectCommand({
-      Bucket: r2Config.bucket,
-      Key: objectKey,
-      Body: bytes,
-      ContentType: resolvedContentType,
-    }))
-
-    return `${R2_PREFIX}${objectKey}`
-  }
-
-  const filename = `${Date.now()}-${randomUUID()}.${extension}`
-  const storagePath = `${LOCAL_UPLOAD_PREFIX}${filename}`
-  await mkdir(getLocalUploadDirectory(), { recursive: true })
-  await writeFile(path.join(process.cwd(), storagePath), bytes)
-  return storagePath
-}
-
-async function readR2Object(objectKey: string) {
-  const r2Config = getR2Config()
-  const client = await getR2Client()
-  if (!r2Config || !client) return null
-
-  const { GetObjectCommand } = await import('@aws-sdk/client-s3')
-  const result = await client.send(new GetObjectCommand({
-    Bucket: r2Config.bucket,
-    Key: objectKey,
-  }))
-
-  if (!result.Body) return null
-  const bytes = Buffer.from(await result.Body.transformToByteArray())
-  return {
-    bytes,
-    contentType: result.ContentType ?? getMediaContentType(objectKey),
-  }
-}
-
-export async function readStoredMedia(imagePath: string) {
-  const normalized = normalizeSlashes(imagePath)
-  if (!normalized || hasPathTraversal(normalized)) return null
-
-  if (normalized.startsWith(R2_PREFIX)) {
-    const objectKey = normalized.slice(R2_PREFIX.length)
-    if (!objectKey || hasPathTraversal(objectKey)) return null
+  if (hasR2StorageConfig()) {
+    const client = getR2Client()
     try {
-      return await readR2Object(objectKey)
+      const response = await client.send(
+        new GetObjectCommand({
+          Bucket: getR2Bucket(),
+          Key: normalized,
+        }),
+      )
+      return {
+        bytes: await bodyToBuffer(response.Body),
+        contentType: response.ContentType || contentType,
+      }
     } catch {
       return null
     }
   }
 
-  const diskPath = resolveStoredMediaPath(normalized)
+  assertHostedRuntimeReady('private media access', ['media'])
+  const diskPath = resolveLocalMediaPath(imagePath)
   if (!diskPath) return null
 
   try {
-    const fileBytes = await readFile(diskPath)
     return {
-      bytes: fileBytes,
-      contentType: getMediaContentType(normalized),
+      bytes: await readFile(diskPath),
+      contentType,
     }
   } catch {
     return null
   }
 }
 
-async function deleteR2Object(objectKey: string) {
-  const r2Config = getR2Config()
-  const client = await getR2Client()
-  if (!r2Config || !client) return
+export async function saveStoredMedia(storagePath: string, bytes: Buffer, contentType: string) {
+  const normalized = normalizeStoredMediaPath(storagePath)
+  if (!normalized) {
+    throw new Error('Invalid private media storage path.')
+  }
 
-  const { DeleteObjectCommand } = await import('@aws-sdk/client-s3')
-  await client.send(new DeleteObjectCommand({
-    Bucket: r2Config.bucket,
-    Key: objectKey,
-  }))
+  if (hasR2StorageConfig()) {
+    const client = getR2Client()
+    await client.send(
+      new PutObjectCommand({
+        Bucket: getR2Bucket(),
+        Key: normalized,
+        Body: bytes,
+        ContentType: contentType,
+      }),
+    )
+    return normalized
+  }
+
+  return normalized
 }
 
 export async function deleteStoredMedia(imagePath: string) {
-  const normalized = normalizeSlashes(imagePath)
-  if (!normalized || hasPathTraversal(normalized)) return
+  const normalized = normalizeStoredMediaPath(imagePath)
+  if (!normalized) return
 
-  if (normalized.startsWith(R2_PREFIX)) {
-    const objectKey = normalized.slice(R2_PREFIX.length)
-    if (!objectKey || hasPathTraversal(objectKey)) return
+  if (hasR2StorageConfig()) {
+    const client = getR2Client()
     try {
-      await deleteR2Object(objectKey)
+      await client.send(
+        new DeleteObjectCommand({
+          Bucket: getR2Bucket(),
+          Key: normalized,
+        }),
+      )
     } catch {
       // Best effort cleanup only.
     }
-    return
-  }
-
-  const diskPath = resolveStoredMediaPath(normalized)
-  if (!diskPath) return
-
-  try {
-    await unlink(diskPath)
-  } catch {
-    // Best effort cleanup only.
   }
 }

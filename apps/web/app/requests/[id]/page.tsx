@@ -12,10 +12,13 @@ import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
 import { BillingEventList } from '@/components/billing-event-list'
 import { BillingSummaryCards } from '@/components/billing-summary-cards'
+import { formatMoney } from '@/lib/billing-utils'
 import { RequestBillbackForm } from '@/components/request-billback-form'
+import { MediaPhotoCard } from '@/components/media-photo-card'
 import { AddCommentForm } from './add-comment-form'
-import { AuditLogList } from '@/components/audit-log-list'
-import { getAuditLogs } from '@/lib/audit-log'
+import { vendorCommercialStatusLabel, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
+import { RequestControlPanel } from './request-control-panel'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -23,16 +26,10 @@ const VISIBILITY_LABELS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  requested: 'Requested',
-  approved: 'Approved',
-  declined: 'Declined',
-  vendor_selected: 'Vendor Selected',
+  new: 'New',
   scheduled: 'Scheduled',
   in_progress: 'In Progress',
-  completed: 'Completed',
-  closed: 'Closed',
-  canceled: 'Canceled',
-  reopened: 'Reopened',
+  done: 'Done',
 }
 
 function statusLabel(s: string) {
@@ -51,10 +48,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
   const vendorPhotos = data.photos.filter((photo) => photo.source === 'vendor')
-  const [requestAuditLogs, billingAuditLogs] = await Promise.all([
-    getAuditLogs('request', data.request.id),
-    Promise.all(data.billingDocuments.map((doc) => getAuditLogs('billingDocument', doc.id))).then((groups) => groups.flat()),
-  ])
+  const latestTenderReply = data.tenders
+    .flatMap((tender) => tender.invites.map((invite) => ({
+      tender,
+      invite,
+      activityAt: invite.respondedAt ?? invite.invitedAt,
+    })))
+    .sort((a, b) => new Date(b.activityAt).getTime() - new Date(a.activityAt).getTime())[0]
+  const latestVendorDispatch = [...data.dispatchHistory]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+  const latestVisibleReply = [...data.comments]
+    .filter((comment) => comment.visibility === 'external')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+  const latestCommercialReply = [...data.vendorCommercialItems]
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
 
   return (
     <div className="stack requestDetailPage">
@@ -81,11 +88,116 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         <div className="requestHeroAside">
           <div className="requestSignalCard">
             <div className="kicker">Next move</div>
-            <div className="signalTitle">Push the request forward.</div>
-            <div className="muted">Assign, update, close, then bill if needed.</div>
+            <div className="signalTitle">Check replies first.</div>
+            <div className="muted">Tender responses and vendor updates now outrank billing on this page.</div>
           </div>
         </div>
       </section>
+
+      <SectionCard
+        kicker="Tender"
+        title="Tender and reply signal"
+        subtitle="This is where vendor decisions and incoming replies should stand out first."
+      >
+        <div className="stack" style={{ gap: 16 }}>
+          <div className="grid cols-3">
+            <div className="signalSpotlightCard">
+              <div className="kicker">Latest tender reply</div>
+              {latestTenderReply ? (
+                <>
+                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestTenderReply.invite.vendorName}</div>
+                  <div className="signalAccent">{latestTenderReply.invite.status.replaceAll('_', ' ')}</div>
+                  <div className="muted">
+                    {latestTenderReply.invite.bidAmountCents != null
+                      ? `Bid USD ${(latestTenderReply.invite.bidAmountCents / 100).toFixed(2)}`
+                      : 'No bid amount yet'}
+                  </div>
+                  <div className="muted">{new Date(latestTenderReply.activityAt).toLocaleString()}</div>
+                </>
+              ) : (
+                <div className="muted">No tender reply yet.</div>
+              )}
+            </div>
+
+            <div className="signalSpotlightCard">
+              <div className="kicker">Latest vendor update</div>
+              {latestVendorDispatch ? (
+                <>
+                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestVendorDispatch.vendorName ?? 'Vendor update'}</div>
+                  <div className="signalAccent">{statusLabel(latestVendorDispatch.status)}</div>
+                  <div className="muted">{latestVendorDispatch.note ?? 'No note attached.'}</div>
+                  <div className="muted">{new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
+                </>
+              ) : (
+                <div className="muted">No dispatch reply yet.</div>
+              )}
+            </div>
+
+            <div className="signalSpotlightCard">
+              <div className="kicker">Latest visible note</div>
+              {latestVisibleReply ? (
+                <>
+                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestVisibleReply.authorName}</div>
+                  <div className="muted">{latestVisibleReply.body}</div>
+                  <div className="muted">{new Date(latestVisibleReply.createdAt).toLocaleString()}</div>
+                </>
+              ) : latestCommercialReply ? (
+                <>
+                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestCommercialReply.title}</div>
+                  <div className="signalAccent">{vendorCommercialTypeLabel(latestCommercialReply.itemType)}</div>
+                  <div className="muted">{new Date(latestCommercialReply.submittedAt).toLocaleString()}</div>
+                </>
+              ) : (
+                <div className="muted">No recent reply signal yet.</div>
+              )}
+            </div>
+          </div>
+
+          {data.tenders.length ? data.tenders.map((tender) => (
+            <div key={tender.id} className="tenderFocusCard">
+              <div className="row" style={{ alignItems: 'flex-start' }}>
+                <div>
+                  <div className="kicker">Tender round</div>
+                  <h3 style={{ marginTop: 4 }}>{tender.title ?? 'Tender round'}</h3>
+                  <div className="muted">
+                    {tender.status.replaceAll('_', ' ')}
+                    {tender.sentAt ? ` · Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
+                    {tender.awardedAt ? ` · Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
+                  </div>
+                </div>
+              </div>
+              {tender.note ? <div className="muted">{tender.note}</div> : null}
+              <div className="stack" style={{ gap: 10 }}>
+                {tender.invites.map((invite) => (
+                  <div key={invite.id} className={`timelineRow${invite.awardedAt ? ' spotlightSuccess' : ''}`}>
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
+                        <div className="signalAccent">{invite.status.replaceAll('_', ' ')}</div>
+                      </div>
+                      {invite.awardedAt ? <span className="badge done">Awarded</span> : null}
+                    </div>
+                    <div className="muted">
+                      {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
+                      {invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}
+                    </div>
+                    {(invite.proposedStart || invite.proposedEnd) ? (
+                      <div className="muted">
+                        {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '—'}
+                        {invite.proposedEnd ? ` → ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                      </div>
+                    ) : null}
+                    <div className="muted">
+                      Invited {new Date(invite.invitedAt).toLocaleString()}
+                      {invite.respondedAt ? ` · Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )) : <div className="muted">No tenders yet.</div>}
+        </div>
+      </SectionCard>
 
       <div className="requestDetailGrid">
         <div className="stack">
@@ -114,74 +226,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
-          <SectionCard kicker="Billing" title="Charges and payments" subtitle="Use when the request creates a chargeback or vendor payment.">
-            <div className="stack" style={{ gap: 16 }}>
-              <div className="card" style={{ padding: 16, background: 'var(--panel)' }}>
-                <div className="kicker">Tenant responsibility</div>
-                <h3 style={{ marginTop: 4 }}>Bill-back</h3>
-                <div className="muted" style={{ marginBottom: 12 }}>
-                  Current: {data.request.tenantBillbackDecision ?? 'none'}
-                  {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
-                    ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
-                    : ''}
-                  {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
-                </div>
-                <RequestBillbackForm
-                  requestId={data.request.id}
-                  decision={data.request.tenantBillbackDecision}
-                  amountCents={data.request.tenantBillbackAmountCents}
-                  reason={data.request.tenantBillbackReason}
-                />
-              </div>
-              <BillingSummaryCards documents={data.billingDocuments} />
-              <div className="billingLayout">
-                <div className="stack">
-                <BillingDocumentForm
-                  requestId={data.request.id}
-                  tenantEmail={data.request.submittedByEmail}
-                  vendorEmail={data.request.assignedVendorEmail}
-                  tenantBillbackDecision={data.request.tenantBillbackDecision}
-                  tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
-                  tenantBillbackReason={data.request.tenantBillbackReason}
-                />
-                </div>
-                <div className="stack">
-                  <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
-                  <BillingEventList documents={data.billingDocuments} />
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard kicker="Tender" title="Vendor bids and invites" subtitle="Tender state for this request.">
-            {data.tenders.length ? data.tenders.map((tender) => (
-              <div key={tender.id} className="stack" style={{ gap: 10, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                <div>
-                  <strong>{tender.title ?? 'Tender round'}</strong>
-                  <div className="muted">Status: {tender.status}{tender.sentAt ? ` · Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}</div>
-                </div>
-                {tender.note ? <div className="muted">{tender.note}</div> : null}
-                <div className="stack" style={{ gap: 8 }}>
-                  {tender.invites.map((invite) => (
-                    <div key={invite.id} className="timelineRow">
-                      <div style={{ fontWeight: 600 }}>{invite.vendorName} · {invite.status}</div>
-                      <div className="muted">
-                        {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
-                        {invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}
-                      </div>
-                      {(invite.proposedStart || invite.proposedEnd) ? (
-                        <div className="muted">
-                          {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '—'}
-                          {invite.proposedEnd ? ` → ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )) : <div className="muted">No tenders yet.</div>}
-          </SectionCard>
-
           <SectionCard kicker="Dispatch" title="Vendor execution" subtitle="Field activity so far.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">
@@ -200,40 +244,47 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             )) : <div className="muted">No dispatch activity.</div>}
           </SectionCard>
 
-          <AuditLogList
-            title="Operational activity"
-            items={[...requestAuditLogs, ...billingAuditLogs]
-              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-              .map((item) => ({
-                id: item.id,
-                action: item.action,
-                summary: item.summary,
-                createdAt: item.createdAt.toISOString(),
-                actorName: item.actorUser?.email ?? undefined,
-              }))}
-          />
-
-          <SectionCard kicker="Timeline" title="Status activity" subtitle="How it has moved.">
-            {data.events.length ? data.events.map((event) => (
-              <div key={event.id} className="timelineRow">
-                <div style={{ fontWeight: 600 }}>
-                  {event.fromStatus ? `${statusLabel(event.fromStatus)} → ${statusLabel(event.toStatus)}` : statusLabel(event.toStatus)}
+          <SectionCard kicker="Commercial" title="Vendor submissions" subtitle="Bid, fee, overcost, and PM billing items sent from the vendor portal.">
+            {data.vendorCommercialItems.length ? data.vendorCommercialItems.map((item) => (
+              <div key={item.id} className="timelineRow">
+                <div style={{ fontWeight: 600 }}>{item.title}</div>
+                <div className="muted">
+                  {(item.vendorName ?? 'Vendor')} · {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {new Date(item.submittedAt).toLocaleString()}
                 </div>
-                <div className="muted">{event.actorName} · {new Date(event.createdAt).toLocaleString()}</div>
+                <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
+                {item.description ? <div>{item.description}</div> : null}
+                {item.status === 'submitted' ? (
+                  <VendorCommercialApprovalForm
+                    requestId={data.request.id}
+                    itemId={item.id}
+                    label={item.itemType === 'bid' ? 'Approve bid' : 'Approve submission'}
+                  />
+                ) : null}
               </div>
-            )) : <div className="muted">No status changes.</div>}
+            )) : <div className="muted">No vendor commercial submissions yet.</div>}
           </SectionCard>
+
         </div>
 
         <div className="stack">
+          <SectionCard kicker="Control" title="Actions" subtitle="Dispatch work, move status, and award bids.">
+            <RequestControlPanel
+              request={data.request}
+              vendors={data.availableVendors}
+              tenders={data.tenders}
+            />
+          </SectionCard>
+
           <SectionCard kicker="Photos" title="Issue intake photos">
             {issuePhotos.length ? (
               <div className="photo-grid">
                 {issuePhotos.map((photo) => (
-                  <a key={photo.id} href={`/api/landlord/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/landlord/media/${photo.id}`} alt="Maintenance issue photo" className="photo-image" />
-                  </a>
+                  <MediaPhotoCard
+                    key={photo.id}
+                    href={`/api/landlord/media/${photo.id}`}
+                    src={`/api/landlord/media/${photo.id}`}
+                    alt="Maintenance issue photo"
+                  />
                 ))}
               </div>
             ) : <div className="muted">No issue intake photos uploaded.</div>}
@@ -243,10 +294,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             {vendorPhotos.length ? (
               <div className="photo-grid">
                 {vendorPhotos.map((photo) => (
-                  <a key={photo.id} href={`/api/landlord/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/landlord/media/${photo.id}`} alt="Vendor dispatch photo" className="photo-image" />
-                  </a>
+                  <MediaPhotoCard
+                    key={photo.id}
+                    href={`/api/landlord/media/${photo.id}`}
+                    src={`/api/landlord/media/${photo.id}`}
+                    alt="Vendor dispatch photo"
+                  />
                 ))}
               </div>
             ) : <div className="muted">No vendor photos yet.</div>}
@@ -267,6 +320,40 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             )) : <div className="muted">No comments.</div>}
             <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
               <AddCommentForm requestId={data.request.id} />
+            </div>
+          </SectionCard>
+
+          <SectionCard kicker="Billing" title="Billing" subtitle="Smaller and lower priority unless this request already turned into money movement.">
+            <div className="stack billingCompact" style={{ gap: 14 }}>
+              <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
+                <div className="kicker">Tenant responsibility</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Current: {data.request.tenantBillbackDecision ?? 'none'}
+                  {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
+                    ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
+                    : ''}
+                  {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <RequestBillbackForm
+                    requestId={data.request.id}
+                    decision={data.request.tenantBillbackDecision}
+                    amountCents={data.request.tenantBillbackAmountCents}
+                    reason={data.request.tenantBillbackReason}
+                  />
+                </div>
+              </div>
+              <BillingSummaryCards documents={data.billingDocuments} />
+              <BillingDocumentForm
+                requestId={data.request.id}
+                tenantEmail={data.request.submittedByEmail}
+                vendorEmail={data.request.assignedVendorEmail}
+                tenantBillbackDecision={data.request.tenantBillbackDecision}
+                tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
+                tenantBillbackReason={data.request.tenantBillbackReason}
+              />
+              <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
+              <BillingEventList documents={data.billingDocuments} />
             </div>
           </SectionCard>
         </div>

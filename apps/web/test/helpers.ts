@@ -64,6 +64,7 @@ export async function createTenantIdentity(
       unitId,
       tenantName: uid('Tenant-'),
       phoneE164: randomPhone(),
+      leaseStartDate: new Date(),
       status: 'pending_invite',
       ...overrides,
     },

@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { createOtpChallenge, OtpRateLimitError } from '@/lib/tenant-otp-lib'
 import { findReturningTenantIdentityByIdentifier } from '@/lib/tenant-portal-data'
 import { writeAuditLog } from '@/lib/audit-log'
-import { getRequestClientContext } from '@/lib/request-client'
 
 export type ReturningLoginState = { error: string | null }
 
@@ -13,7 +12,6 @@ export async function startReturningLoginAction(
   formData: FormData,
 ): Promise<ReturningLoginState> {
   const identifier = String(formData.get('identifier') ?? '').trim().toLowerCase()
-  const client = await getRequestClientContext()
 
   if (!identifier) {
     return { error: 'Email is required.' }
@@ -44,7 +42,7 @@ export async function startReturningLoginAction(
   })
   let otp
   try {
-    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel, { clientHint: client.clientHint })
+    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel)
   } catch (error) {
     if (error instanceof OtpRateLimitError) {
       return { error: 'Too many code requests. Try again later.' }

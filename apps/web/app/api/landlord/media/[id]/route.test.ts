@@ -1,12 +1,12 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { readFile } from 'node:fs/promises'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { readStoredMedia } from '@/lib/media-storage'
 import { GET } from '@/app/api/landlord/media/[id]/route'
 import { scaffoldLandlord, createMaintenanceRequest } from '@/test/helpers'
 
 vi.mock('@/lib/landlord-session')
-vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
+vi.mock('@/lib/media-storage', () => ({ readStoredMedia: vi.fn() }))
 
 const FAKE_IMAGE = Buffer.from('fake-image-data')
 
@@ -17,7 +17,7 @@ function makeParams(id: string) {
 describe('GET /api/landlord/media/[id]', () => {
   beforeEach(() => {
     vi.mocked(getLandlordSession).mockResolvedValue(null)
-    vi.mocked(readFile).mockReset()
+    vi.mocked(readStoredMedia).mockReset()
   })
 
   test('returns 401 when no session', async () => {
@@ -53,7 +53,7 @@ describe('GET /api/landlord/media/[id]', () => {
     })
 
     vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
-    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readStoredMedia).mockResolvedValueOnce({ bytes: FAKE_IMAGE, contentType: 'image/jpeg' } as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
@@ -71,7 +71,7 @@ describe('GET /api/landlord/media/[id]', () => {
     })
 
     vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
-    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readStoredMedia).mockResolvedValueOnce({ bytes: FAKE_IMAGE, contentType: 'image/png' } as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
@@ -86,7 +86,7 @@ describe('GET /api/landlord/media/[id]', () => {
     })
 
     vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
-    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readStoredMedia).mockResolvedValueOnce({ bytes: FAKE_IMAGE, contentType: 'image/jpeg' } as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
@@ -103,10 +103,10 @@ describe('GET /api/landlord/media/[id]', () => {
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(404)
-    expect(readFile).not.toHaveBeenCalled()
+    expect(readStoredMedia).toHaveBeenCalledWith('../../secrets.txt')
   })
 
-  test('returns 404 when disk path fails', async () => {
+  test('returns 404 when media read fails', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const request = await createMaintenanceRequest(property.id, unit.id)
     const photo = await prisma.maintenancePhoto.create({
@@ -114,7 +114,7 @@ describe('GET /api/landlord/media/[id]', () => {
     })
 
     vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, isLoggedIn: true } as never)
-    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'))
+    vi.mocked(readStoredMedia).mockResolvedValueOnce(null)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(404)

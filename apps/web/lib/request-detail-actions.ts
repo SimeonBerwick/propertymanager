@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
 import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage } from '@/lib/notify'
@@ -194,7 +195,7 @@ export async function updateVendorFormAction(
       })
       if (vendors.length !== tenderVendorIds.length) return { error: 'One or more selected vendors were not found.' }
 
-      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      const appUrl = getAppBaseUrl('vendor tender notifications')
       const tender = await prisma.requestTender.create({
         data: {
           requestId,
@@ -338,7 +339,7 @@ export async function updateVendorFormAction(
 
     if (vendorName && vendorEmail) {
       const dispatchLink = vendorId ? await createVendorDispatchLink(requestId, vendorId).catch(() => null) : null
-      const appUrl = process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      const appUrl = getAppBaseUrl('vendor dispatch notifications')
       notificationPayload = {
         requestId,
         title: updated.title,
@@ -461,6 +462,16 @@ export async function awardTenderInviteAction(
         data: { status: 'not_awarded' },
       })
 
+      await tx.vendorCommercialItem.updateMany({
+        where: {
+          requestId,
+          itemType: 'bid',
+          status: 'submitted',
+          vendorId: { not: invite.vendorId },
+        },
+        data: { status: 'declined' },
+      })
+
       await tx.tenderInvite.update({
         where: { id: inviteId },
         data: { status: 'awarded', awardedAt: new Date() },
@@ -522,6 +533,95 @@ export async function awardTenderInviteAction(
     return { error: null, success: true, message: 'Tender awarded.' }
   } catch {
     return { error: 'Could not award tender invite.' }
+  }
+}
+
+export async function approveVendorCommercialItemAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const itemId = String(formData.get('itemId') ?? '')
+
+  try {
+    const item = await prisma.vendorCommercialItem.findFirst({
+      where: {
+        id: itemId,
+        requestId,
+        request: { property: { ownerId: session.userId } },
+      },
+      include: {
+        vendor: true,
+        request: true,
+      },
+    })
+
+    if (!item) return { error: 'Vendor submission not found.' }
+    if (item.status !== 'submitted') return { error: 'Vendor submission is already resolved.' }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.vendorCommercialItem.update({
+        where: { id: itemId },
+        data: { status: 'approved' },
+      })
+
+      if (item.itemType === 'bid') {
+        const nextStatus: RequestStatus =
+          item.request.status === 'requested' || item.request.status === 'approved' || item.request.status === 'reopened'
+            ? 'vendor_selected'
+            : item.request.status
+
+        await tx.maintenanceRequest.update({
+          where: { id: requestId },
+          data: {
+            assignedVendorId: item.vendorId,
+            assignedVendorName: item.vendor.name,
+            assignedVendorEmail: item.vendor.email ?? null,
+            assignedVendorPhone: item.vendor.phone ?? null,
+            dispatchStatus: 'accepted',
+            reviewState: 'none',
+            reviewNote: null,
+            status: nextStatus,
+          },
+        })
+
+        if (nextStatus !== item.request.status) {
+          await tx.statusEvent.create({
+            data: { requestId, toStatus: nextStatus, actorUserId: session.userId },
+          })
+        }
+
+        await tx.vendorDispatchEvent.create({
+          data: {
+            requestId,
+            vendorId: item.vendorId,
+            actorUserId: session.userId,
+            status: 'accepted',
+            note: 'Vendor bid approved from vendor submissions.',
+          },
+        })
+      }
+    })
+
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'vendorCommercialItem',
+      entityId: itemId,
+      action: 'vendorCommercialItem.approved',
+      summary: `Approved vendor ${item.itemType} submission from ${item.vendor.name}.`,
+      metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
+    })
+
+    await applyRequestAutomation(requestId)
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved and vendor assigned.' : 'Vendor submission approved.' }
+  } catch {
+    return { error: 'Could not approve vendor submission.' }
   }
 }
 

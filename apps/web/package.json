@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-changeme} next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "start:prod-local": "NODE_ENV=production SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-local-prod-password-2026} next start",
     "lint": "next lint",
@@ -19,17 +19,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:hosted": "node scripts/hosted-regression.mjs"
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.901.0",
+    "@aws-sdk/client-s3": "^3.1040.0",
     "@prisma/client": "^6.9.0",
-    "@upstash/redis": "^1.35.6",
     "iron-session": "^8.0.4",
     "libphonenumber-js": "^1.12.40",
-    "next": "^15.5.15",
-    "nodemailer": "^8.0.7",
+    "next": "^15.5.14",
+    "nodemailer": "^8.0.3",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
@@ -43,10 +41,6 @@
     "tsx": "^4.19.2",
     "typescript": "^5.8.2",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.5"
-  },
-  "overrides": {
-    "vite": "8.0.10",
-    "postcss": "8.5.10"
+    "vitest": "^4.1.1"
   }
 }

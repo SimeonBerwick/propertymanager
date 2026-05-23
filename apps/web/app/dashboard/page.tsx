@@ -8,7 +8,8 @@ import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
-import { formatDateTime, formatRelativeAge, formatClaimStatus, isStaleClaim } from '@/lib/ui-utils'
+import { formatRelativeAge, isStaleClaim } from '@/lib/ui-utils'
+import { RequestQueueList } from './request-queue-list'
 
 export default async function DashboardPage({
   searchParams,
@@ -23,10 +24,6 @@ export default async function DashboardPage({
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
-  const selectedClaimedBy = params?.claimedBy ?? ''
-  const selectedOperatorName = selectedClaimedBy
-    ? data.requestRows.find((request) => request.claimedByUserId === selectedClaimedBy)?.claimedByUserName ?? selectedClaimedBy
-    : ''
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -37,7 +34,9 @@ export default async function DashboardPage({
     const currencyMatch = selectedCurrency === 'all' || request.preferredCurrency === selectedCurrency
     const languageMatch = selectedLanguage === 'all' || request.preferredLanguage === selectedLanguage
     const queueMatch = selectedQueue === 'all'
-      || (selectedQueue === 'non-english' && !['closed', 'declined', 'canceled'].includes(request.status) && request.preferredLanguage !== 'english')
+      || (selectedQueue === 'open' && !['closed', 'declined', 'canceled'].includes(request.status))
+      || (selectedQueue === 'declined' && request.status === 'declined')
+      || (selectedQueue === 'canceled' && request.status === 'canceled')
       || (selectedQueue === 'non-usd' && !['closed', 'declined', 'canceled'].includes(request.status) && request.preferredCurrency !== 'usd')
       || (selectedQueue === 'reassignment-needed' && (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed'))
       || (selectedQueue === 'completion-review' && request.reviewState === 'vendor_completed_pending_review')
@@ -45,22 +44,12 @@ export default async function DashboardPage({
       || (selectedQueue === 'scheduled-today' && !!request.vendorScheduledStart && new Date(request.vendorScheduledStart) >= todayStart && new Date(request.vendorScheduledStart) < todayEnd)
       || (selectedQueue === 'overdue-scheduled' && !!request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && !['closed', 'declined', 'canceled'].includes(request.status))
       || (selectedQueue === 'unclaimed' && !request.claimedAt)
-      || (selectedQueue === 'stale-claimed' && isStaleClaim(request))
-      || (selectedQueue === 'my-claims' && request.claimedByUserId === session.userId)
+      || (selectedQueue === 'completed' && request.status === 'completed')
 
-    const claimedByMatch = !selectedClaimedBy || request.claimedByUserId === selectedClaimedBy
-
-    return currencyMatch && languageMatch && queueMatch && claimedByMatch
+    return currencyMatch && languageMatch && queueMatch
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
-    const aClaimed = !!a.claimedAt
-    const bClaimed = !!b.claimedAt
-
-    if (aClaimed !== bClaimed) {
-      return aClaimed ? 1 : -1
-    }
-
     if (selectedSort === 'oldest') {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     }
@@ -75,21 +64,15 @@ export default async function DashboardPage({
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
-            <div className="kicker">Operations overview</div>
-            <h1 className="pageTitle">Maintenance operations</h1>
-            <div className="muted">See what needs action now, what is drifting, and what can be cleared first.</div>
+            <div className="kicker">Dashboard</div>
+            <h1 className="pageTitle">Maintenance queue</h1>
+            <div className="muted">See what needs action now and clear it fast.</div>
           </div>
           <div className="requestHeroMeta">
             <Link href="/submit" className="button primary">Tenant issue form</Link>
+            <Link href="/access" className="button">Access</Link>
             <Link href="/exceptions" className="button">Exceptions queue</Link>
             <Link href="/reports" className="button">Reports</Link>
-          </div>
-        </div>
-        <div className="requestHeroAside">
-          <div className="requestSignalCard">
-            <div className="kicker">Operator pressure</div>
-            <div className="signalTitle">{data.queueCounts.reassignmentNeeded + data.queueCounts.completedPendingReview + data.queueCounts.needsFollowUp}</div>
-            <div className="muted">requests need review, reassignment, or follow-up</div>
           </div>
         </div>
       </section>
@@ -97,7 +80,7 @@ export default async function DashboardPage({
       <section className="grid cols-4">
         <div className="card metricCard metricDanger">
           <div>
-            <div className="kicker">Needs review</div>
+            <div className="kicker">Needs triage</div>
             <div className="metricValue">{data.statusCounts.requested + data.statusCounts.reopened}</div>
           </div>
           <div className="muted">Fresh requests still waiting on operator attention.</div>
@@ -125,53 +108,14 @@ export default async function DashboardPage({
         </div>
       </section>
 
-      <section className="queueGrid">
-        <Link href="/dashboard?queue=reassignment-needed" className="card queueCard">
-          <div className="kicker">Reassignment needed</div>
-          <div className="queueValue">{data.queueCounts.reassignmentNeeded}</div>
-          <div className="muted">Vendor declined or was cleared.</div>
-        </Link>
-        <Link href="/dashboard?queue=completion-review" className="card queueCard">
-          <div className="kicker">Completion review</div>
-          <div className="queueValue">{data.queueCounts.completedPendingReview}</div>
-          <div className="muted">Vendor says complete; landlord has not signed off.</div>
-        </Link>
-        <Link href="/dashboard?queue=follow-up" className="card queueCard">
-          <div className="kicker">Follow-up</div>
-          <div className="queueValue">{data.queueCounts.needsFollowUp}</div>
-          <div className="muted">Vendor updates need operator action.</div>
-        </Link>
-        <Link href="/dashboard?queue=unclaimed" className="card queueCard">
-          <div className="kicker">Unclaimed</div>
-          <div className="queueValue">{data.queueCounts.unclaimedOpen}</div>
-          <div className="muted">Open requests still without an owner.</div>
-        </Link>
-        <Link href="/dashboard?queue=stale-claimed" className="card queueCard">
-          <div className="kicker">Stale claimed</div>
-          <div className="queueValue">{data.queueCounts.staleClaimedOpen}</div>
-          <div className="muted">Claims older than 24 hours without closure.</div>
-        </Link>
-        <Link href="/dashboard?queue=my-claims" className="card queueCard">
-          <div className="kicker">My claims</div>
-          <div className="queueValue">{data.queueCounts.myClaimsOpen}</div>
-          <div className="muted">Open requests currently assigned to you.</div>
-        </Link>
-        <Link href="/dashboard?queue=non-english" className="card queueCard">
-          <div className="kicker">Non-English</div>
-          <div className="queueValue">{data.queueCounts.nonEnglishOpen}</div>
-          <div className="muted">Open requests with language constraints.</div>
-        </Link>
-      </section>
-
       <SectionCard
         kicker="Inbox"
-        title="Operator request queue"
-        subtitle="Scan fast. Open the right request. Move it forward without guessing."
-        action={<Link href="/dashboard" className="button">Reset view</Link>}
+        title="Request queue"
+        subtitle="Scan fast and move the right request forward."
+        action={<Link href="/dashboard" className="button">Clear filters</Link>}
       >
         <form method="get" className="filtersRow">
           <input type="hidden" name="queue" value={selectedQueue} />
-          <input type="hidden" name="claimedBy" value={selectedClaimedBy} />
           <label className="field" style={{ minWidth: 180 }}>
             <span className="field-label">Currency</span>
             <select className="input" name="currency" defaultValue={selectedCurrency}>
@@ -198,58 +142,28 @@ export default async function DashboardPage({
               <option value="oldest">Oldest to newest</option>
             </select>
           </label>
-          <button type="submit" className="button">Apply filters</button>
+          <button type="submit" className="button">Filter</button>
         </form>
 
         <div className="filterChipRow">
           <Link href="/dashboard" className="filterChip" style={selectedQueue === 'all' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>All</Link>
+          <Link href="/dashboard?queue=open" className="filterChip" style={selectedQueue === 'open' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Open only</Link>
+          <Link href="/dashboard?queue=declined" className="filterChip" style={selectedQueue === 'declined' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Declined</Link>
+          <Link href="/dashboard?queue=canceled" className="filterChip" style={selectedQueue === 'canceled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Canceled</Link>
+          <Link href="/dashboard?queue=completed" className="filterChip" style={selectedQueue === 'completed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Completed</Link>
           <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
           <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue scheduled</Link>
-          <Link href="/dashboard?queue=non-usd" className="filterChip" style={selectedQueue === 'non-usd' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Non-USD</Link>
           <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
           <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Unclaimed</Link>
-          <Link href="/dashboard?queue=stale-claimed" className="filterChip" style={selectedQueue === 'stale-claimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Stale claimed</Link>
-          <Link href="/dashboard?queue=my-claims" className="filterChip" style={selectedQueue === 'my-claims' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>My claims</Link>
         </div>
 
-        {selectedQueue !== 'all' || selectedClaimedBy ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue !== 'all' ? selectedQueue : 'all'}{selectedOperatorName ? ` · operator ${selectedOperatorName}` : ''}</div> : null}
+        {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing the top {focusNow.length} of {filteredRequests.length} matching requests. Unclaimed work is prioritized first, then sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
-          {filteredRequests.length > focusNow.length ? ' Narrow filters or drill into a queue card to work the rest.' : ''}
+          Showing {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+          {filteredRequests.length > focusNow.length ? ' Narrow the filters to see the rest.' : ''}
         </div>
 
-        <div className="inboxList">
-          {focusNow.length === 0 ? (
-            <div className="notice">No maintenance requests match the current filters or queue drill-down.</div>
-          ) : focusNow.map((request) => (
-            <div key={request.id} className="inboxRow" style={{ cursor: 'default' }}>
-              <div className="stack" style={{ gap: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{request.title}</div>
-                  <div className="muted" style={{ marginTop: 4 }}>{request.propertyName} · {request.unitLabel}</div>
-                  <div className="requestMetaLine">
-                    <RequestFlowBadge request={request} />
-                    <span className="muted">{request.category}</span>
-                    <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
-                    <span className="muted">{formatClaimStatus(request)}</span>
-                    {request.claimedByUserName ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Owner: {request.claimedByUserName}</span> : null}
-                    {isStaleClaim(request) ? <span className="badge" style={{ background: '#fff4e6', color: '#b35c00' }}>Stale claim</span> : null}
-                  </div>
-                </div>
-                <RequestSignalStrip request={request} />
-                <RequestOpsSignals request={request} />
-                <RequestQuickActions request={request} compact />
-              </div>
-              <div className="stack" style={{ gap: 10, alignItems: 'flex-end' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
-                  <div className="muted">Scheduled start</div>
-                </div>
-                <Link href={`/requests/${request.id}`} className="button primary">Open request</Link>
-              </div>
-            </div>
-          ))}
-        </div>
+        <RequestQueueList requests={focusNow} selectedSort={selectedSort} />
       </SectionCard>
     </div>
   )

@@ -2,7 +2,7 @@ import { getRequestFlowState } from '@/lib/ui-utils'
 import type { MaintenanceRequest } from '@/lib/types'
 
 const LABELS: Record<string, string> = {
-  requested: 'Needs review',
+  requested: 'Needs triage',
   approved: 'Approved',
   declined: 'Declined',
   vendor_selected: 'Vendor selected',

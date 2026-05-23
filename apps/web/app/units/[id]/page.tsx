@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuditLogs } from '@/lib/audit-log'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
 import { AuditLogList } from '@/components/audit-log-list'
-import { getTenantIdentityIssues } from '@/lib/tenant-identity-health'
+import { getTenantLeaseLabel, getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -32,13 +32,14 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { unit, property, requests, openCount, closedCount } = data
-  const [tenantIdentity, auditLogs] = await Promise.all([
-    prisma.tenantIdentity.findFirst({
+  const [tenantIdentities, auditLogs] = await Promise.all([
+    prisma.tenantIdentity.findMany({
       where: { unitId: unit.id, property: { ownerId: session.userId } },
-      orderBy: { createdAt: 'desc' },
-    }).catch(() => null),
+      orderBy: [{ leaseStartDate: 'asc' }, { createdAt: 'asc' }],
+    }).catch(() => []),
     getAuditLogs('unit', unit.id),
   ])
+  const occupancy = getUnitOccupancySnapshot(tenantIdentities)
 
   return (
     <div className="stack">
@@ -62,15 +63,24 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
               <Link href={`/properties/${property.id}`}>{property.name}</Link>
               {' · '}{property.address}
             </div>
-            {(unit.tenantName || unit.tenantEmail) && (
+            {occupancy.current && (
               <div className="muted" style={{ marginTop: 4 }}>
-                Tenant: {unit.tenantName ?? '—'}
-                {unit.tenantEmail ? ` · ${unit.tenantEmail}` : ''}
+                Tenant: {occupancy.current.tenantName}
+                {occupancy.current.email ? ` · ${occupancy.current.email}` : ''}
+                {' · '}Lease {getTenantLeaseLabel(occupancy.current)}
               </div>
             )}
-            {!unit.tenantName && !unit.tenantEmail && (
-              <div className="muted" style={{ marginTop: 4 }}>Vacant</div>
+            {!occupancy.current && (
+              <div className="muted" style={{ marginTop: 4 }}>
+                Vacant
+                {occupancy.vacantUntil ? ` until ${occupancy.vacantUntil.toLocaleDateString()}` : ''}
+              </div>
             )}
+            {occupancy.upcoming ? (
+              <div className="muted" style={{ marginTop: 4 }}>
+                Next renter: {occupancy.upcoming.tenantName} · Lease {getTenantLeaseLabel(occupancy.upcoming)}
+              </div>
+            ) : null}
           </div>
           <Link href={`/units/${unit.id}/edit`} className="button">Edit unit</Link>
         </div>
@@ -100,16 +110,17 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
         propertyIsActive={property.isActive}
         tenantName={unit.tenantName}
         tenantEmail={unit.tenantEmail}
-        tenantIdentity={tenantIdentity ? {
+        tenantIdentities={tenantIdentities.map((tenantIdentity) => ({
           id: tenantIdentity.id,
           tenantName: tenantIdentity.tenantName,
           phoneE164: tenantIdentity.phoneE164,
           email: tenantIdentity.email,
           status: tenantIdentity.status,
+          leaseStartDate: tenantIdentity.leaseStartDate?.toISOString() ?? null,
+          leaseEndDate: tenantIdentity.leaseEndDate?.toISOString() ?? null,
           verifiedAt: tenantIdentity.verifiedAt?.toISOString() ?? null,
           lastLoginAt: tenantIdentity.lastLoginAt?.toISOString() ?? null,
-          issues: getTenantIdentityIssues(tenantIdentity),
-        } : null}
+        }))}
       />
 
       <AuditLogList
@@ -170,7 +181,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             </tbody>
           </table>
         ) : (
-          <div className="muted">No maintenance requests for this unit yet.</div>
+          <div className="muted">No requests for this unit yet.</div>
         )}
       </section>
     </div>

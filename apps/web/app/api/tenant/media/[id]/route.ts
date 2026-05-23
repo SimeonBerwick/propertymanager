@@ -18,14 +18,14 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
-  const storedMedia = await readStoredMedia(photo.imageUrl)
-  if (!storedMedia) {
+  const media = await readStoredMedia(photo.imageUrl)
+  if (!media) {
     return new NextResponse('File not found', { status: 404 })
   }
 
-  return new NextResponse(new Uint8Array(storedMedia.bytes), {
+  return new NextResponse(new Uint8Array(media.bytes), {
     headers: {
-      'Content-Type': storedMedia.contentType,
+      'Content-Type': media.contentType,
       'Cache-Control': 'private, max-age=3600',
     },
   })

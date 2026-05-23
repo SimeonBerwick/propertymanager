@@ -40,7 +40,7 @@ export async function applyRequestAutomation(requestId: string) {
 
   await sendNotification({
     to: landlordEmail,
-    subject: `[Operations] ${autoFlag.replace(/_/g, ' ')} — ${request.title}`,
+    subject: `[Mission Control] ${autoFlag.replace(/_/g, ' ')} — ${request.title}`,
     text: [
       `Request ${request.id} requires attention.`,
       ``,

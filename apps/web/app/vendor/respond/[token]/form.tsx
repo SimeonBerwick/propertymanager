@@ -15,7 +15,7 @@ export function VendorResponseForm({ token }: { token: string }) {
 
       <label className="field">
         <span className="field-label">Response</span>
-        <select className="input" name="dispatchStatus" defaultValue="accepted">
+        <select className="input" name="dispatchStatus" defaultValue="contacted">
           <option value="contacted">Contacted</option>
           <option value="accepted">Accepted</option>
           <option value="declined">Declined</option>

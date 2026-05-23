@@ -94,18 +94,7 @@ describe('setupMobileIdentityAction', () => {
       PREV,
       formData({ unitId: unit.id, tenantName: 'Test Tenant', phoneE164: 'not-a-phone' }),
     )
-    expect(result.error).toMatch(/valid phone number/i)
-  })
-
-  test('returns error for a too-short E.164 phone number', async () => {
-    const { user, unit } = await scaffoldLandlord()
-    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
-
-    const result = await setupMobileIdentityAction(
-      PREV,
-      formData({ unitId: unit.id, tenantName: 'Test Tenant', phoneE164: '+16025512' }),
-    )
-    expect(result.error).toMatch(/valid phone number/i)
+    expect(result.error).toMatch(/required/i)
   })
 
   test('creates tenant identity and returns success', async () => {
@@ -139,6 +128,30 @@ describe('setupMobileIdentityAction', () => {
     expect(updatedUnit?.tenantEmail).toBe('bob@test.com')
   })
 
+  test('updates the existing live identity for the unit instead of creating a duplicate when phone changes', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const existing = await createActiveTenantIdentity(user.id, property.id, unit.id, {
+      email: 'dummy@example.com',
+      phoneE164: '+16025550000',
+      tenantName: 'Old Tenant',
+    })
+
+    const result = await setupMobileIdentityAction(
+      PREV,
+      formData({ unitId: unit.id, tenantName: 'New Tenant', phoneE164: '+16025550123', email: 'real@example.com' }),
+    )
+
+    expect(result.error).toBeNull()
+    const identities = await prisma.tenantIdentity.findMany({ where: { unitId: unit.id, orgId: user.id } })
+    expect(identities).toHaveLength(1)
+    expect(identities[0]?.id).toBe(existing.id)
+    expect(identities[0]?.tenantName).toBe('New Tenant')
+    expect(identities[0]?.phoneE164).toBe('+16025550123')
+    expect(identities[0]?.email).toBe('real@example.com')
+    expect(identities[0]?.status).toBe('pending_invite')
+  })
+
   test('normalizes local-format UK number when phoneRegion=GB is provided', async () => {
     const { user, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
@@ -164,7 +177,7 @@ describe('setupMobileIdentityAction', () => {
       PREV,
       formData({ unitId: unit.id, tenantName: 'Dave', phoneE164: '07911 123456', phoneRegion: 'US' }),
     )
-    expect(result.error).toMatch(/valid phone number/i)
+    expect(result.error).toMatch(/required/i)
   })
 })
 

@@ -8,13 +8,10 @@ export default defineConfig({
     globals: true,
     include: ['app/**/*.test.ts', 'app/**/*.test.tsx', 'lib/**/*.test.ts', 'lib/**/*.test.tsx'],
     exclude: ['tests/e2e/**'],
-    // Run test files sequentially so DB-backed tests mutate one Postgres test DB at a time.
+    // Run test files sequentially to avoid SQLite write conflicts
     fileParallelism: false,
     env: {
-      DATABASE_URL:
-        process.env.TEST_DATABASE_URL ??
-        process.env.DATABASE_URL ??
-        'postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_dev?schema=test',
+      DATABASE_URL: 'file:./test.db',
       NODE_ENV: 'test',
     },
     globalSetup: ['./test/global-setup.ts'],

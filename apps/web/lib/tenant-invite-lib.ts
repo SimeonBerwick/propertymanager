@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
+import { isTenantIdentityActiveOn } from '@/lib/tenant-occupancy'
 
 const INVITE_TTL_DAYS = 7
 
@@ -24,15 +25,33 @@ function maskDestination(value: string) {
 }
 
 export async function createTenantInvite(tenantIdentityId: string, sentVia: 'email' = 'email') {
-  const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId } })
+  const tenantIdentity = await prisma.tenantIdentity.findUnique({
+    where: { id: tenantIdentityId },
+    include: {
+      unit: {
+        select: { tenantEmail: true },
+      },
+    },
+  })
 
   if (!tenantIdentity) {
     throw new Error('Tenant identity not found.')
   }
 
-  const destination = tenantIdentity.email ?? ''
+  if (!isTenantIdentityActiveOn(tenantIdentity)) {
+    throw new Error('Tenant access is outside the active lease window.')
+  }
+
+  const destination = tenantIdentity.unit.tenantEmail?.trim().toLowerCase() || (tenantIdentity.email ?? '')
   if (!destination) {
     throw new Error('Tenant identity is missing a delivery email.')
+  }
+
+  if (tenantIdentity.email !== destination) {
+    await prisma.tenantIdentity.update({
+      where: { id: tenantIdentity.id },
+      data: { email: destination },
+    })
   }
 
   const rawToken = randomBytes(24).toString('hex')
@@ -129,7 +148,7 @@ export async function validateTenantInviteToken(rawToken: string): Promise<Invit
     return { ok: false, code: 'expired' }
   }
 
-  if (invite.tenantIdentity.status === 'inactive' || invite.tenantIdentity.status === 'moved_out') {
+  if (invite.tenantIdentity.status === 'inactive' || invite.tenantIdentity.status === 'moved_out' || !isTenantIdentityActiveOn(invite.tenantIdentity)) {
     return { ok: false, code: 'inactive' }
   }
 

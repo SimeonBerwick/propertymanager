@@ -11,6 +11,7 @@ import type {
   RequestTenderView,
 } from '@/lib/types'
 import type { BillingDocumentView } from '@/lib/billing-types'
+import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 import { prisma } from '@/lib/prisma'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
@@ -50,9 +51,11 @@ export interface RequestDetailData {
   events: StatusEvent[]
   photos: MaintenancePhoto[]
   recommendedVendors: Vendor[]
+  availableVendors: Vendor[]
   dispatchHistory: VendorDispatchEvent[]
   tenders: RequestTenderView[]
   billingDocuments: BillingDocumentView[]
+  vendorCommercialItems: VendorCommercialItemView[]
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -335,6 +338,10 @@ export async function getRequestDetailData(requestId: string, userId: string): P
             },
           },
         },
+        vendorCommercialItems: {
+          include: { vendor: true },
+          orderBy: { submittedAt: 'desc' },
+        },
       },
     })
     if (!dbRequest) return null
@@ -439,15 +446,32 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       })),
     }))
 
+    const vendorCommercialItems: VendorCommercialItemView[] = dbRequest.vendorCommercialItems.map((item) => ({
+      id: item.id,
+      requestId: item.requestId,
+      vendorId: item.vendorId,
+      vendorName: item.vendor?.name ?? undefined,
+      itemType: item.itemType,
+      status: item.status,
+      currency: item.currency,
+      amountCents: item.amountCents,
+      title: item.title,
+      description: item.description ?? undefined,
+      submittedAt: item.submittedAt.toISOString(),
+      createdAt: item.createdAt.toISOString(),
+    }))
+
     return {
       request,
       comments,
       events,
       photos: dbRequest.photos.map(mapPhoto),
       recommendedVendors,
+      availableVendors: vendorRows.map(mapVendor),
       dispatchHistory,
       tenders,
       billingDocuments,
+      vendorCommercialItems,
     }
   } catch {
     return null

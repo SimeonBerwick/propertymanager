@@ -8,10 +8,11 @@ node_modules/
 tsconfig.tsbuildinfo
 # Tenant-uploaded photos (served from public/ but should not be committed)
 public/uploads/
-# Legacy local DB artifacts from the pre-Postgres phase
+# Local SQLite database
 prisma/*.db
 prisma/*.db-journal
 e2e.db
 e2e.db-journal
 playwright-report/
 test-results/
+.vercel

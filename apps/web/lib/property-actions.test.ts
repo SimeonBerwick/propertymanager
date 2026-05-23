@@ -170,6 +170,33 @@ describe('property-actions', () => {
     expect(updated?.tenantEmail).toBeNull()
   })
 
+  test('updateUnitAction keeps the live tenant identity email and name in sync', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getIronSession).mockResolvedValue(fakeSession(user.id))
+    const identity = await createTenantIdentity(user.id, property.id, unit.id, {
+      tenantName: 'Seed Tenant',
+      email: 'dummy@example.com',
+      status: 'active',
+    })
+
+    await expect(
+      updateUnitAction(
+        PREV,
+        formData({
+          unitId: unit.id,
+          propertyId: property.id,
+          label: 'Unit AB',
+          tenantName: 'Real Tenant',
+          tenantEmail: 'REAL@EXAMPLE.COM',
+        }),
+      ),
+    ).rejects.toThrow(new RegExp(`NEXT_REDIRECT:/units/${unit.id}`))
+
+    const updatedIdentity = await prisma.tenantIdentity.findUnique({ where: { id: identity.id } })
+    expect(updatedIdentity?.tenantName).toBe('Real Tenant')
+    expect(updatedIdentity?.email).toBe('real@example.com')
+  })
+
   test('restoreUnitAction refuses to restore a unit while the property is archived', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getIronSession).mockResolvedValue(fakeSession(user.id))

@@ -1,8 +1,13 @@
+import { randomUUID } from 'node:crypto'
+import { mkdir, unlink, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
-import { getMediaContentType, storeMediaObject, deleteStoredMedia } from '@/lib/media-storage'
+import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
+import { hasR2StorageConfig } from '@/lib/runtime-env'
 
 export const MAX_PHOTO_COUNT = 5
 export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
+export const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
 
 function getFileExtension(file: File) {
   const extensionFromType = file.type.split('/')[1]?.toLowerCase()
@@ -36,12 +41,24 @@ export async function validatePhotoFiles(files: File[]) {
 export async function savePhotos(files: File[]) {
   if (!files.length) return [] as string[]
 
+  const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
+  await mkdir(diskDirectory, { recursive: true })
+
   const savedPaths: string[] = []
 
   for (const file of files) {
     const extension = getFileExtension(file)
+    const filename = `${Date.now()}-${randomUUID()}.${extension}`
+    const diskPath = path.join(diskDirectory, filename)
+    const storagePath = `${UPLOAD_SUBDIRECTORY}/${filename}`
     const bytes = Buffer.from(await file.arrayBuffer())
-    const storagePath = await storeMediaObject(bytes, extension, getMediaContentType(file.name || `file.${extension}`))
+
+    await saveStoredMedia(storagePath, bytes, file.type || 'application/octet-stream')
+
+    if (!hasR2StorageConfig()) {
+      await writeFile(diskPath, bytes)
+    }
+
     savedPaths.push(storagePath)
   }
 
@@ -49,5 +66,16 @@ export async function savePhotos(files: File[]) {
 }
 
 export async function cleanupPhotos(photoPaths: string[]) {
-  await Promise.all(photoPaths.map((photoPath) => deleteStoredMedia(photoPath)))
+  await Promise.all(
+    photoPaths.map(async (photoPath) => {
+      await deleteStoredMedia(photoPath)
+
+      const diskPath = path.join(process.cwd(), photoPath)
+      try {
+        await unlink(diskPath)
+      } catch {
+        // Best effort cleanup only.
+      }
+    }),
+  )
 }

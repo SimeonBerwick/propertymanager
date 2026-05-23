@@ -17,6 +17,7 @@ import { getLandlordEmail, getLandlordSlug, getDevFallbackPassword, assertProduc
 import { hashPassword } from '../lib/password'
 
 const prisma = new PrismaClient()
+const defaultLeaseStart = new Date('2026-01-01T00:00:00Z')
 
 async function main() {
   assertProductionAuthEnv()
@@ -71,6 +72,29 @@ async function main() {
         tenantEmail: unit.tenantEmail,
       },
     })
+
+    if (unit.tenantName) {
+      await prisma.tenantIdentity.upsert({
+        where: { orgId_phoneE164_unitId: { orgId: landlord.id, phoneE164: `+1555${unit.id.slice(-6).padStart(6, '0')}`, unitId: unit.id } },
+        update: {
+          propertyId: unit.propertyId,
+          tenantName: unit.tenantName,
+          email: unit.tenantEmail,
+          leaseStartDate: defaultLeaseStart,
+          status: 'active',
+        },
+        create: {
+          orgId: landlord.id,
+          propertyId: unit.propertyId,
+          unitId: unit.id,
+          tenantName: unit.tenantName,
+          email: unit.tenantEmail,
+          phoneE164: `+1555${unit.id.slice(-6).padStart(6, '0')}`,
+          leaseStartDate: defaultLeaseStart,
+          status: 'active',
+        },
+      })
+    }
   }
 
   for (const vendor of seedVendors) {

@@ -1,0 +1,204 @@
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+import { getLandlordSession } from '@/lib/landlord-session'
+import { getTenantLeaseLabel, getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
+
+export default async function AccessPage() {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+
+  const [units, vendors] = await Promise.all([
+    prisma.unit.findMany({
+      where: { property: { ownerId: session.userId } },
+      include: {
+        property: { select: { id: true, name: true, isActive: true } },
+        tenantIdentities: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            tenantName: true,
+            email: true,
+            phoneE164: true,
+            status: true,
+            leaseStartDate: true,
+            leaseEndDate: true,
+            verifiedAt: true,
+            lastLoginAt: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: [{ isActive: 'desc' }, { property: { name: 'asc' } }, { label: 'asc' }],
+    }).catch(() => []),
+    prisma.vendor.findMany({
+      where: { orgId: session.userId },
+      orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        lastLoginAt: true,
+      },
+    }).catch(() => []),
+  ])
+
+  const occupancyRows = units.map((unit) => ({
+    unit,
+    occupancy: getUnitOccupancySnapshot(unit.tenantIdentities),
+  }))
+  const renterAccessCount = occupancyRows.filter((row) => row.occupancy.current?.status === 'active').length
+  const pendingInviteCount = occupancyRows.filter((row) => row.occupancy.current?.status === 'pending_invite' || row.occupancy.upcoming?.status === 'pending_invite').length
+  const activeVendorCount = vendors.filter((vendor) => vendor.isActive).length
+
+  return (
+    <div className="stack">
+      <section className="card stack">
+        <div className="row">
+          <div>
+            <div className="kicker">Access</div>
+            <h1 className="pageTitle">People and portal access</h1>
+            <div className="muted">Grant, resend, or remove renter and vendor access from one place.</div>
+          </div>
+          <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <Link href="/properties" className="button">Properties</Link>
+            <Link href="/vendors" className="button">Vendors</Link>
+          </div>
+        </div>
+        <div className="notice">
+          Renter access lives on the unit record. Vendor access lives on the vendor record. This page exposes both directly instead of making you hunt for them.
+        </div>
+      </section>
+
+      <section className="grid cols-3">
+        <div className="card">
+          <div className="kicker">Renter access</div>
+          <h2>{renterAccessCount}</h2>
+          <div className="muted">Units with active renter portal access</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Pending invites</div>
+          <h2>{pendingInviteCount}</h2>
+          <div className="muted">Renter identities waiting on invite completion</div>
+        </div>
+        <div className="card">
+          <div className="kicker">Vendor access</div>
+          <h2>{activeVendorCount}</h2>
+          <div className="muted">Active vendor accounts that can sign in</div>
+        </div>
+      </section>
+
+      <section className="card stack">
+        <div className="row">
+          <div>
+            <div className="kicker">Renters</div>
+            <h3 style={{ marginTop: 4 }}>Unit access</h3>
+          </div>
+          <div className="muted">{units.length} units</div>
+        </div>
+        {units.length ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Renter</th>
+                <th>Access state</th>
+                <th>Last activity</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {occupancyRows.map(({ unit, occupancy }) => {
+                const identity = occupancy.current ?? occupancy.upcoming
+                const archived = !unit.isActive || !unit.property.isActive
+                const stateLabel = archived
+                  ? 'Archived'
+                  : occupancy.current
+                    ? identity?.status.replaceAll('_', ' ')
+                    : occupancy.upcoming
+                      ? `Vacant until ${occupancy.vacantUntil?.toLocaleDateString()}`
+                      : 'Vacant'
+                const lastActivity = identity?.lastLoginAt
+                  ? new Date(identity.lastLoginAt).toLocaleString()
+                  : identity?.verifiedAt
+                    ? `Verified ${new Date(identity.verifiedAt).toLocaleDateString()}`
+                    : 'No login yet'
+
+                return (
+                  <tr key={unit.id}>
+                    <td>
+                      <Link href={`/units/${unit.id}`} style={{ fontWeight: 600 }}>
+                        {unit.label}
+                      </Link>
+                      <div className="muted">{unit.property.name}</div>
+                    </td>
+                    <td>
+                      <div>{identity?.tenantName ?? 'No renter on file'}</div>
+                      <div className="muted">{identity?.email ?? 'No email on file'}</div>
+                    </td>
+                    <td className="muted">
+                      {stateLabel}
+                      {identity?.phoneE164 ? ` · ${identity.phoneE164}` : ''}
+                      {identity ? ` · ${getTenantLeaseLabel(identity)}` : ''}
+                    </td>
+                    <td className="muted">{lastActivity}</td>
+                    <td>
+                      <Link href={`/units/${unit.id}`} className="button">
+                        Manage renter access
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted">No units available yet.</div>
+        )}
+      </section>
+
+      <section className="card stack">
+        <div className="row">
+          <div>
+            <div className="kicker">Vendors</div>
+            <h3 style={{ marginTop: 4 }}>Vendor login access</h3>
+          </div>
+          <Link href="/vendors/new" className="button primary">Add vendor</Link>
+        </div>
+        {vendors.length ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Contact</th>
+                <th>Access state</th>
+                <th>Last login</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendors.map((vendor) => (
+                <tr key={vendor.id}>
+                  <td style={{ fontWeight: 600 }}>{vendor.name}</td>
+                  <td className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` · ${vendor.phone}` : ''}</td>
+                  <td className="muted">{vendor.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="muted">{vendor.lastLoginAt ? new Date(vendor.lastLoginAt).toLocaleString() : 'Never'}</td>
+                  <td>
+                    <Link href={`/vendors/${vendor.id}`} className="button">
+                      Manage vendor access
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted">No vendors yet.</div>
+        )}
+      </section>
+    </div>
+  )
+}

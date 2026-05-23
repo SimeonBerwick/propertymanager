@@ -3,6 +3,7 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
+import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -16,6 +17,47 @@ const STATUS_LABELS: Record<string, string> = {
   closed: 'Closed',
   canceled: 'Canceled',
   reopened: 'Reopened',
+}
+
+function classifyCommentSource(
+  comment: {
+    body: string
+    author?: { displayName: string | null, email: string } | null
+  },
+  assignedVendorName?: string | null,
+) {
+  if (comment.author) {
+    return {
+      label: 'Property manager',
+      byline: comment.author.displayName ?? comment.author.email,
+    }
+  }
+
+  const normalizedBody = comment.body.trim().toLowerCase()
+  const normalizedVendor = assignedVendorName?.trim().toLowerCase()
+
+  if (normalizedVendor && normalizedBody.includes(normalizedVendor)) {
+    return {
+      label: 'Vendor',
+      byline: assignedVendorName,
+    }
+  }
+
+  if (
+    normalizedBody.startsWith('submitted from tenant mobile portal')
+    || normalizedBody.startsWith('tenant canceled request:')
+    || normalizedBody.startsWith('submitted by ')
+  ) {
+    return {
+      label: 'Tenant',
+      byline: null,
+    }
+  }
+
+  return {
+    label: 'Visible note',
+    byline: null,
+  }
 }
 
 export default async function TenantMobileRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -120,7 +162,15 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <h3 style={{ marginTop: 4 }}>Visible notes</h3>
         </div>
         {request.comments.length ? request.comments.map((comment) => (
-          <div key={comment.id}>
+          <div key={comment.id} className="timelineRow">
+            {(() => {
+              const source = classifyCommentSource(comment, request.assignedVendorName)
+              return (
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  {source.label}{source.byline ? ` · ${source.byline}` : ''}
+                </div>
+              )
+            })()}
             <div>{comment.body}</div>
             <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
           </div>
@@ -163,9 +213,12 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         {request.photos.length ? (
           <div className="photo-grid">
             {request.photos.map((photo) => (
-              <a key={photo.id} href={`/api/tenant/media/${photo.id}`} target="_blank" rel="noreferrer" className="photo-card">
-                <img src={`/api/tenant/media/${photo.id}`} alt="Maintenance issue photo" className="photo-image" />
-              </a>
+              <MediaPhotoCard
+                key={photo.id}
+                href={`/api/tenant/media/${photo.id}`}
+                src={`/api/tenant/media/${photo.id}`}
+                alt="Maintenance issue photo"
+              />
             ))}
           </div>
         ) : <div className="muted">No photos uploaded.</div>}

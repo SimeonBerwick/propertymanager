@@ -1,12 +1,13 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import {
   deactivateMobileIdentityAction,
   sendMobileInviteAction,
   setupMobileIdentityAction,
   type MobileIdentityState,
 } from './actions'
+import { getTenantLeaseLabel } from '@/lib/tenant-occupancy'
 
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
@@ -16,55 +17,73 @@ interface MobileIdentityPanelProps {
   propertyIsActive?: boolean
   tenantName?: string
   tenantEmail?: string
-  tenantIdentity?: {
+  tenantIdentities?: Array<{
     id: string
     tenantName: string
     phoneE164: string
     email?: string | null
     status: string
+    leaseStartDate?: string | null
+    leaseEndDate?: string | null
     verifiedAt?: string | null
     lastLoginAt?: string | null
-    issues?: string[]
-  } | null
+  }>
 }
 
-export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsActive = true, tenantName, tenantEmail, tenantIdentity }: MobileIdentityPanelProps) {
+export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsActive = true, tenantName, tenantEmail, tenantIdentities = [] }: MobileIdentityPanelProps) {
   const [setupState, setupAction, setupPending] = useActionState(setupMobileIdentityAction, INITIAL_STATE)
   const [inviteState, inviteAction, invitePending] = useActionState(sendMobileInviteAction, INITIAL_STATE)
   const [deactivateState, deactivateAction, deactivatePending] = useActionState(deactivateMobileIdentityAction, INITIAL_STATE)
 
   const isArchived = !unitIsActive || !propertyIsActive
+  const now = new Date()
+  const sorted = [...tenantIdentities].sort((a, b) => new Date(a.leaseStartDate ?? 0).getTime() - new Date(b.leaseStartDate ?? 0).getTime())
+  const currentIdentity = [...sorted].reverse().find((identity) => {
+    const start = identity.leaseStartDate ? new Date(identity.leaseStartDate) : new Date(0)
+    const end = identity.leaseEndDate ? new Date(identity.leaseEndDate) : null
+    return identity.status !== 'inactive' && identity.status !== 'moved_out' && start <= now && (!end || end >= now)
+  }) ?? null
+  const upcomingIdentity = sorted.find((identity) => {
+    const start = identity.leaseStartDate ? new Date(identity.leaseStartDate) : new Date(0)
+    return identity.status !== 'inactive' && identity.status !== 'moved_out' && start > now
+  }) ?? null
+  const [currentMonthToMonth, setCurrentMonthToMonth] = useState(!currentIdentity?.leaseEndDate)
+  const [upcomingMonthToMonth, setUpcomingMonthToMonth] = useState(!upcomingIdentity?.leaseEndDate)
 
   return (
     <section className="card stack">
       <div>
         <div className="kicker">Mobile tenant access</div>
-        <h3 style={{ marginTop: 4 }}>Invite and manage tenant portal access</h3>
+        <h3 style={{ marginTop: 4 }}>Manage renter occupancy and portal access</h3>
       </div>
 
-      {tenantIdentity ? (
+      {currentIdentity ? (
         <div className="stack" style={{ gap: 8 }}>
-          <div className="muted">Status: {tenantIdentity.status}</div>
-          <div className="muted">Tenant: {tenantIdentity.tenantName}</div>
-          <div className="muted">Phone: {tenantIdentity.phoneE164}</div>
-          {tenantIdentity.email && <div className="muted">Email: {tenantIdentity.email}</div>}
-          <div className="muted">Verified: {tenantIdentity.verifiedAt ? new Date(tenantIdentity.verifiedAt).toLocaleString() : 'No'}</div>
-          <div className="muted">Last login: {tenantIdentity.lastLoginAt ? new Date(tenantIdentity.lastLoginAt).toLocaleString() : 'Never'}</div>
+          <div className="kicker">Current renter</div>
+          <div className="muted">Status: {currentIdentity.status}</div>
+          <div className="muted">Tenant: {currentIdentity.tenantName}</div>
+          <div className="muted">Lease: {getTenantLeaseLabel(currentIdentity)}</div>
+          <div className="muted">Phone: {currentIdentity.phoneE164}</div>
+          {currentIdentity.email && <div className="muted">Email: {currentIdentity.email}</div>}
+          <div className="muted">Verified: {currentIdentity.verifiedAt ? new Date(currentIdentity.verifiedAt).toLocaleString() : 'No'}</div>
+          <div className="muted">Last login: {currentIdentity.lastLoginAt ? new Date(currentIdentity.lastLoginAt).toLocaleString() : 'Never'}</div>
         </div>
       ) : (
-        <div className="muted">No mobile identity configured yet.</div>
-      )}
-
-      {tenantIdentity?.issues && tenantIdentity.issues.length > 0 && (
-        <div className="notice error">
-          <strong>Mobile identity needs attention.</strong>
-          <ul style={{ margin: '8px 0 0 18px' }}>
-            {tenantIdentity.issues.map((issue) => (
-              <li key={issue}>{issue}</li>
-            ))}
-          </ul>
+        <div className="notice" style={{ background: '#fff8e1', borderColor: '#fcd34d' }}>
+          This unit is currently vacant.
+          {upcomingIdentity?.leaseStartDate ? ` Next renter starts ${new Date(upcomingIdentity.leaseStartDate).toLocaleDateString()}.` : ''}
         </div>
       )}
+
+      {upcomingIdentity ? (
+        <div className="stack" style={{ gap: 8 }}>
+          <div className="kicker">Upcoming renter</div>
+          <div className="muted">Tenant: {upcomingIdentity.tenantName}</div>
+          <div className="muted">Lease: {getTenantLeaseLabel(upcomingIdentity)}</div>
+          <div className="muted">Phone: {upcomingIdentity.phoneE164}</div>
+          {upcomingIdentity.email && <div className="muted">Email: {upcomingIdentity.email}</div>}
+        </div>
+      ) : null}
 
       {isArchived && (
         <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
@@ -88,9 +107,10 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
 
       <form action={setupAction} className="stack">
         <input type="hidden" name="unitId" value={unitId} />
+        {currentIdentity ? <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} /> : null}
         <label className="field">
-          <span className="field-label">Tenant name</span>
-          <input className="input" type="text" name="tenantName" defaultValue={tenantIdentity?.tenantName ?? tenantName ?? ''} required />
+          <span className="field-label">Current renter name</span>
+          <input className="input" type="text" name="tenantName" defaultValue={currentIdentity?.tenantName ?? tenantName ?? ''} required />
         </label>
         <label className="field">
           <span className="field-label">Phone number</span>
@@ -107,7 +127,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
               <option value="NZ">NZ (+64)</option>
               <option value="ZA">ZA (+27)</option>
             </select>
-            <input className="input" type="text" name="phoneE164" defaultValue={tenantIdentity?.phoneE164 ?? ''} placeholder="+16025551212 or local format" required style={{ flex: 1 }} />
+            <input className="input" type="text" name="phoneE164" defaultValue={currentIdentity?.phoneE164 ?? ''} placeholder="+16025551212 or local format" required style={{ flex: 1 }} />
           </div>
           <span className="field-hint" style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
             Use E.164 (+16025551212) for any region, or local format with the correct region selected.
@@ -115,21 +135,97 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         </label>
         <label className="field">
           <span className="field-label">Email</span>
-          <input className="input" type="email" name="email" defaultValue={tenantIdentity?.email ?? tenantEmail ?? ''} placeholder="tenant@example.com" />
+          <input className="input" type="email" name="email" defaultValue={currentIdentity?.email ?? tenantEmail ?? ''} placeholder="tenant@example.com" />
         </label>
-        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save mobile identity'}</button>
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Lease start</span>
+            <input className="input" type="date" name="leaseStartDate" defaultValue={currentIdentity?.leaseStartDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10)} required />
+          </label>
+          <label className="field">
+            <span className="field-label">Lease end</span>
+            <input
+              className="input"
+              type="date"
+              name="leaseEndDate"
+              defaultValue={currentIdentity?.leaseEndDate?.slice(0, 10) ?? ''}
+              disabled={currentMonthToMonth}
+              style={currentMonthToMonth ? { opacity: 0.45 } : undefined}
+            />
+          </label>
+        </div>
+        <label className="row" style={{ justifyContent: 'flex-start', gap: 10 }}>
+          <input
+            type="checkbox"
+            name="monthToMonth"
+            checked={currentMonthToMonth}
+            onChange={(event) => setCurrentMonthToMonth(event.target.checked)}
+          />
+          <span>Month to month</span>
+        </label>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save current renter'}</button>
       </form>
 
-      {tenantIdentity && (
+      <form action={setupAction} className="stack">
+        <input type="hidden" name="unitId" value={unitId} />
+        <input type="hidden" name="createMode" value="future" />
+        {upcomingIdentity ? <input type="hidden" name="tenantIdentityId" value={upcomingIdentity.id} /> : null}
+        <div>
+          <div className="kicker">Next renter</div>
+          <h4 style={{ margin: '4px 0 0' }}>Stage upcoming occupancy</h4>
+          <div className="muted">Optional. Leave this blank if the unit will be vacant after the current lease ends.</div>
+        </div>
+        <label className="field">
+          <span className="field-label">Next renter name</span>
+          <input className="input" type="text" name="tenantName" defaultValue={upcomingIdentity?.tenantName ?? ''} />
+        </label>
+        <label className="field">
+          <span className="field-label">Phone number</span>
+          <input className="input" type="text" name="phoneE164" defaultValue={upcomingIdentity?.phoneE164 ?? ''} placeholder="+16025551212" />
+        </label>
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input className="input" type="email" name="email" defaultValue={upcomingIdentity?.email ?? ''} placeholder="next-renter@example.com" />
+        </label>
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Lease start</span>
+            <input className="input" type="date" name="leaseStartDate" defaultValue={upcomingIdentity?.leaseStartDate?.slice(0, 10) ?? ''} />
+          </label>
+          <label className="field">
+            <span className="field-label">Lease end</span>
+            <input
+              className="input"
+              type="date"
+              name="leaseEndDate"
+              defaultValue={upcomingIdentity?.leaseEndDate?.slice(0, 10) ?? ''}
+              disabled={upcomingMonthToMonth}
+              style={upcomingMonthToMonth ? { opacity: 0.45 } : undefined}
+            />
+          </label>
+        </div>
+        <label className="row" style={{ justifyContent: 'flex-start', gap: 10 }}>
+          <input
+            type="checkbox"
+            name="monthToMonth"
+            checked={upcomingMonthToMonth}
+            onChange={(event) => setUpcomingMonthToMonth(event.target.checked)}
+          />
+          <span>Month to month</span>
+        </label>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save next renter'}</button>
+      </form>
+
+      {currentIdentity && (
         <div className="row" style={{ justifyContent: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <form action={inviteAction}>
-            <input type="hidden" name="tenantIdentityId" value={tenantIdentity.id} />
+            <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button primary" disabled={invitePending || isArchived}>
               {invitePending ? 'Creating invite…' : 'Create invite link'}
             </button>
           </form>
           <form action={deactivateAction}>
-            <input type="hidden" name="tenantIdentityId" value={tenantIdentity.id} />
+            <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button" disabled={deactivatePending}>
               {deactivatePending ? 'Deactivating…' : 'Deactivate mobile access'}
             </button>

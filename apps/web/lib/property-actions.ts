@@ -367,6 +367,19 @@ export async function updateUnitAction(
       return { error: 'Unit not found or you do not have access.' }
     }
 
+    await prisma.tenantIdentity.updateMany({
+      where: {
+        orgId: ownerId,
+        propertyId,
+        unitId,
+        status: { in: ['pending_invite', 'active'] },
+      },
+      data: {
+        ...(tenantName ? { tenantName } : {}),
+        email: tenantEmail || null,
+      },
+    })
+
     await writeAuditLog({
       orgId: ownerId,
       actorUserId: ownerId,

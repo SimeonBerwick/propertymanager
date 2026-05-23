@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -61,6 +61,15 @@ enum TenantOtpPurpose {
 
 enum TenantOtpChannel {
   sms
+  email
+}
+
+enum VendorOtpPurpose {
+  returning_login
+  dispatch_link_login
+}
+
+enum VendorOtpChannel {
   email
 }
 
@@ -141,6 +150,19 @@ enum BillingDocumentStatus {
   partial
   paid
   void
+}
+
+enum VendorCommercialType {
+  bid
+  service_fee
+  overcost
+  bill_to_property_manager
+}
+
+enum VendorCommercialStatus {
+  submitted
+  approved
+  declined
 }
 
 model User {
@@ -253,6 +275,7 @@ model MaintenanceRequest {
   tenders                 RequestTender[]
   tenderInvites           TenderInvite[]
   billingDocuments        BillingDocument[]
+  vendorCommercialItems   VendorCommercialItem[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
@@ -318,6 +341,7 @@ model Vendor {
   supportedLanguagesCsv  String?  @default("")
   supportedCurrenciesCsv String?  @default("")
   isActive               Boolean  @default(true)
+  lastLoginAt            DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -325,8 +349,35 @@ model Vendor {
   dispatchEvents   VendorDispatchEvent[]
   dispatchLinks    VendorDispatchLink[]
   tenderInvites    TenderInvite[]
+  sessions         VendorSession[]
+  otpChallenges    VendorOtpChallenge[]
+  commercialItems  VendorCommercialItem[]
 
   @@index([orgId, isActive])
+  @@index([email, isActive])
+}
+
+model VendorCommercialItem {
+  id           String                 @id @default(cuid())
+  requestId    String
+  vendorId     String
+  orgId        String?
+  itemType     VendorCommercialType
+  status       VendorCommercialStatus @default(submitted)
+  currency     CurrencyOption         @default(usd)
+  amountCents  Int
+  title        String
+  description  String?
+  submittedAt  DateTime               @default(now())
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  vendor  Vendor             @relation(fields: [vendorId], references: [id])
+
+  @@index([requestId, submittedAt])
+  @@index([vendorId, submittedAt])
+  @@index([orgId, submittedAt])
 }
 
 model VendorDispatchEvent {
@@ -412,6 +463,8 @@ model TenantIdentity {
   tenantName  String
   phoneE164   String
   email       String?
+  leaseStartDate DateTime?
+  leaseEndDate   DateTime?
   status      TenantIdentityStatus @default(pending_invite)
   verifiedAt  DateTime?
   lastLoginAt DateTime?
@@ -491,6 +544,45 @@ model TenantSession {
 
   @@index([tenantIdentityId, revokedAt])
   @@index([orgId])
+}
+
+model VendorSession {
+  id                String    @id @default(cuid())
+  vendorId          String
+  orgId             String?
+  sessionSecretHash String    @unique
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  lastSeenAt        DateTime?
+  userAgent         String?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, revokedAt])
+  @@index([orgId])
+}
+
+model VendorOtpChallenge {
+  id                String           @id @default(cuid())
+  vendorId          String
+  orgId             String?
+  purpose           VendorOtpPurpose
+  channel           VendorOtpChannel
+  destinationMasked String
+  codeHash          String
+  codeSalt          String
+  expiresAt         DateTime
+  attemptCount      Int              @default(0)
+  maxAttempts       Int              @default(5)
+  lockedUntil       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime         @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, purpose, createdAt])
+  @@index([orgId, purpose])
 }
 
 model BillingDocument {

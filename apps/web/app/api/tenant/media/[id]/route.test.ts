@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { readFile } from 'node:fs/promises'
 import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { readStoredMedia } from '@/lib/media-storage'
 import { GET } from '@/app/api/tenant/media/[id]/route'
 import { scaffoldTenant, createMaintenanceRequest } from '@/test/helpers'
 import { prisma } from '@/lib/prisma'
@@ -10,7 +10,7 @@ vi.mock('@/lib/tenant-mobile-session', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/tenant-mobile-session')>()
   return { ...actual, getTenantMobileSession: vi.fn() }
 })
-vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
+vi.mock('@/lib/media-storage', () => ({ readStoredMedia: vi.fn() }))
 
 const FAKE_IMAGE = Buffer.from('fake-image-data')
 
@@ -41,7 +41,7 @@ function makeTenantScope(
 describe('GET /api/tenant/media/[id]', () => {
   beforeEach(() => {
     vi.mocked(getTenantMobileSession).mockResolvedValue(null)
-    vi.mocked(readFile).mockReset()
+    vi.mocked(readStoredMedia).mockReset()
   })
 
   test('returns 401 when no session', async () => {
@@ -50,14 +50,14 @@ describe('GET /api/tenant/media/[id]', () => {
   })
 
   test('returns 404 for unknown photo id', async () => {
-    const { user, property, unit, identity } = await scaffoldTenant()
+    const { property, unit, identity } = await scaffoldTenant()
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
     const res = await GET(new Request('http://localhost'), makeParams('nonexistent'))
     expect(res.status).toBe(404)
   })
 
   test('returns 404 when photo belongs to a different tenant', async () => {
-    const { user: userA, property: propA, unit: unitA } = await scaffoldTenant()
+    const { property: propA, unit: unitA } = await scaffoldTenant()
     const { property: propB, unit: unitB, identity: identityB } = await scaffoldTenant()
 
     const requestA = await createMaintenanceRequest(propA.id, unitA.id)
@@ -65,7 +65,6 @@ describe('GET /api/tenant/media/[id]', () => {
       data: { requestId: requestA.id, imageUrl: 'uploads/requests/a.jpg' },
     })
 
-    // Tenant B tries to access tenant A's photo
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identityB, propB, unitB))
     const res = await GET(new Request('http://localhost'), makeParams(photoA.id))
     expect(res.status).toBe(404)
@@ -83,7 +82,7 @@ describe('GET /api/tenant/media/[id]', () => {
     })
 
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
-    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readStoredMedia).mockResolvedValueOnce({ bytes: FAKE_IMAGE, contentType: 'image/webp' } as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
@@ -101,7 +100,7 @@ describe('GET /api/tenant/media/[id]', () => {
     })
 
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
-    vi.mocked(readFile).mockResolvedValueOnce(FAKE_IMAGE as never)
+    vi.mocked(readStoredMedia).mockResolvedValueOnce({ bytes: FAKE_IMAGE, contentType: 'image/jpeg' } as never)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(200)
@@ -120,10 +119,10 @@ describe('GET /api/tenant/media/[id]', () => {
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(404)
-    expect(readFile).not.toHaveBeenCalled()
+    expect(readStoredMedia).toHaveBeenCalledWith('../../secrets.txt')
   })
 
-  test('returns 404 when disk path fails', async () => {
+  test('returns 404 when media read fails', async () => {
     const { property, unit, identity } = await scaffoldTenant()
     const request = await createMaintenanceRequest(property.id, unit.id, {
       tenantIdentityId: identity.id,
@@ -133,7 +132,7 @@ describe('GET /api/tenant/media/[id]', () => {
     })
 
     vi.mocked(getTenantMobileSession).mockResolvedValue(makeTenantScope(identity, property, unit))
-    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'))
+    vi.mocked(readStoredMedia).mockResolvedValueOnce(null)
 
     const res = await GET(new Request('http://localhost'), makeParams(photo.id))
     expect(res.status).toBe(404)

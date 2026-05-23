@@ -3,6 +3,7 @@ import { randomBytes, createHash } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
+import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 30
@@ -35,7 +36,7 @@ export async function createTenantMobileSession(tenantIdentityId: string) {
     include: { property: true, unit: true },
   })
 
-  if (!tenantIdentity || tenantIdentity.status !== 'active') {
+  if (!tenantIdentity || !canTenantIdentityAccessPortal(tenantIdentity)) {
     throw new Error('Tenant identity is not active.')
   }
 
@@ -110,7 +111,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
 
   const identity = session.tenantIdentity
 
-  if (identity.status !== 'active' || !identity.property.isActive || !identity.unit.isActive) {
+  if (!canTenantIdentityAccessPortal(identity) || !identity.property.isActive || !identity.unit.isActive) {
     await writeAuditLog({
       orgId: identity.orgId,
       actorUserId: null,

@@ -64,6 +64,7 @@ export async function validateVendorDispatchToken(rawToken: string) {
     linkId: link.id,
     vendorId: link.vendorId,
     vendorName: link.vendor.name,
+    vendorEmail: link.vendor.email,
     requestId: link.requestId,
     requestTitle: link.request.title,
     propertyName: link.request.property.name,

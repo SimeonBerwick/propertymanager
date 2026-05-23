@@ -49,7 +49,7 @@ export function OpsActivityFeed({ items }: { items: OpsActivityItem[] }) {
             </div>
           </div>
         )
-      }) : <div className="muted">No recent operator activity yet.</div>}
+      }) : <div className="muted">No recent activity.</div>}
     </div>
   )
 }

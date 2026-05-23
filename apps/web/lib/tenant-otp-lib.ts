@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
 import { takeRateLimitHit } from '@/lib/rate-limit'
+import { isTenantIdentityActiveOn } from '@/lib/tenant-occupancy'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -45,23 +46,37 @@ export async function createOtpChallenge(
   tenantIdentityId: string,
   purpose: 'invite_login' | 'returning_login',
   channel: 'email',
-  options?: { clientHint?: string },
 ) {
-  const tenantIdentity = await prisma.tenantIdentity.findUnique({ where: { id: tenantIdentityId } })
+  const tenantIdentity = await prisma.tenantIdentity.findUnique({
+    where: { id: tenantIdentityId },
+    include: {
+      unit: {
+        select: { tenantEmail: true },
+      },
+    },
+  })
 
   if (!tenantIdentity) {
     throw new Error('Tenant identity not found.')
   }
 
-  const destination = tenantIdentity.email ?? ''
+  if (!isTenantIdentityActiveOn(tenantIdentity)) {
+    throw new Error('Tenant access is outside the active lease window.')
+  }
+
+  const destination = tenantIdentity.unit.tenantEmail?.trim().toLowerCase() || (tenantIdentity.email ?? '')
   if (!destination) {
     throw new Error('Tenant identity is missing a delivery email.')
   }
 
-  const issueLimit = await takeRateLimitHit(
-    `tenant-otp-issue:${options?.clientHint ?? 'unknown-client'}:${tenantIdentityId}:${purpose}:${channel}`,
-    OTP_ISSUE_RATE_LIMIT,
-  )
+  if (tenantIdentity.email !== destination) {
+    await prisma.tenantIdentity.update({
+      where: { id: tenantIdentity.id },
+      data: { email: destination },
+    })
+  }
+
+  const issueLimit = await takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
   if (!issueLimit.ok) {
     throw new OtpRateLimitError()
   }

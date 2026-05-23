@@ -11,6 +11,7 @@ import {
   updateStatusFormAction,
   updateVendorFormAction,
   addCommentFormAction,
+  awardTenderInviteAction,
 } from '@/lib/request-detail-actions'
 import { scaffoldLandlord, createMaintenanceRequest } from '@/test/helpers'
 
@@ -295,5 +296,94 @@ describe('addCommentFormAction', () => {
 
     const comments = await prisma.requestComment.findMany({ where: { requestId: request.id } })
     expect(comments[0].visibility).toBe('external')
+  })
+})
+
+describe('awardTenderInviteAction', () => {
+  beforeEach(() => {
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('declines losing submitted vendor bid items when another tender invite is awarded', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, { orgId: user.id, status: 'approved' })
+
+    const winningVendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Desert Air Service', email: 'desert@example.com', isActive: true },
+    })
+    const losingVendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Southwest Plumbing', email: 'southwest@example.com', isActive: true },
+    })
+
+    const tender = await prisma.requestTender.create({
+      data: { requestId: request.id, status: 'open', sentAt: new Date() },
+    })
+
+    const losingInvite = await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: losingVendor.id,
+        status: 'bid_submitted',
+        bidAmountCents: 50000,
+        bidCurrency: 'usd',
+      },
+    })
+
+    const winningInvite = await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: winningVendor.id,
+        status: 'bid_submitted',
+        bidAmountCents: 65000,
+        bidCurrency: 'usd',
+      },
+    })
+
+    const losingBidItem = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: losingVendor.id,
+        orgId: user.id,
+        itemType: 'bid',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 50000,
+        title: 'Leak repair bid',
+      },
+    })
+
+    const winningBidItem = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: winningVendor.id,
+        orgId: user.id,
+        itemType: 'bid',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 65000,
+        title: 'Leak repair bid',
+      },
+    })
+
+    const result = await awardTenderInviteAction(
+      PREV,
+      formData({ requestId: request.id, tenderId: tender.id, inviteId: winningInvite.id }),
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+
+    const refreshedLosingInvite = await prisma.tenderInvite.findUnique({ where: { id: losingInvite.id } })
+    const refreshedWinningInvite = await prisma.tenderInvite.findUnique({ where: { id: winningInvite.id } })
+    const refreshedLosingBid = await prisma.vendorCommercialItem.findUnique({ where: { id: losingBidItem.id } })
+    const refreshedWinningBid = await prisma.vendorCommercialItem.findUnique({ where: { id: winningBidItem.id } })
+
+    expect(refreshedLosingInvite?.status).toBe('not_awarded')
+    expect(refreshedWinningInvite?.status).toBe('awarded')
+    expect(refreshedLosingBid?.status).toBe('declined')
+    expect(refreshedWinningBid?.status).toBe('submitted')
   })
 })

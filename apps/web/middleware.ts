@@ -25,6 +25,11 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Vendor portal handles its own session via requireVendorSession().
+  if (pathname.startsWith('/vendor')) {
+    return response
+  }
+
   if (!session.isLoggedIn) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
