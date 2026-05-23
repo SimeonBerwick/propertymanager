@@ -90,6 +90,8 @@ function main() {
 
   const loginHead = head('/login')
   expectStatus(loginHead, 200, 'login page')
+  const loginPage = get('/login')
+  expectMatch(loginPage, /Choose access type|Property manager|Sign in/, 'login page')
 
   const landlordCookie = getSmokeSessionCookie('landlord', smokeUsers.landlord)
   const dashboardHead = head('/dashboard', landlordCookie)
