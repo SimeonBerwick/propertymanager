@@ -52,8 +52,8 @@ vi.mock('next/headers', () => ({
 
 beforeEach(() => {
   mockCookieStore._reset()
-  vi.mocked(cookies).mockResolvedValue(mockCookieStore as ReturnType<typeof vi.fn>)
-  vi.mocked(headers).mockResolvedValue({ get: () => 'test-agent/1.0' } as ReturnType<typeof vi.fn>)
+  vi.mocked(cookies).mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
+  vi.mocked(headers).mockResolvedValue({ get: () => 'test-agent/1.0' } as unknown as Awaited<ReturnType<typeof headers>>)
 })
 
 // ─── helpers ──────────────────────────────────────────────────────────────────

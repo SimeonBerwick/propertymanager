@@ -12,6 +12,7 @@ import {
   updateVendorFormAction,
   addCommentFormAction,
   awardTenderInviteAction,
+  updateDispatchFormAction,
 } from '@/lib/request-detail-actions'
 import { scaffoldLandlord, createMaintenanceRequest } from '@/test/helpers'
 
@@ -385,5 +386,48 @@ describe('awardTenderInviteAction', () => {
     expect(refreshedWinningInvite?.status).toBe('awarded')
     expect(refreshedLosingBid?.status).toBe('declined')
     expect(refreshedWinningBid?.status).toBe('submitted')
+  })
+})
+
+describe('updateDispatchFormAction', () => {
+  beforeEach(() => {
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('moves a selected vendor back to approved with reassignment review when they decline', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Declining Vendor', email: 'decline@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'accepted',
+    })
+
+    const result = await updateDispatchFormAction(
+      PREV,
+      formData({ requestId: request.id, dispatchStatus: 'declined', note: 'Cannot take this job' }),
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+
+    const [updatedRequest, statusEvent, dispatchEvent] = await Promise.all([
+      prisma.maintenanceRequest.findUnique({ where: { id: request.id } }),
+      prisma.statusEvent.findFirst({ where: { requestId: request.id }, orderBy: { createdAt: 'desc' } }),
+      prisma.vendorDispatchEvent.findFirst({ where: { requestId: request.id }, orderBy: { createdAt: 'desc' } }),
+    ])
+
+    expect(updatedRequest?.status).toBe('approved')
+    expect(updatedRequest?.reviewState).toBe('vendor_declined_reassignment_needed')
+    expect(updatedRequest?.assignedVendorId).toBe(vendor.id)
+    expect(statusEvent?.toStatus).toBe('approved')
+    expect(dispatchEvent?.status).toBe('declined')
+    expect(dispatchEvent?.vendorId).toBe(vendor.id)
   })
 })
