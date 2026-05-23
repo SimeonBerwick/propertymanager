@@ -19,33 +19,32 @@ const smokeUsers = {
   tenant: process.env.HOSTED_SMOKE_TENANT_EMAIL ?? 'tenant@example.com',
 }
 
-function runVercelCurl(path, args = []) {
+function runCurl(path, args = []) {
   return execFileSync(
-    'vercel',
-    ['curl', path, '--deployment', baseUrl, '--yes', '--', ...args],
+    'curl',
+    ['-sS', '-i', `${baseUrl}${path}`, ...args],
     { encoding: 'utf8' },
   )
 }
 
 function head(path, cookie = '') {
-  const args = ['--head']
+  const args = ['-X', 'HEAD']
   if (cookie) args.push('--header', `Cookie: ${cookie}`)
-  return runVercelCurl(path, args)
+  return runCurl(path, args)
 }
 
 function get(path, cookie = '') {
   const args = []
   if (cookie) args.push('--header', `Cookie: ${cookie}`)
-  return runVercelCurl(path, args)
+  return runCurl(path, args)
 }
 
 function postJson(path, body, extraHeaders = []) {
-  return runVercelCurl(path, [
-    '--request', 'POST',
+  return runCurl(path, [
+    '-X', 'POST',
     '--header', 'Content-Type: application/json',
     ...extraHeaders,
     '--data', JSON.stringify(body),
-    '--include',
   ])
 }
 
