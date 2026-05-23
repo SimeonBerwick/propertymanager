@@ -19,6 +19,7 @@ export function formatRelativeAge(value: string) {
 }
 
 export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' | 'reviewState' | 'vendorScheduledEnd' | 'vendorScheduledStart'>):
+  | 'reassignment'
   | 'scheduled-today'
   | 'overdue'
   | 'follow-up'
@@ -30,6 +31,7 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
   const todayEnd = new Date(todayStart)
   todayEnd.setDate(todayEnd.getDate() + 1)
 
+  if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') return 'reassignment'
   if (request.reviewState === 'vendor_completed_pending_review') return 'review'
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') return 'follow-up'
   if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd) < now && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) return 'overdue'
