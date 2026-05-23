@@ -16,9 +16,11 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "./node_modules/.bin/tsx prisma/seed.ts",
+    "ops:sync-landlord-password": "node ./scripts/sync-landlord-password.mjs",
     "setup:local": "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:hosted": "node ./scripts/hosted-regression.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },
