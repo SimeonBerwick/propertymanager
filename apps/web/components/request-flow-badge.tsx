@@ -12,6 +12,7 @@ const LABELS: Record<string, string> = {
   closed: 'Closed',
   canceled: 'Canceled',
   reopened: 'Reopened',
+  reassignment: 'Reassign',
   'scheduled-today': 'Today',
   overdue: 'Overdue',
   'follow-up': 'Follow up',
