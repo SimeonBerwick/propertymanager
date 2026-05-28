@@ -17,6 +17,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "./node_modules/.bin/tsx prisma/seed.ts",
     "ops:sync-landlord-password": "node ./scripts/sync-landlord-password.mjs",
+    "hosted:db:reconcile": "bash ./scripts/apply-hosted-postgres-reconciliation.sh",
+    "ops:sync-landlord-password": "node ./scripts/sync-landlord-password.mjs",
     "setup:local": "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed",
     "test": "vitest run",
     "test:watch": "vitest",
