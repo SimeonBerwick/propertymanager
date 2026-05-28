@@ -53,6 +53,17 @@ function isHostedUrl(value: string) {
   }
 }
 
+function isConfiguredSmtpUrl(value: string) {
+  if (!value || PLACEHOLDER_PATTERN.test(value)) return false
+
+  try {
+    const url = new URL(value)
+    return ['smtp:', 'smtps:'].includes(url.protocol) && !PLACEHOLDER_PATTERN.test(url.hostname)
+  } catch {
+    return false
+  }
+}
+
 function normalizedUrl(value: string) {
   return value.replace(/\/$/, '')
 }
@@ -164,9 +175,13 @@ export function getRuntimeChecks(): RuntimeCheck[] {
     {
       id: 'smtpUrl',
       label: 'SMTP_URL',
-      ok: !!smtpUrl,
+      ok: isConfiguredSmtpUrl(smtpUrl),
       blocking,
-      detail: smtpUrl ? 'SMTP connection string is configured.' : 'Missing SMTP_URL.',
+      detail: smtpUrl
+        ? isConfiguredSmtpUrl(smtpUrl)
+          ? 'SMTP connection string looks production-safe.'
+          : 'SMTP_URL is missing, malformed, or still looks like a placeholder.'
+        : 'Missing SMTP_URL.',
     },
     {
       id: 'r2AccountId',

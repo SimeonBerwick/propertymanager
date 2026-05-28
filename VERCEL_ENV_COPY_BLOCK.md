@@ -1,0 +1,52 @@
+# Vercel Env Copy Block
+
+Use this as the exact field list for the PropertyManagerV1 web app.
+
+## Required env vars
+
+```env
+# Core runtime
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require
+SESSION_SECRET=replace-with-32+-char-random-secret
+APP_URL=https://pm.yourdomain.com
+NEXT_PUBLIC_APP_URL=https://pm.yourdomain.com
+INTERNAL_AUTOMATION_SECRET=replace-with-long-random-secret
+HOSTED_RUNTIME_REQUIRED=true
+
+# Auth bootstrap / seed-time landlord values
+LANDLORD_EMAIL=landlord@example.com
+LANDLORD_PASSWORD=replace-at-seed-time-only
+LANDLORD_SLUG=landlord
+
+# Notifications
+NOTIFY_TRANSPORT=smtp
+SMTP_URL=smtps://user:pass@smtp.example.com:465
+NOTIFY_FROM=Property Manager <noreply@yourdomain.com>
+
+# Cloudflare R2 private media
+R2_ACCOUNT_ID=your-r2-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+R2_BUCKET=property-manager-private-media
+
+# Upstash Redis shared rate limiting
+UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-rest-token
+```
+
+## Vercel target
+Set these for:
+- Production
+- Preview if you want hosted substrate checks there too
+
+## After env entry
+- redeploy
+- open `/ops`
+- require zero blocking failures
+
+## Must verify after deploy
+- landlord login works
+- SMTP notification sends
+- private photo upload/read works
+- rate limiting works through Upstash
+- internal automation succeeds with bearer auth

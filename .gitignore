@@ -14,3 +14,5 @@ apps/web/e2e.db
 apps/web/e2e.db-journal
 apps/web/playwright-report/
 apps/web/test-results/
+.vercel
+.env.vercel.*

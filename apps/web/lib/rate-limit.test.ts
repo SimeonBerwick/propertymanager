@@ -40,6 +40,36 @@ describe('rate-limit', () => {
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain('/set/shared')
   })
 
+  test('persists Upstash buckets without double-serializing the value', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: null }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: 'OK' }) })
+
+    await takeRateLimitHit('shared', { limit: 2, windowMs: 60_000 })
+
+    const requestInit = fetchMock.mock.calls[1]?.[1] as { method?: string; body?: string }
+    expect(requestInit.method).toBe('POST')
+    expect(JSON.parse(requestInit.body ?? '{}')).toMatchObject({
+      hits: expect.any(Array),
+      blockedUntil: null,
+    })
+  })
+
+  test('blocks repeated hits when Upstash returns a persisted bucket', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: JSON.stringify({ hits: [Date.now() - 1000], blockedUntil: null }) }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ result: 'OK' }) })
+
+    const result = await takeRateLimitHit('shared', { limit: 2, windowMs: 60_000, blockMs: 60_000 })
+    expect(result.ok).toBe(false)
+  })
+
   test('resets Upstash bucket when configured', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
