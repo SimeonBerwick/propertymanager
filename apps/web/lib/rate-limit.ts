@@ -85,7 +85,7 @@ async function getUpstashBucket(key: string) {
 }
 
 async function setUpstashBucket(key: string, bucket: Bucket) {
-  await upstashRequest('set', key, JSON.stringify(JSON.stringify(bucket)))
+  await upstashRequest('set', key, JSON.stringify(bucket))
 }
 
 async function deleteUpstashBucket(key: string) {

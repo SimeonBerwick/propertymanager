@@ -33,4 +33,19 @@ describe('runtime-env', () => {
     expect(checks.find((check) => check.id === 'mediaBackend')?.ok).toBe(false)
     expect(checks.find((check) => check.id === 'rateLimitBackend')?.ok).toBe(false)
   })
+
+  test('flags placeholder SMTP_URL values as blocking under hosted enforcement', () => {
+    process.env.HOSTED_RUNTIME_REQUIRED = 'true'
+    process.env.DATABASE_URL = 'postgresql://user:pass@db.example.net/app?sslmode=require'
+    process.env.SESSION_SECRET = '12345678901234567890123456789012'
+    process.env.APP_URL = 'https://propertymanager-alpha.vercel.app'
+    process.env.NEXT_PUBLIC_APP_URL = 'https://propertymanager-alpha.vercel.app'
+    process.env.INTERNAL_AUTOMATION_SECRET = 'abcdefghijklmnopqrstuvwxyz123456'
+    process.env.NOTIFY_TRANSPORT = 'smtp'
+    process.env.SMTP_URL = 'smtps://user:pass@smtp.example.com:465'
+
+    const smtpCheck = getRuntimeChecks().find((check) => check.id === 'smtpUrl')
+    expect(smtpCheck?.ok).toBe(false)
+    expect(smtpCheck?.detail).toMatch(/placeholder/i)
+  })
 })

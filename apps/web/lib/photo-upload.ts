@@ -41,8 +41,11 @@ export async function validatePhotoFiles(files: File[]) {
 export async function savePhotos(files: File[]) {
   if (!files.length) return [] as string[]
 
+  const shouldWriteLocalDisk = !hasR2StorageConfig()
   const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
-  await mkdir(diskDirectory, { recursive: true })
+  if (shouldWriteLocalDisk) {
+    await mkdir(diskDirectory, { recursive: true })
+  }
 
   const savedPaths: string[] = []
 
@@ -55,7 +58,7 @@ export async function savePhotos(files: File[]) {
 
     await saveStoredMedia(storagePath, bytes, file.type || 'application/octet-stream')
 
-    if (!hasR2StorageConfig()) {
+    if (shouldWriteLocalDisk) {
       await writeFile(diskPath, bytes)
     }
 
