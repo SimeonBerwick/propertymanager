@@ -77,37 +77,6 @@ export default async function DashboardPage({
         </div>
       </section>
 
-      <section className="grid cols-4">
-        <div className="card metricCard metricDanger">
-          <div>
-            <div className="kicker">Needs triage</div>
-            <div className="metricValue">{data.statusCounts.requested + data.statusCounts.reopened}</div>
-          </div>
-          <div className="muted">Fresh requests still waiting on operator attention.</div>
-        </div>
-        <div className="card metricCard metricWarn">
-          <div>
-            <div className="kicker">Scheduled today</div>
-            <div className="metricValue">{data.queueCounts.scheduledToday}</div>
-          </div>
-          <div className="muted">Vendor visits expected to land today.</div>
-        </div>
-        <div className="card metricCard metricDanger">
-          <div>
-            <div className="kicker">Overdue scheduled</div>
-            <div className="metricValue">{data.queueCounts.overdueScheduled}</div>
-          </div>
-          <div className="muted">Scheduled windows already slipped.</div>
-        </div>
-        <div className="card metricCard">
-          <div>
-            <div className="kicker">Open exceptions</div>
-            <div className="metricValue">{data.queueCounts.reassignmentNeeded + data.queueCounts.completedPendingReview + data.queueCounts.needsFollowUp}</div>
-          </div>
-          <div className="muted">Requests blocked on review or vendor handling.</div>
-        </div>
-      </section>
-
       <SectionCard
         kicker="Inbox"
         title="Request queue"
@@ -151,8 +120,6 @@ export default async function DashboardPage({
           <Link href="/dashboard?queue=declined" className="filterChip" style={selectedQueue === 'declined' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Declined</Link>
           <Link href="/dashboard?queue=canceled" className="filterChip" style={selectedQueue === 'canceled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Canceled</Link>
           <Link href="/dashboard?queue=completed" className="filterChip" style={selectedQueue === 'completed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Completed</Link>
-          <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
-          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue scheduled</Link>
           <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
           <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Unclaimed</Link>
         </div>
