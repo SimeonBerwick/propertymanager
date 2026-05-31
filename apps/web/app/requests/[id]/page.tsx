@@ -84,14 +84,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </div>
           <RequestSignalStrip request={data.request} />
         </div>
-
-        <div className="requestHeroAside">
-          <div className="requestSignalCard">
-            <div className="kicker">Next move</div>
-            <div className="signalTitle">Check replies first.</div>
-            <div className="muted">Tender responses and vendor updates now outrank billing on this page.</div>
-          </div>
-        </div>
       </section>
 
       <SectionCard

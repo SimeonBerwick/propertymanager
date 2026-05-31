@@ -3,7 +3,6 @@
 import { useActionState } from 'react'
 import { awardTenderInviteAction, type RequestActionState, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
-import { RequestQuickActions } from '@/components/request-quick-actions'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -50,12 +49,6 @@ export function RequestControlPanel({
 
   return (
     <div className="stack" style={{ gap: 16 }}>
-      <div className="card" style={{ padding: 16, background: 'var(--panel)' }}>
-        <div className="kicker">Queue actions</div>
-        <h3 style={{ marginTop: 4 }}>Maintenance Ops</h3>
-        <RequestQuickActions request={request} />
-      </div>
-
       <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
           <div className="kicker">Status</div>
