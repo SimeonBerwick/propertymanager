@@ -139,16 +139,28 @@ describe('property-actions', () => {
           label: 'Unit Z',
           tenantName: 'Taylor Reed',
           tenantEmail: 'TAYLOR@EXAMPLE.COM',
+          sizeSqFt: '920',
+          bedrooms: '2',
+          bathrooms: '1.5',
+          monthlyRent: '1650.25',
         }),
       ),
     ).rejects.toThrow(new RegExp(`NEXT_REDIRECT:/properties/${property.id}`))
 
     const unit = await prisma.unit.findFirst({ where: { propertyId: property.id, label: 'Unit Z' } })
     expect(unit?.tenantEmail).toBe('taylor@example.com')
+    expect(unit?.sizeSqFt).toBe(920)
+    expect(unit?.bedrooms).toBe(2)
+    expect(unit?.bathrooms).toBe(1.5)
+    expect(unit?.monthlyRentCents).toBe(165025)
   })
 
-  test('updateUnitAction updates unit fields and clears optional tenant data when blank', async () => {
+  test('updateUnitAction updates unit fields and clears optional tenant and profile data when blank', async () => {
     const { user, property, unit } = await scaffoldLandlord()
+    await prisma.unit.update({
+      where: { id: unit.id },
+      data: { sizeSqFt: 900, bedrooms: 2, bathrooms: 1.5, monthlyRentCents: 150000 },
+    })
     vi.mocked(getIronSession).mockResolvedValue(fakeSession(user.id))
 
     await expect(
@@ -160,6 +172,10 @@ describe('property-actions', () => {
           label: 'Unit AA',
           tenantName: '',
           tenantEmail: '',
+          sizeSqFt: '',
+          bedrooms: '',
+          bathrooms: '',
+          monthlyRent: '',
         }),
       ),
     ).rejects.toThrow(new RegExp(`NEXT_REDIRECT:/units/${unit.id}`))
@@ -168,6 +184,10 @@ describe('property-actions', () => {
     expect(updated?.label).toBe('Unit AA')
     expect(updated?.tenantName).toBeNull()
     expect(updated?.tenantEmail).toBeNull()
+    expect(updated?.sizeSqFt).toBeNull()
+    expect(updated?.bedrooms).toBeNull()
+    expect(updated?.bathrooms).toBeNull()
+    expect(updated?.monthlyRentCents).toBeNull()
   })
 
   test('updateUnitAction keeps the live tenant identity email and name in sync', async () => {

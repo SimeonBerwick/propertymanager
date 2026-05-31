@@ -6,9 +6,9 @@ export const properties: Property[] = [
 ]
 
 export const units: Unit[] = [
-  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed', isActive: true },
-  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', isActive: true },
-  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz', isActive: true },
+  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed', sizeSqFt: 920, bedrooms: 2, bathrooms: 1.5, monthlyRentCents: 165000, isActive: true },
+  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', sizeSqFt: 880, bedrooms: 2, bathrooms: 1, monthlyRentCents: 157500, isActive: true },
+  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz', sizeSqFt: 980, bedrooms: 2, bathrooms: 2, monthlyRentCents: 172500, isActive: true },
 ]
 
 const baseRequest = {

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel } from '@/lib/types'
+import { currencyLabel, languageLabel, unitInfoChips } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
@@ -63,6 +63,13 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
               <Link href={`/properties/${property.id}`}>{property.name}</Link>
               {' · '}{property.address}
             </div>
+            {unitInfoChips(unit).length ? (
+              <div className="muted" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6, fontSize: 12 }}>
+                {unitInfoChips(unit).map((chip) => (
+                  <span key={chip} className="badge">{chip}</span>
+                ))}
+              </div>
+            ) : null}
             {occupancy.current && (
               <div className="muted" style={{ marginTop: 4 }}>
                 Tenant: {occupancy.current.tenantName}

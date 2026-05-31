@@ -22,6 +22,10 @@ export interface Unit {
   label: string
   tenantName?: string
   tenantEmail?: string
+  sizeSqFt?: number
+  bedrooms?: number
+  bathrooms?: number
+  monthlyRentCents?: number
   isActive: boolean
 }
 
@@ -167,4 +171,22 @@ export function currencyLabel(value: CurrencyOption): string {
 
 export function languageLabel(value: LanguageOption): string {
   return LANGUAGE_LABELS[value]
+}
+
+export function formatMonthlyRent(cents?: number): string | null {
+  if (typeof cents !== 'number') return null
+  return `$${(cents / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}/mo`
+}
+
+export function unitInfoChips(unit: Pick<Unit, 'sizeSqFt' | 'bedrooms' | 'bathrooms' | 'monthlyRentCents'>): string[] {
+  const chips: string[] = []
+  if (typeof unit.sizeSqFt === 'number') chips.push(`${unit.sizeSqFt.toLocaleString()} sq ft`)
+  if (typeof unit.bedrooms === 'number') chips.push(`${unit.bedrooms} bd`)
+  if (typeof unit.bathrooms === 'number') chips.push(`${Number.isInteger(unit.bathrooms) ? unit.bathrooms.toFixed(0) : unit.bathrooms} ba`)
+  const rent = formatMonthlyRent(unit.monthlyRentCents)
+  if (rent) chips.push(rent)
+  return chips
 }

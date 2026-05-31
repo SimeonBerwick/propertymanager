@@ -47,6 +47,28 @@ export function NewUnitForm({ propertyId }: NewUnitFormProps) {
         </label>
       </div>
 
+      <div className="grid cols-4">
+        <label className="field">
+          <span className="field-label">Sq ft</span>
+          <input className="input" type="number" name="sizeSqFt" placeholder="920" min={0} max={100000} inputMode="numeric" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Beds</span>
+          <input className="input" type="number" name="bedrooms" placeholder="2" min={0} max={100} inputMode="numeric" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Baths</span>
+          <input className="input" type="number" name="bathrooms" placeholder="1.5" min={0} max={100} step={0.5} inputMode="decimal" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Rent</span>
+          <input className="input" type="number" name="monthlyRent" placeholder="1650" min={0} max={1000000} step={0.01} inputMode="decimal" />
+        </label>
+      </div>
+
       <div className="row">
         <Link href={`/properties/${propertyId}`} className="button">Cancel</Link>
         <button type="submit" className="button primary" disabled={isPending}>
