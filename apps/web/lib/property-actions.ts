@@ -24,6 +24,32 @@ function normalizeConfirmation(value: string) {
   return value.trim()
 }
 
+function readOptionalInt(formData: FormData, key: string, label: string, max: number) {
+  const raw = readTrimmedString(formData, key)
+  if (!raw) return { value: null }
+  if (!/^\d+$/.test(raw)) return { error: `${label} must be a whole number.` }
+  const value = Number(raw)
+  if (!Number.isSafeInteger(value) || value < 0 || value > max) return { error: `${label} is outside the allowed range.` }
+  return { value }
+}
+
+function readOptionalNumber(formData: FormData, key: string, label: string, max: number) {
+  const raw = readTrimmedString(formData, key)
+  if (!raw) return { value: null }
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value < 0 || value > max) return { error: `${label} is outside the allowed range.` }
+  return { value: Math.round(value * 10) / 10 }
+}
+
+function readOptionalMoneyCents(formData: FormData, key: string, label: string, maxDollars: number) {
+  const raw = readTrimmedString(formData, key).replace(/[$,]/g, '')
+  if (!raw) return { value: null }
+  if (!/^\d+(\.\d{1,2})?$/.test(raw)) return { error: `${label} must be a valid dollar amount.` }
+  const dollars = Number(raw)
+  if (!Number.isFinite(dollars) || dollars < 0 || dollars > maxDollars) return { error: `${label} is outside the allowed range.` }
+  return { value: Math.round(dollars * 100) }
+}
+
 export async function createPropertyAction(
   _prev: PropertyActionState,
   formData: FormData,
@@ -286,12 +312,20 @@ export async function createUnitAction(
   const label = readTrimmedString(formData, 'label')
   const tenantName = readTrimmedString(formData, 'tenantName')
   const tenantEmail = readTrimmedString(formData, 'tenantEmail').toLowerCase()
+  const sizeSqFt = readOptionalInt(formData, 'sizeSqFt', 'Size', 100000)
+  const bedrooms = readOptionalInt(formData, 'bedrooms', 'Bedrooms', 100)
+  const bathrooms = readOptionalNumber(formData, 'bathrooms', 'Bathrooms', 100)
+  const monthlyRentCents = readOptionalMoneyCents(formData, 'monthlyRent', 'Monthly rent', 1000000)
 
   if (!propertyId) return { error: 'Property ID is required.' }
   if (!label) return { error: 'Unit label is required.' }
   if (label.length > 100) return { error: 'Unit label must be 100 characters or fewer.' }
   if (tenantName.length > 120) return { error: 'Tenant name must be 120 characters or fewer.' }
   if (tenantEmail.length > 254) return { error: 'Tenant email is too long.' }
+  if (sizeSqFt.error) return { error: sizeSqFt.error }
+  if (bedrooms.error) return { error: bedrooms.error }
+  if (bathrooms.error) return { error: bathrooms.error }
+  if (monthlyRentCents.error) return { error: monthlyRentCents.error }
 
   try {
     const property = await prisma.property.findFirst({
@@ -309,6 +343,10 @@ export async function createUnitAction(
         label,
         tenantName: tenantName || null,
         tenantEmail: tenantEmail || null,
+        sizeSqFt: sizeSqFt.value,
+        bedrooms: bedrooms.value,
+        bathrooms: bathrooms.value,
+        monthlyRentCents: monthlyRentCents.value,
       },
     })
 
@@ -319,7 +357,7 @@ export async function createUnitAction(
       entityId: unit.id,
       action: 'unit.created',
       summary: `Created unit ${label}.`,
-      metadata: { propertyId },
+      metadata: { propertyId, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
     })
   } catch {
     return { error: 'Could not create unit. Please try again.' }
@@ -345,6 +383,10 @@ export async function updateUnitAction(
   const label = readTrimmedString(formData, 'label')
   const tenantName = readTrimmedString(formData, 'tenantName')
   const tenantEmail = readTrimmedString(formData, 'tenantEmail').toLowerCase()
+  const sizeSqFt = readOptionalInt(formData, 'sizeSqFt', 'Size', 100000)
+  const bedrooms = readOptionalInt(formData, 'bedrooms', 'Bedrooms', 100)
+  const bathrooms = readOptionalNumber(formData, 'bathrooms', 'Bathrooms', 100)
+  const monthlyRentCents = readOptionalMoneyCents(formData, 'monthlyRent', 'Monthly rent', 1000000)
 
   if (!unitId) return { error: 'Unit ID is required.' }
   if (!propertyId) return { error: 'Property ID is required.' }
@@ -352,6 +394,10 @@ export async function updateUnitAction(
   if (label.length > 100) return { error: 'Unit label must be 100 characters or fewer.' }
   if (tenantName.length > 120) return { error: 'Tenant name must be 120 characters or fewer.' }
   if (tenantEmail.length > 254) return { error: 'Tenant email is too long.' }
+  if (sizeSqFt.error) return { error: sizeSqFt.error }
+  if (bedrooms.error) return { error: bedrooms.error }
+  if (bathrooms.error) return { error: bathrooms.error }
+  if (monthlyRentCents.error) return { error: monthlyRentCents.error }
 
   try {
     const updated = await prisma.unit.updateMany({
@@ -360,6 +406,10 @@ export async function updateUnitAction(
         label,
         tenantName: tenantName || null,
         tenantEmail: tenantEmail || null,
+        sizeSqFt: sizeSqFt.value,
+        bedrooms: bedrooms.value,
+        bathrooms: bathrooms.value,
+        monthlyRentCents: monthlyRentCents.value,
       },
     })
 
@@ -387,7 +437,7 @@ export async function updateUnitAction(
       entityId: unitId,
       action: 'unit.updated',
       summary: `Updated unit ${label}.`,
-      metadata: { propertyId },
+      metadata: { propertyId, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
     })
   } catch {
     return { error: 'Could not update unit. Please try again.' }

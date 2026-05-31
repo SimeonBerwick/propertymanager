@@ -79,6 +79,10 @@ function mapUnit(u: any): Unit {
     label: u.label,
     tenantName: u.tenantName ?? undefined,
     tenantEmail: u.tenantEmail ?? undefined,
+    sizeSqFt: u.sizeSqFt ?? undefined,
+    bedrooms: u.bedrooms ?? undefined,
+    bathrooms: u.bathrooms ?? undefined,
+    monthlyRentCents: u.monthlyRentCents ?? undefined,
     isActive: u.isActive !== false,
   }
 }

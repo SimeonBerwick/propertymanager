@@ -12,6 +12,10 @@ interface EditUnitFormProps {
   initialLabel: string
   initialTenantName?: string
   initialTenantEmail?: string
+  initialSizeSqFt?: number
+  initialBedrooms?: number
+  initialBathrooms?: number
+  initialMonthlyRentCents?: number
 }
 
 export function EditUnitForm({
@@ -20,6 +24,10 @@ export function EditUnitForm({
   initialLabel,
   initialTenantName,
   initialTenantEmail,
+  initialSizeSqFt,
+  initialBedrooms,
+  initialBathrooms,
+  initialMonthlyRentCents,
 }: EditUnitFormProps) {
   const [state, formAction, isPending] = useActionState(updateUnitAction, INITIAL_STATE)
 
@@ -55,6 +63,37 @@ export function EditUnitForm({
             Tenant email <span className="muted">(optional)</span>
           </span>
           <input className="input" type="email" name="tenantEmail" defaultValue={initialTenantEmail} maxLength={254} />
+        </label>
+      </div>
+
+      <div className="grid cols-4">
+        <label className="field">
+          <span className="field-label">Sq ft</span>
+          <input className="input" type="number" name="sizeSqFt" defaultValue={initialSizeSqFt} min={0} max={100000} inputMode="numeric" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Beds</span>
+          <input className="input" type="number" name="bedrooms" defaultValue={initialBedrooms} min={0} max={100} inputMode="numeric" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Baths</span>
+          <input className="input" type="number" name="bathrooms" defaultValue={initialBathrooms} min={0} max={100} step={0.5} inputMode="decimal" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Rent</span>
+          <input
+            className="input"
+            type="number"
+            name="monthlyRent"
+            defaultValue={typeof initialMonthlyRentCents === 'number' ? initialMonthlyRentCents / 100 : undefined}
+            min={0}
+            max={1000000}
+            step={0.01}
+            inputMode="decimal"
+          />
         </label>
       </div>
 

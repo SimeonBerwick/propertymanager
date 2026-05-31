@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel } from '@/lib/types'
+import { currencyLabel, languageLabel, unitInfoChips } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { AuditLogList } from '@/components/audit-log-list'
@@ -89,6 +89,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   {!unit.isActive && <span className="archiveBadge">Archived</span>}
                 </div>
                 <div className="muted">{unit.tenantName ?? 'Vacant'}</div>
+                {unitInfoChips(unit).length ? (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>
+                    {unitInfoChips(unit).join(' · ')}
+                  </div>
+                ) : null}
               </div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <div className="muted">{unit.tenantEmail ?? 'No tenant email'}</div>

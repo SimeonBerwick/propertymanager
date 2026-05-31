@@ -63,6 +63,10 @@ async function main() {
         label: unit.label,
         tenantName: unit.tenantName,
         tenantEmail: unit.tenantEmail,
+        sizeSqFt: unit.sizeSqFt,
+        bedrooms: unit.bedrooms,
+        bathrooms: unit.bathrooms,
+        monthlyRentCents: unit.monthlyRentCents,
       },
       create: {
         id: unit.id,
@@ -70,6 +74,10 @@ async function main() {
         label: unit.label,
         tenantName: unit.tenantName,
         tenantEmail: unit.tenantEmail,
+        sizeSqFt: unit.sizeSqFt,
+        bedrooms: unit.bedrooms,
+        bathrooms: unit.bathrooms,
+        monthlyRentCents: unit.monthlyRentCents,
       },
     })
 

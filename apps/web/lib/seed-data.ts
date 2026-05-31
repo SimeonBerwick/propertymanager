@@ -7,12 +7,12 @@ export const properties: Property[] = [
 
 export const units: Unit[] = [
   // Canyon View Duplex
-  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed', tenantEmail: 'taylor@example.com', isActive: true },
-  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', tenantEmail: 'jordan@example.com', isActive: true },
+  { id: 'unit-1a', propertyId: 'prop-1', label: 'Unit A', tenantName: 'Taylor Reed', tenantEmail: 'taylor@example.com', sizeSqFt: 920, bedrooms: 2, bathrooms: 1.5, monthlyRentCents: 165000, isActive: true },
+  { id: 'unit-1b', propertyId: 'prop-1', label: 'Unit B', tenantName: 'Jordan Hayes', tenantEmail: 'jordan@example.com', sizeSqFt: 880, bedrooms: 2, bathrooms: 1, monthlyRentCents: 157500, isActive: true },
   // Palm Court Fourplex
-  { id: 'unit-2a', propertyId: 'prop-2', label: 'Unit 1', tenantName: 'Maria Soto', tenantEmail: 'maria@example.com', isActive: true },
-  { id: 'unit-2b', propertyId: 'prop-2', label: 'Unit 2', tenantName: 'Dev Patel', tenantEmail: 'dev@example.com', isActive: true },
-  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz', tenantEmail: 'chris@example.com', isActive: true },
+  { id: 'unit-2a', propertyId: 'prop-2', label: 'Unit 1', tenantName: 'Maria Soto', tenantEmail: 'maria@example.com', sizeSqFt: 740, bedrooms: 1, bathrooms: 1, monthlyRentCents: 122500, isActive: true },
+  { id: 'unit-2b', propertyId: 'prop-2', label: 'Unit 2', tenantName: 'Dev Patel', tenantEmail: 'dev@example.com', sizeSqFt: 760, bedrooms: 1, bathrooms: 1, monthlyRentCents: 125000, isActive: true },
+  { id: 'unit-2c', propertyId: 'prop-2', label: 'Unit 3', tenantName: 'Chris Ortiz', tenantEmail: 'chris@example.com', sizeSqFt: 980, bedrooms: 2, bathrooms: 2, monthlyRentCents: 172500, isActive: true },
   { id: 'unit-2d', propertyId: 'prop-2', label: 'Unit 4', isActive: true },
 ]
 

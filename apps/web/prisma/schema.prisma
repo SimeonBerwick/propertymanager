@@ -200,13 +200,17 @@ model Property {
 }
 
 model Unit {
-  id          String   @id @default(cuid())
-  propertyId  String
-  label       String
-  tenantName  String?
-  tenantEmail String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  propertyId       String
+  label            String
+  tenantName       String?
+  tenantEmail      String?
+  sizeSqFt         Int?
+  bedrooms         Int?
+  bathrooms        Float?
+  monthlyRentCents Int?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
 
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]

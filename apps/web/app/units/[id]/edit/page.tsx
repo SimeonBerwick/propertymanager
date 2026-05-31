@@ -46,6 +46,10 @@ export default async function EditUnitPage({ params }: { params: Promise<{ id: s
           initialLabel={data.unit.label}
           initialTenantName={data.unit.tenantName}
           initialTenantEmail={data.unit.tenantEmail}
+          initialSizeSqFt={data.unit.sizeSqFt}
+          initialBedrooms={data.unit.bedrooms}
+          initialBathrooms={data.unit.bathrooms}
+          initialMonthlyRentCents={data.unit.monthlyRentCents}
         />
       </section>
 
