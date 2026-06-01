@@ -48,7 +48,7 @@ export async function applyRequestAutomation(requestId: string) {
       `Property: ${request.property.name}`,
       `Flag: ${autoFlag}`,
     ].join('\n'),
-  })
+  }, { ownerUserId: request.property.owner.id, requestId: request.id })
 }
 
 export async function runAutomationSweep() {
@@ -91,7 +91,7 @@ export async function sendDailyExceptionSummaryToLandlord(userId: string) {
       autoFlag: request.autoFlag ?? undefined,
       reviewState: request.reviewState ?? undefined,
     })),
-  }))
+  }), { ownerUserId: userId })
 
   return { ok: true }
 }

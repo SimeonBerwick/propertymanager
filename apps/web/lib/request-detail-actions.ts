@@ -151,6 +151,7 @@ export async function updateStatusFormAction(
         fromStatus,
         toStatus,
       }),
+      { ownerUserId: session.userId, requestId },
     )
   }
 
@@ -239,7 +240,7 @@ export async function updateVendorFormAction(
             preferredCurrency: request.preferredCurrency,
             preferredLanguage: request.preferredLanguage,
             responseLink: dispatchLink ? `${appUrl}/vendor/respond/${dispatchLink.rawToken}` : undefined,
-          }))
+          }), { ownerUserId: session.userId, requestId })
         }
       }
 
@@ -376,7 +377,7 @@ export async function updateVendorFormAction(
 
   if (notificationPayload) {
     if (await areEmailNotificationsEnabled(session.userId)) {
-      await sendNotification(buildVendorAssignedMessage(notificationPayload))
+      await sendNotification(buildVendorAssignedMessage(notificationPayload), { ownerUserId: session.userId, requestId })
     }
   }
 
@@ -889,7 +890,7 @@ export async function quickRequestAction(
           unitLabel: request.unit.label,
           tenantEmail: request.submittedByEmail!,
           tenantName: request.submittedByName!,
-        }))
+        }), { ownerUserId: session.userId, requestId })
       }
 
       await writeAuditLog({
@@ -1097,7 +1098,7 @@ export async function addCommentFormAction(
         tenantEmail: request.submittedByEmail,
         tenantName: request.submittedByName,
         comment: body,
-      }))
+      }), { ownerUserId: session.userId, requestId })
     }
     return { error: null, success: true }
   } catch {

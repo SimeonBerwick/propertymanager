@@ -25,6 +25,14 @@ export interface DashboardData {
   requestRows: DashboardRequestRow[]
   statusCounts: Record<RequestStatus, number>
   emailNotificationsEnabled: boolean
+  mailboxConnections: Array<{
+    id: string
+    provider: 'gmail' | 'outlook'
+    status: 'connected' | 'needs_reauth' | 'disconnected'
+    email: string
+    lastSyncedAt?: string
+    syncError?: string
+  }>
   queueCounts: {
     nonEnglishOpen: number
     nonUsdOpen: number
@@ -227,10 +235,15 @@ function vendorMatchScore(request: DashboardRequestRow, vendor: Vendor): number 
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
-    const [user, dbProperties, dbRequests, claimUsers] = await Promise.all([
+    const [user, mailboxConnections, dbProperties, dbRequests, claimUsers] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { emailNotificationsEnabled: true },
+      }),
+      prisma.mailboxConnection.findMany({
+        where: { userId },
+        orderBy: { connectedAt: 'desc' },
+        select: { id: true, provider: true, status: true, email: true, lastSyncedAt: true, syncError: true },
       }),
       prisma.property.findMany({
         where: { ownerId: userId, isActive: true },
@@ -252,10 +265,18 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       requestRows,
       statusCounts: countStatuses(requestRows),
       emailNotificationsEnabled: user?.emailNotificationsEnabled ?? true,
+      mailboxConnections: mailboxConnections.map((connection) => ({
+        id: connection.id,
+        provider: connection.provider,
+        status: connection.status,
+        email: connection.email,
+        lastSyncedAt: connection.lastSyncedAt?.toISOString(),
+        syncError: connection.syncError ?? undefined,
+      })),
       queueCounts: queueCounts(requestRows, userId),
     }
   } catch {
-    return { properties: [], requestRows: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, queueCounts: queueCounts([], userId) }
+    return { properties: [], requestRows: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
   }
 }
 

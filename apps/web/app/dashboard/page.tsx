@@ -10,7 +10,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { formatRelativeAge, isStaleClaim } from '@/lib/ui-utils'
 import { RequestQueueList } from './request-queue-list'
-import { toggleEmailNotificationsAction } from './actions'
+import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
 
 export default async function DashboardPage({
   searchParams,
@@ -70,6 +70,18 @@ export default async function DashboardPage({
             <div className="muted">See what needs action now and clear it fast.</div>
           </div>
           <div className="requestHeroMeta">
+            <div className="mailboxMini">
+              <span className="mailboxMiniLabel">Mailbox</span>
+              {data.mailboxConnections.find((connection) => connection.status === 'connected') ? (
+                data.mailboxConnections.filter((connection) => connection.status === 'connected').slice(0, 1).map((connection) => (
+                  <span key={connection.id} className="mailboxMiniAddress">{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'}: {connection.email}</span>
+                ))
+              ) : (
+                <span className="mailboxMiniAddress">SMTP fallback</span>
+              )}
+              <a className="button compactToggle" href="/api/mailbox/oauth/gmail/start">Connect Gmail</a>
+              <a className="button compactToggle" href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
+            </div>
             <form action={toggleEmailNotificationsAction}>
               <input type="hidden" name="enabled" value={data.emailNotificationsEnabled ? 'false' : 'true'} />
               <button
@@ -87,6 +99,36 @@ export default async function DashboardPage({
           </div>
         </div>
       </section>
+
+      {data.mailboxConnections.length ? (
+        <section className="card mailboxPanel">
+          <div>
+            <div className="kicker">Two-way email</div>
+            <h2 className="sectionTitle">Connected mailboxes</h2>
+          </div>
+          <div className="mailboxRows">
+            {data.mailboxConnections.map((connection) => (
+              <div className="mailboxRow" key={connection.id}>
+                <div>
+                  <strong>{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'} - {connection.email}</strong>
+                  <div className="muted">{connection.status}{connection.lastSyncedAt ? ` - synced ${new Date(connection.lastSyncedAt).toLocaleString()}` : ''}</div>
+                  {connection.syncError ? <div className="muted" style={{ color: 'var(--danger)' }}>{connection.syncError}</div> : null}
+                </div>
+                <div className="requestHeroMeta">
+                  <form action={syncMailboxAction}>
+                    <input type="hidden" name="mailboxId" value={connection.id} />
+                    <button className="button compactToggle" type="submit">Sync</button>
+                  </form>
+                  <form action={disconnectMailboxAction}>
+                    <input type="hidden" name="mailboxId" value={connection.id} />
+                    <button className="button compactToggle" type="submit">Disconnect</button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <SectionCard
         kicker="Inbox"

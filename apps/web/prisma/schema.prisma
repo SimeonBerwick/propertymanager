@@ -173,6 +173,25 @@ enum VendorCommercialStatus {
   declined
 }
 
+enum MailboxProvider {
+  gmail
+  outlook
+}
+
+enum MailboxConnectionStatus {
+  connected
+  needs_reauth
+  disconnected
+}
+
+enum EmailDeliveryStatus {
+  pending
+  sent
+  failed
+  received
+  ignored
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -188,6 +207,9 @@ model User {
 
   properties              Property[]
   comments                RequestComment[]
+  mailboxConnections      MailboxConnection[]
+  outboundEmails          OutboundEmail[]
+  inboundEmails           InboundEmail[]
   submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
   tenantBillbackDecisions MaintenanceRequest[]  @relation("TenantBillbackDecider")
   statusEvents            StatusEvent[]         @relation("StatusActor")
@@ -285,6 +307,8 @@ model MaintenanceRequest {
   assignedVendor          Vendor?               @relation(fields: [assignedVendorId], references: [id])
   photos                  MaintenancePhoto[]
   comments                RequestComment[]
+  outboundEmails          OutboundEmail[]
+  inboundEmails           InboundEmail[]
   events                  StatusEvent[]
   dispatchHistory         VendorDispatchEvent[]
   dispatchLinks           VendorDispatchLink[]
@@ -456,6 +480,94 @@ model RequestComment {
 
   request MaintenanceRequest @relation(fields: [requestId], references: [id])
   author  User?              @relation(fields: [authorUserId], references: [id])
+  inboundEmail InboundEmail?
+}
+
+model MailboxConnection {
+  id                  String                  @id @default(cuid())
+  userId              String
+  provider            MailboxProvider
+  status              MailboxConnectionStatus @default(connected)
+  email               String
+  displayName         String?
+  providerAccountId   String?
+  accessTokenCipher   String?
+  refreshTokenCipher  String
+  tokenExpiresAt      DateTime?
+  scopesCsv           String?                 @default("")
+  syncCursor          String?
+  lastSyncedAt        DateTime?
+  syncError           String?
+  connectedAt         DateTime                @default(now())
+  disconnectedAt      DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  outboundEmails OutboundEmail[]
+  inboundEmails  InboundEmail[]
+
+  @@unique([userId, provider])
+  @@index([userId, status])
+}
+
+model OutboundEmail {
+  id                    String              @id @default(cuid())
+  userId                String?
+  requestId             String?
+  mailboxConnectionId   String?
+  provider              MailboxProvider?
+  transport             String
+  status                EmailDeliveryStatus @default(pending)
+  to                    String
+  from                  String?
+  subject               String
+  messageIdHeader       String?
+  providerMessageId     String?
+  providerThreadId      String?
+  error                 String?
+  createdAt             DateTime            @default(now())
+  sentAt                DateTime?
+
+  user              User?              @relation(fields: [userId], references: [id])
+  request           MaintenanceRequest? @relation(fields: [requestId], references: [id])
+  mailboxConnection MailboxConnection?  @relation(fields: [mailboxConnectionId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([requestId, createdAt])
+  @@index([providerMessageId])
+  @@index([messageIdHeader])
+}
+
+model InboundEmail {
+  id                   String              @id @default(cuid())
+  userId               String
+  requestId            String?
+  mailboxConnectionId  String
+  provider             MailboxProvider
+  status               EmailDeliveryStatus @default(received)
+  from                 String
+  to                   String?
+  subject              String
+  textBody             String?
+  htmlBody             String?
+  providerMessageId    String
+  providerThreadId     String?
+  messageIdHeader      String?
+  inReplyToHeader      String?
+  receivedAt           DateTime?
+  commentId            String?             @unique
+  createdAt            DateTime            @default(now())
+
+  user              User               @relation(fields: [userId], references: [id])
+  request           MaintenanceRequest? @relation(fields: [requestId], references: [id])
+  mailboxConnection MailboxConnection   @relation(fields: [mailboxConnectionId], references: [id])
+  comment           RequestComment?     @relation(fields: [commentId], references: [id])
+
+  @@unique([provider, providerMessageId])
+  @@index([userId, createdAt])
+  @@index([requestId, createdAt])
+  @@index([providerThreadId])
 }
 
 model StatusEvent {

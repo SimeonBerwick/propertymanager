@@ -43,6 +43,8 @@ async function notifyBillingRecipient({
   totalCents,
   paidCents,
   currency,
+  ownerUserId,
+  requestId,
 }: {
   to: string
   title: string
@@ -52,6 +54,8 @@ async function notifyBillingRecipient({
   totalCents: number
   paidCents: number
   currency: 'usd' | 'peso' | 'pound' | 'euro'
+  ownerUserId: string
+  requestId: string
 }) {
   await sendNotification(buildBillingDocumentMessage({
     to,
@@ -62,7 +66,7 @@ async function notifyBillingRecipient({
     amountLabel: formatMoney(totalCents, currency),
     paidLabel: formatMoney(paidCents, currency),
     balanceLabel: formatMoney(totalCents - paidCents, currency),
-  }))
+  }), { ownerUserId, requestId })
 }
 
 export async function createBillingDocumentAction(
@@ -160,6 +164,8 @@ export async function createBillingDocumentAction(
         totalCents,
         paidCents: paidCents ?? 0,
         currency: request.preferredCurrency,
+        ownerUserId: session.userId,
+        requestId,
       })
     }
 
@@ -283,6 +289,8 @@ export async function resendBillingDocumentAction(
       totalCents: doc.totalCents,
       paidCents: doc.paidCents,
       currency: doc.currency,
+      ownerUserId: session.userId,
+      requestId,
     })
 
     revalidatePath(`/requests/${requestId}`)

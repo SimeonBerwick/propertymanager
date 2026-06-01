@@ -89,7 +89,7 @@ export async function submitMaintenanceRequest(
   }
 
   let verifiedLandlordId: string | undefined
-  let notificationOwner: { email: string; emailNotificationsEnabled: boolean } | undefined
+  let notificationOwner: { id: string; email: string; emailNotificationsEnabled: boolean } | undefined
 
   if (orgSlug) {
     const landlord = await getLandlordBySlug(orgSlug)
@@ -115,7 +115,7 @@ export async function submitMaintenanceRequest(
       include: {
         property: {
           include: {
-            owner: { select: { email: true, emailNotificationsEnabled: true } },
+            owner: { select: { id: true, email: true, emailNotificationsEnabled: true } },
           },
         },
       },
@@ -193,7 +193,10 @@ export async function submitMaintenanceRequest(
       preferredCurrency,
       preferredLanguage,
     })
-    await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
+    await Promise.all([
+      sendNotification(tenantMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),
+      sendNotification(landlordMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),
+    ])
   }
 
   const successUrl = orgSlug
