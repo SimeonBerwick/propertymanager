@@ -89,6 +89,7 @@ export async function submitMaintenanceRequest(
   }
 
   let verifiedLandlordId: string | undefined
+  let notificationOwner: { email: string; emailNotificationsEnabled: boolean } | undefined
 
   if (orgSlug) {
     const landlord = await getLandlordBySlug(orgSlug)
@@ -111,13 +112,20 @@ export async function submitMaintenanceRequest(
           ...(verifiedLandlordId ? { ownerId: verifiedLandlordId } : {}),
         },
       },
-      include: { property: true },
+      include: {
+        property: {
+          include: {
+            owner: { select: { email: true, emailNotificationsEnabled: true } },
+          },
+        },
+      },
     })
     if (!unit) {
       return { error: 'The selected property or unit is no longer available for new requests.' }
     }
     unitLabel = unit.label
     propertyName = unit.property.name
+    notificationOwner = unit.property.owner
   } catch {
     return { error: 'Could not verify property or unit. Please try again.' }
   }
@@ -170,21 +178,23 @@ export async function submitMaintenanceRequest(
   }
 
   // Notifications are best-effort — sendNotification never throws.
-  const [tenantMsg, landlordMsg] = buildNewRequestMessages({
-    requestId: createdRequestId,
-    title,
-    propertyName,
-    unitLabel,
-    tenantName,
-    tenantEmail,
-    landlordEmail: getLandlordEmail(),
-    urgency,
-    category,
-    description,
-    preferredCurrency,
-    preferredLanguage,
-  })
-  await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
+  if (notificationOwner?.emailNotificationsEnabled !== false) {
+    const [tenantMsg, landlordMsg] = buildNewRequestMessages({
+      requestId: createdRequestId,
+      title,
+      propertyName,
+      unitLabel,
+      tenantName,
+      tenantEmail,
+      landlordEmail: notificationOwner?.email ?? getLandlordEmail(),
+      urgency,
+      category,
+      description,
+      preferredCurrency,
+      preferredLanguage,
+    })
+    await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
+  }
 
   const successUrl = orgSlug
     ? `/submit/${orgSlug}?submitted=${createdRequestId}`

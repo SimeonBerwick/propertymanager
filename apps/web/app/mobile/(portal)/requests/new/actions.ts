@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
 
 export type MobileRequestState = { error: string | null }
 
@@ -84,7 +85,16 @@ export async function submitTenantMobileRequestAction(
       isActive: true,
       property: { id: session.propertyId, isActive: true },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      label: true,
+      property: {
+        select: {
+          name: true,
+          owner: { select: { email: true, emailNotificationsEnabled: true } },
+        },
+      },
+    },
   })
 
   if (!activeUnit) {
@@ -129,6 +139,24 @@ export async function submitTenantMobileRequestAction(
       return { error: `Could not submit your request. ${error.message}` }
     }
     return { error: 'Could not submit your request. Please try again or contact the property manager.' }
+  }
+
+  if (session.email && activeUnit.property.owner.emailNotificationsEnabled) {
+    const [tenantMsg, landlordMsg] = buildNewRequestMessages({
+      requestId,
+      title,
+      propertyName: activeUnit.property.name,
+      unitLabel: activeUnit.label,
+      tenantName: session.tenantName,
+      tenantEmail: session.email,
+      landlordEmail: activeUnit.property.owner.email,
+      urgency,
+      category,
+      description,
+      preferredCurrency,
+      preferredLanguage,
+    })
+    await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
   }
 
   redirect(`/mobile/requests/${requestId}` as never)

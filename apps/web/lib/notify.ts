@@ -2,8 +2,8 @@
  * Provider-agnostic notification layer.
  *
  * Transports (controlled by NOTIFY_TRANSPORT env var):
- *   unset / "log" — writes to stdout; safe dev default, zero config required.
- *   "smtp"        — sends email via nodemailer using SMTP_URL.
+ *   unset / "log" - writes to stdout; safe dev default, zero config required.
+ *   "smtp"        - sends email via nodemailer using SMTP_URL.
  *                   Requires: SMTP_URL, optionally NOTIFY_FROM.
  *
  * Notifications are best-effort: transport errors are logged but never
@@ -22,16 +22,16 @@ export interface NotificationMessage {
   html?: string
 }
 
-// ── Transports ────────────────────────────────────────────────────────────────
+// Transports
 
 function sendViaLog(msg: NotificationMessage): void {
   console.log(
-    `\n[NOTIFY] ──────────────────────────────────────\n` +
+    `\n[NOTIFY] --------------------------------------\n` +
     `  To:      ${msg.to}\n` +
     `  Subject: ${msg.subject}\n` +
-    `  ─────────────────────────────────────────────\n` +
+    `  ---------------------------------------------\n` +
     `  ${msg.text.replace(/\n/g, '\n  ')}\n` +
-    `[/NOTIFY] ─────────────────────────────────────\n`,
+    `[/NOTIFY] -------------------------------------\n`,
   )
 }
 
@@ -50,10 +50,10 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
   })
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// Public API
 
 /**
- * Dispatch a notification. Never throws — transport failures are caught and
+ * Dispatch a notification. Never throws - transport failures are caught and
  * logged so callers don't need try/catch around notification calls.
  * Returns { ok: false } when the transport fails so callers can surface a warning.
  */
@@ -68,7 +68,7 @@ export async function sendNotification(msg: NotificationMessage): Promise<{ ok: 
       const failures = getRuntimeFailures(['notifications'])
       console.error(
         '[NOTIFY] Hosted runtime is not allowed to fall back to log delivery:',
-        failures.map((failure) => `${failure.label} — ${failure.detail}`).join(' | '),
+        failures.map((failure) => `${failure.label} - ${failure.detail}`).join(' | '),
       )
       return { ok: false }
     }
@@ -76,12 +76,12 @@ export async function sendNotification(msg: NotificationMessage): Promise<{ ok: 
     sendViaLog(msg)
     return { ok: true }
   } catch (err) {
-    console.error('[NOTIFY] Transport error — notification was not delivered:', err)
+    console.error('[NOTIFY] Transport error - notification was not delivered:', err)
     return { ok: false }
   }
 }
 
-// ── HTML helpers ──────────────────────────────────────────────────────────────
+// HTML helpers
 
 /** Escape user-supplied strings for safe HTML embedding. */
 function esc(s: string): string {
@@ -94,28 +94,49 @@ function esc(s: string): string {
 
 /**
  * Wrap content in a minimal responsive email shell.
- * Uses only inline styles — no external CSS, no JavaScript.
+ * Uses a hybrid-fluid table layout so Gmail Android can shrink the message
+ * while Outlook keeps a predictable desktop width.
  */
 function htmlEmail(body: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 0">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:6px;overflow:hidden;max-width:600px;width:100%">
-        <tr><td style="background:#1a56db;padding:16px 24px">
-          <span style="color:#ffffff;font-size:18px;font-weight:bold">Property Manager</span>
-        </td></tr>
-        <tr><td style="padding:24px;color:#111827;font-size:15px;line-height:1.6">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;width:100%">
+  <center style="width:100%;background-color:#f4f4f4">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#f4f4f4;mso-table-lspace:0pt;mso-table-rspace:0pt">
+      <tr>
+        <td align="center" style="padding:16px 8px">
+          <!--[if mso]>
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td>
+          <![endif]-->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#ffffff;mso-table-lspace:0pt;mso-table-rspace:0pt">
+            <tr>
+              <td bgcolor="#1a56db" style="background-color:#1a56db;padding:16px 20px">
+                <span style="color:#ffffff;font-size:18px;line-height:22px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Property Manager</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px;color:#111827;font-size:15px;line-height:23px;font-family:Arial,Helvetica,sans-serif;word-break:normal;overflow-wrap:break-word">
           ${body}
-        </td></tr>
-        <tr><td style="background:#f9fafb;padding:12px 24px;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb">
-          This is an automated message — please do not reply directly to this email.
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
+              </td>
+            </tr>
+            <tr>
+              <td bgcolor="#f9fafb" style="background-color:#f9fafb;padding:12px 20px;font-size:12px;line-height:18px;color:#6b7280;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif">
+                This is an automated message - please do not reply directly to this email.
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]>
+          </td></tr></table>
+          <![endif]-->
+        </td>
+      </tr>
+    </table>
+  </center>
 </body>
 </html>`
 }
@@ -123,12 +144,16 @@ function htmlEmail(body: string): string {
 /** Render a two-column details table row. */
 function dtRow(label: string, value: string): string {
   return `<tr>
-    <td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap;vertical-align:top">${esc(label)}</td>
-    <td style="padding:4px 0;color:#111827">${esc(value)}</td>
+    <td width="120" style="width:120px;padding:5px 12px 5px 0;color:#6b7280;vertical-align:top;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif">${esc(label)}</td>
+    <td style="padding:5px 0;color:#111827;vertical-align:top;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;word-break:normal;overflow-wrap:break-word">${esc(value)}</td>
   </tr>`
 }
 
-// ── Message builders ──────────────────────────────────────────────────────────
+function escLines(s: string): string {
+  return esc(s).replace(/\r\n|\r|\n/g, '<br>')
+}
+
+// Message builders
 
 export interface NewRequestParams {
   requestId: string
@@ -151,7 +176,7 @@ export interface NewRequestParams {
 export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessage, NotificationMessage] {
   const tenantMsg: NotificationMessage = {
     to: p.tenantEmail,
-    subject: `Maintenance request received — ${p.title}`,
+    subject: `Maintenance request received - ${p.title}`,
     text: [
       `Hi ${p.tenantName},`,
       ``,
@@ -159,7 +184,7 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
-      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
       `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}`,
@@ -168,24 +193,24 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
     ].join('\n'),
     html: htmlEmail(`
-      <p>Hi ${esc(p.tenantName)},</p>
-      <p>We received your maintenance request and it&rsquo;s in our queue.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
+      <p style="margin:0 0 14px 0">We received your maintenance request and it&rsquo;s in our queue.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
-        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
         ${dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro'))}
         ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
       </table>
-      <p>We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
+      <p style="margin:14px 0 0 0">We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
     `),
   }
 
   const landlordMsg: NotificationMessage = {
     to: p.landlordEmail,
-    subject: `[New request] ${p.title} — ${p.propertyName} / ${p.unitLabel}`,
+    subject: `[New request] ${p.title} - ${p.propertyName} / ${p.unitLabel}`,
     text: [
       `A new maintenance request was submitted.`,
       ``,
@@ -203,8 +228,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       p.description,
     ].join('\n'),
     html: htmlEmail(`
-      <p>A new maintenance request was submitted.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">A new maintenance request was submitted.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
         ${dtRow('Property', p.propertyName)}
@@ -215,8 +240,8 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
         ${dtRow('Tenant', `${p.tenantName} <${p.tenantEmail}>`)}
       </table>
-      <p style="font-weight:bold">Description</p>
-      <p style="white-space:pre-wrap;background:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px;border-radius:0 4px 4px 0">${esc(p.description)}</p>
+      <p style="margin:14px 0 8px 0;font-weight:bold">Description</p>
+      <p style="margin:0;background-color:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px">${escLines(p.description)}</p>
     `),
   }
 
@@ -258,7 +283,7 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
 
   return {
     to: p.tenantEmail,
-    subject: `Update on your maintenance request — ${p.title}`,
+    subject: `Update on your maintenance request - ${p.title}`,
     text: [
       `Hi ${p.tenantName},`,
       ``,
@@ -266,21 +291,21 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
-      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       `  New status   : ${STATUS_LABELS[p.toStatus]}`,
       ``,
       closingText,
     ].join('\n'),
     html: htmlEmail(`
-      <p>Hi ${esc(p.tenantName)},</p>
-      <p>Your maintenance request has been updated.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
+      <p style="margin:0 0 14px 0">Your maintenance request has been updated.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
-        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
         ${dtRow('New status', STATUS_LABELS[p.toStatus])}
       </table>
-      <p>${esc(closingText)}</p>
+      <p style="margin:14px 0 0 0">${esc(closingText)}</p>
     `),
   }
 }
@@ -304,7 +329,7 @@ export interface VendorAssignedParams {
 export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
   return {
     to: p.vendorEmail,
-    subject: `New maintenance assignment — ${p.title}`,
+    subject: `New maintenance assignment - ${p.title}`,
     text: [
       `Hi ${p.vendorName},`,
       ``,
@@ -318,14 +343,14 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
       `  Urgency      : ${p.urgency}`,
       p.preferredCurrency ? `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}` : '',
       p.preferredLanguage ? `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}` : '',
-      p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')}` : '',
+      p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')}` : '',
       ``,
       p.responseLink ? `Respond here: ${p.responseLink}` : 'Please contact the operator to confirm scheduling and next steps.',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
-      <p>Hi ${esc(p.vendorName)},</p>
-      <p>You have been assigned a maintenance request.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
+      <p style="margin:0 0 14px 0">You have been assigned a maintenance request.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
         ${dtRow('Property', p.propertyName)}
@@ -334,9 +359,9 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${dtRow('Urgency', p.urgency)}
         ${p.preferredCurrency ? dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')) : ''}
         ${p.preferredLanguage ? dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')) : ''}
-        ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' · ')) : ''}
+        ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')) : ''}
       </table>
-      <p>${p.responseLink ? `Respond here: <a href="${esc(p.responseLink)}">${esc(p.responseLink)}</a>` : 'Please contact the operator to confirm scheduling and next steps.'}</p>
+      <p style="margin:14px 0 0 0">${p.responseLink ? `Respond here: <a href="${esc(p.responseLink)}" style="color:#1a56db;text-decoration:underline;word-break:break-all;overflow-wrap:break-word">${esc(p.responseLink)}</a>` : 'Please contact the operator to confirm scheduling and next steps.'}</p>
     `),
   }
 }
@@ -365,6 +390,16 @@ export interface TenantQueueViewedParams {
   tenantName: string
 }
 
+export interface TenantCommentNotificationParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  tenantEmail: string
+  tenantName: string
+  comment: string
+}
+
 export interface BillingDocumentNotificationParams {
   to: string
   title: string
@@ -378,12 +413,12 @@ export interface BillingDocumentNotificationParams {
 
 export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): NotificationMessage {
   const scheduleLine = p.scheduledStart
-    ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` → ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
+    ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` to ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
     : ''
 
   return {
     to: p.tenantEmail,
-    subject: `Vendor update for your maintenance request — ${p.title}`,
+    subject: `Vendor update for your maintenance request - ${p.title}`,
     text: [
       `Hi ${p.tenantName},`,
       ``,
@@ -391,7 +426,7 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
-      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       `  Vendor       : ${p.vendorName}`,
       `  Dispatch     : ${p.dispatchStatus}`,
       scheduleLine ? `  Schedule     : ${scheduleLine}` : '',
@@ -399,18 +434,18 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
       p.note ? `Note: ${p.note}` : '',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
-      <p>Hi ${esc(p.tenantName)},</p>
-      <p>Your maintenance request has a vendor update.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
+      <p style="margin:0 0 14px 0">Your maintenance request has a vendor update.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
-        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
         ${dtRow('Vendor', p.vendorName)}
         ${dtRow('Dispatch', p.dispatchStatus)}
         ${scheduleLine ? dtRow('Schedule', scheduleLine) : ''}
         ${p.photoCount ? dtRow('Photos', `${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}`) : ''}
       </table>
-      ${p.note ? `<p><strong>Note:</strong> ${esc(p.note)}</p>` : ''}
+      ${p.note ? `<p style="margin:14px 0 0 0"><strong>Note:</strong> ${esc(p.note)}</p>` : ''}
     `),
   }
 }
@@ -418,7 +453,7 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
 export function buildTenantQueueViewedMessage(p: TenantQueueViewedParams): NotificationMessage {
   return {
     to: p.tenantEmail,
-    subject: `Your maintenance request is now being reviewed — ${p.title}`,
+    subject: `Your maintenance request is now being reviewed - ${p.title}`,
     text: [
       `Hi ${p.tenantName},`,
       ``,
@@ -426,19 +461,49 @@ export function buildTenantQueueViewedMessage(p: TenantQueueViewedParams): Notif
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
-      `  Unit         : ${p.unitLabel} — ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       ``,
-      `We’ll send another update when scheduling or work status changes.`,
+      `We'll send another update when scheduling or work status changes.`,
     ].join('\n'),
     html: htmlEmail(`
-      <p>Hi ${esc(p.tenantName)},</p>
-      <p>A property manager has opened your maintenance request and it is now being reviewed.</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
+      <p style="margin:0 0 14px 0">A property manager has opened your maintenance request and it is now being reviewed.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
-        ${dtRow('Unit', `${p.unitLabel} — ${p.propertyName}`)}
+        ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
       </table>
-      <p>We&rsquo;ll send another update when scheduling or work status changes.</p>
+      <p style="margin:14px 0 0 0">We&rsquo;ll send another update when scheduling or work status changes.</p>
+    `),
+  }
+}
+
+export function buildTenantCommentMessage(p: TenantCommentNotificationParams): NotificationMessage {
+  return {
+    to: p.tenantEmail,
+    subject: `New message on your maintenance request - ${p.title}`,
+    text: [
+      `Hi ${p.tenantName},`,
+      ``,
+      `There is a new message on your maintenance request.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
+      ``,
+      `Message:`,
+      p.comment,
+    ].join('\n'),
+    html: htmlEmail(`
+      <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
+      <p style="margin:0 0 14px 0">There is a new message on your maintenance request.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
+      </table>
+      <p style="margin:14px 0 8px 0;font-weight:bold">Message</p>
+      <p style="margin:0;background-color:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px">${escLines(p.comment)}</p>
     `),
   }
 }
@@ -463,18 +528,18 @@ export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummary
       `Daily exception summary`,
       ``,
       ...p.requests.map((request) =>
-        `- ${request.title} (${request.propertyName} / ${request.unitLabel}) · flag=${request.autoFlag ?? 'none'} · review=${request.reviewState ?? 'none'}`,
+        `- ${request.title} (${request.propertyName} / ${request.unitLabel}) - flag=${request.autoFlag ?? 'none'} - review=${request.reviewState ?? 'none'}`,
       ),
     ].join('\n'),
     html: htmlEmail(`
-      <p><strong>Daily exception summary</strong></p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0"><strong>Daily exception summary</strong></p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${p.requests.map((request) => `
           <tr>
-            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#111827">${esc(request.title)}</td>
-            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280">${esc(`${request.propertyName} / ${request.unitLabel}`)}</td>
-            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280">${esc(request.autoFlag ?? 'none')}</td>
-            <td style="padding:8px 0;vertical-align:top;color:#6b7280">${esc(request.reviewState ?? 'none')}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#111827;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.title)}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(`${request.propertyName} / ${request.unitLabel}`)}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.autoFlag ?? 'none')}</td>
+            <td style="padding:8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.reviewState ?? 'none')}</td>
           </tr>
         `).join('')}
       </table>
@@ -497,8 +562,8 @@ export function buildBillingDocumentMessage(p: BillingDocumentNotificationParams
       `Balance: ${p.balanceLabel}`,
     ].join('\n'),
     html: htmlEmail(`
-      <p>${esc(p.title)}</p>
-      <table cellpadding="0" cellspacing="0" style="margin:16px 0">
+      <p style="margin:0 0 14px 0">${esc(p.title)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Recipient', p.recipientLabel)}
         ${dtRow('Type', p.documentType)}
         ${dtRow('Status', p.status)}

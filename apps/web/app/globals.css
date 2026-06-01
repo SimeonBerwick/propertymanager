@@ -152,6 +152,14 @@ body { min-height: 100vh; }
 }
 .button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(31, 111, 235, 0.12); border-color: var(--border-strong); }
 .button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.compactToggle {
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.compactToggle.is-on { border-color: var(--success-border); color: var(--success-text); background: var(--success-bg); }
+.compactToggle.is-off { border-color: var(--border); color: var(--muted); background: var(--chip); }
 .themeToggle { min-width: 108px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 14px; font-weight: 600; }

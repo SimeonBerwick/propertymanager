@@ -56,6 +56,7 @@ export async function submitVendorResponse(
         propertyName: string
         unitLabel: string
         vendorName: string
+        emailNotificationsEnabled: boolean
       }
     | undefined
 
@@ -69,7 +70,7 @@ export async function submitVendorResponse(
           submittedByEmail: true,
           submittedByName: true,
           title: true,
-          property: { select: { name: true } },
+          property: { select: { name: true, owner: { select: { emailNotificationsEnabled: true } } } },
           unit: { select: { label: true } },
         },
       })
@@ -153,6 +154,7 @@ export async function submitVendorResponse(
           propertyName: currentRequest.property.name,
           unitLabel: currentRequest.unit.label,
           vendorName: validation.vendorName,
+          emailNotificationsEnabled: currentRequest.property.owner.emailNotificationsEnabled,
         }
       }
 
@@ -206,7 +208,7 @@ export async function submitVendorResponse(
   await applyRequestAutomation(validation.requestId)
 
   const shouldNotifyTenant = dispatchStatus === 'scheduled' || dispatchStatus === 'completed' || savedPhotoPaths.length > 0
-  if (shouldNotifyTenant && tenantNotification) {
+  if (shouldNotifyTenant && tenantNotification?.emailNotificationsEnabled) {
     await sendNotification(buildTenantVendorUpdateMessage({
       tenantEmail: tenantNotification.tenantEmail,
       tenantName: tenantNotification.tenantName,
