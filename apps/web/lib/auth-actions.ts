@@ -16,6 +16,14 @@ function logAuthError(stage: string, error: unknown) {
 }
 
 export type LoginState = { error: string } | null
+type AuthenticatedLandlord = {
+  userId: string
+  email: string
+  role: string
+  subscriptionStatus?: SessionData['subscriptionStatus']
+  trialEndsAt?: string | null
+  subscriptionEndsAt?: string | null
+}
 
 const LANDLORD_LOGIN_RATE_LIMIT = {
   limit: 5,
@@ -49,6 +57,9 @@ async function authenticateAgainstDatabase(email: string, password: string) {
     userId: user.id,
     email: user.email,
     role: user.role,
+    subscriptionStatus: user.subscriptionStatus,
+    trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
+    subscriptionEndsAt: user.subscriptionEndsAt?.toISOString() ?? null,
   }
 }
 
@@ -68,10 +79,13 @@ function authenticateAgainstDevFallback(email: string, password: string) {
     userId: 'dev-landlord',
     email: expectedEmail,
     role: 'landlord',
+    subscriptionStatus: 'active' as const,
+    trialEndsAt: null,
+    subscriptionEndsAt: null,
   }
 }
 
-export async function authenticateLogin(formData: FormData): Promise<{ error: string | null; user?: { userId: string; email: string; role: string } }> {
+export async function authenticateLogin(formData: FormData): Promise<{ error: string | null; user?: AuthenticatedLandlord }> {
   assertProductionAuthEnv()
 
   const email = formData.get('email')
@@ -93,7 +107,7 @@ export async function authenticateLogin(formData: FormData): Promise<{ error: st
     return { error: 'Too many login attempts. Try again later.' }
   }
 
-  let authenticatedUser: { userId: string; email: string; role: string } | null = null
+  let authenticatedUser: AuthenticatedLandlord | null = null
 
   try {
     authenticatedUser = await authenticateAgainstDatabase(normalizedEmail, password)
@@ -127,6 +141,9 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.userId = result.user.userId
     session.email = result.user.email
     session.role = result.user.role
+    session.subscriptionStatus = result.user.subscriptionStatus
+    session.trialEndsAt = result.user.trialEndsAt
+    session.subscriptionEndsAt = result.user.subscriptionEndsAt
     await session.save()
   } catch (error) {
     logAuthError('session.save', error)

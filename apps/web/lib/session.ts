@@ -5,6 +5,9 @@ export interface SessionData {
   userId?: string
   email?: string
   role?: string
+  subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired'
+  trialEndsAt?: string | null
+  subscriptionEndsAt?: string | null
 }
 
 // Dev default is intentionally weak and obvious; production requires SESSION_SECRET env var.

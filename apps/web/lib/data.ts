@@ -24,6 +24,7 @@ export interface DashboardData {
   properties: Property[]
   requestRows: DashboardRequestRow[]
   statusCounts: Record<RequestStatus, number>
+  emailNotificationsEnabled: boolean
   queueCounts: {
     nonEnglishOpen: number
     nonUsdOpen: number
@@ -226,7 +227,11 @@ function vendorMatchScore(request: DashboardRequestRow, vendor: Vendor): number 
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
-    const [dbProperties, dbRequests, claimUsers] = await Promise.all([
+    const [user, dbProperties, dbRequests, claimUsers] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { emailNotificationsEnabled: true },
+      }),
       prisma.property.findMany({
         where: { ownerId: userId, isActive: true },
         include: { _count: { select: { units: true } } },
@@ -246,10 +251,11 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       properties: dbProperties.map(mapProperty),
       requestRows,
       statusCounts: countStatuses(requestRows),
+      emailNotificationsEnabled: user?.emailNotificationsEnabled ?? true,
       queueCounts: queueCounts(requestRows, userId),
     }
   } catch {
-    return { properties: [], requestRows: [], statusCounts: countStatuses([]), queueCounts: queueCounts([], userId) }
+    return { properties: [], requestRows: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, queueCounts: queueCounts([], userId) }
   }
 }
 

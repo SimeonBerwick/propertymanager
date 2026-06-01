@@ -36,7 +36,7 @@ export async function applyRequestAutomation(requestId: string) {
   }).catch(() => null)
 
   const landlordEmail = request.property.owner.email
-  if (!landlordEmail || !shouldAlert || !autoFlag) return
+  if (!landlordEmail || !shouldAlert || !autoFlag || request.property.owner.emailNotificationsEnabled === false) return
 
   await sendNotification({
     to: landlordEmail,
@@ -65,7 +65,7 @@ export async function runAutomationSweep() {
 
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null)
-  if (!user?.email) return { ok: false }
+  if (!user?.email || user.emailNotificationsEnabled === false) return { ok: false, skipped: true }
 
   const requests = await prisma.maintenanceRequest.findMany({
     where: {

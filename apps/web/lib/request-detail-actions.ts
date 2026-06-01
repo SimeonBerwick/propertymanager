@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
-import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage } from '@/lib/notify'
+import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage, buildTenantCommentMessage } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
+import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -138,7 +139,7 @@ export async function updateStatusFormAction(
   revalidatePath(`/requests/${requestId}`)
   revalidatePath('/dashboard')
 
-  if (tenantEmail && tenantName && title && propertyName && unitLabel) {
+  if (tenantEmail && tenantName && title && propertyName && unitLabel && await areEmailNotificationsEnabled(session.userId)) {
     await sendNotification(
       buildStatusChangedMessage({
         requestId,
@@ -224,7 +225,7 @@ export async function updateVendorFormAction(
         if (vendor.email) {
           const invite = tender.invites.find((entry) => entry.vendorId === vendor.id)
           const dispatchLink = invite ? await createVendorDispatchLink(requestId, vendor.id, invite.id).catch(() => null) : null
-          await sendNotification(buildVendorAssignedMessage({
+          if (await areEmailNotificationsEnabled(session.userId)) await sendNotification(buildVendorAssignedMessage({
             requestId,
             title: request.title,
             propertyName: request.property.name,
@@ -374,7 +375,9 @@ export async function updateVendorFormAction(
   }
 
   if (notificationPayload) {
-    await sendNotification(buildVendorAssignedMessage(notificationPayload))
+    if (await areEmailNotificationsEnabled(session.userId)) {
+      await sendNotification(buildVendorAssignedMessage(notificationPayload))
+    }
   }
 
   return { error: null, success: true }
@@ -878,7 +881,7 @@ export async function quickRequestAction(
         },
       })
 
-      if (shouldNotifyTenant) {
+      if (shouldNotifyTenant && await areEmailNotificationsEnabled(session.userId)) {
         await sendNotification(buildTenantQueueViewedMessage({
           requestId,
           title: request.title,
@@ -1055,7 +1058,14 @@ export async function addCommentFormAction(
 
   const request = await prisma.maintenanceRequest.findFirst({
     where: { id: requestId, property: { ownerId: session.userId } },
-    select: { id: true },
+    select: {
+      id: true,
+      title: true,
+      submittedByName: true,
+      submittedByEmail: true,
+      property: { select: { name: true } },
+      unit: { select: { label: true } },
+    },
   })
   if (!request) return { error: 'Request not found.' }
 
@@ -1073,6 +1083,22 @@ export async function addCommentFormAction(
       metadata: { visibility },
     })
     revalidatePath(`/requests/${requestId}`)
+    if (
+      visibility === 'external' &&
+      request.submittedByEmail &&
+      request.submittedByName &&
+      await areEmailNotificationsEnabled(session.userId)
+    ) {
+      await sendNotification(buildTenantCommentMessage({
+        requestId,
+        title: request.title,
+        propertyName: request.property.name,
+        unitLabel: request.unit.label,
+        tenantEmail: request.submittedByEmail,
+        tenantName: request.submittedByName,
+        comment: body,
+      }))
+    }
     return { error: null, success: true }
   } catch {
     return { error: 'Could not save comment. Database may not be connected.' }

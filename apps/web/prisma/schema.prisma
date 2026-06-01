@@ -152,6 +152,14 @@ enum BillingDocumentStatus {
   void
 }
 
+enum AccountSubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  expired
+}
+
 enum VendorCommercialType {
   bid
   service_fee
@@ -172,6 +180,10 @@ model User {
   passwordHash String
   role         String
   slug         String?  @unique
+  subscriptionStatus AccountSubscriptionStatus @default(trialing)
+  trialEndsAt        DateTime?
+  subscriptionEndsAt DateTime?
+  emailNotificationsEnabled Boolean @default(true)
   createdAt    DateTime @default(now())
 
   properties              Property[]

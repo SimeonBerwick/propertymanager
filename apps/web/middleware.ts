@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
+import { evaluateSubscriptionGate } from '@/lib/subscription-gate'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -13,6 +14,10 @@ export async function middleware(request: NextRequest) {
     if (session.isLoggedIn) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
+    return response
+  }
+
+  if (pathname.startsWith('/account/billing-status')) {
     return response
   }
 
@@ -32,6 +37,18 @@ export async function middleware(request: NextRequest) {
 
   if (!session.isLoggedIn) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  const gate = evaluateSubscriptionGate({
+    subscriptionStatus: session.subscriptionStatus,
+    trialEndsAt: session.trialEndsAt,
+    subscriptionEndsAt: session.subscriptionEndsAt,
+  })
+
+  if (!gate.allowed) {
+    const url = new URL('/account/billing-status', request.url)
+    url.searchParams.set('reason', gate.reason)
+    return NextResponse.redirect(url)
   }
 
   return response

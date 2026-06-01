@@ -10,6 +10,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { currencyLabel, languageLabel } from '@/lib/types'
 import { formatRelativeAge, isStaleClaim } from '@/lib/ui-utils'
 import { RequestQueueList } from './request-queue-list'
+import { toggleEmailNotificationsAction } from './actions'
 
 export default async function DashboardPage({
   searchParams,
@@ -69,6 +70,16 @@ export default async function DashboardPage({
             <div className="muted">See what needs action now and clear it fast.</div>
           </div>
           <div className="requestHeroMeta">
+            <form action={toggleEmailNotificationsAction}>
+              <input type="hidden" name="enabled" value={data.emailNotificationsEnabled ? 'false' : 'true'} />
+              <button
+                type="submit"
+                className={`button compactToggle ${data.emailNotificationsEnabled ? 'is-on' : 'is-off'}`}
+                title="Toggle request and message email notifications"
+              >
+                Email {data.emailNotificationsEnabled ? 'On' : 'Off'}
+              </button>
+            </form>
             <Link href="/submit" className="button primary">Tenant issue form</Link>
             <Link href="/access" className="button">Access</Link>
             <Link href="/exceptions" className="button">Exceptions queue</Link>
