@@ -17,6 +17,13 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (pathname.startsWith('/signup')) {
+    if (session.isLoggedIn) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
+
   if (pathname.startsWith('/account/billing-status')) {
     return response
   }

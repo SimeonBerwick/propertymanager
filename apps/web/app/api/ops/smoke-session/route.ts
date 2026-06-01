@@ -56,7 +56,16 @@ export async function POST(request: NextRequest) {
     if (role === 'landlord') {
       const user = await prisma.user.findUnique({
         where: { email },
-        select: { id: true, email: true, role: true },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          subscriptionStatus: true,
+          subscriptionPlan: true,
+          billingCadence: true,
+          trialEndsAt: true,
+          subscriptionEndsAt: true,
+        },
       })
 
       if (!user || user.role !== 'landlord') {
@@ -68,6 +77,11 @@ export async function POST(request: NextRequest) {
       session.userId = user.id
       session.email = user.email
       session.role = user.role
+      session.subscriptionStatus = user.subscriptionStatus
+      session.subscriptionPlan = user.subscriptionPlan
+      session.billingCadence = user.billingCadence
+      session.trialEndsAt = user.trialEndsAt?.toISOString() ?? null
+      session.subscriptionEndsAt = user.subscriptionEndsAt?.toISOString() ?? null
       await session.save()
 
       await logAppEvent('info', 'ops.smoke_session.issued', {

@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { isDatabaseAvailable } from '@/lib/db-status'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { writeAuditLog } from '@/lib/audit-log'
+import { checkUnitCapacity } from '@/lib/account-limits'
 
 export type PropertyActionState = { error: string | null }
 
@@ -337,6 +338,11 @@ export async function createUnitAction(
       return { error: 'Property not found or you do not have access.' }
     }
 
+    const capacity = await checkUnitCapacity(ownerId)
+    if (!capacity.ok) {
+      return { error: `The Growth plan supports up to ${capacity.limit} active units. Upgrade to Pro to add more units.` }
+    }
+
     const unit = await prisma.unit.create({
       data: {
         propertyId,
@@ -524,6 +530,11 @@ export async function restoreUnitAction(
 
     if (!property.isActive) {
       return { error: 'Restore the property before restoring its units.' }
+    }
+
+    const capacity = await checkUnitCapacity(ownerId)
+    if (!capacity.ok) {
+      return { error: `The Growth plan supports up to ${capacity.limit} active units. Upgrade to Pro to restore more units.` }
     }
 
     const updated = await prisma.unit.updateMany({

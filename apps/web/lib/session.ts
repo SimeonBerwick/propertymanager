@@ -6,6 +6,8 @@ export interface SessionData {
   email?: string
   role?: string
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired'
+  subscriptionPlan?: 'growth' | 'pro' | null
+  billingCadence?: 'monthly' | 'annual' | null
   trialEndsAt?: string | null
   subscriptionEndsAt?: string | null
 }
