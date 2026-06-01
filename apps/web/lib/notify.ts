@@ -11,12 +11,15 @@
  */
 
 import { getRuntimeFailures, isHostedRuntimeEnforced } from '@/lib/runtime-env'
+import { logFallbackEmail, sendViaConnectedMailbox, type NotificationContext } from '@/lib/mailbox-service'
+import { prisma } from '@/lib/prisma'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
   to: string
   subject: string
   text: string
+  requestId?: string
   /** Optional HTML body. When present, email clients that support HTML will
    *  render it; clients that don't fall back to `text`. */
   html?: string
@@ -57,10 +60,29 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
  * logged so callers don't need try/catch around notification calls.
  * Returns { ok: false } when the transport fails so callers can surface a warning.
  */
-export async function sendNotification(msg: NotificationMessage): Promise<{ ok: boolean }> {
+function withRequestSubject(msg: NotificationMessage, context: NotificationContext) {
+  const requestId = context.requestId ?? msg.requestId
+  if (!requestId || msg.subject.includes(`[PMR:${requestId}]`)) return msg
+  return { ...msg, subject: `${msg.subject} [PMR:${requestId}]`, requestId }
+}
+
+export async function sendNotification(msg: NotificationMessage, context: NotificationContext = {}): Promise<{ ok: boolean }> {
+  const normalized = withRequestSubject(msg, context)
   try {
+    if (context.ownerUserId) {
+      const preference = await prisma.user.findUnique({
+        where: { id: context.ownerUserId },
+        select: { emailNotificationsEnabled: true },
+      })
+      if (preference?.emailNotificationsEnabled === false) return { ok: false }
+    }
+
+    const mailbox = await sendViaConnectedMailbox(normalized, context)
+    if (mailbox.attempted && mailbox.ok) return { ok: true }
+
     if (process.env.NOTIFY_TRANSPORT === 'smtp') {
-      await sendViaSmtp(msg)
+      await sendViaSmtp(normalized)
+      await logFallbackEmail(normalized, context, 'smtp', true)
       return { ok: true }
     }
 
@@ -73,9 +95,11 @@ export async function sendNotification(msg: NotificationMessage): Promise<{ ok: 
       return { ok: false }
     }
 
-    sendViaLog(msg)
+    sendViaLog(normalized)
+    await logFallbackEmail(normalized, context, 'log', true)
     return { ok: true }
   } catch (err) {
+    await logFallbackEmail(normalized, context, process.env.NOTIFY_TRANSPORT === 'smtp' ? 'smtp' : 'log', false, err)
     console.error('[NOTIFY] Transport error - notification was not delivered:', err)
     return { ok: false }
   }

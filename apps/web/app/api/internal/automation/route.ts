@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runAutomationSweep, sendDailyExceptionSummaryToLandlord } from '@/lib/automation'
+import { syncAllMailboxReplies } from '@/lib/mailbox-sync'
 import { prisma } from '@/lib/prisma'
 import { assertHostedRuntimeReady } from '@/lib/runtime-env'
 
@@ -17,8 +18,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => ({})) as { sendSummaries?: boolean }
+  const body = await request.json().catch(() => ({})) as { sendSummaries?: boolean; syncMailboxes?: boolean }
   const sweep = await runAutomationSweep()
+  const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
   if (body.sendSummaries) {
@@ -33,5 +35,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, summaryResults })
+  return NextResponse.json({ ok: true, sweep, mailboxSync, summaryResults })
 }

@@ -91,7 +91,7 @@ export async function submitTenantMobileRequestAction(
       property: {
         select: {
           name: true,
-          owner: { select: { email: true, emailNotificationsEnabled: true } },
+          owner: { select: { id: true, email: true, emailNotificationsEnabled: true } },
         },
       },
     },
@@ -156,7 +156,10 @@ export async function submitTenantMobileRequestAction(
       preferredCurrency,
       preferredLanguage,
     })
-    await Promise.all([sendNotification(tenantMsg), sendNotification(landlordMsg)])
+    await Promise.all([
+      sendNotification(tenantMsg, { ownerUserId: activeUnit.property.owner.id, requestId }),
+      sendNotification(landlordMsg, { ownerUserId: activeUnit.property.owner.id, requestId }),
+    ])
   }
 
   redirect(`/mobile/requests/${requestId}` as never)

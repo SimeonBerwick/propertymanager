@@ -56,6 +56,7 @@ export async function submitVendorResponse(
         propertyName: string
         unitLabel: string
         vendorName: string
+        ownerUserId: string
         emailNotificationsEnabled: boolean
       }
     | undefined
@@ -70,7 +71,7 @@ export async function submitVendorResponse(
           submittedByEmail: true,
           submittedByName: true,
           title: true,
-          property: { select: { name: true, owner: { select: { emailNotificationsEnabled: true } } } },
+          property: { select: { name: true, owner: { select: { id: true, emailNotificationsEnabled: true } } } },
           unit: { select: { label: true } },
         },
       })
@@ -154,6 +155,7 @@ export async function submitVendorResponse(
           propertyName: currentRequest.property.name,
           unitLabel: currentRequest.unit.label,
           vendorName: validation.vendorName,
+          ownerUserId: currentRequest.property.owner.id,
           emailNotificationsEnabled: currentRequest.property.owner.emailNotificationsEnabled,
         }
       }
@@ -222,7 +224,7 @@ export async function submitVendorResponse(
       scheduledStart: scheduledStart?.toISOString(),
       scheduledEnd: scheduledEnd?.toISOString(),
       photoCount: savedPhotoPaths.length || undefined,
-    }))
+    }), { ownerUserId: tenantNotification.ownerUserId, requestId: tenantNotification.requestId })
   }
 
   redirect(`/vendor/respond/${token}?submitted=1`)

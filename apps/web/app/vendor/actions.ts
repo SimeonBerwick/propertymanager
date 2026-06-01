@@ -43,7 +43,7 @@ export async function submitVendorPortalResponse(
       title: true,
       submittedByEmail: true,
       submittedByName: true,
-      property: { select: { name: true, owner: { select: { emailNotificationsEnabled: true } } } },
+      property: { select: { name: true, owner: { select: { id: true, emailNotificationsEnabled: true } } } },
       unit: { select: { label: true } },
       tenderInvites: {
         where: { vendorId: session.vendorId },
@@ -77,6 +77,7 @@ export async function submitVendorPortalResponse(
         propertyName: string
         unitLabel: string
         vendorName: string
+        ownerUserId: string
         emailNotificationsEnabled: boolean
       }
     | undefined
@@ -159,6 +160,7 @@ export async function submitVendorPortalResponse(
           propertyName: request.property.name,
           unitLabel: request.unit.label,
           vendorName: session.vendorName,
+          ownerUserId: request.property.owner.id,
           emailNotificationsEnabled: request.property.owner.emailNotificationsEnabled,
         }
       }
@@ -225,7 +227,7 @@ export async function submitVendorPortalResponse(
       scheduledStart: scheduledStart?.toISOString(),
       scheduledEnd: scheduledEnd?.toISOString(),
       photoCount: savedPhotoPaths.length || undefined,
-    }))
+    }), { ownerUserId: tenantNotification.ownerUserId, requestId: tenantNotification.requestId })
   }
 
   redirect(`/vendor/requests/${request.id}?submitted=1` as never)
