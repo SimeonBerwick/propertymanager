@@ -18,6 +18,9 @@ type RuntimeCheckId =
   | 'upstashRestUrl'
   | 'upstashRestToken'
   | 'rateLimitBackend'
+  | 'mailboxTokenEncryptionKey'
+  | 'gmailOAuth'
+  | 'outlookOAuth'
 
 export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit'
 
@@ -94,6 +97,9 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const r2Bucket = envValue('R2_BUCKET')
   const upstashRestUrl = envValue('UPSTASH_REDIS_REST_URL')
   const upstashRestToken = envValue('UPSTASH_REDIS_REST_TOKEN')
+  const mailboxTokenEncryptionKey = envValue('MAILBOX_TOKEN_ENCRYPTION_KEY') || sessionSecret
+  const gmailOAuth = !!envValue('GMAIL_OAUTH_CLIENT_ID') && !!envValue('GMAIL_OAUTH_CLIENT_SECRET')
+  const outlookOAuth = !!envValue('OUTLOOK_OAUTH_CLIENT_ID') && !!envValue('OUTLOOK_OAUTH_CLIENT_SECRET')
   const blocking = isHostedRuntimeEnforced()
 
   return [
@@ -242,6 +248,33 @@ export function getRuntimeChecks(): RuntimeCheck[] {
       detail: hasUpstashRateLimitConfig()
         ? 'Rate limiting is configured for Upstash-backed shared state.'
         : 'The app will use process memory until Upstash is configured.',
+    },
+    {
+      id: 'mailboxTokenEncryptionKey',
+      label: 'MAILBOX_TOKEN_ENCRYPTION_KEY',
+      ok: hasNonPlaceholderSecret(mailboxTokenEncryptionKey),
+      blocking,
+      detail: hasNonPlaceholderSecret(mailboxTokenEncryptionKey)
+        ? 'Mailbox token encryption is configured.'
+        : 'Set MAILBOX_TOKEN_ENCRYPTION_KEY to a random value at least 32 characters.',
+    },
+    {
+      id: 'gmailOAuth',
+      label: 'Gmail OAuth',
+      ok: gmailOAuth,
+      blocking: false,
+      detail: gmailOAuth
+        ? 'Gmail mailbox connection is configured.'
+        : 'Add GMAIL_OAUTH_CLIENT_ID and GMAIL_OAUTH_CLIENT_SECRET to enable Gmail connect.',
+    },
+    {
+      id: 'outlookOAuth',
+      label: 'Outlook OAuth',
+      ok: outlookOAuth,
+      blocking: false,
+      detail: outlookOAuth
+        ? 'Outlook mailbox connection is configured.'
+        : 'Add OUTLOOK_OAUTH_CLIENT_ID and OUTLOOK_OAUTH_CLIENT_SECRET to enable Outlook connect.',
     },
   ]
 }

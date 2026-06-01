@@ -4,6 +4,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { getOpsActivity } from '@/lib/ops-activity'
 import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { OpsActivityFeed } from '@/components/ops-activity-feed'
+import { OpsCsvPanel } from '@/components/ops-csv-panel'
 
 export default async function OpsPage({
   searchParams,
@@ -60,6 +61,8 @@ export default async function OpsPage({
           </tbody>
         </table>
       </section>
+
+      <OpsCsvPanel />
 
       <section className="card stack">
         <div>
