@@ -19,6 +19,11 @@ export async function POST(request: Request) {
   session.userId = result.user.userId
   session.email = result.user.email
   session.role = result.user.role
+  session.subscriptionStatus = result.user.subscriptionStatus
+  session.subscriptionPlan = result.user.subscriptionPlan
+  session.billingCadence = result.user.billingCadence
+  session.trialEndsAt = result.user.trialEndsAt
+  session.subscriptionEndsAt = result.user.subscriptionEndsAt
   await session.save()
 
   return response

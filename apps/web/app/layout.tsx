@@ -50,6 +50,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   <Link href="/access">Access</Link>
                   <Link href="/exceptions">Exceptions</Link>
                   <Link href="/ops">Ops</Link>
+                  <Link href="/account/subscription">Subscription</Link>
                   <Link href="/properties">Properties</Link>
                   <Link href="/vendors">Vendors</Link>
                   <Link href="/reports">Reports</Link>

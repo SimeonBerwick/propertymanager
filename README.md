@@ -54,6 +54,13 @@ From `apps/web`:
 - OTP verification still has per-challenge attempt caps + lockout in the DB
 - Current limiter is in-memory, so it is real for single-node/local deployments but not yet shared across multiple app instances
 
+## Subscription truth
+- New property manager accounts start with a one-month free trial and no card requirement
+- Growth is $99/month for up to 50 active units
+- Pro is $199/month for unlimited active units
+- Annual billing applies a 10% discount
+- Paid conversion uses Stripe Checkout; hosted deployments need `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+
 ## Companion-app / packaging prep
 For any companion-app or remote-node packaging path, treat these as required truth:
 - use a real `SESSION_SECRET`

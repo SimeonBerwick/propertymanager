@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { evaluateSubscriptionGate, subscriptionGateMessage } from '@/lib/subscription-gate'
 import { logout } from '@/lib/auth-actions'
+import { PlanPicker } from '@/app/account/subscription/plan-picker'
 
 export default async function BillingStatusPage() {
   const session = await getLandlordSession()
@@ -30,8 +31,9 @@ export default async function BillingStatusPage() {
             Access ended: {gate.expiresAt.toLocaleDateString()}
           </div>
         ) : null}
+        <PlanPicker currentPlan={session.subscriptionPlan} currentCadence={session.billingCadence} />
         <div className="row">
-          <a className="button" href="mailto:support@simeonware.com?subject=Property%20Manager%20subscription">Contact support</a>
+          <a className="button secondary" href="mailto:support@simeonware.com?subject=Property%20Manager%20subscription">Contact support</a>
           <form action={logout}>
             <button type="submit" className="button secondary">Sign out</button>
           </form>

@@ -14,6 +14,9 @@ export default async function LoginPage({
           <div className="kicker">Choose access type</div>
           <h2 style={{ margin: '4px 0 0' }}>Sign in</h2>
         </div>
+        <div className="notice">
+          New property manager? <a href="/signup">Start a free month</a>.
+        </div>
         <AccessTypeSelector error={error} />
       </div>
     </div>

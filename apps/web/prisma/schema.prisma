@@ -160,6 +160,16 @@ enum AccountSubscriptionStatus {
   expired
 }
 
+enum AccountPlan {
+  growth
+  pro
+}
+
+enum BillingCadence {
+  monthly
+  annual
+}
+
 enum VendorCommercialType {
   bid
   service_fee
@@ -200,8 +210,12 @@ model User {
   role         String
   slug         String?  @unique
   subscriptionStatus AccountSubscriptionStatus @default(trialing)
+  subscriptionPlan   AccountPlan?
+  billingCadence     BillingCadence?
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
   emailNotificationsEnabled Boolean @default(true)
   createdAt    DateTime @default(now())
 

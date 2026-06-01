@@ -21,8 +21,10 @@ type RuntimeCheckId =
   | 'mailboxTokenEncryptionKey'
   | 'gmailOAuth'
   | 'outlookOAuth'
+  | 'stripeSecretKey'
+  | 'stripeWebhookSecret'
 
-export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit'
+export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit' | 'billing'
 
 export type RuntimeCheck = {
   id: RuntimeCheckId
@@ -100,6 +102,8 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const mailboxTokenEncryptionKey = envValue('MAILBOX_TOKEN_ENCRYPTION_KEY') || sessionSecret
   const gmailOAuth = !!envValue('GMAIL_OAUTH_CLIENT_ID') && !!envValue('GMAIL_OAUTH_CLIENT_SECRET')
   const outlookOAuth = !!envValue('OUTLOOK_OAUTH_CLIENT_ID') && !!envValue('OUTLOOK_OAUTH_CLIENT_SECRET')
+  const stripeSecretKey = envValue('STRIPE_SECRET_KEY')
+  const stripeWebhookSecret = envValue('STRIPE_WEBHOOK_SECRET')
   const blocking = isHostedRuntimeEnforced()
 
   return [
@@ -276,6 +280,28 @@ export function getRuntimeChecks(): RuntimeCheck[] {
         ? 'Outlook mailbox connection is configured.'
         : 'Add OUTLOOK_OAUTH_CLIENT_ID and OUTLOOK_OAUTH_CLIENT_SECRET to enable Outlook connect.',
     },
+    {
+      id: 'stripeSecretKey',
+      label: 'STRIPE_SECRET_KEY',
+      ok: hasNonPlaceholderSecret(stripeSecretKey),
+      blocking,
+      detail: stripeSecretKey
+        ? hasNonPlaceholderSecret(stripeSecretKey)
+          ? 'Stripe secret key is configured.'
+          : 'Stripe secret key is too short or still looks like a placeholder.'
+        : 'Missing STRIPE_SECRET_KEY.',
+    },
+    {
+      id: 'stripeWebhookSecret',
+      label: 'STRIPE_WEBHOOK_SECRET',
+      ok: hasNonPlaceholderSecret(stripeWebhookSecret),
+      blocking,
+      detail: stripeWebhookSecret
+        ? hasNonPlaceholderSecret(stripeWebhookSecret)
+          ? 'Stripe webhook secret is configured.'
+          : 'Stripe webhook secret is too short or still looks like a placeholder.'
+        : 'Missing STRIPE_WEBHOOK_SECRET.',
+    },
   ]
 }
 
@@ -284,6 +310,7 @@ const CAPABILITY_CHECKS: Record<RuntimeCapability, RuntimeCheckId[]> = {
   notifications: ['notifyTransport', 'smtpUrl'],
   media: ['r2AccountId', 'r2AccessKeyId', 'r2SecretAccessKey', 'r2Bucket', 'mediaBackend'],
   rateLimit: ['upstashRestUrl', 'upstashRestToken', 'rateLimitBackend'],
+  billing: ['stripeSecretKey', 'stripeWebhookSecret'],
 }
 
 export function getRuntimeFailures(capabilities: RuntimeCapability[]) {

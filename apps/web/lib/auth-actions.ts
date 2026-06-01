@@ -21,6 +21,8 @@ type AuthenticatedLandlord = {
   email: string
   role: string
   subscriptionStatus?: SessionData['subscriptionStatus']
+  subscriptionPlan?: SessionData['subscriptionPlan']
+  billingCadence?: SessionData['billingCadence']
   trialEndsAt?: string | null
   subscriptionEndsAt?: string | null
 }
@@ -58,6 +60,8 @@ async function authenticateAgainstDatabase(email: string, password: string) {
     email: user.email,
     role: user.role,
     subscriptionStatus: user.subscriptionStatus,
+    subscriptionPlan: user.subscriptionPlan,
+    billingCadence: user.billingCadence,
     trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
     subscriptionEndsAt: user.subscriptionEndsAt?.toISOString() ?? null,
   }
@@ -80,6 +84,8 @@ function authenticateAgainstDevFallback(email: string, password: string) {
     email: expectedEmail,
     role: 'landlord',
     subscriptionStatus: 'active' as const,
+    subscriptionPlan: 'pro' as const,
+    billingCadence: 'monthly' as const,
     trialEndsAt: null,
     subscriptionEndsAt: null,
   }
@@ -142,6 +148,8 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.email = result.user.email
     session.role = result.user.role
     session.subscriptionStatus = result.user.subscriptionStatus
+    session.subscriptionPlan = result.user.subscriptionPlan
+    session.billingCadence = result.user.billingCadence
     session.trialEndsAt = result.user.trialEndsAt
     session.subscriptionEndsAt = result.user.subscriptionEndsAt
     await session.save()

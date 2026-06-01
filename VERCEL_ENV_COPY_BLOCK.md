@@ -32,6 +32,10 @@ R2_BUCKET=property-manager-private-media
 # Upstash Redis shared rate limiting
 UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-upstash-rest-token
+
+# Stripe subscriptions
+STRIPE_SECRET_KEY=sk_live_replace_me
+STRIPE_WEBHOOK_SECRET=whsec_replace_me
 ```
 
 ## Vercel target
@@ -49,4 +53,6 @@ Set these for:
 - SMTP notification sends
 - private photo upload/read works
 - rate limiting works through Upstash
+- Stripe Checkout opens from `/account/subscription`
+- Stripe webhook endpoint `/api/stripe/webhook` updates account subscription status
 - internal automation succeeds with bearer auth
