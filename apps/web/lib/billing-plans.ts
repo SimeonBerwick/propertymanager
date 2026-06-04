@@ -57,8 +57,8 @@ export function planPriceLabel(plan: PlanKey, cadence: CadenceKey) {
   return cadence === 'monthly' ? `${amount}/month` : `${amount}/year`
 }
 
-export function trialEndsAtFrom(start = new Date()) {
+export function trialEndsAtFrom(start = new Date(), days = TRIAL_DAYS) {
   const date = new Date(start)
-  date.setDate(date.getDate() + TRIAL_DAYS)
+  date.setDate(date.getDate() + days)
   return date
 }

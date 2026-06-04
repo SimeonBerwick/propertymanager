@@ -10,51 +10,39 @@ type Role = 'manager' | 'vendor' | 'tenant'
 export function AccessTypeSelector({ error }: { error?: string }) {
   const [selectedRole, setSelectedRole] = useState<Role>('manager')
 
+  const tabClass = (role: Role) => selectedRole === role ? 'authRoleTab authRoleTabActive' : 'authRoleTab'
+
   return (
-    <div className="authRoleGrid">
-      <div className={selectedRole === 'manager' ? 'authRoleCard authRoleCardActive' : 'authRoleCard'}>
-        <div className="kicker">Property manager</div>
-        <h3 style={{ margin: '4px 0 0' }}>Manage the portfolio</h3>
+    <div className="stack" style={{ gap: 14 }}>
+      <div className="authRoleTabs" role="tablist" aria-label="Access type">
+        <button type="button" className={tabClass('manager')} onClick={() => setSelectedRole('manager')}>
+          Property manager
+        </button>
+        <button type="button" className={tabClass('vendor')} onClick={() => setSelectedRole('vendor')}>
+          Vendor
+        </button>
+        <button type="button" className={tabClass('tenant')} onClick={() => setSelectedRole('tenant')}>
+          Tenant
+        </button>
+      </div>
+
+      <div className="authRolePanel">
         {selectedRole === 'manager' ? (
           <>
-            <div className="authRoleBadge">Property manager</div>
+            <div className="notice trialNotice">
+              <div>
+                <strong>First month free for property managers.</strong>
+                <div className="muted">No credit card required during signup.</div>
+              </div>
+              <a href="/signup" className="button primary">Start a free month</a>
+            </div>
             <LoginForm error={error} />
           </>
-        ) : (
-          <button type="button" className="button" onClick={() => setSelectedRole('manager')}>
-            Property manager sign in
-          </button>
-        )}
-      </div>
+        ) : null}
 
-      <div className={selectedRole === 'vendor' ? 'authRoleCard authRoleCardActive' : 'authRoleCard'}>
-        <div className="kicker">Vendor</div>
-        <h3 style={{ margin: '4px 0 0' }}>Open vendor portal</h3>
-        {selectedRole === 'vendor' ? (
-          <>
-            <div className="authRoleBadge">Vendor</div>
-            <VendorLoginForm />
-          </>
-        ) : (
-          <button type="button" className="button" onClick={() => setSelectedRole('vendor')}>
-            Vendor sign in
-          </button>
-        )}
-      </div>
+        {selectedRole === 'vendor' ? <VendorLoginForm /> : null}
 
-      <div className={selectedRole === 'tenant' ? 'authRoleCard authRoleCardActive' : 'authRoleCard'}>
-        <div className="kicker">Tenant</div>
-        <h3 style={{ margin: '4px 0 0' }}>Open tenant portal</h3>
-        {selectedRole === 'tenant' ? (
-          <>
-            <div className="authRoleBadge">Tenant</div>
-            <ReturningLoginForm />
-          </>
-        ) : (
-          <button type="button" className="button" onClick={() => setSelectedRole('tenant')}>
-            Tenant sign in
-          </button>
-        )}
+        {selectedRole === 'tenant' ? <ReturningLoginForm /> : null}
       </div>
     </div>
   )

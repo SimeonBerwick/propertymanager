@@ -29,7 +29,7 @@ export function providerConfig(provider: MailboxProvider): ProviderConfig {
       clientSecret: env('GMAIL_OAUTH_CLIENT_SECRET', 'GOOGLE_CLIENT_SECRET'),
       authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
       tokenUrl: 'https://oauth2.googleapis.com/token',
-      redirectPath: `${appUrl}/api/mailbox/oauth/gmail/callback`,
+      redirectPath: `${appUrl}/api/mailbox/gmail/callback`,
       scopes: [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly',
@@ -44,7 +44,7 @@ export function providerConfig(provider: MailboxProvider): ProviderConfig {
     clientSecret: env('OUTLOOK_OAUTH_CLIENT_SECRET', 'MICROSOFT_CLIENT_SECRET'),
     authUrl: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
     tokenUrl: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-    redirectPath: `${appUrl}/api/mailbox/oauth/outlook/callback`,
+    redirectPath: `${appUrl}/api/mailbox/outlook/callback`,
     scopes: ['offline_access', 'User.Read', 'Mail.Send', 'Mail.Read'],
   }
 }

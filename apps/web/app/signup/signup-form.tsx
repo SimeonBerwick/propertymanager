@@ -61,6 +61,23 @@ export function SignupForm() {
         First month free. No credit card required during signup.
       </div>
 
+      <label className="field">
+        <span className="field-label">Promo code</span>
+        <input
+          className="input"
+          name="promoCode"
+          type="text"
+          autoComplete="off"
+          maxLength={40}
+          placeholder="Optional"
+        />
+        <span className="muted">Have an invite code? Enter it here to extend the trial.</span>
+      </label>
+
+      <div className="notice">
+        Use a 3-month trial code when running feedback campaigns.
+      </div>
+
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>
         <button type="submit" className="button primary" disabled={pending}>

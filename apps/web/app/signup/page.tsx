@@ -9,7 +9,7 @@ export default function SignupPage() {
           <h2 style={{ margin: '4px 0 0' }}>Start your free month</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Choose Growth or Pro now. You can use the app for the first month without a card, then add billing when the trial ends.
+          Choose Growth or Pro now. You can use the app for the first month without a card, or enter a promo code for an extended feedback trial.
         </p>
       </section>
 

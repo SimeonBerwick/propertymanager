@@ -56,40 +56,43 @@ a { color: inherit; text-decoration: none; }
 body { min-height: 100vh; }
 .page { max-width: 1240px; margin: 0 auto; padding: 28px; }
 .authEntryLayout { max-width: 980px; margin: 48px auto 0; display: grid; gap: 18px; }
-.authRoleGrid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.authRoleCard {
-  display: grid;
-  gap: 10px;
+.authRoleTabs { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.authRoleTab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--table-row);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
   padding: 16px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+.authRoleTab:hover { border-color: var(--border-strong); }
+.authRoleTabActive {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.25);
+}
+.authRolePanel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
   border-radius: 16px;
   border: 1px solid var(--border);
   background: var(--table-row);
 }
-.authRoleCardActive {
-  border-color: var(--accent);
-  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--table-row) 100%);
-}
-.authRoleCardActive form {
+.authRolePanel form {
   gap: 10px;
 }
-.authRoleCardActive .input {
+.authRolePanel .input {
   padding: 9px 11px;
 }
-.authRoleCardActive .button {
+.authRolePanel .button {
   padding: 9px 12px;
 }
-.authRoleBadge {
-  display: inline-flex;
-  width: fit-content;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(96, 165, 250, 0.18);
-  color: #bfdbfe;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+.trialNotice { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .header {
   display: flex;
   justify-content: space-between;
@@ -457,8 +460,12 @@ body { min-height: 100vh; }
 .shellNotice { margin-bottom: 16px; }
 
 @media (max-width: 980px) {
-  .authRoleGrid {
+  .authRoleTabs {
     grid-template-columns: 1fr;
+  }
+  .trialNotice {
+    align-items: stretch;
+    flex-direction: column;
   }
   .grid.cols-4, .grid.cols-3, .grid.cols-2, .photo-grid, .queueGrid, .opsCsvGrid, .detailFactsGrid, .requestHero, .requestDetailGrid, .inboxRow, .billingLayout {
     grid-template-columns: 1fr;
