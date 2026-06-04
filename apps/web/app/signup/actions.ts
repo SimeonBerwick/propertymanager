@@ -12,8 +12,37 @@ import { writeAuditLog } from '@/lib/audit-log'
 
 export type SignupState = { error: string | null }
 
+const DEFAULT_PROMO_TRIAL_DAYS: Record<string, number> = {
+  PM3MONTHS: 93,
+  '3MONTHS': 93,
+}
+
 function read(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim()
+}
+
+function normalizePromoCode(value: string) {
+  return value.replace(/[\s-]+/g, '').toUpperCase()
+}
+
+function configuredPromoTrialDays() {
+  const raw = process.env.SIGNUP_PROMO_TRIAL_DAYS?.trim()
+  if (!raw) return DEFAULT_PROMO_TRIAL_DAYS
+
+  return raw.split(',').reduce<Record<string, number>>((codes, entry) => {
+    const [code, days] = entry.split(':').map((part) => part.trim())
+    const normalizedCode = normalizePromoCode(code ?? '')
+    const parsedDays = Number(days)
+    if (normalizedCode && Number.isInteger(parsedDays) && parsedDays > 0) {
+      codes[normalizedCode] = parsedDays
+    }
+    return codes
+  }, { ...DEFAULT_PROMO_TRIAL_DAYS })
+}
+
+function promoTrialDays(code: string) {
+  if (!code) return null
+  return configuredPromoTrialDays()[normalizePromoCode(code)] ?? null
 }
 
 function slugFromEmail(email: string) {
@@ -36,14 +65,18 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   const password = read(formData, 'password')
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
+  const promoCode = read(formData, 'promoCode')
+  const promoDays = promoTrialDays(promoCode)
 
   if (!displayName) return { error: 'Name is required.' }
   if (displayName.length > 120) return { error: 'Name must be 120 characters or fewer.' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
   if (!plan || !cadence) return { error: 'Choose a subscription plan.' }
+  if (promoCode && !promoDays) return { error: 'That promo code is not valid.' }
 
-  const trialEndsAt = trialEndsAtFrom()
+  const trialEndsAt = trialEndsAtFrom(undefined, promoDays ?? undefined)
+  const normalizedPromoCode = promoCode ? normalizePromoCode(promoCode) : null
 
   try {
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
@@ -69,8 +102,10 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       entityType: 'user',
       entityId: user.id,
       action: 'account.trialStarted',
-      summary: `Started free trial on ${plan} ${cadence}.`,
-      metadata: { plan, cadence, trialEndsAt: trialEndsAt.toISOString() },
+      summary: normalizedPromoCode
+        ? `Started ${promoDays}-day trial on ${plan} ${cadence} with promo code.`
+        : `Started free trial on ${plan} ${cadence}.`,
+      metadata: { plan, cadence, trialEndsAt: trialEndsAt.toISOString(), promoCode: normalizedPromoCode, promoDays },
     })
 
     const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
