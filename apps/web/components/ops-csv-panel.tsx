@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { importTicketsCsv, importUnitsCsv, importVendorsCsv, type OpsCsvState } from '@/app/ops/actions'
 
 const initialState: OpsCsvState = { error: null }
@@ -25,7 +25,8 @@ function UploadForm({
       </div>
       <form action={formAction} className="row" style={{ justifyContent: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
         <input className="input" type="file" name="file" accept=".csv,text/csv" required />
-        <button className="button primary compactToggle" type="submit" disabled={pending}>{pending ? 'Uploading' : 'Upload CSV'}</button>
+        <label className="row" style={{ gap: 6 }}><input type="checkbox" name="preview" value="true" defaultChecked /> Preview only</label>
+        <button className="button primary compactToggle" type="submit" disabled={pending}>{pending ? 'Checking' : 'Check / upload CSV'}</button>
       </form>
       {formState.error ? <div className="muted" style={{ color: 'var(--danger)' }}>{formState.error}</div> : null}
       {formState.success ? <div className="badge done" style={{ width: 'fit-content' }}>{formState.success}</div> : null}
@@ -34,18 +35,24 @@ function UploadForm({
 }
 
 export function OpsCsvPanel() {
+  const [since, setSince] = useState('')
+  const suffix = since ? `?since=${encodeURIComponent(since)}` : ''
   return (
     <section className="card stack">
       <div>
         <div className="kicker">CSV</div>
         <h3 style={{ marginTop: 4 }}>Import / export</h3>
+        <div className="muted">Downloads include stable IDs and update timestamps. Uploads preview changes by default and reject stale rows.</div>
       </div>
+      <label className="field" style={{ maxWidth: 320 }}>
+        <span className="field-label">Download changes since</span>
+        <input className="input" type="date" value={since} onChange={(event) => setSince(event.target.value)} />
+      </label>
       <div className="opsCsvGrid">
-        <UploadForm title="Units" action={importUnitsCsv} state={initialState} downloadHref="/api/ops/csv/units" />
-        <UploadForm title="Vendors" action={importVendorsCsv} state={initialState} downloadHref="/api/ops/csv/vendors" />
-        <UploadForm title="Tickets" action={importTicketsCsv} state={initialState} downloadHref="/api/ops/csv/tickets" />
+        <UploadForm title="Units" action={importUnitsCsv} state={initialState} downloadHref={`/api/ops/csv/units${suffix}`} />
+        <UploadForm title="Vendors" action={importVendorsCsv} state={initialState} downloadHref={`/api/ops/csv/vendors${suffix}`} />
+        <UploadForm title="Tickets" action={importTicketsCsv} state={initialState} downloadHref={`/api/ops/csv/tickets${suffix}`} />
       </div>
     </section>
   )
 }
-

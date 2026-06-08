@@ -12,18 +12,29 @@ function csvResponse(filename: string, body: string) {
   })
 }
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ kind: string }> }) {
+function changedSince(request: NextRequest) {
+  const raw = request.nextUrl.searchParams.get('since')
+  if (!raw) return undefined
+  const parsed = new Date(raw)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ kind: string }> }) {
   const session = await getLandlordSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { kind } = await params
+  const since = changedSince(request)
   if (kind === 'units') {
     const units = await prisma.unit.findMany({
-      where: { property: { ownerId: session.userId } },
+      where: { property: { ownerId: session.userId }, ...(since ? { updatedAt: { gte: since } } : {}) },
       include: { property: true },
       orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }],
     })
     return csvResponse('propertymanager-units.csv', toCsv([
+      'id',
+      'updatedAt',
+      'propertyId',
       'propertyName',
       'propertyAddress',
       'unitLabel',
@@ -35,6 +46,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       'monthlyRent',
       'isActive',
     ], units.map((unit) => ({
+      id: unit.id,
+      updatedAt: unit.updatedAt.toISOString(),
+      propertyId: unit.propertyId,
       propertyName: unit.property.name,
       propertyAddress: unit.property.address,
       unitLabel: unit.label,
@@ -50,10 +64,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (kind === 'vendors') {
     const vendors = await prisma.vendor.findMany({
-      where: { orgId: session.userId },
+      where: { orgId: session.userId, ...(since ? { updatedAt: { gte: since } } : {}) },
       orderBy: { name: 'asc' },
     })
     return csvResponse('propertymanager-vendors.csv', toCsv([
+      'id',
+      'updatedAt',
       'name',
       'email',
       'phone',
@@ -62,6 +78,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       'supportedCurrencies',
       'isActive',
     ], vendors.map((vendor) => ({
+      id: vendor.id,
+      updatedAt: vendor.updatedAt.toISOString(),
       name: vendor.name,
       email: vendor.email,
       phone: vendor.phone,
@@ -74,12 +92,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (kind === 'tickets') {
     const requests = await prisma.maintenanceRequest.findMany({
-      where: { property: { ownerId: session.userId } },
+      where: { property: { ownerId: session.userId }, ...(since ? { updatedAt: { gte: since } } : {}) },
       include: { property: true, unit: true },
       orderBy: { createdAt: 'desc' },
       take: 5000,
     })
     return csvResponse('propertymanager-tickets.csv', toCsv([
+      'id',
+      'updatedAt',
+      'propertyId',
+      'unitId',
       'propertyName',
       'unitLabel',
       'title',
@@ -94,6 +116,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       'assignedVendorPhone',
       'createdAt',
     ], requests.map((request) => ({
+      id: request.id,
+      updatedAt: request.updatedAt.toISOString(),
+      propertyId: request.propertyId,
+      unitId: request.unitId,
       propertyName: request.property.name,
       unitLabel: request.unit.label,
       title: request.title,
@@ -112,4 +138,3 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({ error: 'Unsupported CSV export.' }, { status: 404 })
 }
-

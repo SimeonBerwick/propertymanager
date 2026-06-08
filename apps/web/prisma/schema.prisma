@@ -240,6 +240,7 @@ model Property {
   address   String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   owner            User                 @relation(fields: [ownerId], references: [id])
   units            Unit[]
@@ -259,6 +260,7 @@ model Unit {
   monthlyRentCents Int?
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]
