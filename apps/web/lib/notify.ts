@@ -46,7 +46,7 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
   const nodemailer = await import('nodemailer')
   const transport = nodemailer.createTransport(smtpUrl)
   await transport.sendMail({
-    from: process.env.NOTIFY_FROM ?? 'Property Manager <noreply@propertymanager.local>',
+    from: process.env.NOTIFY_FROM ?? 'Simeonware Maintenance Manager <noreply@propertymanager.local>',
     to: msg.to,
     subject: msg.subject,
     text: msg.text,
@@ -143,7 +143,7 @@ function htmlEmail(body: string): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#ffffff;mso-table-lspace:0pt;mso-table-rspace:0pt">
             <tr>
               <td bgcolor="#1a56db" style="background-color:#1a56db;padding:16px 20px">
-                <span style="color:#ffffff;font-size:18px;line-height:22px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Property Manager</span>
+                <span style="color:#ffffff;font-size:18px;line-height:22px;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Simeonware Maintenance Manager</span>
               </td>
             </tr>
             <tr>

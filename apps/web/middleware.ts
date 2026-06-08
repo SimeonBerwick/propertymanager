@@ -28,6 +28,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (pathname === '/privacy' || pathname === '/terms' || pathname === '/support' || pathname === '/account-deletion') {
+    return response
+  }
+
   if (pathname.startsWith('/submit')) {
     return response
   }

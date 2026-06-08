@@ -31,7 +31,7 @@ export function renderBillingPdfHtml(input: BillingPdfInput) {
 <body style="font-family: Inter, Arial, sans-serif; padding: 32px; color: #111827;">
   <div style="max-width: 760px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden;">
     <div style="padding: 24px; background: #0f172a; color: white;">
-      <div style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8;">Property Manager</div>
+      <div style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8;">Simeonware LLC</div>
       <h1 style="margin: 8px 0 0; font-size: 28px;">${input.title}</h1>
     </div>
     <div style="padding: 24px;">

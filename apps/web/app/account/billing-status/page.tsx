@@ -33,7 +33,7 @@ export default async function BillingStatusPage() {
         ) : null}
         <PlanPicker currentPlan={session.subscriptionPlan} currentCadence={session.billingCadence} />
         <div className="row">
-          <a className="button secondary" href="mailto:support@simeonware.com?subject=Property%20Manager%20subscription">Contact support</a>
+          <a className="button secondary" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20subscription">Contact support</a>
           <form action={logout}>
             <button type="submit" className="button secondary">Sign out</button>
           </form>
