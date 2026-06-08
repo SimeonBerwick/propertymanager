@@ -5,7 +5,7 @@ export default function SignupPage() {
     <main className="stack" style={{ maxWidth: 900, margin: '0 auto' }}>
       <section className="card stack">
         <div>
-          <div className="kicker">Property Manager V1</div>
+          <div className="kicker">Simeonware LLC</div>
           <h2 style={{ margin: '4px 0 0' }}>Start your free month</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>

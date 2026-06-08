@@ -458,6 +458,16 @@ body { min-height: 100vh; }
 .queueCard { display: block; }
 .queueCard .queueValue { font-size: 28px; font-weight: 800; margin: 8px 0 4px; }
 .shellNotice { margin-bottom: 16px; }
+.siteFooter {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
 
 @media (max-width: 980px) {
   .authRoleTabs {

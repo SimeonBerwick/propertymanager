@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Simeonware Property Manager',
-    short_name: 'Simeonware',
+    name: 'Simeonware: Maintenance Manager',
+    short_name: 'Maintenance Manager',
     description: 'Maintenance coordination for property managers, tenants, and vendors.',
     start_url: '/',
     display: 'standalone',

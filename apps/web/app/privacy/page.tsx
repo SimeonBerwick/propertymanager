@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Privacy Policy | Property Manager V1',
-  description: 'Privacy policy for Property Manager V1.',
+  title: 'Privacy Policy | Simeonware: Maintenance Manager',
+  description: 'Privacy policy for Simeonware: Maintenance Manager.',
 }
 
 export default function PrivacyPage() {
@@ -13,7 +13,7 @@ export default function PrivacyPage() {
           <div className="muted sectionSubtitle">Last updated: June 5, 2026</div>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Property Manager V1 helps landlords, tenants, and vendors coordinate maintenance requests. This policy explains what information the service handles and how it is used.
+          Simeonware LLC operates Simeonware: Maintenance Manager, which helps property managers, tenants, and vendors coordinate maintenance requests. This policy explains what information the service handles and how it is used.
         </p>
       </section>
 
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
       <section className="card stack">
         <h3 style={{ margin: 0 }}>Your choices</h3>
         <p className="muted" style={{ margin: 0 }}>
-          You may request access, correction, or deletion of account information by contacting support. Some records may need to be retained where required for legitimate business, legal, security, or accounting reasons.
+          You may request access, correction, or deletion of account information through our account deletion page or by contacting support. Some records may need to be retained where required for legitimate business, legal, security, or accounting reasons.
         </p>
       </section>
 

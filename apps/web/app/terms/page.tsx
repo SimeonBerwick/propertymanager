@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Terms of Service | Property Manager V1',
-  description: 'Terms of service for Property Manager V1.',
+  title: 'Terms of Service | Simeonware: Maintenance Manager',
+  description: 'Terms of service for Simeonware: Maintenance Manager.',
 }
 
 export default function TermsPage() {
@@ -13,7 +13,7 @@ export default function TermsPage() {
           <div className="muted sectionSubtitle">Last updated: June 5, 2026</div>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          These terms govern use of Property Manager V1, a maintenance coordination service for small landlords, property managers, tenants, and vendors.
+          These terms govern use of Simeonware: Maintenance Manager, a maintenance coordination service operated by Simeonware LLC for landlords, property managers, tenants, and vendors.
         </p>
       </section>
 

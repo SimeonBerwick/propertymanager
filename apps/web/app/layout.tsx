@@ -10,8 +10,8 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { PushNotificationControl } from '@/components/push-notification-control'
 
 export const metadata = {
-  title: 'Property Manager V1',
-  description: 'Maintenance command center for small landlords',
+  title: 'Simeonware: Maintenance Manager',
+  description: 'Maintenance coordination for property managers, tenants, and vendors.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.svg',
@@ -50,8 +50,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           )}
           <header className="header">
             <div>
-              <div className="kicker">Property Manager V1</div>
-              <h1 style={{ margin: '4px 0 0' }}>Maintenance Ops</h1>
+              <div className="kicker">Simeonware LLC</div>
+              <h1 style={{ margin: '4px 0 0' }}>Maintenance Manager</h1>
             </div>
             <div className="nav">
               <ThemeToggle />
@@ -74,6 +74,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </div>
           </header>
           {children}
+          <footer className="siteFooter">
+            <span>Simeonware LLC</span>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/support">Support</Link>
+            <Link href="/account-deletion">Account deletion</Link>
+          </footer>
         </div>
       </body>
     </html>

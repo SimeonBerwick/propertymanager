@@ -67,7 +67,7 @@ export async function startCheckoutAction(formData: FormData) {
           unit_amount: planAmountCents(plan, cadence),
           recurring: { interval: cadence === 'annual' ? 'year' : 'month' },
           product_data: {
-            name: `Property Manager ${BILLING_PLANS[plan].name}`,
+            name: `Simeonware Maintenance Manager ${BILLING_PLANS[plan].name}`,
             description: `${BILLING_PLANS[plan].description} ${CADENCE_LABELS[cadence]} billing at ${planPriceLabel(plan, cadence)}.`,
           },
         },
