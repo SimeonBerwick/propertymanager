@@ -767,6 +767,20 @@ model BillingEvent {
   @@index([billingDocumentId, createdAt])
 }
 
+model PushSubscription {
+  id            String   @id @default(cuid())
+  principalType String
+  principalId   String
+  endpoint      String   @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([principalType, principalId])
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   orgId        String?

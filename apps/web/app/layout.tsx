@@ -7,10 +7,21 @@ import { getSessionOptions, type SessionData } from '@/lib/session'
 import { logout } from '@/lib/auth-actions'
 import { isDatabaseAvailable } from '@/lib/db-status'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { PushNotificationControl } from '@/components/push-notification-control'
 
 export const metadata = {
   title: 'Property Manager V1',
   description: 'Maintenance command center for small landlords',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Simeonware',
+    statusBarStyle: 'default',
+  },
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -46,6 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <ThemeToggle />
               {session.isLoggedIn && (
                 <>
+                  <PushNotificationControl />
                   <Link href="/dashboard">Dashboard</Link>
                   <Link href="/access">Access</Link>
                   <Link href="/exceptions">Exceptions</Link>
