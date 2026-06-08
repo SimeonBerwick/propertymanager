@@ -6,7 +6,7 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 
 const TENANT_COOKIE = 'pm_tenant_session'
-const SESSION_TTL_DAYS = 30
+const SESSION_TTL_DAYS = 365
 
 function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex')

@@ -9,7 +9,7 @@ export default function MobileAuthLandingPage() {
         <h2 style={{ marginTop: 4 }}>Mobile portal</h2>
       </div>
       <p className="muted" style={{ margin: 0 }}>
-        Use your invite link to activate access, or sign back in with the email tied to your unit.
+        Use your invite link to activate access, or sign back in with the email tied to your unit. Once verified, this device stays signed in for up to one year.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/mobile/auth/login' as Route} className="button primary">Tenant sign in</Link>

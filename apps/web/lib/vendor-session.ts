@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
-const SESSION_TTL_DAYS = 30
+const SESSION_TTL_DAYS = 365
 
 function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex')
