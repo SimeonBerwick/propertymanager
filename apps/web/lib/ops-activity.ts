@@ -13,6 +13,7 @@ export interface OpsActivityItem {
 export interface OpsActivityFilters {
   entityType?: string
   actionPrefix?: string
+  createdAfter?: Date
 }
 
 export async function getOpsActivity(userId: string, limit = 50, filters: OpsActivityFilters = {}): Promise<OpsActivityItem[]> {
@@ -22,6 +23,7 @@ export async function getOpsActivity(userId: string, limit = 50, filters: OpsAct
         orgId: userId,
         ...(filters.entityType ? { entityType: filters.entityType } : {}),
         ...(filters.actionPrefix ? { action: { startsWith: filters.actionPrefix } } : {}),
+        ...(filters.createdAfter ? { createdAt: { gte: filters.createdAfter } } : {}),
       },
       include: { actorUser: true },
       orderBy: { createdAt: 'desc' },
@@ -39,5 +41,21 @@ export async function getOpsActivity(userId: string, limit = 50, filters: OpsAct
     }))
   } catch {
     return []
+  }
+}
+
+export async function hasOlderOpsActivity(userId: string, before: Date, filters: OpsActivityFilters = {}) {
+  try {
+    return await prisma.auditLog.count({
+      where: {
+        orgId: userId,
+        createdAt: { lt: before },
+        ...(filters.entityType ? { entityType: filters.entityType } : {}),
+        ...(filters.actionPrefix ? { action: { startsWith: filters.actionPrefix } } : {}),
+      },
+      take: 1,
+    }) > 0
+  } catch {
+    return false
   }
 }
