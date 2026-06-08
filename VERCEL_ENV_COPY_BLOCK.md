@@ -8,8 +8,8 @@ Use this as the exact field list for the PropertyManagerV1 web app.
 # Core runtime
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB?sslmode=require
 SESSION_SECRET=replace-with-32+-char-random-secret
-APP_URL=https://pm.yourdomain.com
-NEXT_PUBLIC_APP_URL=https://pm.yourdomain.com
+APP_URL=https://simeonware.com
+NEXT_PUBLIC_APP_URL=https://simeonware.com
 INTERNAL_AUTOMATION_SECRET=replace-with-long-random-secret
 HOSTED_RUNTIME_REQUIRED=true
 
@@ -21,7 +21,7 @@ LANDLORD_SLUG=landlord
 # Notifications
 NOTIFY_TRANSPORT=smtp
 SMTP_URL=smtps://user:pass@smtp.example.com:465
-NOTIFY_FROM=Property Manager <noreply@yourdomain.com>
+NOTIFY_FROM=Property Manager <noreply@simeonware.com>
 
 # Cloudflare R2 private media
 R2_ACCOUNT_ID=your-r2-account-id
