@@ -13,6 +13,7 @@
 import { getRuntimeFailures, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { logFallbackEmail, sendViaConnectedMailbox, type NotificationContext } from '@/lib/mailbox-service'
 import { prisma } from '@/lib/prisma'
+import { sendPushNotification } from '@/lib/push'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
@@ -76,6 +77,8 @@ export async function sendNotification(msg: NotificationMessage, context: Notifi
       })
       if (preference?.emailNotificationsEnabled === false) return { ok: false }
     }
+
+    await sendPushNotification(normalized)
 
     const mailbox = await sendViaConnectedMailbox(normalized, context)
     if (mailbox.attempted && mailbox.ok) return { ok: true }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { Route } from 'next'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { tenantMobileSignoutAction } from '@/app/mobile/auth/signout/actions'
+import { PushNotificationControl } from '@/components/push-notification-control'
 
 export default async function TenantMobileLayout({ children }: { children: ReactNode }) {
   const session = await requireTenantMobileSession()
@@ -17,6 +18,7 @@ export default async function TenantMobileLayout({ children }: { children: React
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
           <div className="row" style={{ gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
+            <PushNotificationControl />
             <Link href={'/mobile' as Route} className="button">Dashboard</Link>
             <Link href={'/mobile/requests/new' as Route} className="button primary">Report issue</Link>
             <form action={tenantMobileSignoutAction}>

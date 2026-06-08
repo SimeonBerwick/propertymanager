@@ -4,7 +4,7 @@
  * Covers:
  *  - createTenantMobileSession:
  *      - stores a SHA-256 hash (never raw secret) in the DB
- *      - sets expiresAt ~30 days in the future
+ *      - sets expiresAt ~365 days in the future
  *      - updates identity.lastLoginAt
  *      - throws when identity is not active
  *  - getTenantMobileSession:
@@ -106,7 +106,7 @@ describe('createTenantMobileSession', () => {
     void property; void unit; void user
   })
 
-  test('sets expiresAt roughly 30 days from now', async () => {
+  test('sets expiresAt roughly 365 days from now', async () => {
     const { identity } = await scaffoldTenant()
     const before = Date.now()
     await createTenantMobileSession(identity.id)
@@ -114,7 +114,7 @@ describe('createTenantMobileSession', () => {
 
     const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
     const ttlMs = session!.expiresAt.getTime()
-    const expectedMs = 30 * 24 * 60 * 60 * 1000
+    const expectedMs = 365 * 24 * 60 * 60 * 1000
     expect(ttlMs).toBeGreaterThanOrEqual(before + expectedMs - 5000)
     expect(ttlMs).toBeLessThanOrEqual(after + expectedMs + 5000)
   })

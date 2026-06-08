@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 // Wipe all tables between tests so each test starts with a clean state.
 // Delete in FK-safe order (children before parents).
 afterEach(async () => {
+  await prisma.pushSubscription.deleteMany()
   await prisma.tenantSession.deleteMany()
   await prisma.tenantOtpChallenge.deleteMany()
   await prisma.tenantInvite.deleteMany()

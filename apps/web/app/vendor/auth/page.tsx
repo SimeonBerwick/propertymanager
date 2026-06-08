@@ -16,7 +16,7 @@ export default async function VendorAuthLandingPage() {
         <h2 style={{ marginTop: 4 }}>Vendor portal</h2>
       </div>
       <p className="muted" style={{ margin: 0 }}>
-        Sign in with the email attached to your vendor account. Once verified, the portal stays signed in on this device.
+        Sign in with the email attached to your vendor account. Once verified, the portal stays signed in on this device for up to one year.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/vendor/auth/login' as Route} className="button primary">Vendor sign in</Link>

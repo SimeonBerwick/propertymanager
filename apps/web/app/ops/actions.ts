@@ -9,6 +9,23 @@ import type { RequestStatus, Urgency } from '@prisma/client'
 
 export type OpsCsvState = { error: string | null; success?: string }
 
+function isPreview(formData: FormData) {
+  return formData.get('preview') === 'true'
+}
+
+function staleExport(row: Record<string, string>, updatedAt: Date) {
+  const raw = value(row, 'updatedAt')
+  if (!raw) return false
+  const exportedAt = new Date(raw)
+  return !Number.isNaN(exportedAt.getTime()) && updatedAt.getTime() > exportedAt.getTime() + 1000
+}
+
+function importSummary(kind: string, preview: boolean, created: number, updated: number, skipped: number, conflicts: number, errors: string[]) {
+  const prefix = preview ? `${kind} preview` : `${kind} imported`
+  const detail = `${prefix}: ${created} to create, ${updated} to update, ${conflicts} conflicts, ${skipped} skipped.`
+  return errors.length ? `${detail} ${errors.slice(0, 5).join(' ')}` : detail
+}
+
 function value(row: Record<string, string>, ...names: string[]) {
   for (const name of names) {
     const direct = row[name]
@@ -64,16 +81,41 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
   let created = 0
   let updated = 0
   let skipped = 0
+  let conflicts = 0
+  const errors: string[] = []
+  const preview = isPreview(formData)
 
-  for (const row of parsed.rows ?? []) {
+  for (const [index, row] of (parsed.rows ?? []).entries()) {
+    const rowNumber = index + 2
+    const id = value(row, 'id')
     const propertyName = value(row, 'propertyName', 'property')
     const label = value(row, 'unitLabel', 'label', 'unit')
     if (!propertyName || !label) {
       skipped += 1
+      errors.push(`Row ${rowNumber}: property and unit label are required.`)
       continue
     }
-    const property = await findOrCreateProperty(session.userId, propertyName, value(row, 'propertyAddress', 'address'))
+    const existingById = id ? await prisma.unit.findFirst({
+      where: { id, property: { ownerId: session.userId } },
+      select: { id: true, updatedAt: true, propertyId: true },
+    }) : null
+    if (id && !existingById) {
+      skipped += 1
+      errors.push(`Row ${rowNumber}: unit ID is not owned by this account.`)
+      continue
+    }
+    if (existingById && staleExport(row, existingById.updatedAt)) {
+      conflicts += 1
+      errors.push(`Row ${rowNumber}: unit changed after this CSV was downloaded.`)
+      continue
+    }
+    const propertyId = value(row, 'propertyId')
+    const existingProperty = propertyId
+      ? await prisma.property.findFirst({ where: { id: propertyId, ownerId: session.userId }, select: { id: true } })
+      : await prisma.property.findFirst({ where: { ownerId: session.userId, name: propertyName }, select: { id: true } })
+    const property = existingProperty ?? (preview ? null : await findOrCreateProperty(session.userId, propertyName, value(row, 'propertyAddress', 'address')))
     const data = {
+      label,
       tenantName: value(row, 'tenantName') || null,
       tenantEmail: value(row, 'tenantEmail', 'email').toLowerCase() || null,
       sizeSqFt: optionalInt(value(row, 'sizeSqFt', 'size')),
@@ -82,20 +124,21 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
       monthlyRentCents: optionalMoneyCents(value(row, 'monthlyRent', 'rent')),
       isActive: boolFromCsv(value(row, 'isActive', 'active'), true),
     }
-    const existing = await prisma.unit.findFirst({ where: { propertyId: property.id, label }, select: { id: true } })
+    const existing = existingById ?? (property ? await prisma.unit.findFirst({ where: { propertyId: property.id, label }, select: { id: true, updatedAt: true, propertyId: true } }) : null)
     if (existing) {
-      await prisma.unit.update({ where: { id: existing.id }, data })
+      if (!preview) await prisma.unit.update({ where: { id: existing.id }, data: { ...data, ...(property ? { propertyId: property.id } : {}) } })
       updated += 1
     } else {
-      await prisma.unit.create({ data: { propertyId: property.id, label, ...data } })
+      if (!preview && property) await prisma.unit.create({ data: { propertyId: property.id, ...data } })
       created += 1
     }
   }
 
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'unit', entityId: session.userId, action: 'unit.csvImported', summary: `Imported units CSV: ${created} created, ${updated} updated, ${skipped} skipped.` })
+  if (preview) return { error: null, success: importSummary('Units', true, created, updated, skipped, conflicts, errors) }
+  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'unit', entityId: session.userId, action: 'unit.csvImported', summary: `Imported units CSV: ${created} created, ${updated} updated, ${conflicts} conflicts, ${skipped} skipped.` })
   revalidatePath('/ops')
   revalidatePath('/properties')
-  return { error: null, success: `Units imported: ${created} created, ${updated} updated, ${skipped} skipped.` }
+  return { error: null, success: importSummary('Units', false, created, updated, skipped, conflicts, errors) }
 }
 
 export async function importVendorsCsv(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
@@ -107,10 +150,16 @@ export async function importVendorsCsv(_prev: OpsCsvState, formData: FormData): 
   let created = 0
   let updated = 0
   let skipped = 0
-  for (const row of parsed.rows ?? []) {
+  let conflicts = 0
+  const errors: string[] = []
+  const preview = isPreview(formData)
+  for (const [index, row] of (parsed.rows ?? []).entries()) {
+    const rowNumber = index + 2
+    const id = value(row, 'id')
     const name = value(row, 'name', 'vendorName')
     if (!name) {
       skipped += 1
+      errors.push(`Row ${rowNumber}: vendor name is required.`)
       continue
     }
     const email = value(row, 'email', 'vendorEmail').toLowerCase()
@@ -122,20 +171,33 @@ export async function importVendorsCsv(_prev: OpsCsvState, formData: FormData): 
       supportedCurrenciesCsv: value(row, 'supportedCurrencies', 'currencies') || 'usd',
       isActive: boolFromCsv(value(row, 'isActive', 'active'), true),
     }
-    const existing = await prisma.vendor.findFirst({ where: { orgId: session.userId, OR: [{ name }, ...(email ? [{ email }] : [])] }, select: { id: true } })
+    const existing = id
+      ? await prisma.vendor.findFirst({ where: { id, orgId: session.userId }, select: { id: true, updatedAt: true } })
+      : await prisma.vendor.findFirst({ where: { orgId: session.userId, OR: [{ name }, ...(email ? [{ email }] : [])] }, select: { id: true, updatedAt: true } })
+    if (id && !existing) {
+      skipped += 1
+      errors.push(`Row ${rowNumber}: vendor ID is not owned by this account.`)
+      continue
+    }
+    if (existing && staleExport(row, existing.updatedAt)) {
+      conflicts += 1
+      errors.push(`Row ${rowNumber}: vendor changed after this CSV was downloaded.`)
+      continue
+    }
     if (existing) {
-      await prisma.vendor.update({ where: { id: existing.id }, data: { name, ...data } })
+      if (!preview) await prisma.vendor.update({ where: { id: existing.id }, data: { name, ...data } })
       updated += 1
     } else {
-      await prisma.vendor.create({ data: { orgId: session.userId, name, ...data } })
+      if (!preview) await prisma.vendor.create({ data: { orgId: session.userId, name, ...data } })
       created += 1
     }
   }
 
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'vendor', entityId: session.userId, action: 'vendor.csvImported', summary: `Imported vendors CSV: ${created} created, ${updated} updated, ${skipped} skipped.` })
+  if (preview) return { error: null, success: importSummary('Vendors', true, created, updated, skipped, conflicts, errors) }
+  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'vendor', entityId: session.userId, action: 'vendor.csvImported', summary: `Imported vendors CSV: ${created} created, ${updated} updated, ${conflicts} conflicts, ${skipped} skipped.` })
   revalidatePath('/ops')
   revalidatePath('/vendors')
-  return { error: null, success: `Vendors imported: ${created} created, ${updated} updated, ${skipped} skipped.` }
+  return { error: null, success: importSummary('Vendors', false, created, updated, skipped, conflicts, errors) }
 }
 
 function normalizedUrgency(raw: string): Urgency {
@@ -154,26 +216,50 @@ export async function importTicketsCsv(_prev: OpsCsvState, formData: FormData): 
   if (parsed.error) return { error: parsed.error }
 
   let created = 0
+  let updated = 0
   let skipped = 0
-  for (const row of parsed.rows ?? []) {
+  let conflicts = 0
+  const errors: string[] = []
+  const preview = isPreview(formData)
+  for (const [index, row] of (parsed.rows ?? []).entries()) {
+    const rowNumber = index + 2
+    const id = value(row, 'id')
     const propertyName = value(row, 'propertyName', 'property')
     const unitLabel = value(row, 'unitLabel', 'unit')
     const title = value(row, 'title', 'subject')
     const description = value(row, 'description', 'details', 'body')
     if (!propertyName || !unitLabel || !title || !description) {
       skipped += 1
+      errors.push(`Row ${rowNumber}: property, unit, title, and description are required.`)
       continue
     }
+    const unitId = value(row, 'unitId')
     const unit = await prisma.unit.findFirst({
-      where: { label: unitLabel, property: { ownerId: session.userId, name: propertyName } },
+      where: unitId
+        ? { id: unitId, property: { ownerId: session.userId } }
+        : { label: unitLabel, property: { ownerId: session.userId, name: propertyName } },
       include: { property: true },
     })
     if (!unit) {
       skipped += 1
+      errors.push(`Row ${rowNumber}: matching unit was not found.`)
       continue
     }
-    await prisma.maintenanceRequest.create({
-      data: {
+    const existing = id ? await prisma.maintenanceRequest.findFirst({
+      where: { id, property: { ownerId: session.userId } },
+      select: { id: true, updatedAt: true },
+    }) : null
+    if (id && !existing) {
+      skipped += 1
+      errors.push(`Row ${rowNumber}: ticket ID is not owned by this account.`)
+      continue
+    }
+    if (existing && staleExport(row, existing.updatedAt)) {
+      conflicts += 1
+      errors.push(`Row ${rowNumber}: ticket changed after this CSV was downloaded.`)
+      continue
+    }
+    const data = {
         propertyId: unit.propertyId,
         unitId: unit.id,
         orgId: session.userId,
@@ -187,14 +273,19 @@ export async function importTicketsCsv(_prev: OpsCsvState, formData: FormData): 
         assignedVendorName: value(row, 'assignedVendorName', 'vendorName') || null,
         assignedVendorEmail: value(row, 'assignedVendorEmail', 'vendorEmail').toLowerCase() || null,
         assignedVendorPhone: value(row, 'assignedVendorPhone', 'vendorPhone') || null,
-      },
-    })
-    created += 1
+    }
+    if (existing) {
+      if (!preview) await prisma.maintenanceRequest.update({ where: { id: existing.id }, data })
+      updated += 1
+    } else {
+      if (!preview) await prisma.maintenanceRequest.create({ data })
+      created += 1
+    }
   }
 
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'request', entityId: session.userId, action: 'request.csvImported', summary: `Imported tickets CSV: ${created} created, ${skipped} skipped.` })
+  if (preview) return { error: null, success: importSummary('Tickets', true, created, updated, skipped, conflicts, errors) }
+  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'request', entityId: session.userId, action: 'request.csvImported', summary: `Imported tickets CSV: ${created} created, ${updated} updated, ${conflicts} conflicts, ${skipped} skipped.` })
   revalidatePath('/ops')
   revalidatePath('/dashboard')
-  return { error: null, success: `Tickets imported: ${created} created, ${skipped} skipped.` }
+  return { error: null, success: importSummary('Tickets', false, created, updated, skipped, conflicts, errors) }
 }
-

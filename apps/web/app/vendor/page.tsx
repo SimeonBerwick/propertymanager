@@ -7,6 +7,7 @@ import { currencyLabel } from '@/lib/types'
 import { vendorSignoutAction } from './auth/signout/actions'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
+import { PushNotificationControl } from '@/components/push-notification-control'
 
 type VendorDashboardFilter = 'open' | 'bids' | 'billing' | 'commercial'
 
@@ -78,9 +79,12 @@ export default async function VendorDashboardPage({
           <h2 style={{ marginTop: 4 }}>{session.vendorName}</h2>
           <div className="muted">{session.email ?? 'No email on file'}</div>
         </div>
-        <form action={vendorSignoutAction}>
-          <button type="submit" className="button">Sign out</button>
-        </form>
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <PushNotificationControl />
+          <form action={vendorSignoutAction}>
+            <button type="submit" className="button">Sign out</button>
+          </form>
+        </div>
       </section>
 
       <section className="grid cols-4">
