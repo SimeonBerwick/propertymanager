@@ -50,12 +50,13 @@ export async function submitVendorPortalResponse(
         orderBy: { createdAt: 'desc' },
         select: { id: true, status: true },
       },
+      _count: { select: { photos: true } },
     },
   })
 
   if (!request) return { error: 'This request is not available for your vendor account.' }
 
-  const photoError = await validatePhotoFiles(photoFiles)
+  const photoError = await validatePhotoFiles(photoFiles, request._count.photos)
   if (photoError) return { error: photoError }
 
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null

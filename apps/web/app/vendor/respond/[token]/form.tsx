@@ -55,6 +55,7 @@ export function VendorResponseForm({ token }: { token: string }) {
       <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
+        <span className="muted">Up to 3 photos total per work order, 5 MB each.</span>
       </label>
 
       <button type="submit" className="button primary" disabled={pending}>

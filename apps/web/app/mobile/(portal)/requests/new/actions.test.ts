@@ -102,18 +102,18 @@ describe('submitTenantMobileRequestAction', () => {
     expect(result.error).toMatch(/urgency/i)
   })
 
-  test('returns error when more than 5 photos are attached', async () => {
+  test('returns error when more than 3 photos are attached', async () => {
     const session = await makeSession()
     vi.mocked(requireTenantMobileSession).mockResolvedValue(session)
 
     const fd = new FormData()
     for (const [k, v] of Object.entries(validFields())) fd.append(k, v)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       fd.append('photos', new File([JPEG_HEADER], `photo${i}.jpg`, { type: 'image/jpeg' }))
     }
 
     const result = await submitTenantMobileRequestAction(PREV, fd)
-    expect(result.error).toMatch(/5 photos/i)
+    expect(result.error).toMatch(/3 photos/i)
   })
 
   test('returns error for non-image file', async () => {
