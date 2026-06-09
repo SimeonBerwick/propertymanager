@@ -8,7 +8,6 @@ import { getActiveUnitCount } from '@/lib/account-limits'
 import { PlanPicker } from './plan-picker'
 import { openBillingPortalAction } from './actions'
 import { isAndroidWebView } from '@/lib/android-webview'
-import { ExternalSubscriptionLink } from '@/components/external-subscription-link'
 
 export default async function SubscriptionPage({
   searchParams,
@@ -89,12 +88,11 @@ export default async function SubscriptionPage({
         <section className="card stack" style={{ maxWidth: 720 }}>
           <div>
             <div className="kicker">Android app</div>
-            <h3 style={{ margin: '4px 0 0' }}>Manage your subscription on the Simeonware website</h3>
+            <h3 style={{ margin: '4px 0 0' }}>Subscription status</h3>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Subscription purchases and billing changes are completed outside the Android app. Your current access remains available here.
+            Subscription purchases and billing changes are not available in the Android app. Your current access remains available here.
           </p>
-          <ExternalSubscriptionLink />
         </section>
       ) : (
         <PlanPicker currentPlan={plan} currentCadence={cadence} />

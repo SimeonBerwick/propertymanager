@@ -5,7 +5,6 @@ import { evaluateSubscriptionGate, subscriptionGateMessage } from '@/lib/subscri
 import { logout } from '@/lib/auth-actions'
 import { PlanPicker } from '@/app/account/subscription/plan-picker'
 import { isAndroidWebView } from '@/lib/android-webview'
-import { ExternalSubscriptionLink } from '@/components/external-subscription-link'
 
 export default async function BillingStatusPage() {
   const session = await getLandlordSession()
@@ -37,8 +36,7 @@ export default async function BillingStatusPage() {
         ) : null}
         {androidApp ? (
           <div className="notice stack">
-            <span>Open the Simeonware website in your browser to choose or renew a subscription.</span>
-            <ExternalSubscriptionLink />
+            <span>Subscription purchases and renewals are not available in the Android app. Contact support if you need help with account access.</span>
           </div>
         ) : (
           <PlanPicker currentPlan={session.subscriptionPlan} currentCadence={session.billingCadence} />

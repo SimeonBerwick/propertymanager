@@ -20,7 +20,7 @@ function billingUrl(message?: string) {
 
 export async function startCheckoutAction(formData: FormData) {
   if (isAndroidWebView((await headers()).get('user-agent'))) {
-    redirect(billingUrl('Subscription purchases are managed on the Simeonware website outside the Android app.') as Route)
+    redirect(billingUrl('Subscription purchases are not available in the Android app.') as Route)
   }
 
   const session = await getLandlordSession()
@@ -104,7 +104,7 @@ export async function startCheckoutAction(formData: FormData) {
 
 export async function openBillingPortalAction() {
   if (isAndroidWebView((await headers()).get('user-agent'))) {
-    redirect(billingUrl('Billing changes are managed on the Simeonware website outside the Android app.') as Route)
+    redirect(billingUrl('Billing changes are not available in the Android app.') as Route)
   }
 
   const session = await getLandlordSession()
