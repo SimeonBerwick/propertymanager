@@ -231,6 +231,7 @@ model User {
   billingDocuments        BillingDocument[]
   billingEvents           BillingEvent[]
   auditLogs               AuditLog[]
+  accountDeletionRequests AccountDeletionRequest[]
 }
 
 model Property {
@@ -794,6 +795,21 @@ model NativePushToken {
   updatedAt     DateTime @updatedAt
 
   @@index([principalType, principalId])
+}
+
+model AccountDeletionRequest {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String
+  reason      String?
+  status      String   @default("pending")
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
 }
 
 model AuditLog {

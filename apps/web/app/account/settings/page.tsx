@@ -48,10 +48,10 @@ export default async function AccountSettingsPage() {
             <div className="kicker">Privacy</div>
             <h3 style={{ margin: '4px 0 0' }}>Data and account</h3>
           </div>
-          <p className="muted" style={{ margin: 0 }}>Review privacy practices or request deletion of your account and associated data.</p>
+          <p className="muted" style={{ margin: 0 }}>Review privacy practices or submit an in-app request to delete your account and associated data.</p>
           <div className="row" style={{ justifyContent: 'flex-start' }}>
             <Link href="/privacy" className="button">Privacy policy</Link>
-            <Link href="/account-deletion" className="button">Account deletion</Link>
+            <Link href="/account/settings/deletion" className="button primary">Delete account and data</Link>
           </div>
         </div>
 

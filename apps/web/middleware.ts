@@ -50,6 +50,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  if (pathname.startsWith('/account/settings/deletion')) {
+    return response
+  }
+
   const gate = evaluateSubscriptionGate({
     subscriptionStatus: session.subscriptionStatus,
     trialEndsAt: session.trialEndsAt,

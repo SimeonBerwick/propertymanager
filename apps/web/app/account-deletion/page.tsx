@@ -1,9 +1,14 @@
+import Link from 'next/link'
+import { getLandlordSession } from '@/lib/landlord-session'
+
 export const metadata = {
   title: 'Account Deletion | Simeonware: Maintenance Manager',
   description: 'Request account and associated data deletion from Simeonware LLC.',
 }
 
-export default function AccountDeletionPage() {
+export default async function AccountDeletionPage() {
+  const session = await getLandlordSession()
+
   return (
     <main className="stack" style={{ maxWidth: 760, margin: '0 auto' }}>
       <section className="card stack">
@@ -20,9 +25,15 @@ export default function AccountDeletionPage() {
         <p className="muted" style={{ margin: 0 }}>
           Property managers should cancel any active subscription before requesting deletion. Support will confirm the records that can be deleted and when deletion is complete.
         </p>
-        <a className="button primary" style={{ alignSelf: 'flex-start' }} href="mailto:support@simeonware.com?subject=Simeonware%20account%20deletion%20request">
-          Request account deletion
-        </a>
+        {session ? (
+          <Link className="button primary" style={{ alignSelf: 'flex-start' }} href="/account/settings/deletion">
+            Open in-account deletion request
+          </Link>
+        ) : (
+          <a className="button primary" style={{ alignSelf: 'flex-start' }} href="mailto:support@simeonware.com?subject=Simeonware%20account%20deletion%20request">
+            Request account deletion by email
+          </a>
+        )}
       </section>
     </main>
   )
