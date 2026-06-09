@@ -22,6 +22,7 @@ LANDLORD_SLUG=landlord
 NOTIFY_TRANSPORT=smtp
 SMTP_URL=smtps://user:pass@smtp.example.com:465
 NOTIFY_FROM=Property Manager <noreply@simeonware.com>
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"replace-me"}
 
 # Cloudflare R2 private media
 R2_ACCOUNT_ID=your-r2-account-id
@@ -51,6 +52,7 @@ Set these for:
 ## Must verify after deploy
 - landlord login works
 - SMTP notification sends
+- Android native push notification sends through Firebase Cloud Messaging
 - private photo upload/read works
 - rate limiting works through Upstash
 - Stripe Checkout opens from `/account/subscription`

@@ -783,6 +783,19 @@ model PushSubscription {
   @@index([principalType, principalId])
 }
 
+model NativePushToken {
+  id            String   @id @default(cuid())
+  principalType String
+  principalId   String
+  token         String   @unique
+  platform      String
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([principalType, principalId])
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   orgId        String?

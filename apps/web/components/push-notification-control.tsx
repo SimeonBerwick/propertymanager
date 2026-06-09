@@ -4,6 +4,35 @@ import { useEffect, useState } from 'react'
 
 type ControlState = 'checking' | 'unsupported' | 'blocked' | 'off' | 'on' | 'working' | 'error'
 
+type NativePushPlugin = {
+  checkPermissions(): Promise<{ receive: string }>
+  requestPermissions(): Promise<{ receive: string }>
+  register(): Promise<void>
+  addListener(eventName: string, listener: (event: Record<string, unknown>) => void): Promise<{ remove(): Promise<void> }>
+}
+
+function getNativePushPlugin() {
+  const capacitor = (window as typeof window & {
+    Capacitor?: {
+      isNativePlatform?: () => boolean
+      getPlatform?: () => string
+      Plugins?: { PushNotifications?: NativePushPlugin }
+    }
+  }).Capacitor
+
+  if (!capacitor?.isNativePlatform?.() || capacitor.getPlatform?.() !== 'android') return null
+  return capacitor.Plugins?.PushNotifications ?? null
+}
+
+async function saveNativeToken(token: string) {
+  const response = await fetch('/api/push/native-tokens', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token, platform: 'android' }),
+  })
+  if (!response.ok) throw new Error('Could not save native push token.')
+}
+
 function urlBase64ToUint8Array(value: string) {
   const padding = '='.repeat((4 - value.length % 4) % 4)
   const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -15,6 +44,53 @@ export function PushNotificationControl() {
   const [state, setState] = useState<ControlState>('checking')
 
   useEffect(() => {
+    const nativePush = getNativePushPlugin()
+    if (nativePush) {
+      let active = true
+      const listenerHandles: Array<{ remove(): Promise<void> }> = []
+
+      Promise.all([
+        nativePush.addListener('registration', (event) => {
+          const token = event.value
+          if (typeof token !== 'string') return
+          saveNativeToken(token)
+            .then(() => { if (active) setState('on') })
+            .catch(() => { if (active) setState('error') })
+        }),
+        nativePush.addListener('registrationError', () => {
+          if (active) setState('error')
+        }),
+        nativePush.addListener('pushNotificationActionPerformed', (event) => {
+          const notification = event.notification
+          if (!notification || typeof notification !== 'object' || !('data' in notification)) return
+          const data = notification.data
+          if (!data || typeof data !== 'object' || !('url' in data) || typeof data.url !== 'string') return
+          window.location.assign(data.url)
+        }),
+      ]).then((handles) => {
+        listenerHandles.push(...handles)
+        return nativePush.checkPermissions()
+      }).then(({ receive }) => {
+        if (!active) return
+        if (receive === 'denied') {
+          setState('blocked')
+          return
+        }
+        if (receive === 'granted') {
+          setState('working')
+          return nativePush.register()
+        }
+        setState('off')
+      }).catch(() => {
+        if (active) setState('error')
+      })
+
+      return () => {
+        active = false
+        void Promise.all(listenerHandles.map((handle) => handle.remove()))
+      }
+    }
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       setState('unsupported')
       return
@@ -29,6 +105,17 @@ export function PushNotificationControl() {
   async function enable() {
     setState('working')
     try {
+      const nativePush = getNativePushPlugin()
+      if (nativePush) {
+        const { receive } = await nativePush.requestPermissions()
+        if (receive !== 'granted') {
+          setState(receive === 'denied' ? 'blocked' : 'off')
+          return
+        }
+        await nativePush.register()
+        return
+      }
+
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') {
         setState(permission === 'denied' ? 'blocked' : 'off')

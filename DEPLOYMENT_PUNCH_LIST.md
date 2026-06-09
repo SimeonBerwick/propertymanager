@@ -30,6 +30,7 @@ Set these values in the Vercel project:
 - `NOTIFY_TRANSPORT=smtp`
 - `SMTP_URL`
 - optional: `NOTIFY_FROM`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` for Android native push
 
 ### Private media
 - `R2_ACCOUNT_ID`
@@ -71,6 +72,7 @@ Must be green:
 ### Notifications
 - trigger a tenant/vendor notification
 - verify it sends through SMTP, not log sink
+- enable notifications in the Android app and verify the same event arrives through Firebase Cloud Messaging
 
 ### Media
 - submit/upload a private photo
