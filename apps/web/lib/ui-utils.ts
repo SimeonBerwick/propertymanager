@@ -1,5 +1,21 @@
 import type { MaintenanceRequest, RequestStatus, ReviewStatus } from '@/lib/types'
 
+export function getCityFromAddress(address: string) {
+  const parts = address.split(',').map((part) => part.trim()).filter(Boolean)
+  if (parts.length < 2) return 'Unknown city'
+
+  const lastPart = parts.at(-1) ?? ''
+  const stateOrStateZip = /^[A-Z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/i
+  const country = /^(?:USA|United States|United States of America)$/i
+
+  if (country.test(lastPart) && parts.length >= 3) {
+    const regionPart = parts.at(-2) ?? ''
+    return stateOrStateZip.test(regionPart) ? parts.at(-3) ?? 'Unknown city' : regionPart
+  }
+
+  return stateOrStateZip.test(lastPart) ? parts.at(-2) ?? 'Unknown city' : lastPart
+}
+
 export function formatDateTime(value?: string) {
   if (!value) return 'Not scheduled'
   return new Intl.DateTimeFormat('en-US', {

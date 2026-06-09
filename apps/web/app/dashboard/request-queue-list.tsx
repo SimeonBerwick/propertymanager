@@ -6,8 +6,8 @@ import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestOpsSignals } from '@/components/request-ops-signals'
 import { RequestQuickActions } from '@/components/request-quick-actions'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
-import { currencyLabel, languageLabel } from '@/lib/types'
-import { formatDateTime } from '@/lib/ui-utils'
+import { languageLabel } from '@/lib/types'
+import { formatDateTime, getCityFromAddress } from '@/lib/ui-utils'
 import type { DashboardRequestRow } from '@/lib/data'
 
 type DashboardQueueRequest = DashboardRequestRow
@@ -70,7 +70,7 @@ export function RequestQueueList({
               <div className="requestMetaLine">
                 <RequestFlowBadge request={request} />
                 <span className="muted">{request.category}</span>
-                <span className="muted">{currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}</span>
+                <span className="muted">{getCityFromAddress(request.propertyAddress)} · {languageLabel(request.preferredLanguage)}</span>
                 {request.claimedByUserName ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Owner: {request.claimedByUserName}</span> : null}
               </div>
             </div>
