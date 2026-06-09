@@ -7,7 +7,6 @@ import { createVendorAction, updateVendorAction, type VendorActionState } from '
 const INITIAL_STATE: VendorActionState = { error: null }
 const CATEGORY_OPTIONS = ['Plumbing', 'HVAC', 'Exterior', 'Electrical', 'Appliance', 'General']
 const LANGUAGE_OPTIONS = ['english', 'spanish', 'french']
-const CURRENCY_OPTIONS = ['usd', 'peso', 'pound', 'euro']
 
 function hasValue(values: string[] | undefined, value: string) {
   return values?.includes(value) ?? false
@@ -20,6 +19,7 @@ export function VendorForm({ vendor }: { vendor?: Vendor }) {
   return (
     <form action={formAction} className="stack">
       {vendor ? <input type="hidden" name="vendorId" value={vendor.id} /> : null}
+      <input type="hidden" name="supportedCurrencies" value="usd" />
       {state.error ? <div className="notice error">{state.error}</div> : null}
 
       <div className="grid cols-2">
@@ -63,16 +63,6 @@ export function VendorForm({ vendor }: { vendor?: Vendor }) {
           <label key={language} className="row" style={{ gap: 8, justifyContent: 'flex-start' }}>
             <input type="checkbox" name="supportedLanguages" value={language} defaultChecked={hasValue(vendor?.supportedLanguages, language)} />
             <span style={{ textTransform: 'capitalize' }}>{language}</span>
-          </label>
-        ))}
-      </fieldset>
-
-      <fieldset className="card stack">
-        <legend style={{ fontWeight: 600 }}>Supported currencies</legend>
-        {CURRENCY_OPTIONS.map((currency) => (
-          <label key={currency} className="row" style={{ gap: 8, justifyContent: 'flex-start' }}>
-            <input type="checkbox" name="supportedCurrencies" value={currency} defaultChecked={hasValue(vendor?.supportedCurrencies, currency)} />
-            <span style={{ textTransform: currency === 'usd' ? 'none' : 'capitalize' }}>{currency === 'usd' ? 'US Dollar' : currency}</span>
           </label>
         ))}
       </fieldset>

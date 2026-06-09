@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
@@ -8,6 +9,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { BILLING_PLANS, CADENCE_LABELS, parseCadence, parsePlan, planAmountCents, planPriceLabel } from '@/lib/billing-plans'
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
+import { isAndroidWebView } from '@/lib/android-webview'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -17,6 +19,10 @@ function billingUrl(message?: string) {
 }
 
 export async function startCheckoutAction(formData: FormData) {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    redirect(billingUrl('Subscription purchases are managed on the Simeonware website outside the Android app.') as Route)
+  }
+
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 
@@ -97,6 +103,10 @@ export async function startCheckoutAction(formData: FormData) {
 }
 
 export async function openBillingPortalAction() {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    redirect(billingUrl('Billing changes are managed on the Simeonware website outside the Android app.') as Route)
+  }
+
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 

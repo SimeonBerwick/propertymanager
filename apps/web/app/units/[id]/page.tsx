@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getUnitDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel, unitInfoChips } from '@/lib/types'
+import { languageLabel, unitInfoChips } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { prisma } from '@/lib/prisma'
@@ -172,7 +172,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
                       </div>
                     </td>
                     <td className="muted">{r.category}</td>
-                    <td className="muted">{currencyLabel(r.preferredCurrency)} · {languageLabel(r.preferredLanguage)}</td>
+                    <td className="muted">{languageLabel(r.preferredLanguage)}</td>
                     <td className="muted">{r.urgency}</td>
                     <td>
                       {!['closed', 'declined', 'canceled'].includes(r.status) ? (

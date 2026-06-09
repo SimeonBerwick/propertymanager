@@ -49,7 +49,6 @@ export default async function VendorsPage() {
               <div className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` · ${vendor.phone}` : ''}</div>
               <div><strong>Categories:</strong> {csvToList(vendor.categoriesCsv).join(', ') || 'None'}</div>
               <div><strong>Languages:</strong> {csvToList(vendor.supportedLanguagesCsv).join(', ') || 'None'}</div>
-              <div><strong>Currencies:</strong> {csvToList(vendor.supportedCurrenciesCsv).join(', ') || 'None'}</div>
               <div><strong>Assignments:</strong> {scorecard?.assignmentCount ?? 0}</div>
               <div><strong>Accepted:</strong> {scorecard?.acceptedCount ?? 0} · <strong>Declined:</strong> {scorecard?.declinedCount ?? 0}</div>
               <div><strong>Completed:</strong> {scorecard?.completedCount ?? 0}{scorecard?.avgCompletionDays ? ` · Avg ${scorecard.avgCompletionDays.toFixed(1)}d` : ''}</div>

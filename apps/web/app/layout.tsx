@@ -1,6 +1,7 @@
 import './globals.css'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import type { Route } from 'next'
 import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
@@ -62,7 +63,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   <Link href="/access">Access</Link>
                   <Link href="/exceptions">Exceptions</Link>
                   <Link href="/ops">Ops</Link>
-                  <Link href="/account/subscription">Subscription</Link>
+                  <Link href={'/account/settings' as Route}>Settings</Link>
+                  <Link href="/support">Support</Link>
                   <Link href="/properties">Properties</Link>
                   <Link href="/vendors">Vendors</Link>
                   <Link href="/reports">Reports</Link>

@@ -1,12 +1,16 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { evaluateSubscriptionGate, subscriptionGateMessage } from '@/lib/subscription-gate'
 import { logout } from '@/lib/auth-actions'
 import { PlanPicker } from '@/app/account/subscription/plan-picker'
+import { isAndroidWebView } from '@/lib/android-webview'
+import { ExternalSubscriptionLink } from '@/components/external-subscription-link'
 
 export default async function BillingStatusPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
+  const androidApp = isAndroidWebView((await headers()).get('user-agent'))
 
   const gate = evaluateSubscriptionGate({
     subscriptionStatus: session.subscriptionStatus,
@@ -31,7 +35,14 @@ export default async function BillingStatusPage() {
             Access ended: {gate.expiresAt.toLocaleDateString()}
           </div>
         ) : null}
-        <PlanPicker currentPlan={session.subscriptionPlan} currentCadence={session.billingCadence} />
+        {androidApp ? (
+          <div className="notice stack">
+            <span>Open the Simeonware website in your browser to choose or renew a subscription.</span>
+            <ExternalSubscriptionLink />
+          </div>
+        ) : (
+          <PlanPicker currentPlan={session.subscriptionPlan} currentCadence={session.billingCadence} />
+        )}
         <div className="row">
           <a className="button secondary" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20subscription">Contact support</a>
           <form action={logout}>

@@ -75,7 +75,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       'phone',
       'categories',
       'supportedLanguages',
-      'supportedCurrencies',
       'isActive',
     ], vendors.map((vendor) => ({
       id: vendor.id,
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       phone: vendor.phone,
       categories: vendor.categoriesCsv,
       supportedLanguages: vendor.supportedLanguagesCsv,
-      supportedCurrencies: vendor.supportedCurrenciesCsv,
       isActive: vendor.isActive,
     }))))
   }

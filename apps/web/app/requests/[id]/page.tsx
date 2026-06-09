@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel } from '@/lib/types'
+import { languageLabel } from '@/lib/types'
 import { reviewStateLabel, formatClaimStatus, formatDateTime, isStaleClaim } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
@@ -201,7 +201,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
               <div className="detailFactsGrid">
                 <div><strong>Submitted by</strong><div className="muted">{data.request.submittedByName ?? 'Unknown tenant'}{data.request.submittedByEmail ? ` · ${data.request.submittedByEmail}` : ''}</div></div>
-                <div><strong>Preferences</strong><div className="muted">{currencyLabel(data.request.preferredCurrency)} · {languageLabel(data.request.preferredLanguage)}</div></div>
+                <div><strong>Preferred language</strong><div className="muted">{languageLabel(data.request.preferredLanguage)}</div></div>
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` · ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
                 <div><strong>Queue claim</strong><div className="muted">{formatClaimStatus(data.request)}</div></div>
