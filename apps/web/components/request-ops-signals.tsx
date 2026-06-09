@@ -15,7 +15,6 @@ export function RequestOpsSignals({ request }: { request: MaintenanceRequest }) 
     request.reviewState && request.reviewState !== 'none' ? `Review: ${reviewStateLabel(request.reviewState)}` : null,
     request.autoFlag ? `Flag: ${request.autoFlag}` : null,
     request.preferredLanguage !== 'english' ? `Language: ${request.preferredLanguage}` : null,
-    request.preferredCurrency !== 'usd' ? `Currency: ${request.preferredCurrency}` : null,
   ].filter(Boolean)
 
   return (

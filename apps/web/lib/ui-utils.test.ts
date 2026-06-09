@@ -1,5 +1,17 @@
 import { describe, expect, test } from 'vitest'
-import { getRequestFlowState, reviewStateLabel } from '@/lib/ui-utils'
+import { getCityFromAddress, getRequestFlowState, reviewStateLabel } from '@/lib/ui-utils'
+
+describe('getCityFromAddress', () => {
+  test('extracts a city from common property address formats', () => {
+    expect(getCityFromAddress('742 W Mesquite Ave, Phoenix, AZ')).toBe('Phoenix')
+    expect(getCityFromAddress('742 W Mesquite Ave, Phoenix, AZ 85003')).toBe('Phoenix')
+    expect(getCityFromAddress('742 W Mesquite Ave, Phoenix, AZ, USA')).toBe('Phoenix')
+  })
+
+  test('returns a useful fallback when an address has no city segment', () => {
+    expect(getCityFromAddress('Unknown address')).toBe('Unknown city')
+  })
+})
 
 describe('getRequestFlowState', () => {
   test('surfaces reassignment-needed requests as a distinct flow state', () => {

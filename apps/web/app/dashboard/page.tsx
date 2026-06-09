@@ -7,21 +7,20 @@ import { RequestOpsSignals } from '@/components/request-ops-signals'
 import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel } from '@/lib/types'
-import { formatRelativeAge, isStaleClaim } from '@/lib/ui-utils'
+import { formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-utils'
 import { RequestQueueList } from './request-queue-list'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; language?: string; queue?: string; sort?: string; claimedBy?: string }>
+  searchParams?: Promise<{ city?: string; language?: string; queue?: string; sort?: string; claimedBy?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
   const data = await getDashboardData(session.userId)
   const params = searchParams ? await searchParams : undefined
-  const selectedCurrency = params?.currency ?? 'all'
+  const selectedCity = params?.city ?? 'all'
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
@@ -31,14 +30,16 @@ export default async function DashboardPage({
   const todayEnd = new Date(todayStart)
   todayEnd.setDate(todayEnd.getDate() + 1)
 
+  const cities = Array.from(new Set(data.requestRows.map((request) => getCityFromAddress(request.propertyAddress))))
+    .sort((a, b) => a.localeCompare(b))
+
   const filteredRequests = data.requestRows.filter((request) => {
-    const currencyMatch = selectedCurrency === 'all' || request.preferredCurrency === selectedCurrency
+    const cityMatch = selectedCity === 'all' || getCityFromAddress(request.propertyAddress) === selectedCity
     const languageMatch = selectedLanguage === 'all' || request.preferredLanguage === selectedLanguage
     const queueMatch = selectedQueue === 'all'
       || (selectedQueue === 'open' && !['closed', 'declined', 'canceled'].includes(request.status))
       || (selectedQueue === 'declined' && request.status === 'declined')
       || (selectedQueue === 'canceled' && request.status === 'canceled')
-      || (selectedQueue === 'non-usd' && !['closed', 'declined', 'canceled'].includes(request.status) && request.preferredCurrency !== 'usd')
       || (selectedQueue === 'reassignment-needed' && (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed'))
       || (selectedQueue === 'completion-review' && request.reviewState === 'vendor_completed_pending_review')
       || (selectedQueue === 'follow-up' && (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review'))
@@ -47,7 +48,7 @@ export default async function DashboardPage({
       || (selectedQueue === 'unclaimed' && !request.claimedAt)
       || (selectedQueue === 'completed' && request.status === 'completed')
 
-    return currencyMatch && languageMatch && queueMatch
+    return cityMatch && languageMatch && queueMatch
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -139,13 +140,10 @@ export default async function DashboardPage({
         <form method="get" className="filtersRow">
           <input type="hidden" name="queue" value={selectedQueue} />
           <label className="field" style={{ minWidth: 180 }}>
-            <span className="field-label">Currency</span>
-            <select className="input" name="currency" defaultValue={selectedCurrency}>
-              <option value="all">All currencies</option>
-              <option value="usd">US Dollar</option>
-              <option value="peso">Peso</option>
-              <option value="pound">Pound</option>
-              <option value="euro">Euro</option>
+            <span className="field-label">City</span>
+            <select className="input" name="city" defaultValue={selectedCity}>
+              <option value="all">All cities</option>
+              {cities.map((city) => <option key={city} value={city}>{city}</option>)}
             </select>
           </label>
           <label className="field" style={{ minWidth: 180 }}>
