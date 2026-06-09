@@ -7,7 +7,7 @@ import { BILLING_PLANS, CADENCE_LABELS } from '@/lib/billing-plans'
 import { getActiveUnitCount } from '@/lib/account-limits'
 import { PlanPicker } from './plan-picker'
 import { openBillingPortalAction } from './actions'
-import { isAndroidWebView } from '@/lib/android-webview'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 export default async function SubscriptionPage({
   searchParams,
@@ -47,7 +47,9 @@ export default async function SubscriptionPage({
           <div>
             <div className="kicker">Subscription</div>
             <h2 className="sectionTitle">Plan and billing</h2>
-            <div className="muted sectionSubtitle">First month is free for new accounts. No card is required until the trial ends.</div>
+            <div className="muted sectionSubtitle">
+              {androidApp ? 'Review your current subscription status.' : 'First month is free for new accounts. No card is required until the trial ends.'}
+            </div>
           </div>
           {user.stripeCustomerId && !androidApp ? (
             <form action={openBillingPortalAction}>
@@ -69,7 +71,7 @@ export default async function SubscriptionPage({
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Current plan</div>
             <strong>{plan ? BILLING_PLANS[plan].name : 'Not selected'}</strong>
-            <span className="muted">{cadence ? CADENCE_LABELS[cadence] : 'Choose a cadence'}</span>
+            <span className="muted">{cadence ? CADENCE_LABELS[cadence] : androidApp ? 'Not set' : 'Choose a cadence'}</span>
           </div>
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Active units</div>
@@ -91,7 +93,7 @@ export default async function SubscriptionPage({
             <h3 style={{ margin: '4px 0 0' }}>Subscription status</h3>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Subscription purchases and billing changes are not available in the Android app. Your current access remains available here.
+            {ANDROID_SUBSCRIPTION_MESSAGE} Your current access remains available in the Android app.
           </p>
         </section>
       ) : (

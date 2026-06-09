@@ -1,6 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
@@ -9,6 +9,7 @@ import { hashPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { parseCadence, parsePlan, trialEndsAtFrom } from '@/lib/billing-plans'
 import { writeAuditLog } from '@/lib/audit-log'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 export type SignupState = { error: string | null }
 
@@ -56,6 +57,10 @@ function slugFromEmail(email: string) {
 }
 
 export async function signupAction(_prev: SignupState, formData: FormData): Promise<SignupState> {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    return { error: ANDROID_SUBSCRIPTION_MESSAGE }
+  }
+
   if (!await isDatabaseAvailable()) {
     return { error: 'Demo mode, no database connected. Signup is disabled.' }
   }

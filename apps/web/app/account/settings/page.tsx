@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 export default async function AccountSettingsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
+  const androidApp = isAndroidWebView((await headers()).get('user-agent'))
 
   return (
     <main className="stack">
@@ -22,8 +25,10 @@ export default async function AccountSettingsPage() {
             <div className="kicker">Plan</div>
             <h3 style={{ margin: '4px 0 0' }}>Subscription</h3>
           </div>
-          <p className="muted" style={{ margin: 0 }}>Review your current plan, billing status, and renewal details.</p>
-          <Link href="/account/subscription" className="button primary" style={{ alignSelf: 'flex-start' }}>Subscription settings</Link>
+          <p className="muted" style={{ margin: 0 }}>
+            {androidApp ? ANDROID_SUBSCRIPTION_MESSAGE : 'Review your current plan, billing status, and renewal details.'}
+          </p>
+          {!androidApp ? <Link href="/account/subscription" className="button primary" style={{ alignSelf: 'flex-start' }}>Subscription settings</Link> : null}
         </div>
 
         <div className="card stack">

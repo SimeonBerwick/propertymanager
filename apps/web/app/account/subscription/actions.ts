@@ -9,7 +9,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { BILLING_PLANS, CADENCE_LABELS, parseCadence, parsePlan, planAmountCents, planPriceLabel } from '@/lib/billing-plans'
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
-import { isAndroidWebView } from '@/lib/android-webview'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -20,7 +20,7 @@ function billingUrl(message?: string) {
 
 export async function startCheckoutAction(formData: FormData) {
   if (isAndroidWebView((await headers()).get('user-agent'))) {
-    redirect(billingUrl('Subscription purchases are not available in the Android app.') as Route)
+    redirect(billingUrl(ANDROID_SUBSCRIPTION_MESSAGE) as Route)
   }
 
   const session = await getLandlordSession()
@@ -104,7 +104,7 @@ export async function startCheckoutAction(formData: FormData) {
 
 export async function openBillingPortalAction() {
   if (isAndroidWebView((await headers()).get('user-agent'))) {
-    redirect(billingUrl('Billing changes are not available in the Android app.') as Route)
+    redirect(billingUrl(ANDROID_SUBSCRIPTION_MESSAGE) as Route)
   }
 
   const session = await getLandlordSession()
