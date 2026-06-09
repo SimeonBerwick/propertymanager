@@ -5,7 +5,7 @@ import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation
 import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
 import { hasR2StorageConfig } from '@/lib/runtime-env'
 
-export const MAX_PHOTO_COUNT = 5
+export const MAX_PHOTO_COUNT = 3
 export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
 export const UPLOAD_SUBDIRECTORY = path.join('uploads', 'requests')
 
@@ -15,9 +15,9 @@ function getFileExtension(file: File) {
   return extensionFromType || extensionFromName || 'jpg'
 }
 
-export async function validatePhotoFiles(files: File[]) {
-  if (files.length > MAX_PHOTO_COUNT) {
-    return `Upload up to ${MAX_PHOTO_COUNT} photos.`
+export async function validatePhotoFiles(files: File[], existingPhotoCount = 0) {
+  if (files.length > 0 && existingPhotoCount + files.length > MAX_PHOTO_COUNT) {
+    return `A work order can have up to ${MAX_PHOTO_COUNT} photos.`
   }
 
   for (const file of files) {

@@ -37,4 +37,21 @@ describe('photo-upload', () => {
     expect(writeFileMock).not.toHaveBeenCalled()
     expect(saveStoredMediaMock).toHaveBeenCalledTimes(1)
   })
+
+  test('rejects photos that would put a work order over the three-photo limit', async () => {
+    const { validatePhotoFiles } = await import('@/lib/photo-upload')
+    const jpegHeader = Buffer.from([0xff, 0xd8, 0xff, 0xe0])
+    const files = [
+      new File([jpegHeader], 'one.jpg', { type: 'image/jpeg' }),
+      new File([jpegHeader], 'two.jpg', { type: 'image/jpeg' }),
+    ]
+
+    await expect(validatePhotoFiles(files, 2)).resolves.toMatch(/3 photos/i)
+  })
+
+  test('allows a photo-free update on a legacy work order already over the limit', async () => {
+    const { validatePhotoFiles } = await import('@/lib/photo-upload')
+
+    await expect(validatePhotoFiles([], 5)).resolves.toBeNull()
+  })
 })

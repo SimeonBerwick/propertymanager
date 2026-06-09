@@ -113,16 +113,16 @@ describe('submitMaintenanceRequest — magic-byte validation', () => {
     await expect(submitMaintenanceRequest(PREV, fd)).rejects.toThrow(/NEXT_REDIRECT/)
   })
 
-  test('returns error when more than 5 photos are attached', async () => {
+  test('returns error when more than 3 photos are attached', async () => {
     const fields = await validBaseFields()
     const fd = new FormData()
     for (const [k, v] of Object.entries(fields)) fd.append(k, v)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       fd.append('photos', new File([JPEG_HEADER], `p${i}.jpg`, { type: 'image/jpeg' }))
     }
 
     const result = await submitMaintenanceRequest(PREV, fd)
-    expect(result.error).toMatch(/5 photos/i)
+    expect(result.error).toMatch(/3 photos/i)
   })
 
   test('returns error when required fields are missing', async () => {

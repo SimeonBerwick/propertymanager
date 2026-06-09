@@ -34,7 +34,10 @@ export async function submitVendorResponse(
     return { error: 'This vendor response link is invalid or expired.' }
   }
 
-  const photoError = await validatePhotoFiles(photoFiles)
+  const existingPhotoCount = await prisma.maintenancePhoto.count({
+    where: { requestId: validation.requestId },
+  })
+  const photoError = await validatePhotoFiles(photoFiles, existingPhotoCount)
   if (photoError) return { error: photoError }
 
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null

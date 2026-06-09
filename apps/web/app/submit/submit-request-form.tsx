@@ -159,7 +159,7 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
       <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
-        <span className="muted">Up to 5 images, 5 MB each.</span>
+        <span className="muted">Up to 3 images, 5 MB each.</span>
       </label>
 
       <button type="submit" className="button primary" disabled={isPending || !selectedUnitId}>
