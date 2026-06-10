@@ -3,7 +3,6 @@ import type { Route } from 'next'
 import { requireVendorSession } from '@/lib/vendor-session'
 import { getVendorCommercialSummary, getVendorRequestsForDashboard } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
-import { currencyLabel } from '@/lib/types'
 import { vendorSignoutAction } from './auth/signout/actions'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
@@ -81,6 +80,7 @@ export default async function VendorDashboardPage({
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <PushNotificationControl />
+          <Link href={'/support' as Route} className="button">Support</Link>
           <form action={vendorSignoutAction}>
             <button type="submit" className="button">Sign out</button>
           </form>
@@ -145,6 +145,7 @@ export default async function VendorDashboardPage({
               <div className="muted">
                 {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {item.propertyName} · {item.unitLabel}
               </div>
+              <div className="muted">Property manager: {item.propertyManagerName}</div>
               <div>{item.requestTitle}</div>
               {item.description ? <div className="muted">{item.description}</div> : null}
               <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
@@ -159,7 +160,10 @@ export default async function VendorDashboardPage({
                   {request.property.name} · {request.unit.label} · {request.category} · {request.urgency} urgency · {viewState.statusLabel}
                 </div>
                 <div className="muted">
-                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : 'No visit window confirmed for you'} · Currency {currencyLabel(request.preferredCurrency)}
+                  Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
+                </div>
+                <div className="muted">
+                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : 'No visit window confirmed for you'}
                 </div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>

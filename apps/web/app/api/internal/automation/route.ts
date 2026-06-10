@@ -3,24 +3,25 @@ import { runAutomationSweep, sendDailyExceptionSummaryToLandlord } from '@/lib/a
 import { syncAllMailboxReplies } from '@/lib/mailbox-sync'
 import { prisma } from '@/lib/prisma'
 import { assertHostedRuntimeReady } from '@/lib/runtime-env'
+import { sendDueDailyCsvExports } from '@/lib/daily-csv-export'
 
 function isAuthorized(request: NextRequest) {
-  const expected = process.env.INTERNAL_AUTOMATION_SECRET
-  if (!expected) return false
   const header = request.headers.get('authorization')
-  return header === `Bearer ${expected}`
+  return [process.env.INTERNAL_AUTOMATION_SECRET, process.env.CRON_SECRET]
+    .filter(Boolean)
+    .some((secret) => header === `Bearer ${secret}`)
 }
 
-export async function POST(request: NextRequest) {
+async function runAutomation(request: NextRequest, body: { sendSummaries?: boolean; syncMailboxes?: boolean }) {
   assertHostedRuntimeReady('internal automation route', ['base', 'notifications'])
 
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => ({})) as { sendSummaries?: boolean; syncMailboxes?: boolean }
   const sweep = await runAutomationSweep()
   const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
+  const dailyCsvExports = await sendDueDailyCsvExports()
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
   if (body.sendSummaries) {
@@ -35,5 +36,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, mailboxSync, summaryResults })
+  return NextResponse.json({ ok: true, sweep, mailboxSync, dailyCsvExports, summaryResults })
+}
+
+export async function GET(request: NextRequest) {
+  return runAutomation(request, {})
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({})) as { sendSummaries?: boolean; syncMailboxes?: boolean }
+  return runAutomation(request, body)
 }

@@ -1,6 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
@@ -8,6 +10,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { BILLING_PLANS, CADENCE_LABELS, parseCadence, parsePlan, planAmountCents, planPriceLabel } from '@/lib/billing-plans'
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -16,7 +19,52 @@ function billingUrl(message?: string) {
   return `/account/subscription${query ? `?${query}` : ''}`
 }
 
+export type BusinessNameState = {
+  error: string | null
+  success: string | null
+}
+
+export async function updateBusinessNameAction(
+  _previous: BusinessNameState,
+  formData: FormData,
+): Promise<BusinessNameState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in before updating your business name.', success: null }
+
+  const businessName = String(formData.get('businessName') ?? '').trim()
+  if (businessName.length > 160) {
+    return { error: 'Business name must be 160 characters or fewer.', success: null }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: session.userId },
+    data: { businessName: businessName || null },
+    select: { id: true },
+  })
+
+  await writeAuditLog({
+    orgId: user.id,
+    actorUserId: user.id,
+    entityType: 'user',
+    entityId: user.id,
+    action: 'account.businessNameUpdated',
+    summary: businessName ? 'Updated vendor-facing business name.' : 'Removed vendor-facing business name.',
+  })
+
+  revalidatePath('/account/subscription')
+  revalidatePath('/vendor')
+
+  return {
+    error: null,
+    success: businessName ? 'Business name updated.' : 'Business name removed.',
+  }
+}
+
 export async function startCheckoutAction(formData: FormData) {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    redirect(billingUrl(ANDROID_SUBSCRIPTION_MESSAGE) as Route)
+  }
+
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 
@@ -97,6 +145,10 @@ export async function startCheckoutAction(formData: FormData) {
 }
 
 export async function openBillingPortalAction() {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    redirect(billingUrl(ANDROID_SUBSCRIPTION_MESSAGE) as Route)
+  }
+
   const session = await getLandlordSession()
   if (!session) redirect('/login')
 

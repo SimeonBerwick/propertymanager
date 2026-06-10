@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
-import { currencyLabel, languageLabel } from '@/lib/types'
+import { languageLabel } from '@/lib/types'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
@@ -78,7 +78,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
         </div>
         <div className="muted">
-          {request.category} · {request.urgency} urgency · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)} · {STATUS_LABELS[request.status] ?? request.status}
+          {request.category} · {request.urgency} urgency · {languageLabel(request.preferredLanguage)} · {STATUS_LABELS[request.status] ?? request.status}
         </div>
         <div>{request.description}</div>
       </section>

@@ -5,6 +5,7 @@ import { getOpsActivity, hasOlderOpsActivity } from '@/lib/ops-activity'
 import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { OpsActivityFeed } from '@/components/ops-activity-feed'
 import { OpsCsvPanel } from '@/components/ops-csv-panel'
+import { prisma } from '@/lib/prisma'
 
 export default async function OpsPage({
   searchParams,
@@ -22,9 +23,13 @@ export default async function OpsPage({
     entityType: entity || undefined,
     actionPrefix: action || undefined,
   }
-  const [activity, hasOlderActivity] = await Promise.all([
+  const [activity, hasOlderActivity, csvPreference] = await Promise.all([
     getOpsActivity(session.userId, 5000, { ...filters, createdAfter }),
     hasOlderOpsActivity(session.userId, createdAfter, filters),
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { dailyCsvExportEnabled: true, dailyCsvExportLastSentAt: true },
+    }),
   ])
 
   const checks = getRuntimeChecks()
@@ -32,7 +37,10 @@ export default async function OpsPage({
 
   return (
     <div className="stack">
-      <OpsCsvPanel />
+      <OpsCsvPanel
+        dailyExportEnabled={csvPreference?.dailyCsvExportEnabled ?? false}
+        dailyExportLastSentAt={csvPreference?.dailyCsvExportLastSentAt?.toISOString()}
+      />
 
       <section className="card stack">
         <div>

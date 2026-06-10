@@ -14,9 +14,14 @@ export default function SupportPage() {
         <p className="muted" style={{ margin: 0 }}>
           For login help, product questions, pilot feedback, or a problem with a maintenance workflow, email support@simeonware.com.
         </p>
-        <a className="button primary" style={{ alignSelf: 'flex-start' }} href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20support">
-          Email support
-        </a>
+        <div className="row" style={{ justifyContent: 'flex-start' }}>
+          <a className="button primary" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20support">
+            Email support
+          </a>
+          <a className="button" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">
+            Send feedback
+          </a>
+        </div>
       </section>
     </main>
   )

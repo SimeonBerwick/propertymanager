@@ -6,7 +6,7 @@ import { BILLING_PLANS, CADENCE_LABELS, planPriceLabel, type CadenceKey, type Pl
 import { signupAction, type SignupState } from './actions'
 
 const INITIAL_STATE: SignupState = { error: null }
-const PLANS: PlanKey[] = ['growth', 'pro']
+const PLANS: PlanKey[] = ['growth', 'pro', 'portfolio']
 const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function SignupForm() {
@@ -28,11 +28,24 @@ export function SignupForm() {
       </div>
 
       <label className="field">
+        <span className="field-label">Business name</span>
+        <input
+          className="input"
+          name="businessName"
+          type="text"
+          maxLength={160}
+          autoComplete="organization"
+          placeholder="Optional"
+        />
+        <span className="muted">Shown to vendors so they know which property management business is contacting them.</span>
+      </label>
+
+      <label className="field">
         <span className="field-label">Password</span>
         <input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" />
       </label>
 
-      <div className="grid cols-2">
+      <div className="grid cols-3">
         {PLANS.map((plan) => (
           <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
             <span className="row" style={{ alignItems: 'center' }}>

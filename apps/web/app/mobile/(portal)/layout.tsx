@@ -21,6 +21,7 @@ export default async function TenantMobileLayout({ children }: { children: React
             <PushNotificationControl />
             <Link href={'/mobile' as Route} className="button">Dashboard</Link>
             <Link href={'/mobile/requests/new' as Route} className="button primary">Report issue</Link>
+            <Link href={'/support' as Route} className="button">Support</Link>
             <form action={tenantMobileSignoutAction}>
               <button type="submit" className="button">Sign out</button>
             </form>

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { currencyLabel, languageLabel, unitInfoChips } from '@/lib/types'
+import { languageLabel, unitInfoChips } from '@/lib/types'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { AuditLogList } from '@/components/audit-log-list'
@@ -114,7 +114,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {request.unitLabel} · {request.category} · {currencyLabel(request.preferredCurrency)} · {languageLabel(request.preferredLanguage)}
+                  {request.unitLabel} · {request.category} · {languageLabel(request.preferredLanguage)}
                 </div>
               </div>
               <StatusBadge status={request.status} />

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
-const SESSION_TTL_DAYS = 365
+const SESSION_TTL_DAYS = 90
 
 function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex')
@@ -101,7 +101,9 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
     },
   })
 
-  if (!session || session.revokedAt || session.expiresAt <= new Date()) {
+  const now = new Date()
+  const maximumSessionAge = session ? addDays(session.issuedAt, SESSION_TTL_DAYS) : null
+  if (!session || session.revokedAt || session.expiresAt <= now || maximumSessionAge! <= now) {
     await clearVendorCookie()
     return null
   }

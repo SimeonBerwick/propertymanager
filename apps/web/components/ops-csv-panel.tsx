@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { importTicketsCsv, importUnitsCsv, importVendorsCsv, type OpsCsvState } from '@/app/ops/actions'
+import { importTicketsCsv, importUnitsCsv, importVendorsCsv, toggleDailyCsvExportAction, type OpsCsvState } from '@/app/ops/actions'
 
 const initialState: OpsCsvState = { error: null }
 
@@ -34,7 +34,13 @@ function UploadForm({
   )
 }
 
-export function OpsCsvPanel() {
+export function OpsCsvPanel({
+  dailyExportEnabled,
+  dailyExportLastSentAt,
+}: {
+  dailyExportEnabled: boolean
+  dailyExportLastSentAt?: string
+}) {
   const [since, setSince] = useState('')
   const suffix = since ? `?since=${encodeURIComponent(since)}` : ''
   return (
@@ -48,6 +54,19 @@ export function OpsCsvPanel() {
         <span className="field-label">Download changes since</span>
         <input className="input" type="date" value={since} onChange={(event) => setSince(event.target.value)} />
       </label>
+      <form action={toggleDailyCsvExportAction} className="opsCsvBox stack">
+        <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
+          <input type="checkbox" name="enabled" value="true" defaultChecked={dailyExportEnabled} />
+          <strong>Email me a daily CSV of changes</strong>
+        </label>
+        <div className="muted">
+          Sends changed units, vendors, and tickets as separate CSV attachments. Days without changes are skipped.
+          {dailyExportLastSentAt ? ` Last sent ${new Date(dailyExportLastSentAt).toLocaleString()}.` : ''}
+        </div>
+        <button className="button compactToggle" type="submit" style={{ alignSelf: 'flex-start' }}>
+          Save daily export preference
+        </button>
+      </form>
       <div className="opsCsvGrid">
         <UploadForm title="Units" action={importUnitsCsv} state={initialState} downloadHref={`/api/ops/csv/units${suffix}`} />
         <UploadForm title="Vendors" action={importVendorsCsv} state={initialState} downloadHref={`/api/ops/csv/vendors${suffix}`} />

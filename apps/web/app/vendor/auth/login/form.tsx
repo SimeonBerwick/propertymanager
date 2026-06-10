@@ -28,8 +28,9 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         </label>
         <div className="stack" style={{ gap: 8 }}>
           <button type="submit" className="button primary" disabled={isPending}>
-            {isPending ? 'Sending code…' : 'Send login code'}
+            {isPending ? 'Sending code…' : 'Email me a sign-in code'}
           </button>
+          <div className="muted">The code expires after 10 minutes. After verification, this device stays signed in for up to 90 days or until you sign out.</div>
         </div>
       </form>
       {process.env.NODE_ENV !== 'production' ? (

@@ -18,6 +18,7 @@ Make hosted production fail fast when the runtime substrate is fake, partial, or
 - `NOTIFY_TRANSPORT=smtp`
 - `SMTP_URL`
 - optional: `NOTIFY_FROM`
+- optional until Android launch: `FIREBASE_SERVICE_ACCOUNT_JSON`
 
 ### Private media target
 - `R2_ACCOUNT_ID`

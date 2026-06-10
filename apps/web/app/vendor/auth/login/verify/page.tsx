@@ -25,7 +25,7 @@ export default async function VendorLoginVerifyPage({
         <div className="kicker">Vendor portal</div>
         <h2 style={{ marginTop: 4 }}>Enter code</h2>
       </div>
-      <div className="muted">We sent a code to {masked ?? 'your email address'}.</div>
+      <div className="muted">We sent a one-time code to {masked ?? 'your email address'}. It expires after 10 minutes.</div>
       {devCode && process.env.NODE_ENV !== 'production' && (
         <div
           className="notice"

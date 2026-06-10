@@ -163,6 +163,7 @@ enum AccountSubscriptionStatus {
 enum AccountPlan {
   growth
   pro
+  portfolio
 }
 
 enum BillingCadence {
@@ -206,6 +207,7 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   displayName  String?
+  businessName String?
   passwordHash String
   role         String
   slug         String?  @unique
@@ -217,6 +219,8 @@ model User {
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
   emailNotificationsEnabled Boolean @default(true)
+  dailyCsvExportEnabled Boolean @default(false)
+  dailyCsvExportLastSentAt DateTime?
   createdAt    DateTime @default(now())
 
   properties              Property[]
@@ -231,6 +235,7 @@ model User {
   billingDocuments        BillingDocument[]
   billingEvents           BillingEvent[]
   auditLogs               AuditLog[]
+  accountDeletionRequests AccountDeletionRequest[]
 }
 
 model Property {
@@ -781,6 +786,34 @@ model PushSubscription {
   updatedAt     DateTime @updatedAt
 
   @@index([principalType, principalId])
+}
+
+model NativePushToken {
+  id            String   @id @default(cuid())
+  principalType String
+  principalId   String
+  token         String   @unique
+  platform      String
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([principalType, principalId])
+}
+
+model AccountDeletionRequest {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String
+  reason      String?
+  status      String   @default("pending")
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
 }
 
 model AuditLog {

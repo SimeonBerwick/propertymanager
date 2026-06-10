@@ -24,6 +24,11 @@ export interface NotificationMessage {
   /** Optional HTML body. When present, email clients that support HTML will
    *  render it; clients that don't fall back to `text`. */
   html?: string
+  attachments?: Array<{
+    filename: string
+    content: string
+    contentType?: string
+  }>
 }
 
 // Transports
@@ -51,6 +56,13 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
     subject: msg.subject,
     text: msg.text,
     ...(msg.html ? { html: msg.html } : {}),
+    ...(msg.attachments?.length ? {
+      attachments: msg.attachments.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        contentType: attachment.contentType ?? 'text/csv; charset=utf-8',
+      })),
+    } : {}),
   })
 }
 
@@ -214,7 +226,6 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
-      `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}`,
       `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}`,
       ``,
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
@@ -228,7 +239,6 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
-        ${dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro'))}
         ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
       </table>
       <p style="margin:14px 0 0 0">We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
@@ -247,7 +257,6 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Unit         : ${p.unitLabel}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
-      `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}`,
       `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}`,
       `  Tenant       : ${p.tenantName} <${p.tenantEmail}>`,
       ``,
@@ -263,7 +272,6 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Unit', p.unitLabel)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
-        ${dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro'))}
         ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
         ${dtRow('Tenant', `${p.tenantName} <${p.tenantEmail}>`)}
       </table>
@@ -368,7 +376,6 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
       `  Unit         : ${p.unitLabel}`,
       `  Category     : ${p.category}`,
       `  Urgency      : ${p.urgency}`,
-      p.preferredCurrency ? `  Currency     : ${currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')}` : '',
       p.preferredLanguage ? `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}` : '',
       p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')}` : '',
       ``,
@@ -384,7 +391,6 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${dtRow('Unit', p.unitLabel)}
         ${dtRow('Category', p.category)}
         ${dtRow('Urgency', p.urgency)}
-        ${p.preferredCurrency ? dtRow('Currency', currencyLabel(p.preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro')) : ''}
         ${p.preferredLanguage ? dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')) : ''}
         ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')) : ''}
       </table>

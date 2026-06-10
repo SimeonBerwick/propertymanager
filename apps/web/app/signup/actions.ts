@@ -1,6 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
@@ -9,6 +9,7 @@ import { hashPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { parseCadence, parsePlan, trialEndsAtFrom } from '@/lib/billing-plans'
 import { writeAuditLog } from '@/lib/audit-log'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 
 export type SignupState = { error: string | null }
 
@@ -56,12 +57,17 @@ function slugFromEmail(email: string) {
 }
 
 export async function signupAction(_prev: SignupState, formData: FormData): Promise<SignupState> {
+  if (isAndroidWebView((await headers()).get('user-agent'))) {
+    return { error: ANDROID_SUBSCRIPTION_MESSAGE }
+  }
+
   if (!await isDatabaseAvailable()) {
     return { error: 'Demo mode, no database connected. Signup is disabled.' }
   }
 
   const email = read(formData, 'email').toLowerCase()
   const displayName = read(formData, 'displayName')
+  const businessName = read(formData, 'businessName')
   const password = read(formData, 'password')
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
@@ -70,6 +76,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
 
   if (!displayName) return { error: 'Name is required.' }
   if (displayName.length > 120) return { error: 'Name must be 120 characters or fewer.' }
+  if (businessName.length > 160) return { error: 'Business name must be 160 characters or fewer.' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
   if (!plan || !cadence) return { error: 'Choose a subscription plan.' }
@@ -86,6 +93,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       data: {
         email,
         displayName,
+        businessName: businessName || null,
         passwordHash: hashPassword(password),
         role: 'landlord',
         slug: slugFromEmail(email),

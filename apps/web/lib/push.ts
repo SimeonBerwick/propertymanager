@@ -1,6 +1,7 @@
 import webPush from 'web-push'
 import { prisma } from '@/lib/prisma'
 import type { NotificationMessage } from '@/lib/notify'
+import { sendNativePushNotification } from '@/lib/firebase-push'
 
 function getPushConfig() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
@@ -23,7 +24,6 @@ function destinationUrl(principalType: string, requestId?: string) {
 
 export async function sendPushNotification(message: NotificationMessage) {
   const config = getPushConfig()
-  if (!config) return
 
   const [users, tenants, vendors] = await Promise.all([
     prisma.user.findMany({ where: { email: { equals: message.to, mode: 'insensitive' } }, select: { id: true } }),
@@ -38,7 +38,8 @@ export async function sendPushNotification(message: NotificationMessage) {
   if (!principals.length) return
 
   const subscriptions = await prisma.pushSubscription.findMany({ where: { OR: principals } })
-  if (!subscriptions.length) return
+  await sendNativePushNotification(message, principals)
+  if (!subscriptions.length || !config) return
 
   webPush.setVapidDetails(config.subject, config.publicKey, config.privateKey)
   await Promise.all(subscriptions.map(async (subscription) => {

@@ -138,23 +138,15 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
         </label>
       </div>
 
-      <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">Preferred currency</span>
-          <select className="input" name="preferredCurrency" defaultValue="usd" required>
-            <option value="usd">US Dollar</option>
-          </select>
-        </label>
-
-        <label className="field">
-          <span className="field-label">Preferred language</span>
-          <select className="input" name="preferredLanguage" defaultValue="english" required>
-            <option value="english">English</option>
-            <option value="spanish">Spanish</option>
-            <option value="french">French</option>
-          </select>
-        </label>
-      </div>
+      <input type="hidden" name="preferredCurrency" value="usd" />
+      <label className="field">
+        <span className="field-label">Preferred language</span>
+        <select className="input" name="preferredLanguage" defaultValue="english" required>
+          <option value="english">English</option>
+          <option value="spanish">Spanish</option>
+          <option value="french">French</option>
+        </select>
+      </label>
 
       <label className="field">
         <span className="field-label">Photos</span>

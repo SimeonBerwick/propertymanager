@@ -11,6 +11,7 @@ SESSION_SECRET=replace-with-32+-char-random-secret
 APP_URL=https://simeonware.com
 NEXT_PUBLIC_APP_URL=https://simeonware.com
 INTERNAL_AUTOMATION_SECRET=replace-with-long-random-secret
+CRON_SECRET=replace-with-separate-long-random-secret
 HOSTED_RUNTIME_REQUIRED=true
 
 # Auth bootstrap / seed-time landlord values
@@ -22,6 +23,15 @@ LANDLORD_SLUG=landlord
 NOTIFY_TRANSPORT=smtp
 SMTP_URL=smtps://user:pass@smtp.example.com:465
 NOTIFY_FROM=Property Manager <noreply@simeonware.com>
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"replace-me"}
+
+# Google Play reviewer access
+ANDROID_REVIEWER_ACCESS_ENABLED=true
+ANDROID_REVIEWER_LANDLORD_EMAIL=play-review-landlord@simeonware.com
+ANDROID_REVIEWER_LANDLORD_PASSWORD=replace-with-stable-reviewer-password
+ANDROID_REVIEWER_TENANT_EMAIL=play-review-tenant@simeonware.com
+ANDROID_REVIEWER_VENDOR_EMAIL=play-review-vendor@simeonware.com
+ANDROID_REVIEWER_OTP_CODE=replace-with-six-digit-reviewer-code
 
 # Cloudflare R2 private media
 R2_ACCOUNT_ID=your-r2-account-id
@@ -51,6 +61,7 @@ Set these for:
 ## Must verify after deploy
 - landlord login works
 - SMTP notification sends
+- Android native push notification sends through Firebase Cloud Messaging
 - private photo upload/read works
 - rate limiting works through Upstash
 - Stripe Checkout opens from `/account/subscription`

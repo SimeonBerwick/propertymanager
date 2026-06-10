@@ -4,6 +4,17 @@ import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 
 const VENDOR_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
 const VENDOR_TENDER_STATUSES = ['invited', 'viewed', 'bid_submitted', 'awarded'] as const
+const PROPERTY_WITH_MANAGER = {
+  include: {
+    owner: {
+      select: {
+        businessName: true,
+        displayName: true,
+        email: true,
+      },
+    },
+  },
+} as const
 
 function mapVendorCommercialItem(item: any): VendorCommercialItemView {
   return {
@@ -52,7 +63,7 @@ export async function getVendorRequestsForDashboard(session: VendorPortalScope) 
   return prisma.maintenanceRequest.findMany({
     where: buildVendorRequestVisibilityWhere(session),
     include: {
-      property: true,
+      property: PROPERTY_WITH_MANAGER,
       unit: true,
       billingDocuments: vendorBillingDocumentsInclude(),
       tenderInvites: {
@@ -71,7 +82,7 @@ export async function getVendorRequestById(requestId: string, session: VendorPor
       ...buildVendorRequestVisibilityWhere(session),
     },
     include: {
-      property: true,
+      property: PROPERTY_WITH_MANAGER,
       unit: true,
       photos: { orderBy: { createdAt: 'asc' } },
       dispatchHistory: {
@@ -126,7 +137,7 @@ export async function getVendorCommercialSummary(session: VendorPortalScope) {
     include: {
       request: {
         include: {
-          property: true,
+          property: PROPERTY_WITH_MANAGER,
           unit: true,
         },
       },
@@ -140,6 +151,9 @@ export async function getVendorCommercialSummary(session: VendorPortalScope) {
     requestTitle: item.request.title,
     propertyName: item.request.property.name,
     unitLabel: item.request.unit.label,
+    propertyManagerName: item.request.property.owner.businessName
+      ?? item.request.property.owner.displayName
+      ?? item.request.property.owner.email,
   }))
 }
 

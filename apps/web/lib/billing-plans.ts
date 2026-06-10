@@ -19,8 +19,14 @@ export const BILLING_PLANS: Record<PlanKey, {
   },
   pro: {
     name: 'Pro',
-    description: 'Unlimited active units for larger operators.',
+    description: 'For growing portfolios up to 200 active units.',
     monthlyCents: 19900,
+    unitLimit: 200,
+  },
+  portfolio: {
+    name: 'Portfolio',
+    description: 'Unlimited active units for larger operators.',
+    monthlyCents: 49900,
     unitLimit: null,
   },
 }
@@ -31,7 +37,7 @@ export const CADENCE_LABELS: Record<CadenceKey, string> = {
 }
 
 export function parsePlan(value: FormDataEntryValue | string | null): PlanKey | null {
-  return value === 'growth' || value === 'pro' ? value : null
+  return value === 'growth' || value === 'pro' || value === 'portfolio' ? value : null
 }
 
 export function parseCadence(value: FormDataEntryValue | string | null): CadenceKey | null {
