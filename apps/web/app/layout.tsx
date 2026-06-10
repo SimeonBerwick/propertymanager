@@ -61,7 +61,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   <PushNotificationControl />
                   <Link href="/dashboard">Dashboard</Link>
                   <Link href="/access">Access</Link>
-                  <Link href="/exceptions">Exceptions</Link>
                   <Link href="/ops">Ops</Link>
                   <Link href={'/account/settings' as Route}>Settings</Link>
                   <Link href="/support">Support</Link>
