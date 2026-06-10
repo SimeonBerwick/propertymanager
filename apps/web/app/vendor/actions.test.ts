@@ -191,4 +191,32 @@ describe('submitVendorPortalResponse', () => {
     expect(refreshedRequest?.vendorScheduledEnd).toBeNull()
     expect(visibleRequests).toHaveLength(0)
   })
+
+  test('vendor requests include the property manager business identity', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { businessName: 'Sonoran Property Partners' },
+    })
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Southwest Plumbing', email: 'southwest@example.com' },
+    })
+    await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+    })
+
+    const visibleRequests = await getVendorRequestsForDashboard({
+      sessionId: 'vendor-session',
+      vendorId: vendor.id,
+      orgId: user.id,
+      vendorName: vendor.name,
+      email: vendor.email,
+      phone: null,
+    })
+
+    expect(visibleRequests[0]?.property.owner.businessName).toBe('Sonoran Property Partners')
+  })
 })

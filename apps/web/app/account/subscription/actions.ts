@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
@@ -16,6 +17,47 @@ function billingUrl(message?: string) {
   if (message) params.set('error', message)
   const query = params.toString()
   return `/account/subscription${query ? `?${query}` : ''}`
+}
+
+export type BusinessNameState = {
+  error: string | null
+  success: string | null
+}
+
+export async function updateBusinessNameAction(
+  _previous: BusinessNameState,
+  formData: FormData,
+): Promise<BusinessNameState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in before updating your business name.', success: null }
+
+  const businessName = String(formData.get('businessName') ?? '').trim()
+  if (businessName.length > 160) {
+    return { error: 'Business name must be 160 characters or fewer.', success: null }
+  }
+
+  const user = await prisma.user.update({
+    where: { id: session.userId },
+    data: { businessName: businessName || null },
+    select: { id: true },
+  })
+
+  await writeAuditLog({
+    orgId: user.id,
+    actorUserId: user.id,
+    entityType: 'user',
+    entityId: user.id,
+    action: 'account.businessNameUpdated',
+    summary: businessName ? 'Updated vendor-facing business name.' : 'Removed vendor-facing business name.',
+  })
+
+  revalidatePath('/account/subscription')
+  revalidatePath('/vendor')
+
+  return {
+    error: null,
+    success: businessName ? 'Business name updated.' : 'Business name removed.',
+  }
 }
 
 export async function startCheckoutAction(formData: FormData) {

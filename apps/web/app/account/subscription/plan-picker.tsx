@@ -1,12 +1,12 @@
 import { BILLING_PLANS, CADENCE_LABELS, planPriceLabel, type CadenceKey, type PlanKey } from '@/lib/billing-plans'
 import { startCheckoutAction } from './actions'
 
-const PLANS: PlanKey[] = ['growth', 'pro']
+const PLANS: PlanKey[] = ['growth', 'pro', 'portfolio']
 const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function PlanPicker({ currentPlan, currentCadence }: { currentPlan?: PlanKey | null; currentCadence?: CadenceKey | null }) {
   return (
-    <div className="grid cols-2">
+    <div className="grid cols-3">
       {PLANS.map((plan) => (
         <section key={plan} className="billingRowCard stack" style={{ gap: 12 }}>
           <div>

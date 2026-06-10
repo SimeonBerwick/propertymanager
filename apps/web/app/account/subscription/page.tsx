@@ -8,6 +8,7 @@ import { getActiveUnitCount } from '@/lib/account-limits'
 import { PlanPicker } from './plan-picker'
 import { openBillingPortalAction } from './actions'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
+import { BusinessNameForm } from './business-name-form'
 
 export default async function SubscriptionPage({
   searchParams,
@@ -29,6 +30,7 @@ export default async function SubscriptionPage({
         trialEndsAt: true,
         subscriptionEndsAt: true,
         stripeCustomerId: true,
+        businessName: true,
       },
     }),
     getActiveUnitCount(session.userId),
@@ -76,7 +78,7 @@ export default async function SubscriptionPage({
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Active units</div>
             <strong>{activeUnits}</strong>
-            <span className="muted">{plan && BILLING_PLANS[plan].unitLimit ? `${BILLING_PLANS[plan].unitLimit} included` : 'Unlimited on Pro'}</span>
+            <span className="muted">{plan && BILLING_PLANS[plan].unitLimit ? `${BILLING_PLANS[plan].unitLimit} included` : 'Unlimited on Portfolio'}</span>
           </div>
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Access through</div>
@@ -84,6 +86,14 @@ export default async function SubscriptionPage({
             <span className="muted">{user.subscriptionStatus === 'trialing' ? 'Trial end' : 'Billing period end'}</span>
           </div>
         </div>
+      </section>
+
+      <section className="card stack" style={{ maxWidth: 720 }}>
+        <div>
+          <div className="kicker">Vendor identity</div>
+          <h3 style={{ margin: '4px 0 0' }}>Business name</h3>
+        </div>
+        <BusinessNameForm businessName={user.businessName} />
       </section>
 
       {androidApp ? (

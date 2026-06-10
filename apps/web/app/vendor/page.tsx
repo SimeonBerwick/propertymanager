@@ -145,6 +145,7 @@ export default async function VendorDashboardPage({
               <div className="muted">
                 {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {item.propertyName} · {item.unitLabel}
               </div>
+              <div className="muted">Property manager: {item.propertyManagerName}</div>
               <div>{item.requestTitle}</div>
               {item.description ? <div className="muted">{item.description}</div> : null}
               <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
@@ -157,6 +158,9 @@ export default async function VendorDashboardPage({
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
                   {request.property.name} · {request.unit.label} · {request.category} · {request.urgency} urgency · {viewState.statusLabel}
+                </div>
+                <div className="muted">
+                  Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
                 </div>
                 <div className="muted">
                   {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : 'No visit window confirmed for you'}

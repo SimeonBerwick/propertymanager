@@ -163,6 +163,7 @@ enum AccountSubscriptionStatus {
 enum AccountPlan {
   growth
   pro
+  portfolio
 }
 
 enum BillingCadence {
@@ -206,6 +207,7 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   displayName  String?
+  businessName String?
   passwordHash String
   role         String
   slug         String?  @unique

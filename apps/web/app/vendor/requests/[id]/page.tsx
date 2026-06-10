@@ -67,6 +67,9 @@ export default async function VendorRequestDetailPage({
         <div className="muted">
           {request.property.name} · {request.unit.label} · {request.category} · {request.urgency} urgency · {viewState.statusLabel}
         </div>
+        <div className="muted">
+          Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
+        </div>
         <div>{request.description}</div>
       </section>
 

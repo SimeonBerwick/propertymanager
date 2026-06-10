@@ -6,11 +6,19 @@ import { getVendorDetailData } from '@/lib/data'
 import { StatusBadge } from '@/components/status-badge'
 import { AuditLogList } from '@/components/audit-log-list'
 import { getAuditLogs } from '@/lib/audit-log'
+import { revokeAllVendorSessionsAction } from '@/lib/vendor-actions'
 
-export default async function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function VendorDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{ sessions?: string }>
+}) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
   const { id } = await params
+  const query = searchParams ? await searchParams : undefined
 
   const data = await getVendorDetailData(id, session.userId)
 
@@ -48,6 +56,20 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
           </div>
         ) : null}
         <VendorForm vendor={vendor} />
+        <section className="card stack">
+          <div>
+            <div className="kicker">Vendor access</div>
+            <h3 style={{ margin: '4px 0 0' }}>Signed-in devices</h3>
+          </div>
+          {query?.sessions === 'revoked' ? <div className="notice success">Vendor signed out on all devices.</div> : null}
+          <p className="muted" style={{ margin: 0 }}>
+            Vendor sessions last up to 90 days. Use this if a device is lost, shared, or should no longer have access.
+          </p>
+          <form action={revokeAllVendorSessionsAction}>
+            <input type="hidden" name="vendorId" value={vendor.id} />
+            <button type="submit" className="button">Sign out vendor on all devices</button>
+          </form>
+        </section>
       </div>
 
       <AuditLogList

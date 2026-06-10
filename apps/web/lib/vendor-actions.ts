@@ -115,6 +115,13 @@ export async function updateVendorAction(
       },
     })
 
+    if (!isActive) {
+      await prisma.vendorSession.updateMany({
+        where: { vendorId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      })
+    }
+
     const action = !existing.isActive && isActive ? 'vendor.restored' : !isActive ? 'vendor.archived' : 'vendor.updated'
     const summary = action === 'vendor.restored'
       ? `Restored vendor ${name}.`
@@ -138,4 +145,34 @@ export async function updateVendorAction(
   revalidatePath('/vendors')
   revalidatePath(`/vendors/${vendorId}`)
   redirect('/vendors')
+}
+
+export async function revokeAllVendorSessionsAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login')
+
+  const vendorId = getString(formData, 'vendorId')
+  const vendor = await prisma.vendor.findFirst({
+    where: { id: vendorId, orgId: session.userId },
+    select: { id: true, name: true },
+  })
+  if (!vendor) redirect('/vendors')
+
+  const result = await prisma.vendorSession.updateMany({
+    where: { vendorId: vendor.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  })
+
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'vendor',
+    entityId: vendor.id,
+    action: 'vendor.allSessionsRevoked',
+    summary: `Signed ${vendor.name} out on all devices.`,
+    metadata: { revokedSessionCount: result.count },
+  })
+
+  revalidatePath(`/vendors/${vendor.id}`)
+  redirect(`/vendors/${vendor.id}?sessions=revoked`)
 }

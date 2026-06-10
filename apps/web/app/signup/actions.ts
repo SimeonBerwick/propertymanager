@@ -67,6 +67,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
 
   const email = read(formData, 'email').toLowerCase()
   const displayName = read(formData, 'displayName')
+  const businessName = read(formData, 'businessName')
   const password = read(formData, 'password')
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
@@ -75,6 +76,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
 
   if (!displayName) return { error: 'Name is required.' }
   if (displayName.length > 120) return { error: 'Name must be 120 characters or fewer.' }
+  if (businessName.length > 160) return { error: 'Business name must be 160 characters or fewer.' }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
   if (!plan || !cadence) return { error: 'Choose a subscription plan.' }
@@ -91,6 +93,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       data: {
         email,
         displayName,
+        businessName: businessName || null,
         passwordHash: hashPassword(password),
         role: 'landlord',
         slug: slugFromEmail(email),
