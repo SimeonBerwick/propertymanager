@@ -217,6 +217,8 @@ model User {
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
   emailNotificationsEnabled Boolean @default(true)
+  dailyCsvExportEnabled Boolean @default(false)
+  dailyCsvExportLastSentAt DateTime?
   createdAt    DateTime @default(now())
 
   properties              Property[]

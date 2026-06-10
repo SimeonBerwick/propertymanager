@@ -11,6 +11,7 @@ SESSION_SECRET=replace-with-32+-char-random-secret
 APP_URL=https://simeonware.com
 NEXT_PUBLIC_APP_URL=https://simeonware.com
 INTERNAL_AUTOMATION_SECRET=replace-with-long-random-secret
+CRON_SECRET=replace-with-separate-long-random-secret
 HOSTED_RUNTIME_REQUIRED=true
 
 # Auth bootstrap / seed-time landlord values

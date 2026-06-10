@@ -9,6 +9,29 @@ import type { RequestStatus, Urgency } from '@prisma/client'
 
 export type OpsCsvState = { error: string | null; success?: string }
 
+export async function toggleDailyCsvExportAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) return
+
+  const enabled = formData.get('enabled') === 'true'
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: {
+      dailyCsvExportEnabled: enabled,
+      ...(enabled ? { dailyCsvExportLastSentAt: new Date() } : {}),
+    },
+  })
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'user',
+    entityId: session.userId,
+    action: enabled ? 'csv.dailyExportEnabled' : 'csv.dailyExportDisabled',
+    summary: `Daily CSV export emails ${enabled ? 'enabled' : 'disabled'}.`,
+  })
+  revalidatePath('/ops')
+}
+
 function isPreview(formData: FormData) {
   return formData.get('preview') === 'true'
 }

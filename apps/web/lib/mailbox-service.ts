@@ -9,8 +9,8 @@ export interface NotificationContext {
   transportHint?: string
 }
 
-function base64Url(input: string) {
-  return Buffer.from(input, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+function base64Url(input: string | Buffer) {
+  return Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 function requestSubject(subject: string, requestId?: string | null) {
@@ -25,6 +25,7 @@ function messageId(ownerUserId?: string | null, requestId?: string | null) {
 
 function mimeMessage(msg: NotificationMessage, context: NotificationContext, from: string, messageIdHeader: string) {
   const subject = requestSubject(msg.subject, context.requestId ?? msg.requestId)
+  const attachments = msg.attachments ?? []
   const headers = [
     `From: ${from}`,
     `To: ${msg.to}`,
@@ -32,9 +33,31 @@ function mimeMessage(msg: NotificationMessage, context: NotificationContext, fro
     `Message-ID: ${messageIdHeader}`,
     context.requestId ?? msg.requestId ? `X-PropertyManager-Request-ID: ${context.requestId ?? msg.requestId}` : '',
     'MIME-Version: 1.0',
-    msg.html ? 'Content-Type: text/html; charset=UTF-8' : 'Content-Type: text/plain; charset=UTF-8',
   ].filter(Boolean)
-  return `${headers.join('\r\n')}\r\n\r\n${msg.html ?? msg.text}`
+  if (!attachments.length) {
+    headers.push(msg.html ? 'Content-Type: text/html; charset=UTF-8' : 'Content-Type: text/plain; charset=UTF-8')
+    return `${headers.join('\r\n')}\r\n\r\n${msg.html ?? msg.text}`
+  }
+
+  const boundary = `pm-boundary-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`)
+  const body = [
+    `--${boundary}`,
+    msg.html ? 'Content-Type: text/html; charset=UTF-8' : 'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    msg.html ?? msg.text,
+    ...attachments.flatMap((attachment) => [
+      `--${boundary}`,
+      `Content-Type: ${attachment.contentType ?? 'text/csv; charset=utf-8'}; name="${attachment.filename}"`,
+      `Content-Disposition: attachment; filename="${attachment.filename}"`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      Buffer.from(attachment.content, 'utf8').toString('base64'),
+    ]),
+    `--${boundary}--`,
+  ]
+  return `${headers.join('\r\n')}\r\n\r\n${body.join('\r\n')}`
 }
 
 async function sendGmail(accessToken: string, rawMime: string) {
@@ -58,6 +81,14 @@ async function sendOutlook(accessToken: string, msg: NotificationMessage, contex
         subject,
         body: { contentType: msg.html ? 'HTML' : 'Text', content: msg.html ?? msg.text },
         toRecipients: [{ emailAddress: { address: msg.to } }],
+        ...(msg.attachments?.length ? {
+          attachments: msg.attachments.map((attachment) => ({
+            '@odata.type': '#microsoft.graph.fileAttachment',
+            name: attachment.filename,
+            contentType: attachment.contentType ?? 'text/csv',
+            contentBytes: Buffer.from(attachment.content, 'utf8').toString('base64'),
+          })),
+        } : {}),
         internetMessageHeaders: [
           ...(context.requestId ?? msg.requestId ? [{ name: 'X-PropertyManager-Request-ID', value: context.requestId ?? msg.requestId }] : []),
         ],

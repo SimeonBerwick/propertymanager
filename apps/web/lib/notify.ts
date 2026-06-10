@@ -24,6 +24,11 @@ export interface NotificationMessage {
   /** Optional HTML body. When present, email clients that support HTML will
    *  render it; clients that don't fall back to `text`. */
   html?: string
+  attachments?: Array<{
+    filename: string
+    content: string
+    contentType?: string
+  }>
 }
 
 // Transports
@@ -51,6 +56,13 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
     subject: msg.subject,
     text: msg.text,
     ...(msg.html ? { html: msg.html } : {}),
+    ...(msg.attachments?.length ? {
+      attachments: msg.attachments.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        contentType: attachment.contentType ?? 'text/csv; charset=utf-8',
+      })),
+    } : {}),
   })
 }
 
