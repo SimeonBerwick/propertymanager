@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getVendorDeliveryAdapter } from '@/lib/vendor-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
 import { takeRateLimitHit } from '@/lib/rate-limit'
+import { getReviewerOtpCode } from '@/lib/reviewer-access'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -52,12 +53,15 @@ export async function createVendorOtpChallenge(
   }
 
   const destination = vendor.email.trim().toLowerCase()
-  const issueLimit = await takeRateLimitHit(`vendor-otp-issue:${vendorId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
-  if (!issueLimit.ok) {
-    throw new VendorOtpRateLimitError()
+  const reviewerCode = purpose === 'returning_login' ? getReviewerOtpCode('vendor', destination) : null
+  if (!reviewerCode) {
+    const issueLimit = await takeRateLimitHit(`vendor-otp-issue:${vendorId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
+    if (!issueLimit.ok) {
+      throw new VendorOtpRateLimitError()
+    }
   }
 
-  const code = makeCode()
+  const code = reviewerCode ?? makeCode()
   const salt = randomBytes(12).toString('hex')
   const expiresAt = addMinutes(new Date(), OTP_TTL_MINUTES)
 
@@ -82,11 +86,13 @@ export async function createVendorOtpChallenge(
     })
   })
 
-  await getVendorDeliveryAdapter().sendOtp({
-    to: destination,
-    code,
-    vendorName: vendor.name,
-  })
+  if (!reviewerCode) {
+    await getVendorDeliveryAdapter().sendOtp({
+      to: destination,
+      code,
+      vendorName: vendor.name,
+    })
+  }
 
   await writeAuditLog({
     orgId: vendor.orgId,
@@ -95,7 +101,7 @@ export async function createVendorOtpChallenge(
     entityId: vendor.id,
     action: 'vendor.otpIssued',
     summary: `Issued ${purpose} OTP via ${channel}.`,
-    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked },
+    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
   })
 
   return {

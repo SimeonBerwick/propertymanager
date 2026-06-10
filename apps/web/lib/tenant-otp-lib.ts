@@ -4,6 +4,7 @@ import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
 import { takeRateLimitHit } from '@/lib/rate-limit'
 import { isTenantIdentityActiveOn } from '@/lib/tenant-occupancy'
+import { getReviewerOtpCode } from '@/lib/reviewer-access'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -76,12 +77,15 @@ export async function createOtpChallenge(
     })
   }
 
-  const issueLimit = await takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
-  if (!issueLimit.ok) {
-    throw new OtpRateLimitError()
+  const reviewerCode = purpose === 'returning_login' ? getReviewerOtpCode('tenant', destination) : null
+  if (!reviewerCode) {
+    const issueLimit = await takeRateLimitHit(`tenant-otp-issue:${tenantIdentityId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
+    if (!issueLimit.ok) {
+      throw new OtpRateLimitError()
+    }
   }
 
-  const code = makeCode()
+  const code = reviewerCode ?? makeCode()
   const salt = randomBytes(12).toString('hex')
   const expiresAt = addMinutes(new Date(), OTP_TTL_MINUTES)
 
@@ -106,11 +110,13 @@ export async function createOtpChallenge(
     })
   })
 
-  await getTenantDeliveryAdapter().sendOtp({
-    to: destination,
-    code,
-    tenantName: tenantIdentity.tenantName,
-  })
+  if (!reviewerCode) {
+    await getTenantDeliveryAdapter().sendOtp({
+      to: destination,
+      code,
+      tenantName: tenantIdentity.tenantName,
+    })
+  }
 
   await writeAuditLog({
     orgId: tenantIdentity.orgId,
@@ -119,7 +125,7 @@ export async function createOtpChallenge(
     entityId: tenantIdentity.id,
     action: 'tenantIdentity.otpIssued',
     summary: `Issued ${purpose} OTP via ${channel}.`,
-    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked },
+    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
   })
 
   return {

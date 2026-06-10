@@ -24,6 +24,14 @@ SMTP_URL=smtps://user:pass@smtp.example.com:465
 NOTIFY_FROM=Property Manager <noreply@simeonware.com>
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"replace-me"}
 
+# Google Play reviewer access
+ANDROID_REVIEWER_ACCESS_ENABLED=true
+ANDROID_REVIEWER_LANDLORD_EMAIL=play-review-landlord@simeonware.com
+ANDROID_REVIEWER_LANDLORD_PASSWORD=replace-with-stable-reviewer-password
+ANDROID_REVIEWER_TENANT_EMAIL=play-review-tenant@simeonware.com
+ANDROID_REVIEWER_VENDOR_EMAIL=play-review-vendor@simeonware.com
+ANDROID_REVIEWER_OTP_CODE=replace-with-six-digit-reviewer-code
+
 # Cloudflare R2 private media
 R2_ACCOUNT_ID=your-r2-account-id
 R2_ACCESS_KEY_ID=your-r2-access-key-id
