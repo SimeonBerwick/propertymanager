@@ -71,7 +71,7 @@ export function SignupForm() {
       </div>
 
       <div className="notice">
-        First month free. No credit card required during signup.
+        Your complete 31-day trial starts when you create the account. No credit card required.
       </div>
 
       <label className="field">
@@ -87,14 +87,10 @@ export function SignupForm() {
         <span className="muted">Have an invite code? Enter it here to extend the trial.</span>
       </label>
 
-      <div className="notice">
-        Use a 3-month trial code when running feedback campaigns.
-      </div>
-
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>
         <button type="submit" className="button primary" disabled={pending}>
-          {pending ? 'Starting trial...' : 'Start free month'}
+          {pending ? 'Creating account...' : 'Start 31-day free trial'}
         </button>
       </div>
     </form>

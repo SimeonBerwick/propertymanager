@@ -9,10 +9,11 @@ import { logout } from '@/lib/auth-actions'
 import { isDatabaseAvailable } from '@/lib/db-status'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { PushNotificationControl } from '@/components/push-notification-control'
+import { BrandLogo } from '@/components/brand-logo'
 
 export const metadata = {
-  title: 'Simeonware: Maintenance Manager',
-  description: 'Maintenance coordination for property managers, tenants, and vendors.',
+  title: 'Simeonware | Property Maintenance Coordination',
+  description: 'Coordinate maintenance requests, tenants, vendors, approvals, and billing from one organized workspace.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.svg',
@@ -30,7 +31,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const dbAvailable = await isDatabaseAvailable()
 
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <body>
         <div className="page">
           {!dbAvailable && (
@@ -50,14 +51,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </div>
           )}
           <header className="header">
-            <div>
-              <div className="kicker">Simeonware LLC</div>
-              <h1 style={{ margin: '4px 0 0' }}>Maintenance Manager</h1>
-            </div>
+            <BrandLogo href={session.isLoggedIn ? '/dashboard' : '/'} />
             <div className="nav">
-              <ThemeToggle />
               {session.isLoggedIn && (
                 <>
+                  <ThemeToggle />
                   <PushNotificationControl />
                   <Link href="/dashboard">Dashboard</Link>
                   <Link href="/access">Access</Link>
@@ -72,11 +70,22 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   </form>
                 </>
               )}
+              {!session.isLoggedIn && (
+                <>
+                  <Link href="/#features">Features</Link>
+                  <Link href="/#how-it-works">How it works</Link>
+                  <Link href="/#pricing">Pricing</Link>
+                  <Link href="/support">Support</Link>
+                  <Link href="/login" className="button">Sign in</Link>
+                  <Link href="/signup" className="button primary">Start free trial</Link>
+                </>
+              )}
             </div>
           </header>
           {children}
           <footer className="siteFooter">
-            <span>Simeonware LLC</span>
+            <BrandLogo />
+            <span>Property maintenance, clearly coordinated.</span>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/support">Support</Link>
