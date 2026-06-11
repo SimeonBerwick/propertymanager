@@ -1,5 +1,195 @@
-import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { BILLING_PLANS, planPriceLabel, type PlanKey } from '@/lib/billing-plans'
 
 export default function HomePage() {
-  redirect('/dashboard')
+  const plans: PlanKey[] = ['growth', 'pro', 'portfolio']
+
+  return (
+    <main className="marketingPage">
+      <section className="marketingHero">
+        <div className="marketingHeroCopy">
+          <div className="eyebrow">Maintenance coordination for property teams</div>
+          <h1>Property maintenance, without the endless follow-up.</h1>
+          <p>
+            Give tenants a simple way to report issues, keep vendors moving, and see every request,
+            update, approval, and bill in one organized workspace.
+          </p>
+          <div className="heroActions">
+            <Link href="/signup" className="button primary buttonLarge">Start your 31-day free trial</Link>
+            <Link href="/#product-preview" className="button buttonLarge">See the product</Link>
+          </div>
+          <div className="trustLine">
+            <span>No credit card required</span>
+            <span>Built for managers, tenants, and vendors</span>
+            <span>Cancel anytime</span>
+          </div>
+        </div>
+
+        <div className="productWindow" id="product-preview" aria-label="Simeonware product preview">
+          <div className="productWindowBar">
+            <span className="windowDot" />
+            <span className="windowDot" />
+            <span className="windowDot" />
+            <span className="productWindowTitle">Maintenance queue</span>
+          </div>
+          <div className="previewBody">
+            <div className="previewHeading">
+              <div>
+                <span className="previewKicker">Today&apos;s queue</span>
+                <strong>What needs attention</strong>
+              </div>
+              <span className="previewButton">New request</span>
+            </div>
+            <div className="previewMetrics">
+              <div><strong>12</strong><span>Open</span></div>
+              <div><strong>3</strong><span>Needs follow-up</span></div>
+              <div><strong>2</strong><span>Scheduled today</span></div>
+            </div>
+            <div className="previewList">
+              <div className="previewRow">
+                <span className="previewStatus urgent">Urgent</span>
+                <div><strong>Water leak under kitchen sink</strong><span>Willow Creek - Unit 204</span></div>
+                <span>Needs vendor</span>
+              </div>
+              <div className="previewRow">
+                <span className="previewStatus scheduled">Scheduled</span>
+                <div><strong>Air conditioner not cooling</strong><span>Park View - Unit 18</span></div>
+                <span>Today, 2:00 PM</span>
+              </div>
+              <div className="previewRow">
+                <span className="previewStatus review">Review</span>
+                <div><strong>Replace hallway light fixture</strong><span>Oak Terrace - Common area</span></div>
+                <span>Vendor complete</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="proofStrip" aria-label="Product benefits">
+        <div><strong>One clear queue</strong><span>Know what needs action now</span></div>
+        <div><strong>Fewer status calls</strong><span>Keep everyone informed automatically</span></div>
+        <div><strong>Complete history</strong><span>Keep decisions and costs together</span></div>
+        <div><strong>Built-in reporting</strong><span>Spot trends across your portfolio</span></div>
+      </section>
+
+      <section className="marketingSection" id="features">
+        <div className="sectionIntro">
+          <div className="eyebrow">Everything in one place</div>
+          <h2>Run a calmer maintenance operation.</h2>
+          <p>Simeonware replaces scattered emails, texts, and spreadsheets with a workflow everyone can follow.</p>
+        </div>
+        <div className="featureGrid">
+          <article className="featureCard featureCardLarge">
+            <span className="featureNumber">01</span>
+            <h3>See what needs action now</h3>
+            <p>Prioritize urgent, overdue, unclaimed, and follow-up requests from one focused queue.</p>
+            <div className="miniQueue">
+              <span>New requests <strong>5</strong></span>
+              <span>Needs follow-up <strong>3</strong></span>
+              <span>Completion review <strong>2</strong></span>
+            </div>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">02</span>
+            <h3>Coordinate vendors clearly</h3>
+            <p>Share request details, collect responses, review updates, and track scheduled work.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">03</span>
+            <h3>Give tenants an easy path</h3>
+            <p>Collect complete issue reports and photos without forcing tenants into a complicated process.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">04</span>
+            <h3>Keep costs connected</h3>
+            <p>Track vendor billing, approvals, billbacks, and supporting records alongside the request.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">05</span>
+            <h3>Report with confidence</h3>
+            <p>Review maintenance volume, aging, outcomes, and operational trends across your portfolio.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="marketingSection processSection" id="how-it-works">
+        <div className="sectionIntro">
+          <div className="eyebrow">A straightforward workflow</div>
+          <h2>From issue reported to work complete.</h2>
+        </div>
+        <div className="processGrid">
+          <article><span>1</span><h3>Capture</h3><p>Tenants submit the issue, details, and photos through a simple request form.</p></article>
+          <article><span>2</span><h3>Coordinate</h3><p>Your team reviews the request, assigns vendors, and keeps communication together.</p></article>
+          <article><span>3</span><h3>Resolve</h3><p>Track scheduling, completion, approvals, and billing through a clear audit trail.</p></article>
+        </div>
+      </section>
+
+      <section className="marketingSection">
+        <div className="trustPanel">
+          <div>
+            <div className="eyebrow">Designed for responsible operations</div>
+            <h2>Your maintenance records deserve more than a group chat.</h2>
+          </div>
+          <div className="trustGrid">
+            <div><strong>Role-based access</strong><span>Managers, tenants, and vendors see the workflows intended for them.</span></div>
+            <div><strong>Private media storage</strong><span>Maintenance photos use authenticated access controls.</span></div>
+            <div><strong>Operational history</strong><span>Keep comments, status changes, and decisions attached to each request.</span></div>
+            <div><strong>Clear data choices</strong><span>Published privacy, terms, support, and account-deletion processes.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="marketingSection" id="pricing">
+        <div className="sectionIntro">
+          <div className="eyebrow">Simple portfolio pricing</div>
+          <h2>Start free. Choose the capacity that fits.</h2>
+          <p>Every plan includes the complete maintenance workflow. Plans differ only by active-unit capacity.</p>
+        </div>
+        <div className="pricingGrid">
+          {plans.map((plan) => (
+            <article className={`pricingCard ${plan === 'pro' ? 'pricingCardFeatured' : ''}`} key={plan}>
+              {plan === 'pro' ? <span className="popularLabel">Most popular</span> : null}
+              <h3>{BILLING_PLANS[plan].name}</h3>
+              <div className="price">{planPriceLabel(plan, 'monthly').replace('/month', '')}<span>/month</span></div>
+              <p>{BILLING_PLANS[plan].description}</p>
+              <ul>
+                <li>Complete manager request queue</li>
+                <li>Tenant and vendor workflows</li>
+                <li>Billing records and reports</li>
+                <li>Email notifications and history</li>
+              </ul>
+              <Link href="/signup" className={`button ${plan === 'pro' ? 'primary' : ''}`}>Start free trial</Link>
+            </article>
+          ))}
+        </div>
+        <p className="pricingNote">Annual billing includes a 10% discount. No credit card is required to start your 31-day trial.</p>
+      </section>
+
+      <section className="marketingSection">
+        <div className="faqLayout">
+          <div className="sectionIntro">
+            <div className="eyebrow">Frequently asked questions</div>
+            <h2>Know what to expect.</h2>
+            <p>Have another question? <Link href="/support">Contact support.</Link></p>
+          </div>
+          <div className="faqList">
+            <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
+            <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 31 days before adding a payment method.</p></details>
+            <details><summary>What changes between plans?</summary><p>The active-unit capacity. The core maintenance coordination features are included across all plans.</p></details>
+            <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <section className="finalCta">
+        <div>
+          <div className="eyebrow">A clearer maintenance workflow starts here</div>
+          <h2>Spend less time chasing updates.</h2>
+          <p>Start your 31-day free trial and bring your maintenance operation into one organized workspace.</p>
+        </div>
+        <Link href="/signup" className="button primary buttonLarge">Start free trial</Link>
+      </section>
+    </main>
+  )
 }

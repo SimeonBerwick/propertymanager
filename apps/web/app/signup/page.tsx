@@ -11,7 +11,7 @@ export default async function SignupPage() {
       <main className="stack" style={{ maxWidth: 900, margin: '0 auto' }}>
         <section className="card stack">
           <div>
-            <div className="kicker">Simeonware LLC</div>
+            <div className="kicker">Simeonware</div>
             <h2 style={{ margin: '4px 0 0' }}>Account access</h2>
           </div>
           <p className="muted" style={{ margin: 0 }}>{ANDROID_SUBSCRIPTION_MESSAGE}</p>
@@ -25,11 +25,11 @@ export default async function SignupPage() {
     <main className="stack" style={{ maxWidth: 900, margin: '0 auto' }}>
       <section className="card stack">
         <div>
-          <div className="kicker">Simeonware LLC</div>
-          <h2 style={{ margin: '4px 0 0' }}>Start your free month</h2>
+          <div className="kicker">31-day free trial</div>
+          <h2 style={{ margin: '4px 0 0' }}>Create your property manager account</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Choose Growth, Pro, or Portfolio now. You can use the app for the first month without a card, or enter a promo code for an extended feedback trial.
+          Choose the portfolio capacity that fits today. Every plan includes the complete maintenance workflow, and no credit card is required to start.
         </p>
       </section>
 

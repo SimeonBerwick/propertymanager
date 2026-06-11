@@ -27,7 +27,7 @@ export function LoginForm({ error }: { error?: string }) {
           required
           autoFocus
           autoComplete="email"
-          placeholder="landlord@example.com"
+          placeholder="manager@example.com"
         />
       </label>
 

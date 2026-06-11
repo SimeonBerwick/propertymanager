@@ -31,10 +31,10 @@ export function AccessTypeSelector({ error }: { error?: string }) {
           <>
             <div className="notice trialNotice">
               <div>
-                <strong>First month free for property managers.</strong>
+                <strong>Try the complete workflow free for 31 days.</strong>
                 <div className="muted">No credit card required during signup.</div>
               </div>
-              <a href="/signup" className="button primary">Start a free month</a>
+              <a href="/signup" className="button primary">Start free trial</a>
             </div>
             <LoginForm error={error} />
           </>
