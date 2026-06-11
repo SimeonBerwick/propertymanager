@@ -55,16 +55,31 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <div className="nav">
               {session.isLoggedIn && (
                 <>
-                  <ThemeToggle />
-                  <PushNotificationControl />
                   <Link href="/dashboard">Dashboard</Link>
-                  <Link href="/access">Access</Link>
-                  <Link href="/ops">Ops</Link>
-                  <Link href={'/account/settings' as Route}>Settings</Link>
-                  <Link href="/support">Support</Link>
-                  <Link href="/properties">Properties</Link>
-                  <Link href="/vendors">Vendors</Link>
-                  <Link href="/reports">Reports</Link>
+                  <details className="navMenu">
+                    <summary>Portfolio</summary>
+                    <div className="navMenuPanel">
+                      <Link href="/properties">Properties</Link>
+                      <Link href="/vendors">Vendors</Link>
+                      <Link href="/reports">Reports</Link>
+                    </div>
+                  </details>
+                  <details className="navMenu">
+                    <summary>Operations</summary>
+                    <div className="navMenuPanel">
+                      <Link href="/access">Team access</Link>
+                      <Link href="/ops">Operations center</Link>
+                      <Link href={'/account/settings' as Route}>Account settings</Link>
+                      <Link href="/support">Support</Link>
+                    </div>
+                  </details>
+                  <details className="navMenu">
+                    <summary>Preferences</summary>
+                    <div className="navMenuPanel navMenuControls">
+                      <ThemeToggle />
+                      <PushNotificationControl />
+                    </div>
+                  </details>
                   <form action={logout}>
                     <button type="submit" className="button">Sign out</button>
                   </form>

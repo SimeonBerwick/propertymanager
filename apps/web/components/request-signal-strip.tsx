@@ -1,4 +1,4 @@
-import type { MaintenanceRequest } from '@/lib/types'
+import { currencyLabel, languageLabel, type MaintenanceRequest } from '@/lib/types'
 import { reviewStateLabel } from '@/lib/ui-utils'
 
 function urgencyTone(urgency: MaintenanceRequest['urgency']) {
@@ -11,6 +11,17 @@ function urgencyTone(urgency: MaintenanceRequest['urgency']) {
 function slaTone(slaBucket?: string) {
   if (slaBucket === 'priority') return { className: 'badge signalUrgent', label: 'Priority SLA' }
   return { className: 'badge signalNeutral', label: 'Standard SLA' }
+}
+
+function triageTagLabel(tag: string) {
+  const [kind, value] = tag.split(':', 2)
+  if (kind === 'currency' && value) {
+    return `Billing: ${currencyLabel(value as MaintenanceRequest['preferredCurrency'])}`
+  }
+  if (kind === 'language' && value) {
+    return `${languageLabel(value as MaintenanceRequest['preferredLanguage'])} preferred`
+  }
+  return tag.replaceAll('_', ' ').replaceAll(':', ': ')
 }
 
 export function RequestSignalStrip({
@@ -29,7 +40,7 @@ export function RequestSignalStrip({
         <span className="badge signalWarn">Review: {reviewStateLabel(request.reviewState)}</span>
       ) : null}
       {request.triageTags?.map((tag) => (
-        <span key={tag} className="badge signalNeutral">{tag}</span>
+        <span key={tag} className="badge signalNeutral">{triageTagLabel(tag)}</span>
       ))}
     </div>
   )

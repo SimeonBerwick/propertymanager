@@ -31,6 +31,13 @@ export function formatRelativeAge(value: string) {
   const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)))
   if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
+  if (days > 30) {
+    const date = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }).format(new Date(value))
+    return `on ${date}`
+  }
   return `${days}d ago`
 }
 

@@ -62,11 +62,11 @@ export function RequestQueueList({
   return (
     <div className="inboxList">
       {visibleRequests.map((request) => (
-        <div key={request.id} className="inboxRow" style={{ cursor: 'default' }}>
-          <div className="stack" style={{ gap: 10 }}>
+        <article key={request.id} className="inboxRow">
+          <div className="stack requestQueueMain">
             <div>
-              <div style={{ fontWeight: 700 }}>{request.title}</div>
-              <div className="muted" style={{ marginTop: 4 }}>{request.propertyName} · {request.unitLabel}</div>
+              <div className="requestQueueTitle">{request.title}</div>
+              <div className="muted requestQueueLocation">{request.propertyName} · {request.unitLabel}</div>
               <div className="requestMetaLine">
                 <RequestFlowBadge request={request} />
                 <span className="muted">{request.category}</span>
@@ -78,10 +78,10 @@ export function RequestQueueList({
             <RequestOpsSignals request={request} />
             <RequestQuickActions request={request} compact />
           </div>
-          <div className="stack" style={{ gap: 10, alignItems: 'flex-end' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{formatDateTime(request.vendorScheduledStart)}</div>
-              <div className="muted">Scheduled start</div>
+          <div className="requestQueueAside">
+            <div className="requestScheduleBlock">
+              <div className="requestScheduleValue">{request.vendorScheduledStart ? formatDateTime(request.vendorScheduledStart) : 'Not scheduled'}</div>
+              <div className="muted">{request.vendorScheduledStart ? 'Next appointment' : 'Appointment status'}</div>
             </div>
             <Link href={`/requests/${request.id}`} className="button primary">Open</Link>
             {isDismissable(request.status) ? (
@@ -90,7 +90,7 @@ export function RequestQueueList({
               </button>
             ) : null}
           </div>
-        </div>
+        </article>
       ))}
       <div className="muted" style={{ fontSize: 12 }}>
         Queue order: {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.

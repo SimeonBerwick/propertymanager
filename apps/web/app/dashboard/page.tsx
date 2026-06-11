@@ -72,16 +72,21 @@ export default async function DashboardPage({
           </div>
           <div className="requestHeroMeta">
             <div className="mailboxMini">
-              <span className="mailboxMiniLabel">Mailbox</span>
+              <span className="mailboxMiniLabel">Request email</span>
               {data.mailboxConnections.find((connection) => connection.status === 'connected') ? (
                 data.mailboxConnections.filter((connection) => connection.status === 'connected').slice(0, 1).map((connection) => (
                   <span key={connection.id} className="mailboxMiniAddress">{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'}: {connection.email}</span>
                 ))
               ) : (
-                <span className="mailboxMiniAddress">SMTP fallback</span>
+                <span className="mailboxMiniAddress">Secure email delivery active</span>
               )}
-              <a className="button compactToggle" href="/api/mailbox/oauth/gmail/start">Connect Gmail</a>
-              <a className="button compactToggle" href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
+              <details className="actionMenu">
+                <summary>Connect inbox</summary>
+                <div className="actionMenuPanel">
+                  <a href="/api/mailbox/oauth/gmail/start">Connect Gmail</a>
+                  <a href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
+                </div>
+              </details>
             </div>
             <form action={toggleEmailNotificationsAction}>
               <input type="hidden" name="enabled" value={data.emailNotificationsEnabled ? 'false' : 'true'} />
@@ -90,13 +95,18 @@ export default async function DashboardPage({
                 className={`button compactToggle ${data.emailNotificationsEnabled ? 'is-on' : 'is-off'}`}
                 title="Toggle request and message email notifications"
               >
-                Email {data.emailNotificationsEnabled ? 'On' : 'Off'}
+                Email alerts {data.emailNotificationsEnabled ? 'enabled' : 'paused'}
               </button>
             </form>
-            <Link href="/submit" className="button primary">Tenant issue form</Link>
-            <Link href="/access" className="button">Access</Link>
-            <Link href="/exceptions" className="button">Exceptions queue</Link>
-            <Link href="/reports" className="button">Reports</Link>
+            <Link href="/submit" className="button primary">Share request form</Link>
+            <details className="actionMenu">
+              <summary>Queue tools</summary>
+              <div className="actionMenuPanel">
+                <Link href="/exceptions">Review exceptions</Link>
+                <Link href="/access">Manage team access</Link>
+                <Link href="/reports">View reports</Link>
+              </div>
+            </details>
           </div>
         </div>
       </section>

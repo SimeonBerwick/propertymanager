@@ -120,6 +120,58 @@ body { min-height: 100vh; }
 }
 .nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .nav a, .nav .button { white-space: nowrap; }
+.navMenu, .actionMenu { position: relative; }
+.navMenu summary, .actionMenu summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.navMenu summary::-webkit-details-marker, .actionMenu summary::-webkit-details-marker { display: none; }
+.navMenu summary::after, .actionMenu summary::after { content: "⌄"; color: var(--muted); font-size: 12px; }
+.navMenu[open] summary, .navMenu summary:hover, .actionMenu[open] summary, .actionMenu summary:hover {
+  border-color: var(--border);
+  background: var(--chip);
+}
+.navMenuPanel, .actionMenuPanel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  right: 0;
+  min-width: 210px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card-strong);
+  box-shadow: var(--shadow);
+}
+.navMenuPanel a, .actionMenuPanel a {
+  padding: 10px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.navMenuPanel a:hover, .actionMenuPanel a:hover { background: var(--accent-soft); color: var(--accent); }
+.navMenuControls { gap: 8px; padding: 12px; }
+.navMenuControls .button, .navMenuControls .themeToggle { width: 100%; }
+.actionMenu summary {
+  min-height: 34px;
+  padding: 7px 10px;
+  border-color: var(--border);
+  border-radius: 999px;
+  background: var(--chip);
+  font-size: 12px;
+}
+.actionMenuPanel { left: 0; right: auto; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -461,17 +513,30 @@ body { min-height: 100vh; }
   color: var(--muted);
   font-size: 12px;
 }
-.inboxList { display: grid; gap: 12px; }
+.inboxList { display: grid; gap: 16px; }
 .inboxRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) 1fr 0.8fr 0.8fr;
-  gap: 14px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 16px;
+  padding: 20px;
   background: var(--table-row);
 }
+.requestQueueMain { gap: 14px; min-width: 0; }
+.requestQueueTitle { font-size: 16px; font-weight: 750; line-height: 1.35; }
+.requestQueueLocation { margin-top: 5px; }
+.requestQueueAside {
+  min-width: 170px;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.requestScheduleBlock { text-align: right; }
+.requestScheduleValue { font-weight: 700; }
 .requestMetaLine { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .queueGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .queueCard { display: block; }
@@ -640,6 +705,16 @@ body { min-height: 100vh; }
   .billingForm { position: static; }
   .page { padding: 18px; }
   .header .nav { width: 100%; }
+  .navMenuPanel { left: 0; right: auto; }
+  .requestQueueAside {
+    width: 100%;
+    min-width: 0;
+    justify-items: start;
+    padding: 14px 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+  .requestScheduleBlock { text-align: left; }
   .marketingPage { gap: 72px; padding-top: 8px; }
   .marketingHero { min-height: auto; grid-template-columns: 1fr; gap: 42px; }
   .marketingHero h1 { font-size: clamp(44px, 13vw, 66px); }
