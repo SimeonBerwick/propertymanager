@@ -83,19 +83,19 @@ export default function HomePage() {
         <div className="productScreenshotGrid">
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
-              <Image src="/product-screenshots/request-intake.png" alt="Simeonware tenant maintenance request intake form" width={1440} height={1000} />
+              <Image src="/product-screenshots/request-intake.png" alt="Simeonware tenant maintenance request intake form" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
             <figcaption><strong>Request intake</strong><span>Tenants share the issue, details, and photos in one guided form.</span></figcaption>
           </figure>
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
-              <Image src="/product-screenshots/vendor-coordination.png" alt="Simeonware request detail showing vendor coordination signals" width={1440} height={1000} />
+              <Image src="/product-screenshots/vendor-coordination.png" alt="Simeonware request detail showing vendor coordination signals" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
             <figcaption><strong>Vendor coordination</strong><span>Review vendor replies, scheduling, updates, and visible notes together.</span></figcaption>
           </figure>
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
-              <Image src="/product-screenshots/reporting.png" alt="Simeonware property maintenance performance reports" width={1440} height={1000} />
+              <Image src="/product-screenshots/reporting.png" alt="Simeonware property maintenance performance reports" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
             <figcaption><strong>Reporting</strong><span>Track volume, response times, aging, and operational trends.</span></figcaption>
           </figure>

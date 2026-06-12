@@ -12,6 +12,11 @@ function ageBadgeClass(days: number) {
   return 'badge age-old'
 }
 
+function formatHours(hours: number | null) {
+  if (!hours) return '—'
+  return hours >= 72 ? `${(hours / 24).toFixed(1)}d` : `${hours.toFixed(1)}h`
+}
+
 export default async function ReportsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
@@ -19,10 +24,11 @@ export default async function ReportsPage() {
   const totalRequests = data.propertyStats.reduce((sum, p) => sum + p.totalCount, 0)
 
   return (
-    <div className="stack">
-      <section className="card">
+    <div className="stack reportsPage">
+      <section className="card reportsHero">
         <div className="kicker">Reports</div>
         <h2 style={{ margin: '4px 0 0' }}>Performance</h2>
+        <div className="muted">Track workload, response speed, ownership, and vendor outcomes.</div>
       </section>
 
       {data.trendAlerts.length ? (
@@ -37,67 +43,67 @@ export default async function ReportsPage() {
       ) : null}
 
       {/* ── Summary stat row ── */}
-      <section className="grid cols-3">
-        <div className="card">
+      <section className="grid cols-3 reportMetricGrid">
+        <div className="card reportMetricCard">
           <div className="kicker">Total requests</div>
           <h2>{totalRequests}</h2>
           <div className="muted">All time</div>
         </div>
-        <div className="card">
+        <div className="card reportMetricCard">
           <div className="kicker">Open</div>
           <h2>{data.totalOpen}</h2>
           <div className="muted">Needs attention</div>
         </div>
-        <div className="card">
+        <div className="card reportMetricCard">
           <div className="kicker">Closed</div>
           <h2>{data.totalClosed}</h2>
           <div className="muted">Completed</div>
         </div>
       </section>
 
-      <section className="grid cols-4">
-        <div className="card">
+      <section className="grid cols-4 reportMetricGrid">
+        <div className="card reportMetricCard">
           <div className="kicker">Time to assign</div>
-          <h2>{data.avgTimeToAssignHours ? `${data.avgTimeToAssignHours.toFixed(1)}h` : '—'}</h2>
+          <h2>{formatHours(data.avgTimeToAssignHours)}</h2>
           <div className="muted">Average from intake to assignment</div>
         </div>
-        <div className="card">
+        <div className="card reportMetricCard">
           <div className="kicker">Time to first review</div>
-          <h2>{data.avgTimeToFirstReviewHours ? `${data.avgTimeToFirstReviewHours.toFixed(1)}h` : '—'}</h2>
+          <h2>{formatHours(data.avgTimeToFirstReviewHours)}</h2>
           <div className="muted">Average from intake to first operator review</div>
         </div>
-        <div className="card">
+        <div className="card reportMetricCard">
           <div className="kicker">Time to schedule</div>
-          <h2>{data.avgTimeToScheduleHours ? `${data.avgTimeToScheduleHours.toFixed(1)}h` : '—'}</h2>
+          <h2>{formatHours(data.avgTimeToScheduleHours)}</h2>
           <div className="muted">Average from intake to visit window</div>
         </div>
-        <div className="card">
+        <div className="card reportMetricCard">
           <div className="kicker">Time to complete</div>
           <h2>{data.avgTimeToCompleteDays ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '—'}</h2>
           <div className="muted">Average request cycle time</div>
         </div>
       </section>
 
-      <section className="grid cols-3">
-        <Link href="/dashboard?queue=unclaimed" className="card" style={{ textDecoration: 'none' }}>
+      <section className="grid cols-3 reportMetricGrid">
+        <Link href="/dashboard?queue=unclaimed" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
           <div className="kicker">Unclaimed open</div>
           <h2>{data.unclaimedOpenCount}</h2>
           <div className="muted">Still waiting for an owner</div>
         </Link>
-        <Link href="/dashboard?queue=stale-claimed" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/dashboard?queue=stale-claimed" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
           <div className="kicker">Stale claimed open</div>
           <h2>{data.staleClaimedOpenCount}</h2>
           <div className="muted">Claims older than 24 hours</div>
         </Link>
-        <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/dashboard?queue=follow-up" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
           <div className="kicker">Avg open claim age</div>
-          <h2>{data.avgClaimAgeHoursOpen ? `${data.avgClaimAgeHoursOpen.toFixed(1)}h` : '—'}</h2>
+          <h2>{formatHours(data.avgClaimAgeHoursOpen)}</h2>
           <div className="muted">Average age of open claims</div>
         </Link>
       </section>
 
       <section className="grid cols-1">
-        <Link href="/dashboard?queue=follow-up" className="card" style={{ textDecoration: 'none' }}>
+        <Link href="/dashboard?queue=follow-up" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
           <div className="kicker">Reopened</div>
           <h2>{data.reopenCount}</h2>
           <div className="muted">Reopened after review</div>
