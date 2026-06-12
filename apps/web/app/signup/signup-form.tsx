@@ -2,11 +2,11 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
-import { BILLING_PLANS, CADENCE_LABELS, planPriceLabel, type CadenceKey, type PlanKey } from '@/lib/billing-plans'
+import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey } from '@/lib/billing-plans'
 import { signupAction, type SignupState } from './actions'
 
 const INITIAL_STATE: SignupState = { error: null }
-const PLANS: PlanKey[] = ['growth', 'pro', 'portfolio']
+const PLANS = OFFERED_PLANS
 const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function SignupForm() {
@@ -45,7 +45,7 @@ export function SignupForm() {
         <input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" />
       </label>
 
-      <div className="grid cols-3">
+      <div className="grid cols-2">
         {PLANS.map((plan) => (
           <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
             <span className="row" style={{ alignItems: 'center' }}>
@@ -71,7 +71,7 @@ export function SignupForm() {
       </div>
 
       <div className="notice">
-        Your complete 31-day trial starts when you create the account. No credit card required.
+        Your complete 30-day trial starts when you create the account. No credit card required.
       </div>
 
       <label className="field">
@@ -90,7 +90,7 @@ export function SignupForm() {
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>
         <button type="submit" className="button primary" disabled={pending}>
-          {pending ? 'Creating account...' : 'Start 31-day free trial'}
+          {pending ? 'Creating account...' : 'Start 30-day free trial'}
         </button>
       </div>
     </form>

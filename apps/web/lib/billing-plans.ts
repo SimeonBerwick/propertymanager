@@ -2,8 +2,10 @@ import type { AccountPlan, BillingCadence } from '@prisma/client'
 
 export type PlanKey = AccountPlan
 export type CadenceKey = BillingCadence
+export type OfferedPlanKey = Exclude<PlanKey, 'portfolio'>
 
-export const TRIAL_DAYS = 31
+export const TRIAL_DAYS = 30
+export const OFFERED_PLANS: OfferedPlanKey[] = ['growth', 'pro']
 
 export const BILLING_PLANS: Record<PlanKey, {
   name: string
@@ -14,20 +16,20 @@ export const BILLING_PLANS: Record<PlanKey, {
   growth: {
     name: 'Growth',
     description: 'For portfolios up to 50 active units.',
-    monthlyCents: 9900,
+    monthlyCents: 6900,
     unitLimit: 50,
   },
   pro: {
     name: 'Pro',
     description: 'For growing portfolios up to 200 active units.',
-    monthlyCents: 19900,
+    monthlyCents: 14900,
     unitLimit: 200,
   },
   portfolio: {
-    name: 'Portfolio',
-    description: 'Unlimited active units for larger operators.',
-    monthlyCents: 49900,
-    unitLimit: null,
+    name: 'Pro',
+    description: 'For growing portfolios up to 200 active units.',
+    monthlyCents: 14900,
+    unitLimit: 200,
   },
 }
 
@@ -36,7 +38,11 @@ export const CADENCE_LABELS: Record<CadenceKey, string> = {
   annual: 'Annual',
 }
 
-export function parsePlan(value: FormDataEntryValue | string | null): PlanKey | null {
+export function parsePlan(value: FormDataEntryValue | string | null): OfferedPlanKey | null {
+  return value === 'growth' || value === 'pro' ? value : null
+}
+
+export function parseStoredPlan(value: string | null | undefined): PlanKey | null {
   return value === 'growth' || value === 'pro' || value === 'portfolio' ? value : null
 }
 

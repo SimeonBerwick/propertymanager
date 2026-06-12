@@ -78,7 +78,7 @@ export default async function SubscriptionPage({
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Active units</div>
             <strong>{activeUnits}</strong>
-            <span className="muted">{plan && BILLING_PLANS[plan].unitLimit ? `${BILLING_PLANS[plan].unitLimit} included` : 'Unlimited on Portfolio'}</span>
+            <span className="muted">{plan ? `${BILLING_PLANS[plan].unitLimit} included` : 'Choose a plan'}</span>
           </div>
           <div className="billingRowCard stack" style={{ gap: 4 }}>
             <div className="kicker">Access through</div>

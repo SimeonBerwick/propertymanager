@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { BILLING_PLANS, planPriceLabel, type PlanKey } from '@/lib/billing-plans'
+import Image from 'next/image'
+import { BILLING_PLANS, OFFERED_PLANS, planPriceLabel } from '@/lib/billing-plans'
 
 export default function HomePage() {
-  const plans: PlanKey[] = ['growth', 'pro', 'portfolio']
+  const plans = OFFERED_PLANS
 
   return (
     <main className="marketingPage">
@@ -15,7 +16,7 @@ export default function HomePage() {
             update, approval, and bill in one organized workspace.
           </p>
           <div className="heroActions">
-            <Link href="/signup" className="button primary buttonLarge">Start your 31-day free trial</Link>
+            <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
             <Link href="/#product-preview" className="button buttonLarge">See the product</Link>
           </div>
           <div className="trustLine">
@@ -71,6 +72,34 @@ export default function HomePage() {
         <div><strong>Fewer status calls</strong><span>Keep everyone informed automatically</span></div>
         <div><strong>Complete history</strong><span>Keep decisions and costs together</span></div>
         <div><strong>Built-in reporting</strong><span>Spot trends across your portfolio</span></div>
+      </section>
+
+      <section className="marketingSection productScreenshots" aria-labelledby="real-product-heading">
+        <div className="sectionIntro">
+          <div className="eyebrow">The real product</div>
+          <h2 id="real-product-heading">See the workflow before you start.</h2>
+          <p>These are real Simeonware screens showing how requests move from intake through vendor coordination and reporting.</p>
+        </div>
+        <div className="productScreenshotGrid">
+          <figure className="productScreenshotCard">
+            <div className="productScreenshotFrame">
+              <Image src="/product-screenshots/request-intake.png" alt="Simeonware tenant maintenance request intake form" width={1440} height={1000} />
+            </div>
+            <figcaption><strong>Request intake</strong><span>Tenants share the issue, details, and photos in one guided form.</span></figcaption>
+          </figure>
+          <figure className="productScreenshotCard">
+            <div className="productScreenshotFrame">
+              <Image src="/product-screenshots/vendor-coordination.png" alt="Simeonware request detail showing vendor coordination signals" width={1440} height={1000} />
+            </div>
+            <figcaption><strong>Vendor coordination</strong><span>Review vendor replies, scheduling, updates, and visible notes together.</span></figcaption>
+          </figure>
+          <figure className="productScreenshotCard">
+            <div className="productScreenshotFrame">
+              <Image src="/product-screenshots/reporting.png" alt="Simeonware property maintenance performance reports" width={1440} height={1000} />
+            </div>
+            <figcaption><strong>Reporting</strong><span>Track volume, response times, aging, and operational trends.</span></figcaption>
+          </figure>
+        </div>
       </section>
 
       <section className="marketingSection" id="features">
@@ -142,7 +171,7 @@ export default function HomePage() {
 
       <section className="marketingSection" id="pricing">
         <div className="sectionIntro">
-          <div className="eyebrow">Simple portfolio pricing</div>
+          <div className="eyebrow">Simple pricing</div>
           <h2>Start free. Choose the capacity that fits.</h2>
           <p>Every plan includes the complete maintenance workflow. Plans differ only by active-unit capacity.</p>
         </div>
@@ -163,7 +192,7 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-        <p className="pricingNote">Annual billing includes a 10% discount. No credit card is required to start your 31-day trial.</p>
+        <p className="pricingNote">Annual billing includes a 10% discount. No credit card is required to start your 30-day trial.</p>
       </section>
 
       <section className="marketingSection">
@@ -175,7 +204,7 @@ export default function HomePage() {
           </div>
           <div className="faqList">
             <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
-            <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 31 days before adding a payment method.</p></details>
+            <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 30 days before adding a payment method.</p></details>
             <details><summary>What changes between plans?</summary><p>The active-unit capacity. The core maintenance coordination features are included across all plans.</p></details>
             <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
           </div>
@@ -186,7 +215,7 @@ export default function HomePage() {
         <div>
           <div className="eyebrow">A clearer maintenance workflow starts here</div>
           <h2>Spend less time chasing updates.</h2>
-          <p>Start your 31-day free trial and bring your maintenance operation into one organized workspace.</p>
+          <p>Start your 30-day free trial and bring your maintenance operation into one organized workspace.</p>
         </div>
         <Link href="/signup" className="button primary buttonLarge">Start free trial</Link>
       </section>

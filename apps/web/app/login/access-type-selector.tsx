@@ -31,7 +31,7 @@ export function AccessTypeSelector({ error }: { error?: string }) {
           <>
             <div className="notice trialNotice">
               <div>
-                <strong>Try the complete workflow free for 31 days.</strong>
+                <strong>Try the complete workflow free for 30 days.</strong>
                 <div className="muted">No credit card required during signup.</div>
               </div>
               <a href="/signup" className="button primary">Start free trial</a>

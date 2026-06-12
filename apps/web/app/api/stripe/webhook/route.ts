@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { getStripeClient, getStripeWebhookSecret } from '@/lib/stripe'
-import { parseCadence, parsePlan } from '@/lib/billing-plans'
+import { parseCadence, parseStoredPlan } from '@/lib/billing-plans'
 
 function accountStatusFromStripe(status?: string | null) {
   switch (status) {
@@ -29,7 +29,7 @@ function periodEndDate(subscription: Stripe.Subscription) {
 
 async function syncSubscription(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId
-  const plan = parsePlan(subscription.metadata?.plan ?? null)
+  const plan = parseStoredPlan(subscription.metadata?.plan)
   const cadence = parseCadence(subscription.metadata?.cadence ?? null)
   const data = {
     subscriptionStatus: accountStatusFromStripe(subscription.status),
@@ -57,7 +57,7 @@ async function syncSubscription(subscription: Stripe.Subscription) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripe = getStripeClient()
   const userId = session.metadata?.userId
-  const plan = parsePlan(session.metadata?.plan ?? null)
+  const plan = parseStoredPlan(session.metadata?.plan)
   const cadence = parseCadence(session.metadata?.cadence ?? null)
 
   if (!stripe || !userId) return

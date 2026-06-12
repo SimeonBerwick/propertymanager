@@ -25,11 +25,11 @@ export default async function SignupPage() {
     <main className="stack" style={{ maxWidth: 900, margin: '0 auto' }}>
       <section className="card stack">
         <div>
-          <div className="kicker">31-day free trial</div>
+          <div className="kicker">30-day free trial</div>
           <h2 style={{ margin: '4px 0 0' }}>Create your property manager account</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Choose the portfolio capacity that fits today. Every plan includes the complete maintenance workflow, and no credit card is required to start.
+          Choose the plan that fits today. Every plan includes the complete maintenance workflow, and no credit card is required to start.
         </p>
       </section>
 
