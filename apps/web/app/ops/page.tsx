@@ -40,8 +40,8 @@ export default async function OpsPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Activity</div>
-          <h3 style={{ marginTop: 4 }}>Ops feed</h3>
+          <div className="kicker">Audit trail</div>
+          <h3 style={{ marginTop: 4 }}>Activity log</h3>
           <div className="muted">Showing the last {days === 1 ? 'day' : `${days} days`}.</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
@@ -66,17 +66,6 @@ export default async function OpsPage({
             Show previous week
           </Link>
         ) : null}
-      </section>
-
-      <section className="card stack">
-        <div>
-          <div className="kicker">Controls</div>
-          <h3 style={{ marginTop: 4 }}>Actions</h3>
-        </div>
-        <div className="row" style={{ gap: 8, justifyContent: 'flex-start' }}>
-          <Link href="/exceptions" className="button primary">Exceptions</Link>
-          <Link href="/reports" className="button">Reports</Link>
-        </div>
       </section>
     </div>
   )
