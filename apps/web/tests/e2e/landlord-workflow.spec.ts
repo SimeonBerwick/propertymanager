@@ -79,7 +79,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await commentForm.getByRole('combobox').selectOption('external')
   await page.getByRole('button', { name: 'Add comment' }).click()
   await expect(page.getByText('Comment added.')).toBeVisible()
-  await expect(page.getByText('Vendor scheduled for tomorrow morning.')).toBeVisible()
+  await expect(page.getByText('Vendor scheduled for tomorrow morning.').last()).toBeVisible()
 
   await statusForm.getByRole('combobox').selectOption('in_progress')
   await page.getByRole('button', { name: 'Update status' }).click()
