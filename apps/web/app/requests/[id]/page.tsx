@@ -315,41 +315,42 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </SectionCard>
 
-          <SectionCard kicker="Billing" title="Billing" subtitle="Smaller and lower priority unless this request already turned into money movement.">
-            <div className="stack billingCompact" style={{ gap: 14 }}>
-              <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
-                <div className="kicker">Tenant responsibility</div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Current: {data.request.tenantBillbackDecision ?? 'none'}
-                  {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
-                    ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
-                    : ''}
-                  {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <RequestBillbackForm
-                    requestId={data.request.id}
-                    decision={data.request.tenantBillbackDecision}
-                    amountCents={data.request.tenantBillbackAmountCents}
-                    reason={data.request.tenantBillbackReason}
-                  />
-                </div>
-              </div>
-              <BillingSummaryCards documents={data.billingDocuments} />
-              <BillingDocumentForm
-                requestId={data.request.id}
-                tenantEmail={data.request.submittedByEmail}
-                vendorEmail={data.request.assignedVendorEmail}
-                tenantBillbackDecision={data.request.tenantBillbackDecision}
-                tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
-                tenantBillbackReason={data.request.tenantBillbackReason}
-              />
-              <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
-              <BillingEventList documents={data.billingDocuments} />
-            </div>
-          </SectionCard>
         </div>
       </div>
+
+      <SectionCard kicker="Billing" title="Billing" subtitle="Create, send, and track request-related charges when money movement is needed.">
+        <div className="stack billingCompact" style={{ gap: 14 }}>
+          <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
+            <div className="kicker">Tenant responsibility</div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              Current: {data.request.tenantBillbackDecision ?? 'none'}
+              {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
+                ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
+                : ''}
+              {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <RequestBillbackForm
+                requestId={data.request.id}
+                decision={data.request.tenantBillbackDecision}
+                amountCents={data.request.tenantBillbackAmountCents}
+                reason={data.request.tenantBillbackReason}
+              />
+            </div>
+          </div>
+          <BillingSummaryCards documents={data.billingDocuments} />
+          <BillingDocumentForm
+            requestId={data.request.id}
+            tenantEmail={data.request.submittedByEmail}
+            vendorEmail={data.request.assignedVendorEmail}
+            tenantBillbackDecision={data.request.tenantBillbackDecision}
+            tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
+            tenantBillbackReason={data.request.tenantBillbackReason}
+          />
+          <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
+          <BillingEventList documents={data.billingDocuments} />
+        </div>
+      </SectionCard>
     </div>
   )
 }
