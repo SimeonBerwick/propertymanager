@@ -39,6 +39,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (pathname.startsWith('/product-screenshots/')) {
+    return response
+  }
+
   if (pathname.startsWith('/submit')) {
     return response
   }
