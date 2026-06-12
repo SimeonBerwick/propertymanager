@@ -10,6 +10,7 @@ import { isDatabaseAvailable } from '@/lib/db-status'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { BrandLogo } from '@/components/brand-logo'
+import { MenuBehavior } from '@/components/menu-behavior'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <body>
+        <MenuBehavior />
         <div className="page">
           {!dbAvailable && (
             <div
