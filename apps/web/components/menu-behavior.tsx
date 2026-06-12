@@ -28,7 +28,15 @@ export function MenuBehavior() {
 
     function handleClick(event: MouseEvent) {
       const target = event.target
-      if (target instanceof Element && target.closest('.navMenuPanel a, .actionMenuPanel a')) {
+      if (!(target instanceof Element)) return
+
+      const menu = target.closest<HTMLDetailsElement>(MENU_SELECTOR)
+      if (target.closest('summary') && menu) {
+        closeMenus(menu)
+        return
+      }
+
+      if (target.closest('.navMenuPanel a, .actionMenuPanel a')) {
         closeMenus()
       }
     }
