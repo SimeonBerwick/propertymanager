@@ -41,6 +41,7 @@ vi.mock('@/lib/notify', () => ({
   buildStatusChangedMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'status', text: 'status' }),
   buildVendorAssignedMessage: vi.fn().mockReturnValue({ to: 'vendor@example.com', subject: 'vendor', text: 'vendor' }),
   buildTenantQueueViewedMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'queue', text: 'queue' }),
+  buildTenantCommentMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'comment', text: 'comment' }),
 }))
 
 vi.mock('node:fs/promises', async () => {
