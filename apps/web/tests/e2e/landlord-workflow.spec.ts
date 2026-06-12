@@ -14,6 +14,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
 
+  await page.getByText('Portfolio', { exact: true }).click()
   await page.getByRole('link', { name: 'Properties' }).click()
   await expect(page).toHaveURL(/\/properties$/)
   await page.getByRole('link', { name: 'Add property' }).click()
