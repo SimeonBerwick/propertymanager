@@ -267,55 +267,57 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             />
           </SectionCard>
 
-          <SectionCard kicker="Photos" title="Issue intake photos">
-            {issuePhotos.length ? (
-              <div className="photo-grid">
-                {issuePhotos.map((photo) => (
-                  <MediaPhotoCard
-                    key={photo.id}
-                    href={`/api/landlord/media/${photo.id}`}
-                    src={`/api/landlord/media/${photo.id}`}
-                    alt="Maintenance issue photo"
-                  />
-                ))}
-              </div>
-            ) : <div className="muted">No issue intake photos uploaded.</div>}
-          </SectionCard>
-
-          <SectionCard kicker="Vendor evidence" title="Field photos">
-            {vendorPhotos.length ? (
-              <div className="photo-grid">
-                {vendorPhotos.map((photo) => (
-                  <MediaPhotoCard
-                    key={photo.id}
-                    href={`/api/landlord/media/${photo.id}`}
-                    src={`/api/landlord/media/${photo.id}`}
-                    alt="Vendor dispatch photo"
-                  />
-                ))}
-              </div>
-            ) : <div className="muted">No vendor photos yet.</div>}
-          </SectionCard>
-
-          <SectionCard kicker="Communication" title="Comments">
-            {data.comments.length ? data.comments.map((comment) => (
-              <div key={comment.id} className="commentRow">
-                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-                  <strong>{comment.authorName}</strong>
-                  <span className="badge" style={{ fontSize: 11, background: comment.visibility === 'internal' ? '#f0f4ff' : '#f0fff4', color: comment.visibility === 'internal' ? '#3b5bdb' : '#2b7a47' }}>
-                    {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
-                  </span>
-                </div>
-                <div>{comment.body}</div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
-              </div>
-            )) : <div className="muted">No comments.</div>}
-            <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
-              <AddCommentForm requestId={data.request.id} />
-            </div>
-          </SectionCard>
-
         </div>
+      </div>
+
+      <div className="grid cols-3 requestEvidenceGrid">
+        <SectionCard kicker="Photos" title="Issue intake photos">
+          {issuePhotos.length ? (
+            <div className="photo-grid">
+              {issuePhotos.map((photo) => (
+                <MediaPhotoCard
+                  key={photo.id}
+                  href={`/api/landlord/media/${photo.id}`}
+                  src={`/api/landlord/media/${photo.id}`}
+                  alt="Maintenance issue photo"
+                />
+              ))}
+            </div>
+          ) : <div className="muted">No issue intake photos uploaded.</div>}
+        </SectionCard>
+
+        <SectionCard kicker="Vendor evidence" title="Field photos">
+          {vendorPhotos.length ? (
+            <div className="photo-grid">
+              {vendorPhotos.map((photo) => (
+                <MediaPhotoCard
+                  key={photo.id}
+                  href={`/api/landlord/media/${photo.id}`}
+                  src={`/api/landlord/media/${photo.id}`}
+                  alt="Vendor dispatch photo"
+                />
+              ))}
+            </div>
+          ) : <div className="muted">No vendor photos yet.</div>}
+        </SectionCard>
+
+        <SectionCard kicker="Communication" title="Comments">
+          {data.comments.length ? data.comments.map((comment) => (
+            <div key={comment.id} className="commentRow">
+              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+                <strong>{comment.authorName}</strong>
+                <span className="badge" style={{ fontSize: 11, background: comment.visibility === 'internal' ? '#f0f4ff' : '#f0fff4', color: comment.visibility === 'internal' ? '#3b5bdb' : '#2b7a47' }}>
+                  {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
+                </span>
+              </div>
+              <div>{comment.body}</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
+            </div>
+          )) : <div className="muted">No comments.</div>}
+          <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
+            <AddCommentForm requestId={data.request.id} />
+          </div>
+        </SectionCard>
       </div>
 
       <SectionCard kicker="Billing" title="Billing" subtitle="Create, send, and track request-related charges when money movement is needed.">
