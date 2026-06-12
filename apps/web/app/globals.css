@@ -116,7 +116,7 @@ body { min-height: 100vh; }
   fill: none;
   stroke: #0b2f66;
   stroke-linecap: round;
-  stroke-width: 3;
+  stroke-width: 2.5;
 }
 .brandLogoArrowHead { fill: #0b2f66; }
 .nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -378,10 +378,15 @@ body { min-height: 100vh; }
 .signalAccent { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
 .requestDetailGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(520px, 1.05fr);
   gap: 18px;
   align-items: start;
 }
+.requestDetailGrid > .stack { min-width: 0; }
+.reportsHero { display: grid; gap: 6px; }
+.reportMetricGrid { gap: 12px; }
+.reportMetricCard { min-height: 132px; display: grid; align-content: space-between; gap: 8px; }
+.reportMetricCard h2 { margin: 4px 0; font-size: clamp(26px, 3vw, 36px); }
 .signalSpotlightCard {
   border: 1px solid var(--border-strong);
   border-radius: 16px;
@@ -741,7 +746,27 @@ body { min-height: 100vh; }
 }
 
 @media (max-width: 640px) {
-  .brandLogo { width: 200px; }
+  .page { padding: 14px; }
+  .brandLogo { width: 220px; }
+  .header { gap: 14px; margin-bottom: 22px; }
+  .card { padding: 16px; border-radius: 16px; }
+  .pageTitle { font-size: 34px; }
+  .sectionTitle { font-size: 24px; }
+  .kicker { font-size: 12px; }
+  .muted { font-size: 15px; line-height: 1.55; }
+  .button, .input, select, textarea { font-size: 15px; }
+  .button { min-height: 42px; }
+  .badge { font-size: 11px; line-height: 1.25; }
+  .requestQueueTitle { font-size: 18px; }
+  .requestQueueMain { gap: 16px; }
+  .inboxRow { padding: 16px; gap: 16px; }
+  .requestQueueAside { gap: 12px; }
+  .filterChip { min-height: 40px; display: inline-flex; align-items: center; font-size: 13px; }
+  .productScreenshotFrame { aspect-ratio: 1.2 / 1; }
+  .productScreenshotCard figcaption { padding: 18px; }
+  .productScreenshotCard figcaption strong { font-size: 20px; }
+  .productScreenshotCard figcaption span { font-size: 16px; }
+  .reportMetricCard { min-height: 112px; }
   .nav a:not(.button),
   .nav .button,
   .navMenu summary,
