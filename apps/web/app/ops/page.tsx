@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getOpsActivity, hasOlderOpsActivity } from '@/lib/ops-activity'
-import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { OpsActivityFeed } from '@/components/ops-activity-feed'
 import { OpsCsvPanel } from '@/components/ops-csv-panel'
 import { prisma } from '@/lib/prisma'
@@ -32,52 +31,12 @@ export default async function OpsPage({
     }),
   ])
 
-  const checks = getRuntimeChecks()
-  const blockingFailures = checks.filter((check) => check.blocking && !check.ok)
-
   return (
     <div className="stack">
       <OpsCsvPanel
         dailyExportEnabled={csvPreference?.dailyCsvExportEnabled ?? false}
         dailyExportLastSentAt={csvPreference?.dailyCsvExportLastSentAt?.toISOString()}
       />
-
-      <section className="card stack">
-        <div>
-          <div className="kicker">Readiness</div>
-          <h3 style={{ marginTop: 4 }}>Runtime checks</h3>
-        </div>
-        <div className="muted">
-          Mode: {isHostedRuntimeEnforced() ? 'hosted production enforcement' : 'local/dev advisory only'}
-        </div>
-        {blockingFailures.length ? (
-          <div className="badge overdue" style={{ width: 'fit-content' }}>
-            Blocking hosted failures: {blockingFailures.length}
-          </div>
-        ) : (
-          <div className="badge done" style={{ width: 'fit-content' }}>
-            No blocking hosted failures detected
-          </div>
-        )}
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Check</th>
-              <th>Status</th>
-              <th>Detail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {checks.map((check) => (
-              <tr key={check.label}>
-                <td>{check.label}</td>
-                <td>{check.ok ? 'OK' : check.blocking ? 'BLOCKED' : 'Advisory'}</td>
-                <td className="muted">{check.detail}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
 
       <section className="card stack">
         <div>
