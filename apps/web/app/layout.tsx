@@ -13,6 +13,7 @@ import { BrandLogo } from '@/components/brand-logo'
 import { MenuBehavior } from '@/components/menu-behavior'
 import { CommandPalette } from '@/components/command-palette'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
+import { ManagerMobileNav } from '@/components/manager-mobile-nav'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -114,6 +115,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <Link href="/support">Support</Link>
             <Link href="/account-deletion">Account deletion</Link>
           </footer>
+          {session.isLoggedIn ? <ManagerMobileNav /> : null}
         </div>
       </body>
     </html>

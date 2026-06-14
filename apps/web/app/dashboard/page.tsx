@@ -12,6 +12,8 @@ import { RequestQueueList } from './request-queue-list'
 import { DashboardViewControls } from '@/components/dashboard-view-controls'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
 import { NeedsAttentionList } from '@/components/needs-attention-list'
+import { getOnboardingChecklist } from '@/lib/onboarding'
+import { OnboardingChecklist } from '@/components/onboarding-checklist'
 
 export default async function DashboardPage({
   searchParams,
@@ -20,7 +22,7 @@ export default async function DashboardPage({
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
-  const data = await getDashboardData(session.userId)
+  const [data, onboardingItems] = await Promise.all([getDashboardData(session.userId), getOnboardingChecklist(session.userId)])
   const params = searchParams ? await searchParams : undefined
   const selectedCity = params?.city ?? 'all'
   const selectedLanguage = params?.language ?? 'all'
@@ -112,6 +114,8 @@ export default async function DashboardPage({
           </div>
         </div>
       </section>
+
+      <OnboardingChecklist items={onboardingItems} />
 
       <SectionCard
         kicker="Focus"
