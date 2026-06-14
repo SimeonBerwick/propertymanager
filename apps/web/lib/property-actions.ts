@@ -74,6 +74,7 @@ export async function createPropertyAction(
   try {
     const property = await prisma.property.create({ data: { name, address, ownerId } })
     propertyId = property.id
+    await prisma.productEvent.create({ data: { orgId: ownerId, eventName: 'property_created', metadataJson: JSON.stringify({ propertyId: property.id }) } }).catch(() => null)
     await writeAuditLog({
       orgId: ownerId,
       actorUserId: ownerId,

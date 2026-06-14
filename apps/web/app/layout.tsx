@@ -12,6 +12,7 @@ import { PushNotificationControl } from '@/components/push-notification-control'
 import { BrandLogo } from '@/components/brand-logo'
 import { MenuBehavior } from '@/components/menu-behavior'
 import { CommandPalette } from '@/components/command-palette'
+import { AnalyticsTracker } from '@/components/analytics-tracker'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -36,6 +37,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <body>
         <MenuBehavior />
+        <AnalyticsTracker />
         <div className="page">
           {!dbAvailable && (
             <div
@@ -74,6 +76,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     <div className="navMenuPanel">
                       <Link href="/access">Team access</Link>
                       <Link href="/ops">Data &amp; activity</Link>
+                      <Link href="/workflows">Workflows</Link>
                       <Link href={'/account/settings' as Route}>Account settings</Link>
                       <Link href="/support">Support</Link>
                     </div>

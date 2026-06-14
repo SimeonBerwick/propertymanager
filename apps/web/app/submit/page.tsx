@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getAllUnits, getProperties } from '@/lib/data'
 import { prisma } from '@/lib/prisma'
 import { SubmitRequestForm } from './submit-request-form'
+import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
 
 export default async function SubmitPage({
   searchParams,
@@ -31,6 +32,7 @@ export default async function SubmitPage({
   if (submitted) {
     return (
       <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
+        <IntakeDraftCleanup />
         <section className="card stack">
           <div>
             <div className="kicker">Submit a request</div>

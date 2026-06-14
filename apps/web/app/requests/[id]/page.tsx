@@ -19,6 +19,7 @@ import { AddCommentForm } from './add-comment-form'
 import { vendorCommercialStatusLabel, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
+import { InlineRequestEditor } from './inline-request-editor'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -83,6 +84,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <span className="muted">Submitted {new Date(data.request.createdAt).toLocaleString()}</span>
           </div>
           <RequestSignalStrip request={data.request} />
+          <InlineRequestEditor request={data.request} />
         </div>
       </section>
 

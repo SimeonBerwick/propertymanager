@@ -172,6 +172,7 @@ export async function submitMaintenanceRequest(
     })
 
     createdRequestId = request.id
+    await prisma.productEvent.create({ data: { orgId: notificationOwner?.id, eventName: 'request_submitted', metadataJson: JSON.stringify({ requestId: request.id, category }) } }).catch(() => null)
   } catch {
     await cleanupPhotos(savedPhotoPaths)
     return { error: 'Could not submit your request. Please try again or contact the property manager directly.' }

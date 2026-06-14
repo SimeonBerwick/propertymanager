@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { getAllUnits, getLandlordBySlug, getProperties } from '@/lib/data'
 import { SubmitRequestForm } from '../submit-request-form'
+import { prisma } from '@/lib/prisma'
+import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
 
 export default async function ScopedSubmitPage({
   params,
@@ -18,6 +20,7 @@ export default async function ScopedSubmitPage({
   if (submitted) {
     return (
       <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
+        <IntakeDraftCleanup orgSlug={orgSlug} />
         <section className="card stack">
           <div>
             <div className="kicker">Submit a request</div>
@@ -34,9 +37,10 @@ export default async function ScopedSubmitPage({
     )
   }
 
-  const [properties, units] = await Promise.all([
+  const [properties, units, templates] = await Promise.all([
     getProperties(undefined, orgSlug),
     getAllUnits(undefined, orgSlug),
+    prisma.requestTemplate.findMany({ where: { orgId: landlord.id }, orderBy: { name: 'asc' } }).catch(() => []),
   ])
 
   return (
@@ -53,7 +57,7 @@ export default async function ScopedSubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} />
+        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} templates={templates} />
       </section>
     </div>
   )

@@ -833,3 +833,44 @@ model AuditLog {
   @@index([entityType, entityId, createdAt])
   @@index([actorUserId, createdAt])
 }
+
+model AutomationRule {
+  id             String   @id @default(cuid())
+  orgId          String
+  name           String
+  enabled        Boolean  @default(true)
+  conditionField String
+  conditionValue String
+  actionType     String
+  actionValue    String
+  runCount       Int      @default(0)
+  lastRunAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orgId, enabled])
+}
+
+model RequestTemplate {
+  id          String   @id @default(cuid())
+  orgId       String
+  name        String
+  title       String
+  description String
+  category    String
+  urgency     Urgency  @default(medium)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, name])
+}
+
+model ProductEvent {
+  id           String   @id @default(cuid())
+  orgId        String?
+  eventName    String
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([orgId, eventName, createdAt])
+}
