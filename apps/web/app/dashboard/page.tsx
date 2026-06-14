@@ -9,6 +9,7 @@ import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-utils'
 import { RequestQueueList } from './request-queue-list'
+import { DashboardViewControls } from '@/components/dashboard-view-controls'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
 
 export default async function DashboardPage({
@@ -174,6 +175,7 @@ export default async function DashboardPage({
           </label>
           <button type="submit" className="button">Filter</button>
         </form>
+        <DashboardViewControls />
 
         <div className="filterChipRow">
           <Link href="/dashboard" className="filterChip" style={selectedQueue === 'all' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>All</Link>

@@ -26,6 +26,7 @@ export function RequestQueueList({
   selectedSort: 'newest' | 'oldest'
 }) {
   const [dismissedIds, setDismissedIds] = useState<string[]>([])
+  const [lastDismissedId, setLastDismissedId] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -44,6 +45,7 @@ export function RequestQueueList({
   )
 
   function dismissRequest(id: string) {
+    setLastDismissedId(id)
     setDismissedIds((current) => {
       const next = Array.from(new Set([...current, id]))
       try {
@@ -55,8 +57,39 @@ export function RequestQueueList({
     })
   }
 
+  function undoDismiss() {
+    if (!lastDismissedId) return
+    setDismissedIds((current) => {
+      const next = current.filter((id) => id !== lastDismissedId)
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // Ignore storage failures.
+      }
+      return next
+    })
+    setLastDismissedId(null)
+  }
+
   if (visibleRequests.length === 0) {
-    return <div className="notice">No maintenance requests match the current filters or queue drill-down.</div>
+    return (
+      <>
+        <div className="emptyState">
+          <strong>Your queue is clear</strong>
+          <span>No maintenance requests match this view. Clear filters or share the request form to get started.</span>
+          <div className="row" style={{ justifyContent: 'center' }}>
+            <Link href="/dashboard" className="button">Clear filters</Link>
+            <Link href="/submit" className="button primary">Share request form</Link>
+          </div>
+        </div>
+        {lastDismissedId ? (
+          <div className="undoToast" role="status">
+            Removed from this queue view.
+            <button type="button" onClick={undoDismiss}>Undo</button>
+          </div>
+        ) : null}
+      </>
+    )
   }
 
   return (
@@ -95,6 +128,12 @@ export function RequestQueueList({
       <div className="muted" style={{ fontSize: 12 }}>
         Queue order: {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
       </div>
+      {lastDismissedId ? (
+        <div className="undoToast" role="status">
+          Removed from this queue view.
+          <button type="button" onClick={undoDismiss}>Undo</button>
+        </div>
+      ) : null}
     </div>
   )
 }

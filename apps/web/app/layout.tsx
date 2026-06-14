@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { BrandLogo } from '@/components/brand-logo'
 import { MenuBehavior } from '@/components/menu-behavior'
+import { CommandPalette } from '@/components/command-palette'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -58,6 +59,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               {session.isLoggedIn && (
                 <>
                   <Link href="/dashboard">Dashboard</Link>
+                  <CommandPalette />
+                  <Link href="/ops">Activity</Link>
                   <details className="navMenu">
                     <summary>Portfolio</summary>
                     <div className="navMenuPanel">
