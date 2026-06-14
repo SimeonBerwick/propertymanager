@@ -1,5 +1,30 @@
 import { prisma } from '@/lib/prisma'
 import { buildLandlordExceptionSummaryMessage, sendNotification } from '@/lib/notify'
+import { ruleMatches } from '@/lib/workflow-rules'
+
+async function applyConfigurableRules(request: Record<string, unknown> & { id: string, property: { ownerId: string } }) {
+  const rules = await prisma.automationRule.findMany({
+    where: { orgId: request.property.ownerId, enabled: true },
+    orderBy: { createdAt: 'asc' },
+  }).catch(() => [])
+
+  for (const rule of rules) {
+    if (!ruleMatches(request, rule.conditionField, rule.conditionValue)) continue
+    const data: Record<string, unknown> = {}
+    if (rule.actionType === 'set_sla_bucket' && request.slaBucket !== rule.actionValue) data.slaBucket = rule.actionValue
+    if (rule.actionType === 'set_review_state' && request.reviewState !== rule.actionValue) data.reviewState = rule.actionValue
+    if (rule.actionType === 'add_triage_tag') {
+      const tags = String(request.triageTagsCsv ?? '').split(',').map((tag) => tag.trim()).filter(Boolean)
+      if (!tags.includes(rule.actionValue)) data.triageTagsCsv = [...tags, rule.actionValue].join(',')
+    }
+    if (!Object.keys(data).length) continue
+
+    await prisma.$transaction([
+      prisma.maintenanceRequest.update({ where: { id: request.id }, data }),
+      prisma.automationRule.update({ where: { id: rule.id }, data: { runCount: { increment: 1 }, lastRunAt: new Date() } }),
+    ]).catch(() => null)
+  }
+}
 
 export async function applyRequestAutomation(requestId: string) {
   const request = await prisma.maintenanceRequest.findUnique({
@@ -34,6 +59,8 @@ export async function applyRequestAutomation(requestId: string) {
       lastAutoAlertAt: shouldAlert ? now : request.lastAutoAlertAt,
     },
   }).catch(() => null)
+
+  await applyConfigurableRules({ ...request, autoFlag })
 
   const landlordEmail = request.property.owner.email
   if (!landlordEmail || !shouldAlert || !autoFlag || request.property.owner.emailNotificationsEnabled === false) return

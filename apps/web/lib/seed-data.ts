@@ -79,7 +79,7 @@ export const requests: MaintenanceRequest[] = [
     unitId: 'unit-2a',
     submittedByName: 'Maria Soto',
     submittedByEmail: 'maria@example.com',
-    preferredCurrency: 'euro',
+    preferredCurrency: 'usd',
     preferredLanguage: 'english',
     title: 'Bathroom faucet slow drip - hot side',
     description: 'Hot water faucet in the main bathroom drips constantly when off. Running up the water bill.',

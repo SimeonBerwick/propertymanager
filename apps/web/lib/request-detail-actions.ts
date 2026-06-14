@@ -13,6 +13,32 @@ import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
+export async function updateRequestDetailsAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+  const requestId = String(formData.get('requestId') ?? '')
+  const title = String(formData.get('title') ?? '').trim()
+  const description = String(formData.get('description') ?? '').trim()
+  const category = String(formData.get('category') ?? '').trim()
+  const urgency = String(formData.get('urgency') ?? '').trim()
+  if (!title || !description || !category || !urgency) return { error: 'Complete every request detail.' }
+  if (title.length > 200 || description.length > 2000) return { error: 'Request details are too long.' }
+  if (!['low', 'medium', 'high', 'urgent'].includes(urgency)) return { error: 'Invalid urgency.' }
+
+  const updated = await prisma.maintenanceRequest.updateMany({
+    where: { id: requestId, property: { ownerId: session.userId } },
+    data: { title, description, category, urgency: urgency as 'low' | 'medium' | 'high' | 'urgent' },
+  }).catch(() => ({ count: 0 }))
+  if (!updated.count) return { error: 'Request not found or could not be updated.' }
+  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'request', entityId: requestId, action: 'request.detailsUpdated', summary: `Updated request details for ${title}.`, metadata: { category, urgency } })
+  revalidatePath(`/requests/${requestId}`)
+  revalidatePath('/dashboard')
+  return { error: null, success: true, message: 'Request details saved.' }
+}
+
 function parseVendorIds(formData: FormData): string[] {
   return formData
     .getAll('vendorIds')

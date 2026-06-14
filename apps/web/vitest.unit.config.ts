@@ -6,6 +6,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['lib/daily-csv-export.test.ts', 'lib/billing-plans.test.ts'],
+    include: ['lib/daily-csv-export.test.ts', 'lib/billing-plans.test.ts', 'lib/workflow-rules.test.ts'],
   },
 })

@@ -121,6 +121,29 @@ body { min-height: 100vh; }
 .brandLogoArrowHead { fill: #0b2f66; }
 .nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .nav a, .nav .button { white-space: nowrap; }
+.commandTrigger {
+  border: 1px solid var(--border);
+  background: var(--chip);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.commandTrigger span { margin-left: 8px; font-size: 11px; opacity: 0.75; }
+.commandBackdrop { position: fixed; inset: 0; z-index: 100; padding: 10vh 18px 18px; background: rgba(2, 6, 23, 0.62); backdrop-filter: blur(5px); }
+.commandPalette { width: min(680px, 100%); max-height: 72vh; margin: 0 auto; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 28px 80px rgba(2, 6, 23, 0.45); }
+.commandInputRow { display: flex; gap: 10px; padding: 14px; border-bottom: 1px solid var(--border); }
+.commandInput { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 17px; }
+.commandResults { display: grid; gap: 4px; padding: 8px; overflow: auto; max-height: calc(72vh - 70px); }
+.commandResult { display: grid; grid-template-columns: 74px 1fr; gap: 10px; width: 100%; padding: 11px; border: 0; border-radius: 11px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.commandResult:hover, .commandResult:focus { outline: none; background: var(--accent-soft); }
+.commandResultType { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+.commandResult small { display: block; margin-top: 3px; color: var(--muted); }
+.commandHint, .commandEmpty { padding: 18px; color: var(--muted); }
+.commandEmpty { display: grid; gap: 5px; text-align: center; }
+.commandEmpty strong { color: var(--text); }
 .navMenu, .actionMenu { position: relative; }
 .navMenu[open], .actionMenu[open] { z-index: 30; }
 .navMenu summary, .actionMenu summary {
@@ -475,6 +498,15 @@ body { min-height: 100vh; }
 }
 .filtersRow { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .filterChipRow { display: flex; gap: 10px; flex-wrap: wrap; }
+.savedViews { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.savedViewItem { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: var(--chip); }
+.savedViewItem .filterChip { border: 0; background: transparent; cursor: pointer; }
+.savedViewRemove { border: 0; border-left: 1px solid var(--border); background: transparent; color: var(--muted); padding: 7px 9px; cursor: pointer; }
+.emptyState { display: grid; gap: 10px; place-items: center; padding: 32px 18px; border: 1px dashed var(--border-strong); border-radius: 14px; color: var(--muted); text-align: center; }
+.emptyState strong { color: var(--text); font-size: 18px; }
+.workflowRow { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
+.undoToast { position: fixed; z-index: 80; right: 22px; bottom: 22px; display: flex; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--card-strong); box-shadow: var(--shadow); }
+.undoToast button { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
 .filterChip {
   padding: 10px 12px;
   border-radius: 999px;
