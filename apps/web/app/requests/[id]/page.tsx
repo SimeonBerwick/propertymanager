@@ -20,6 +20,7 @@ import { vendorCommercialStatusLabel, vendorCommercialTypeLabel } from '@/lib/ve
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
+import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -88,11 +89,23 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
-      <SectionCard
-        kicker="Tender"
-        title="Tender and reply signal"
-        subtitle="This is where vendor decisions and incoming replies should stand out first."
-      >
+      <GuidedRequestWorkflow request={data.request} />
+
+      <nav className="requestSectionNav" aria-label="Request sections">
+        <a href="#summary">Summary</a>
+        <a href="#actions">Next action</a>
+        <a href="#timeline">Timeline</a>
+        <a href="#billing">Billing</a>
+        <a href="#advanced">More details</a>
+      </nav>
+
+      <details className="advancedDisclosure" id="advanced">
+        <summary>Vendor replies and tender details</summary>
+        <SectionCard
+          kicker="Tender"
+          title="Tender and reply signal"
+          subtitle="Vendor decisions, bids, and incoming replies."
+        >
         <div className="stack" style={{ gap: 16 }}>
           <div className="grid cols-3">
             <div className="signalSpotlightCard">
@@ -191,11 +204,13 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           )) : <div className="muted">No tenders yet.</div>}
         </div>
-      </SectionCard>
+        </SectionCard>
+      </details>
 
       <div className="requestDetailGrid">
         <div className="stack">
-          <SectionCard kicker="Summary" title="Decision context" subtitle="What matters before you act.">
+          <div id="summary">
+          <SectionCard kicker="Summary" title="Request summary" subtitle="The essential context for this request.">
             <div className="stack" style={{ gap: 14 }}>
               <div>
                 <strong>Description</strong>
@@ -219,8 +234,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               ) : null}
             </div>
           </SectionCard>
+          </div>
 
-          <SectionCard kicker="Dispatch" title="Vendor execution" subtitle="Field activity so far.">
+          <div id="timeline">
+          <SectionCard kicker="Timeline" title="Vendor activity" subtitle="Field activity and progress so far.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>
@@ -237,6 +254,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
             )) : <div className="muted">No dispatch activity.</div>}
           </SectionCard>
+          </div>
 
           <SectionCard kicker="Commercial" title="Vendor submissions" subtitle="Bid, fee, overcost, and PM billing items sent from the vendor portal.">
             {data.vendorCommercialItems.length ? data.vendorCommercialItems.map((item) => (
@@ -261,13 +279,15 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="stack">
-          <SectionCard kicker="Control" title="Actions" subtitle="Dispatch work, move status, and award bids.">
+          <div id="actions">
+          <SectionCard kicker="Next action" title="Move this request forward" subtitle="Use the recommended action above, then complete the supporting details here.">
             <RequestControlPanel
               request={data.request}
               vendors={data.availableVendors}
               tenders={data.tenders}
             />
           </SectionCard>
+          </div>
 
         </div>
       </div>
@@ -322,6 +342,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </SectionCard>
       </div>
 
+      <div id="billing">
       <SectionCard kicker="Billing" title="Billing" subtitle="Create, send, and track request-related charges when money movement is needed.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
@@ -355,6 +376,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <BillingEventList documents={data.billingDocuments} />
         </div>
       </SectionCard>
+      </div>
     </div>
   )
 }

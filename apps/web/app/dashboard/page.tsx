@@ -11,6 +11,7 @@ import { formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-ut
 import { RequestQueueList } from './request-queue-list'
 import { DashboardViewControls } from '@/components/dashboard-view-controls'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
+import { NeedsAttentionList } from '@/components/needs-attention-list'
 
 export default async function DashboardPage({
   searchParams,
@@ -111,6 +112,15 @@ export default async function DashboardPage({
           </div>
         </div>
       </section>
+
+      <SectionCard
+        kicker="Focus"
+        title="What needs attention"
+        subtitle="Your highest-pressure requests, each with the recommended next action."
+        action={<Link href="/exceptions" className="button">View all exceptions</Link>}
+      >
+        <NeedsAttentionList requests={data.requestRows} />
+      </SectionCard>
 
       {data.mailboxConnections.length ? (
         <section className="card mailboxPanel">
