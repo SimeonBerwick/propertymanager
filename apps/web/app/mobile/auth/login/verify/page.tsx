@@ -1,11 +1,13 @@
 import { ReturningLoginVerifyForm } from './form'
+import { resendReturningLoginAction } from './actions'
+import { ResendCodeForm } from '@/components/resend-code-form'
 
 export default async function ReturningLoginVerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ challengeId?: string; masked?: string; devCode?: string; next?: string }>
+  searchParams: Promise<{ challengeId?: string; masked?: string; devCode?: string; next?: string; resent?: string }>
 }) {
-  const { challengeId, masked, devCode, next } = await searchParams
+  const { challengeId, masked, devCode, next, resent } = await searchParams
 
   if (!challengeId) {
     return (
@@ -26,6 +28,7 @@ export default async function ReturningLoginVerifyPage({
         <h2 style={{ marginTop: 4 }}>Enter code</h2>
       </div>
       <div className="muted">We sent a secure sign-in link and one-time code to {masked ?? 'your contact method'}. They expire after 10 minutes.</div>
+      {resent === '1' ? <div className="notice success">A new secure link and code were sent.</div> : null}
       {devCode && process.env.NODE_ENV !== 'production' && (
         <div
           className="notice"
@@ -44,6 +47,7 @@ export default async function ReturningLoginVerifyPage({
         </div>
       )}
       <ReturningLoginVerifyForm challengeId={challengeId} next={next} />
+      <ResendCodeForm action={resendReturningLoginAction} challengeId={challengeId} next={next} />
       <div className="muted" style={{ fontSize: '0.875rem' }}>
         <a href="/mobile/auth/login">Use a different email</a>
       </div>

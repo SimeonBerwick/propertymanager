@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createVendorSession } from '@/lib/vendor-session'
-import { verifyVendorOtpChallenge } from '@/lib/vendor-otp-lib'
+import { createVendorOtpChallenge, VendorOtpRateLimitError, verifyVendorOtpChallenge } from '@/lib/vendor-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
 
@@ -42,4 +42,25 @@ export async function verifyVendorLoginAction(
     metadata: { challengeId },
   })
   redirect((next.startsWith('/') ? next : '/vendor') as never)
+}
+
+export async function resendVendorLoginAction(formData: FormData) {
+  const challengeId = String(formData.get('challengeId') ?? '')
+  const next = String(formData.get('next') ?? '').trim()
+  const challenge = await prisma.vendorOtpChallenge.findUnique({
+    where: { id: challengeId },
+    select: { vendorId: true, channel: true, purpose: true },
+  })
+  if (!challenge || challenge.purpose !== 'returning_login') redirect('/vendor/auth/login' as never)
+
+  try {
+    const otp = await createVendorOtpChallenge(challenge.vendorId, 'returning_login', challenge.channel, { next })
+    const params = new URLSearchParams({ challengeId: otp.challengeId, masked: otp.destinationMasked, resent: '1' })
+    if (next.startsWith('/vendor')) params.set('next', next)
+    if (process.env.NODE_ENV !== 'production') params.set('devCode', otp.code)
+    redirect(`/vendor/auth/login/verify?${params.toString()}` as never)
+  } catch (error) {
+    if (error instanceof VendorOtpRateLimitError) redirect('/vendor/auth/login?error=rate-limit' as never)
+    throw error
+  }
 }

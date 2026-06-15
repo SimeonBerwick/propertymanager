@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
-import { verifyOtpChallenge } from '@/lib/tenant-otp-lib'
+import { createOtpChallenge, OtpRateLimitError, verifyOtpChallenge } from '@/lib/tenant-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
 
@@ -42,4 +42,25 @@ export async function verifyReturningLoginAction(
     metadata: { challengeId },
   })
   redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
+}
+
+export async function resendReturningLoginAction(formData: FormData) {
+  const challengeId = String(formData.get('challengeId') ?? '')
+  const next = String(formData.get('next') ?? '').trim()
+  const challenge = await prisma.tenantOtpChallenge.findUnique({
+    where: { id: challengeId },
+    select: { tenantIdentityId: true, channel: true, purpose: true },
+  })
+  if (!challenge || challenge.purpose !== 'returning_login') redirect('/mobile/auth/login' as never)
+
+  try {
+    const otp = await createOtpChallenge(challenge.tenantIdentityId, 'returning_login', challenge.channel, { next })
+    const params = new URLSearchParams({ challengeId: otp.challengeId, masked: otp.destinationMasked, resent: '1' })
+    if (next.startsWith('/mobile')) params.set('next', next)
+    if (process.env.NODE_ENV !== 'production') params.set('devCode', otp.code)
+    redirect(`/mobile/auth/login/verify?${params.toString()}` as never)
+  } catch (error) {
+    if (error instanceof OtpRateLimitError) redirect('/mobile/auth/login?error=rate-limit' as never)
+    throw error
+  }
 }
