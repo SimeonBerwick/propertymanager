@@ -11,9 +11,9 @@ import { formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-ut
 import { RequestQueueList } from './request-queue-list'
 import { DashboardViewControls } from '@/components/dashboard-view-controls'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
-import { NeedsAttentionList } from '@/components/needs-attention-list'
 import { getOnboardingChecklist } from '@/lib/onboarding'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
+import { TodayOverview } from '@/components/today-overview'
 
 export default async function DashboardPage({
   searchParams,
@@ -67,6 +67,8 @@ export default async function DashboardPage({
 
   return (
     <div className="stack">
+      <TodayOverview requests={data.requestRows} now={now} />
+
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
@@ -116,15 +118,6 @@ export default async function DashboardPage({
       </section>
 
       <OnboardingChecklist items={onboardingItems} />
-
-      <SectionCard
-        kicker="Focus"
-        title="What needs attention"
-        subtitle="Your highest-pressure requests, each with the recommended next action."
-        action={<Link href="/exceptions" className="button">View all exceptions</Link>}
-      >
-        <NeedsAttentionList requests={data.requestRows} />
-      </SectionCard>
 
       {data.mailboxConnections.length ? (
         <section className="card mailboxPanel">
@@ -199,6 +192,8 @@ export default async function DashboardPage({
           <Link href="/dashboard?queue=completed" className="filterChip" style={selectedQueue === 'completed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Completed</Link>
           <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
           <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Unclaimed</Link>
+          <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
+          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue</Link>
         </div>
 
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
