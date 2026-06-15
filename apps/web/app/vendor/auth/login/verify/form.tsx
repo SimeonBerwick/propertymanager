@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { verifyVendorLoginAction, type VendorVerifyState } from './actions'
+import { OtpCodeField } from '@/components/otp-code-field'
 
 const INITIAL_STATE: VendorVerifyState = { error: null }
 
@@ -13,10 +14,7 @@ export function VendorLoginVerifyForm({ challengeId, next }: { challengeId: stri
       <input type="hidden" name="challengeId" value={challengeId} />
       <input type="hidden" name="next" value={next ?? ''} />
       {state.error && <div className="notice error">{state.error}</div>}
-      <label className="field">
-        <span className="field-label">Verification code</span>
-        <input className="input" type="text" name="code" inputMode="numeric" maxLength={6} placeholder="123456" required />
-      </label>
+      <OtpCodeField />
       <button type="submit" className="button primary" disabled={isPending}>
         {isPending ? 'Verifying…' : 'Verify and sign in'}
       </button>

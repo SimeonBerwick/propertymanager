@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
-import { getTenantDeliveryAdapter } from '@/lib/tenant-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
 import { takeRateLimitHit } from '@/lib/rate-limit'
 import { isTenantIdentityActiveOn } from '@/lib/tenant-occupancy'
 import { getReviewerOtpCode } from '@/lib/reviewer-access'
+import { getAppBaseUrl } from '@/lib/runtime-env'
+import { sendPortalAuthChallenge, type AuthDeliveryChannel } from '@/lib/portal-auth-delivery'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -46,7 +47,8 @@ function maskDestination(value: string) {
 export async function createOtpChallenge(
   tenantIdentityId: string,
   purpose: 'invite_login' | 'returning_login',
-  channel: 'email',
+  channel: AuthDeliveryChannel,
+  context: { next?: string; inviteId?: string } = {},
 ) {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({
     where: { id: tenantIdentityId },
@@ -65,12 +67,14 @@ export async function createOtpChallenge(
     throw new Error('Tenant access is outside the active lease window.')
   }
 
-  const destination = tenantIdentity.unit.tenantEmail?.trim().toLowerCase() || (tenantIdentity.email ?? '')
+  const destination = channel === 'sms'
+    ? tenantIdentity.phoneE164
+    : tenantIdentity.unit.tenantEmail?.trim().toLowerCase() || (tenantIdentity.email ?? '')
   if (!destination) {
-    throw new Error('Tenant identity is missing a delivery email.')
+    throw new Error(`Tenant identity is missing a delivery ${channel === 'sms' ? 'phone number' : 'email'}.`)
   }
 
-  if (tenantIdentity.email !== destination) {
+  if (channel === 'email' && tenantIdentity.email !== destination) {
     await prisma.tenantIdentity.update({
       where: { id: tenantIdentity.id },
       data: { email: destination },
@@ -111,10 +115,16 @@ export async function createOtpChallenge(
   })
 
   if (!reviewerCode) {
-    await getTenantDeliveryAdapter().sendOtp({
+    const params = new URLSearchParams({ challengeId: challenge.id, code })
+    if (context.next?.startsWith('/')) params.set('next', context.next)
+    if (context.inviteId) params.set('inviteId', context.inviteId)
+    await sendPortalAuthChallenge({
+      role: 'tenant',
+      channel,
       to: destination,
       code,
-      tenantName: tenantIdentity.tenantName,
+      recipientName: tenantIdentity.tenantName,
+      magicLink: `${getAppBaseUrl('tenant magic sign-in links')}/mobile/auth/login/magic?${params.toString()}`,
     })
   }
 

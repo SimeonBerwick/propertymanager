@@ -9,7 +9,7 @@
  *      - non-active (inactive) identity → invalid
  *      - multiple matches → ambiguous
  *      - empty identifier → invalid
- *      - phone input rejected in email-only V1
+ *      - phone input finds an active identity
  *  - getTenantOwnedPhotoById:
  *      - tenant can access their own photo
  *      - tenant CANNOT access another tenant's photo (unit scoping)
@@ -152,9 +152,10 @@ describe('findReturningTenantIdentityByIdentifier', () => {
     expect(result).toEqual({ ok: false, code: 'invalid' })
   })
 
-  test('returns invalid for phone input because V1 is email-only', async () => {
-    const result = await findReturningTenantIdentityByIdentifier('+16025551212')
-    expect(result).toEqual({ ok: false, code: 'invalid' })
+  test('finds an active tenant by phone input', async () => {
+    const { identity } = await scaffoldTenant()
+    const result = await findReturningTenantIdentityByIdentifier(identity.phoneE164)
+    expect(result).toMatchObject({ ok: true, tenantIdentity: { id: identity.id } })
   })
 })
 

@@ -1,9 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
-import { getVendorDeliveryAdapter } from '@/lib/vendor-delivery'
 import { writeAuditLog } from '@/lib/audit-log'
 import { takeRateLimitHit } from '@/lib/rate-limit'
 import { getReviewerOtpCode } from '@/lib/reviewer-access'
+import { getAppBaseUrl } from '@/lib/runtime-env'
+import { sendPortalAuthChallenge, type AuthDeliveryChannel } from '@/lib/portal-auth-delivery'
+import { normalizePhoneToE164 } from '@/lib/phone'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -27,6 +29,7 @@ function makeCode() {
 }
 
 function maskDestination(value: string) {
+  if (!value.includes('@')) return `***${value.slice(-4)}`
   const [name, domain] = value.split('@')
   return `${name.slice(0, 2)}***@${domain}`
 }
@@ -41,19 +44,20 @@ export class VendorOtpRateLimitError extends Error {
 export async function createVendorOtpChallenge(
   vendorId: string,
   purpose: 'returning_login' | 'dispatch_link_login',
-  channel: 'email',
+  channel: AuthDeliveryChannel,
+  context: { next?: string } = {},
 ) {
   const vendor = await prisma.vendor.findUnique({
     where: { id: vendorId },
-    select: { id: true, orgId: true, name: true, email: true, isActive: true },
+    select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true },
   })
 
-  if (!vendor || !vendor.isActive || !vendor.email) {
-    throw new Error('Vendor is not eligible for email login.')
+  const destination = channel === 'sms' ? normalizePhoneToE164(vendor?.phone ?? '') : vendor?.email?.trim().toLowerCase()
+  if (!vendor || !vendor.isActive || !destination) {
+    throw new Error(`Vendor is not eligible for ${channel} login.`)
   }
 
-  const destination = vendor.email.trim().toLowerCase()
-  const reviewerCode = purpose === 'returning_login' ? getReviewerOtpCode('vendor', destination) : null
+  const reviewerCode = purpose === 'returning_login' && channel === 'email' ? getReviewerOtpCode('vendor', destination) : null
   if (!reviewerCode) {
     const issueLimit = await takeRateLimitHit(`vendor-otp-issue:${vendorId}:${purpose}:${channel}`, OTP_ISSUE_RATE_LIMIT)
     if (!issueLimit.ok) {
@@ -87,10 +91,15 @@ export async function createVendorOtpChallenge(
   })
 
   if (!reviewerCode) {
-    await getVendorDeliveryAdapter().sendOtp({
+    const params = new URLSearchParams({ challengeId: challenge.id, code })
+    if (context.next?.startsWith('/')) params.set('next', context.next)
+    await sendPortalAuthChallenge({
+      role: 'vendor',
+      channel,
       to: destination,
       code,
-      vendorName: vendor.name,
+      recipientName: vendor.name,
+      magicLink: `${getAppBaseUrl('vendor magic sign-in links')}/vendor/auth/login/magic?${params.toString()}`,
     })
   }
 
@@ -192,14 +201,18 @@ export async function verifyVendorOtpChallenge(challengeId: string, submittedCod
 
 export async function findReturningVendorByIdentifier(identifier: string) {
   const trimmed = identifier.trim().toLowerCase()
-  if (!trimmed || !trimmed.includes('@')) {
+  if (!trimmed) {
     return { ok: false as const, code: 'invalid' as const }
   }
 
   const matches = await prisma.vendor.findMany({
-    where: { email: trimmed, isActive: true },
-    select: { id: true, orgId: true, name: true, email: true },
-  })
+    where: trimmed.includes('@')
+      ? { email: trimmed, isActive: true }
+      : { phone: { not: null }, isActive: true },
+    select: { id: true, orgId: true, name: true, email: true, phone: true },
+  }).then((vendors) => trimmed.includes('@')
+    ? vendors
+    : vendors.filter((vendor) => normalizePhoneToE164(vendor.phone ?? '') === normalizePhoneToE164(trimmed)))
 
   if (matches.length > 1) {
     return { ok: false as const, code: 'ambiguous' as const }

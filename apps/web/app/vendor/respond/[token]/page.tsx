@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getVendorSession } from '@/lib/vendor-session'
 import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/vendor-dispatch-link'
+import { VendorResponseForm } from './form'
 
 export default async function VendorRespondPage({
   params,
@@ -20,10 +21,16 @@ export default async function VendorRespondPage({
     redirect(`/vendor/requests/${result.requestId}` as never)
   }
 
-  const paramsString = new URLSearchParams({
-    next: `/vendor/requests/${result.requestId}`,
-    email: result.vendorEmail ?? '',
-    context: 'dispatch-link',
-  })
-  redirect(`/vendor/auth/login?${paramsString.toString()}` as never)
+  await markVendorDispatchLinkUsed(result.linkId)
+  return (
+    <div className="card stack" style={{ maxWidth: 720, margin: '32px auto' }}>
+      <div>
+        <div className="kicker">Secure work-order link</div>
+        <h2 style={{ marginTop: 4 }}>{result.requestTitle}</h2>
+        <div className="muted">{result.propertyName} · {result.unitLabel}</div>
+      </div>
+      <div className="notice success">This link gives access only to this work order. No sign-in is required.</div>
+      <VendorResponseForm token={token} />
+    </div>
+  )
 }

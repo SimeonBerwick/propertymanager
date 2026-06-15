@@ -1,0 +1,1 @@
+ALTER TYPE "VendorOtpChannel" ADD VALUE IF NOT EXISTS 'sms';

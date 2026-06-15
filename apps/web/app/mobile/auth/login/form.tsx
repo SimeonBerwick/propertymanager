@@ -5,20 +5,21 @@ import { startReturningLoginAction, type ReturningLoginState } from './actions'
 
 const INITIAL_STATE: ReturningLoginState = { error: null }
 
-export function ReturningLoginForm() {
+export function ReturningLoginForm({ next }: { next?: string }) {
   const [state, formAction, isPending] = useActionState(startReturningLoginAction, INITIAL_STATE)
 
   return (
     <form action={formAction} className="stack">
+      <input type="hidden" name="next" value={next ?? ''} />
       {state.error && <div className="notice error">{state.error}</div>}
       <label className="field">
-        <span className="field-label">Email</span>
-        <input className="input" type="email" name="identifier" placeholder="tenant@example.com" required />
+        <span className="field-label">Email or phone number</span>
+        <input className="input" type="text" name="identifier" autoComplete="username" placeholder="tenant@example.com or +16025551212" required />
       </label>
       <button type="submit" className="button primary" disabled={isPending}>
-        {isPending ? 'Sending code…' : 'Email me a sign-in code'}
+        {isPending ? 'Sending secure link...' : 'Send secure sign-in link'}
       </button>
-      <div className="muted">The code expires after 10 minutes. After verification, this device stays signed in for up to one year or until you sign out.</div>
+      <div className="muted">Open the link in the message for one-tap access, or enter the included code. This device stays signed in for up to one year.</div>
     </form>
   )
 }
