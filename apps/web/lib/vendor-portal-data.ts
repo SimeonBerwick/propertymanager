@@ -35,6 +35,7 @@ function mapVendorCommercialItem(item: any): VendorCommercialItemView {
 
 export function buildVendorRequestVisibilityWhere(session: VendorPortalScope) {
   return {
+    ...(session.requestId ? { id: session.requestId } : {}),
     OR: [
       { assignedVendorId: session.vendorId },
       {
@@ -132,6 +133,7 @@ export async function getVendorCommercialSummary(session: VendorPortalScope) {
   const items = await prisma.vendorCommercialItem.findMany({
     where: {
       vendorId: session.vendorId,
+      ...(session.requestId ? { requestId: session.requestId } : {}),
       status: { in: ['submitted', 'approved'] },
     },
     include: {

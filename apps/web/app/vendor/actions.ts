@@ -7,6 +7,7 @@ import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-uploa
 import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
 import { applyRequestAutomation } from '@/lib/automation'
 import type { DispatchStatus, RequestStatus } from '@/lib/types'
+import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 
 export type VendorPortalResponseState = { error: string | null }
 
@@ -32,10 +33,7 @@ export async function submitVendorPortalResponse(
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
       id: requestId,
-      OR: [
-        { assignedVendorId: session.vendorId },
-        { tenderInvites: { some: { vendorId: session.vendorId, status: { in: ['invited', 'viewed', 'bid_submitted', 'awarded'] } } } },
-      ],
+      ...buildVendorRequestVisibilityWhere(session),
     },
     select: {
       id: true,

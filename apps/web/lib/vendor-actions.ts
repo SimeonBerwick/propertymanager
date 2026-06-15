@@ -116,10 +116,16 @@ export async function updateVendorAction(
     })
 
     if (!isActive) {
-      await prisma.vendorSession.updateMany({
-        where: { vendorId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      })
+      await prisma.$transaction([
+        prisma.vendorSession.updateMany({
+          where: { vendorId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        }),
+        prisma.managerAccessCode.updateMany({
+          where: { vendorId, redeemedAt: null, revokedAt: null },
+          data: { revokedAt: new Date() },
+        }),
+      ])
     }
 
     const action = !existing.isActive && isActive ? 'vendor.restored' : !isActive ? 'vendor.archived' : 'vendor.updated'
@@ -158,10 +164,16 @@ export async function revokeAllVendorSessionsAction(formData: FormData) {
   })
   if (!vendor) redirect('/vendors')
 
-  const result = await prisma.vendorSession.updateMany({
-    where: { vendorId: vendor.id, revokedAt: null },
-    data: { revokedAt: new Date() },
-  })
+  const [result, codeResult] = await prisma.$transaction([
+    prisma.vendorSession.updateMany({
+      where: { vendorId: vendor.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+    prisma.managerAccessCode.updateMany({
+      where: { vendorId: vendor.id, redeemedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ])
 
   await writeAuditLog({
     orgId: session.userId,
@@ -170,7 +182,7 @@ export async function revokeAllVendorSessionsAction(formData: FormData) {
     entityId: vendor.id,
     action: 'vendor.allSessionsRevoked',
     summary: `Signed ${vendor.name} out on all devices.`,
-    metadata: { revokedSessionCount: result.count },
+    metadata: { revokedSessionCount: result.count, revokedAccessCodeCount: codeResult.count },
   })
 
   revalidatePath(`/vendors/${vendor.id}`)

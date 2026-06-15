@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { AuditLogList } from '@/components/audit-log-list'
 import { getAuditLogs } from '@/lib/audit-log'
 import { revokeAllVendorSessionsAction } from '@/lib/vendor-actions'
+import { ManagerAccessCodeForm } from '@/components/manager-access-code-form'
 
 export default async function VendorDetailPage({
   params,
@@ -69,6 +70,19 @@ export default async function VendorDetailPage({
             <input type="hidden" name="vendorId" value={vendor.id} />
             <button type="submit" className="button">Sign out vendor on all devices</button>
           </form>
+        </section>
+        <section className="card stack">
+          <div>
+            <div className="kicker">One-time access code</div>
+            <h3 style={{ margin: '4px 0 0' }}>Create scoped vendor access</h3>
+          </div>
+          <ManagerAccessCodeForm
+            role="vendor"
+            recipientId={vendor.id}
+            recipientName={vendor.name}
+            requests={data.requests.map((request) => ({ id: request.id, title: request.title, unitLabel: request.unitLabel }))}
+            disabled={!vendor.isActive}
+          />
         </section>
       </div>
 

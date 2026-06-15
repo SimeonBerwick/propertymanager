@@ -8,6 +8,7 @@ import {
   type MobileIdentityState,
 } from './actions'
 import { getTenantLeaseLabel } from '@/lib/tenant-occupancy'
+import { ManagerAccessCodeForm } from '@/components/manager-access-code-form'
 
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
@@ -215,6 +216,21 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         </label>
         <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save next renter'}</button>
       </form>
+
+      {currentIdentity && (
+        <section className="card stack">
+          <div>
+            <div className="kicker">One-time access code</div>
+            <h4 style={{ margin: '4px 0 0' }}>Create tenant access</h4>
+          </div>
+          <ManagerAccessCodeForm
+            role="tenant"
+            recipientId={currentIdentity.id}
+            recipientName={currentIdentity.tenantName}
+            disabled={isArchived}
+          />
+        </section>
+      )}
 
       {currentIdentity && (
         <div className="row" style={{ justifyContent: 'flex-start', gap: 12, flexWrap: 'wrap' }}>

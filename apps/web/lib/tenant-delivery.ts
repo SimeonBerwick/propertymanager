@@ -2,6 +2,7 @@ import { sendNotification } from '@/lib/notify'
 
 export interface TenantDeliveryAdapter {
   sendOtp(input: { to: string; code: string; tenantName: string }): Promise<void>
+  sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string }): Promise<void>
   sendInviteLink(input: { to: string; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }>
 }
 
@@ -34,6 +35,22 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
       ].join('\n'),
     })
     return { delivered: result.ok }
+  }
+
+  async sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string }) {
+    await sendNotification({
+      to: input.to,
+      subject: 'Your tenant portal access code',
+      text: [
+        `Hi ${input.tenantName},`,
+        '',
+        `Your property manager created this one-time tenant portal access code: ${input.code}`,
+        `Enter it here: ${input.accessLink}`,
+        `It expires ${input.expiresAt.toLocaleString()}.`,
+        '',
+        'If you did not expect this code, contact your property manager.',
+      ].join('\n'),
+    })
   }
 }
 

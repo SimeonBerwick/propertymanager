@@ -5,6 +5,7 @@ import { requireVendorSession } from '@/lib/vendor-session'
 import { prisma } from '@/lib/prisma'
 import { centsFromDollars } from '@/lib/billing-utils'
 import { writeAuditLog } from '@/lib/audit-log'
+import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 
 export type VendorCommercialActionState = { error: string | null; success?: boolean }
 
@@ -29,10 +30,7 @@ export async function createVendorCommercialItemAction(
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
       id: requestId,
-      OR: [
-        { assignedVendorId: session.vendorId },
-        { tenderInvites: { some: { vendorId: session.vendorId, status: { in: ['invited', 'viewed', 'bid_submitted', 'awarded'] } } } },
-      ],
+      ...buildVendorRequestVisibilityWhere(session),
     },
     select: { id: true },
   })

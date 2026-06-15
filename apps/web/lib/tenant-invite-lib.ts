@@ -193,6 +193,10 @@ export async function revokeAllInvitesAndSessionsForIdentity(tenantIdentityId: s
       where: { tenantIdentityId, revokedAt: null },
       data: { revokedAt: new Date() },
     })
+    await tx.managerAccessCode.updateMany({
+      where: { tenantIdentityId, redeemedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
   })
 
   await writeAuditLog({

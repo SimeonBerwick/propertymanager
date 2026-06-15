@@ -29,12 +29,13 @@ export interface VendorPortalScope {
   sessionId: string
   vendorId: string
   orgId?: string | null
+  requestId?: string | null
   vendorName: string
   email?: string | null
   phone?: string | null
 }
 
-export async function createVendorSession(vendorId: string) {
+export async function createVendorSession(vendorId: string, requestId?: string | null, maximumExpiresAt?: Date) {
   const vendor = await prisma.vendor.findUnique({
     where: { id: vendorId },
     select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true },
@@ -46,13 +47,15 @@ export async function createVendorSession(vendorId: string) {
 
   const rawSecret = randomBytes(32).toString('hex')
   const secretHash = sha256(rawSecret)
-  const expiresAt = addDays(new Date(), SESSION_TTL_DAYS)
+  const defaultExpiresAt = addDays(new Date(), SESSION_TTL_DAYS)
+  const expiresAt = maximumExpiresAt && maximumExpiresAt < defaultExpiresAt ? maximumExpiresAt : defaultExpiresAt
   const userAgent = (await headers()).get('user-agent')?.slice(0, 500) ?? null
 
   const session = await prisma.vendorSession.create({
     data: {
       vendorId: vendor.id,
       orgId: vendor.orgId,
+      requestId: requestId ?? null,
       sessionSecretHash: secretHash,
       expiresAt,
       userAgent,
@@ -79,7 +82,7 @@ export async function createVendorSession(vendorId: string) {
     entityId: vendor.id,
     action: 'vendor.sessionCreated',
     summary: 'Created vendor portal session.',
-    metadata: { sessionId: session.id },
+    metadata: { sessionId: session.id, requestId: requestId ?? null },
   })
 
   return session
@@ -131,6 +134,7 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
     sessionId: session.id,
     vendorId: session.vendor.id,
     orgId: session.vendor.orgId,
+    requestId: session.requestId,
     vendorName: session.vendor.name,
     email: session.vendor.email,
     phone: session.vendor.phone,
