@@ -5,6 +5,7 @@ import type React from 'react'
 import type { MaintenanceRequest } from '@/lib/types'
 import { quickRequestAction, type RequestActionState } from '@/lib/request-detail-actions'
 import { isStaleClaim } from '@/lib/ui-utils'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -85,8 +86,7 @@ export function RequestQuickActions({
           </form>
         ))}
       </div>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">{state.message ?? 'Quick action applied.'} The queue may refresh and move this request.</div> : null}
+      <ActionFeedback error={state.error} success={state.success ? state.message ?? 'Quick action applied.' : null} detail="The request may move to another queue." />
     </div>
   )
 }

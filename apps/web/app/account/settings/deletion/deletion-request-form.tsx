@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { requestAccountDeletionAction, type DeletionRequestState } from './actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: DeletionRequestState = { error: null, success: null }
 
@@ -10,8 +11,7 @@ export function DeletionRequestForm() {
 
   return (
     <form action={action} className="stack" style={{ gap: 16 }}>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">{state.success}</div> : null}
+      <ActionFeedback error={state.error} success={state.success} />
 
       <label className="field">
         <span className="field-label">Reason or additional details</span>

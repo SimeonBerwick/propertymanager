@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { updateBillingDocumentAction, type BillingActionState } from '@/lib/billing-actions'
+import { ActionFeedback } from '@/components/action-feedback'
 import type { BillingDocumentView } from '@/lib/billing-types'
 
 const INITIAL_STATE: BillingActionState = { error: null }
@@ -18,8 +19,7 @@ export function BillingStatusForm({ document }: { document: BillingDocumentView 
         <input className="input" name="paidAmount" defaultValue={(document.paidCents / 100).toFixed(2)} />
       </label>
       <button type="submit" className="button">{pending ? 'Updating…' : 'Update payment state'}</button>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Billing updated.</div> : null}
+      <ActionFeedback error={state.error} success={state.success && 'Billing updated.'} />
     </form>
   )
 }

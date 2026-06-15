@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { awardTenderInviteAction, type RequestActionState, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -68,8 +69,7 @@ export function RequestControlPanel({
           <span className="field-label">Reason if needed</span>
           <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
         </label>
-        {statusState.error ? <div className="notice error">{statusState.error}</div> : null}
-        {statusState.success ? <div className="notice success">Request status updated.</div> : null}
+        <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
         <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
           {statusPending ? 'Saving…' : 'Update status'}
         </button>
@@ -91,8 +91,7 @@ export function RequestControlPanel({
           </select>
         </label>
         <div className="muted">Choose one vendor to assign directly, or use the tender section below to invite several.</div>
-        {vendorState.error ? <div className="notice error">{vendorState.error}</div> : null}
-        {vendorState.success ? <div className="notice success">{vendorState.message ?? 'Vendor updated.'}</div> : null}
+        <ActionFeedback error={vendorState.error} success={vendorState.success ? vendorState.message ?? 'Vendor updated.' : null} detail="The assignment is visible in the request timeline." />
         <button type="submit" className="button primary" disabled={vendorPending}>
           {vendorPending ? 'Sending…' : 'Assign vendor'}
         </button>
@@ -139,8 +138,7 @@ export function RequestControlPanel({
               </button>
             </form>
           )))}
-          {awardState.error ? <div className="notice error">{awardState.error}</div> : null}
-          {awardState.success ? <div className="notice success">{awardState.message ?? 'Tender awarded.'}</div> : null}
+          <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Tender awarded.' : null} />
         </div>
       ) : null}
     </div>
