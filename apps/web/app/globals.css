@@ -555,6 +555,12 @@ body { min-height: 100vh; }
 .todayCompactRow { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
 .todayScheduleRow:hover, .todayCompactRow:hover { border-color: var(--accent); }
 .todaySupportingGrid > div, .todaySupportingGrid > section { min-width: 0; }
+.dashboardWorkspace { padding: 18px; border-top: 1px solid var(--border); }
+.dashboardWorkspaceDisclosure > summary { color: var(--accent); }
+.tenantChargeNotice { display: flex; justify-content: space-between; gap: 14px; align-items: center; text-decoration: none; }
+.tenantStatusSummary { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--accent); border-radius: 14px; background: var(--accent-soft); }
+.tenantStatusSummary strong { font-size: 20px; }
+#vendor-next-action { scroll-margin-top: 18px; border-color: var(--accent); }
 .requestSectionNav { position: sticky; top: 8px; z-index: 15; display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--card-strong); box-shadow: var(--shadow); }
 .requestSectionNav a { padding: 8px 10px; border-radius: 9px; color: var(--muted); font-weight: 700; font-size: 13px; }
 .requestSectionNav a:hover { color: var(--accent); background: var(--accent-soft); }
@@ -809,6 +815,7 @@ body { min-height: 100vh; }
   .todayOverviewHero { align-items: flex-start; flex-direction: column; }
   .todayMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .todayScheduleRow { grid-template-columns: 1fr; }
+  .tenantChargeNotice { align-items: flex-start; flex-direction: column; }
   .attentionRow { grid-template-columns: 1fr; }
   .guidedWorkflowCompact .recommendedAction { min-width: 0; }
   .onboardingHead, .onboardingSteps { grid-template-columns: 1fr; }

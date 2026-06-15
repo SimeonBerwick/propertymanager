@@ -3,7 +3,7 @@ import type { Route } from 'next'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestsForDashboard } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
-import { languageLabel } from '@/lib/types'
+import { tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 
 type TenantDashboardFilter = 'open' | 'all' | 'charges'
 
@@ -22,9 +22,9 @@ export default async function TenantMobileDashboardPage({
   const requests = await getTenantOwnedRequestsForDashboard(session)
   const filter = resolvedSearchParams?.filter === 'open' || resolvedSearchParams?.filter === 'charges'
     ? resolvedSearchParams.filter
-    : 'all'
+    : 'open'
 
-  const openRequests = requests.filter((request) => !['closed', 'declined', 'canceled'].includes(request.status))
+  const openRequests = requests.filter((request) => !['completed', 'closed', 'declined', 'canceled'].includes(request.status))
   const requestsWithCharges = requests.filter((request) => request.billingDocuments.length > 0)
   const outstandingChargeCount = requests.reduce(
     (sum, request) => sum + request.billingDocuments.filter((document) => Math.max(0, document.totalCents - document.paidCents) > 0).length,
@@ -36,7 +36,7 @@ export default async function TenantMobileDashboardPage({
       ? requestsWithCharges
       : requests
   const sectionTitle = filter === 'open'
-    ? 'Open requests'
+    ? 'Repairs in progress'
     : filter === 'charges'
       ? 'Requests with tenant charges'
       : 'This unit'
@@ -52,35 +52,33 @@ export default async function TenantMobileDashboardPage({
         <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
       </section>
 
-      <section className="grid cols-3">
+      <section className="grid cols-2">
         <Link
           href={'/mobile?filter=open' as Route}
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'open') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'open') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">Open requests</div>
+          <div className="kicker">Repairs in progress</div>
           <h2>{openRequests.length}</h2>
-          <div className="muted">Active now</div>
+          <div className="muted">See what is happening next</div>
         </Link>
         <Link
           href={'/mobile?filter=all' as Route}
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'all') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'all') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">All requests</div>
+          <div className="kicker">Request history</div>
           <h2>{requests.length}</h2>
-          <div className="muted">Full history</div>
-        </Link>
-        <Link
-          href={'/mobile?filter=charges' as Route}
-          className="card"
-          style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'charges') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'charges') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
-        >
-          <div className="kicker">Tenant charges</div>
-          <h2>{outstandingChargeCount}</h2>
-          <div className="muted">{requestsWithCharges.length} request{requestsWithCharges.length === 1 ? '' : 's'} with visible tenant invoices</div>
+          <div className="muted">Review past and current requests</div>
         </Link>
       </section>
+
+      {outstandingChargeCount ? (
+        <Link href={'/mobile?filter=charges' as Route} className="notice tenantChargeNotice">
+          <strong>{outstandingChargeCount} payment item{outstandingChargeCount === 1 ? '' : 's'} need review</strong>
+          <span>View charges connected to your maintenance requests.</span>
+        </Link>
+      ) : null}
 
       <section className="card stack">
         <div className="row">
@@ -95,9 +93,10 @@ export default async function TenantMobileDashboardPage({
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {request.category} · {request.urgency} urgency · {languageLabel(request.preferredLanguage)}
+                  {tenantRequestStatusLabel(request.status)}
                   {request.vendorScheduledStart ? ` · Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
                 </div>
+                <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>
                     {request.billingDocuments.map((document) => {
@@ -107,7 +106,7 @@ export default async function TenantMobileDashboardPage({
                   </div>
                 ) : null}
               </div>
-              <div className="muted">{request.status.replace('_', ' ')}</div>
+              <div className="muted">Open details</div>
             </div>
           </Link>
         )) : (

@@ -40,6 +40,7 @@ export default async function VendorRequestDetailPage({
         tone: 'success' as const,
       }
     : viewState.heroNotice
+  const canSendUpdate = viewState.canControlDispatch || viewState.isPendingBid
 
   return (
     <div className="stack">
@@ -71,7 +72,21 @@ export default async function VendorRequestDetailPage({
           Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
         </div>
         <div>{request.description}</div>
+        {canSendUpdate ? <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : 'Send the next update'}</a> : null}
       </section>
+
+      {canSendUpdate ? <section className="card stack" id="vendor-next-action">
+        <div>
+          <div className="kicker">Next action</div>
+          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to tender invite' : 'Send work update'}</h3>
+        </div>
+        <div className="muted">
+          {viewState.isPendingBid
+            ? 'Tell the property manager whether you can take the job and provide your availability or bid.'
+            : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
+        </div>
+        <VendorRequestResponseForm requestId={request.id} />
+      </section> : null}
 
       <section className="card stack">
         <div>
@@ -96,21 +111,16 @@ export default async function VendorRequestDetailPage({
         )) : <div className="muted">This request is assigned directly rather than via tender.</div>}
       </section>
 
-      <section className="card stack">
-        <div>
-          <div className="kicker">Dispatch</div>
-          <h3 style={{ marginTop: 4 }}>Send update</h3>
-        </div>
-        <VendorRequestResponseForm requestId={request.id} />
-      </section>
-
-      <section className="card stack">
-        <div>
-          <div className="kicker">Commercial</div>
-          <h3 style={{ marginTop: 4 }}>Submit bid, fee, overcost, or PM bill</h3>
-        </div>
-        <VendorCommercialItemForm requestId={request.id} />
-      </section>
+      <details className="advancedDisclosure">
+        <summary>Submit a bid, fee, overcost, or property-manager bill</summary>
+        <section className="card stack">
+          <div>
+            <div className="kicker">Commercial</div>
+            <h3 style={{ marginTop: 4 }}>Send a commercial item</h3>
+          </div>
+          <VendorCommercialItemForm requestId={request.id} />
+        </section>
+      </details>
 
       <section className="card stack">
         <div>

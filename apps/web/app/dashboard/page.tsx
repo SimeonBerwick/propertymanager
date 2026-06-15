@@ -69,6 +69,9 @@ export default async function DashboardPage({
     <div className="stack">
       <TodayOverview requests={data.requestRows} now={now} />
 
+      <details className="advancedDisclosure dashboardWorkspaceDisclosure" open={selectedQueue !== 'all'}>
+        <summary>Open full maintenance queue and workspace tools</summary>
+        <div className="stack dashboardWorkspace">
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
@@ -204,6 +207,8 @@ export default async function DashboardPage({
 
         <RequestQueueList requests={focusNow} selectedSort={selectedSort} />
       </SectionCard>
+        </div>
+      </details>
     </div>
   )
 }
