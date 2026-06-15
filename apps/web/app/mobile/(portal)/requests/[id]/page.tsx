@@ -1,23 +1,10 @@
 import { notFound } from 'next/navigation'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
-import { languageLabel } from '@/lib/types'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
-
-const STATUS_LABELS: Record<string, string> = {
-  requested: 'Requested',
-  approved: 'Approved',
-  declined: 'Declined',
-  vendor_selected: 'Vendor selected',
-  scheduled: 'Scheduled',
-  in_progress: 'In progress',
-  completed: 'Completed',
-  closed: 'Closed',
-  canceled: 'Canceled',
-  reopened: 'Reopened',
-}
+import { tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 
 function classifyCommentSource(
   comment: {
@@ -77,21 +64,23 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div className="kicker">Request detail</div>
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
         </div>
-        <div className="muted">
-          {request.category} · {request.urgency} urgency · {languageLabel(request.preferredLanguage)} · {STATUS_LABELS[request.status] ?? request.status}
+        <div className="tenantStatusSummary">
+          <div className="kicker">Current status</div>
+          <strong>{tenantRequestStatusLabel(request.status)}</strong>
+          <div>{tenantRequestNextStep(request)}</div>
         </div>
+        <div className="muted">{request.category}</div>
         <div>{request.description}</div>
       </section>
 
       <section className="card stack">
         <div>
-          <div className="kicker">Appointment</div>
-          <h3 style={{ marginTop: 4 }}>Schedule and contact</h3>
+          <div className="kicker">Who is handling this?</div>
+          <h3 style={{ marginTop: 4 }}>Vendor and appointment</h3>
         </div>
         {request.assignedVendorName ? (
           <div className="stack" style={{ gap: 6 }}>
             <div><strong>{request.assignedVendorName}</strong></div>
-            {request.dispatchStatus ? <div className="muted">Dispatch status: {request.dispatchStatus}</div> : null}
             {request.vendorScheduledStart ? (
               <div className="muted">
                 Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
@@ -149,7 +138,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         {request.events.length ? request.events.map((event) => (
           <div key={event.id}>
             <div style={{ fontWeight: 600 }}>
-              {event.fromStatus ? `${STATUS_LABELS[event.fromStatus] ?? event.fromStatus} → ${STATUS_LABELS[event.toStatus] ?? event.toStatus}` : (STATUS_LABELS[event.toStatus] ?? event.toStatus)}
+              {event.fromStatus ? `${tenantRequestStatusLabel(event.fromStatus)} → ${tenantRequestStatusLabel(event.toStatus)}` : tenantRequestStatusLabel(event.toStatus)}
             </div>
             <div className="muted">{new Date(event.createdAt).toLocaleString()}</div>
           </div>

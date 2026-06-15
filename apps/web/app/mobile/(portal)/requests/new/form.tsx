@@ -35,8 +35,8 @@ export function TenantNewRequestForm() {
         <span className="muted">Up to 3 images, 5 MB each.</span>
       </label>
       <div className="notice" style={{ background: '#f5fff7', borderColor: '#b7ebc6' }}>
-        <strong>Suggested: {category} · {urgency} urgency</strong>
-        <div className="muted">Based on the problem and description. You can adjust this before submitting.</div>
+        <strong>Suggested routing: {category}</strong>
+        <div className="muted">Likely attention level: {urgency}. You can adjust these details before submitting.</div>
         <button type="button" className="button" style={{ marginTop: 10 }} onClick={() => setShowDetails((value) => !value)}>
           {showDetails ? 'Hide details' : 'Adjust details'}
         </button>

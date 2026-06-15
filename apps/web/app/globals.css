@@ -543,6 +543,24 @@ body { min-height: 100vh; }
 .attentionList { display: grid; gap: 10px; }
 .attentionRow { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(320px, 1.3fr); gap: 16px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--table-row); }
 .attentionTitle { font-weight: 800; }
+.todayOverview { gap: 14px; }
+.todayOverviewHero { display: flex; justify-content: space-between; gap: 20px; align-items: center; border-color: var(--border-strong); background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 180%); }
+.todayMetricGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.todayMetricCard { min-height: 132px; display: grid; align-content: space-between; gap: 8px; text-decoration: none; transition: transform .15s ease, border-color .15s ease; }
+.todayMetricCard strong { font-size: clamp(32px, 4vw, 44px); line-height: 1; }
+.todayMetricCard:hover { border-color: var(--accent); transform: translateY(-1px); }
+.todayMetricUrgent { border-color: var(--error-border); background: var(--error-bg); }
+.todayScheduleList, .todayCompactList { display: grid; gap: 8px; }
+.todayScheduleRow { display: grid; grid-template-columns: minmax(150px, .6fr) minmax(220px, 1.4fr) minmax(160px, .8fr) auto; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
+.todayCompactRow { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
+.todayScheduleRow:hover, .todayCompactRow:hover { border-color: var(--accent); }
+.todaySupportingGrid > div, .todaySupportingGrid > section { min-width: 0; }
+.dashboardWorkspace { padding: 18px; border-top: 1px solid var(--border); }
+.dashboardWorkspaceDisclosure > summary { color: var(--accent); }
+.tenantChargeNotice { display: flex; justify-content: space-between; gap: 14px; align-items: center; text-decoration: none; }
+.tenantStatusSummary { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--accent); border-radius: 14px; background: var(--accent-soft); }
+.tenantStatusSummary strong { font-size: 20px; }
+#vendor-next-action { scroll-margin-top: 18px; border-color: var(--accent); }
 .requestSectionNav { position: sticky; top: 8px; z-index: 15; display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--card-strong); box-shadow: var(--shadow); }
 .requestSectionNav a { padding: 8px 10px; border-radius: 9px; color: var(--muted); font-weight: 700; font-size: 13px; }
 .requestSectionNav a:hover { color: var(--accent); background: var(--accent-soft); }
@@ -794,6 +812,10 @@ body { min-height: 100vh; }
   .grid.cols-4, .grid.cols-3, .grid.cols-2, .photo-grid, .queueGrid, .opsCsvGrid, .detailFactsGrid, .requestHero, .requestDetailGrid, .inboxRow, .billingLayout {
     grid-template-columns: 1fr;
   }
+  .todayOverviewHero { align-items: flex-start; flex-direction: column; }
+  .todayMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .todayScheduleRow { grid-template-columns: 1fr; }
+  .tenantChargeNotice { align-items: flex-start; flex-direction: column; }
   .attentionRow { grid-template-columns: 1fr; }
   .guidedWorkflowCompact .recommendedAction { min-width: 0; }
   .onboardingHead, .onboardingSteps { grid-template-columns: 1fr; }
