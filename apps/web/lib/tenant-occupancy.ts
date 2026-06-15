@@ -1,3 +1,5 @@
+import { formatDateOnly } from '@/lib/ui-utils'
+
 type LeaseWindowIdentity = {
   id: string
   tenantName: string
@@ -47,8 +49,8 @@ export function canTenantIdentityAccessPortal(identity: LeaseWindowIdentity, at 
 export function getTenantLeaseLabel(identity: LeaseWindowIdentity) {
   const start = effectiveLeaseStart(identity)
   const end = effectiveLeaseEnd(identity)
-  const startLabel = start.toLocaleDateString()
-  const endLabel = end ? end.toLocaleDateString() : 'open-ended'
+  const startLabel = formatDateOnly(start)
+  const endLabel = end ? formatDateOnly(end) : 'open-ended'
   return `${startLabel} → ${endLabel}`
 }
 

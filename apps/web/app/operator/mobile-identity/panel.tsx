@@ -9,6 +9,7 @@ import {
 } from './actions'
 import { getTenantLeaseLabel } from '@/lib/tenant-occupancy'
 import { ManagerAccessCodeForm } from '@/components/manager-access-code-form'
+import { formatDateOnly } from '@/lib/ui-utils'
 
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
@@ -72,7 +73,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
       ) : (
         <div className="notice" style={{ background: '#fff8e1', borderColor: '#fcd34d' }}>
           This unit is currently vacant.
-          {upcomingIdentity?.leaseStartDate ? ` Next renter starts ${new Date(upcomingIdentity.leaseStartDate).toLocaleDateString()}.` : ''}
+          {upcomingIdentity?.leaseStartDate ? ` Next renter starts ${formatDateOnly(upcomingIdentity.leaseStartDate)}.` : ''}
         </div>
       )}
 

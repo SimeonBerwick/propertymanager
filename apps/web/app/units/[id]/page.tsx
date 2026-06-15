@@ -10,6 +10,7 @@ import { getAuditLogs } from '@/lib/audit-log'
 import { MobileIdentityPanel } from '@/app/operator/mobile-identity/panel'
 import { AuditLogList } from '@/components/audit-log-list'
 import { getTenantLeaseLabel, getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
+import { formatDateOnly } from '@/lib/ui-utils'
 
 function ageBadgeClass(days: number) {
   if (days < 7) return 'badge age-fresh'
@@ -80,7 +81,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             {!occupancy.current && (
               <div className="muted" style={{ marginTop: 4 }}>
                 Vacant
-                {occupancy.vacantUntil ? ` until ${occupancy.vacantUntil.toLocaleDateString()}` : ''}
+                {occupancy.vacantUntil ? ` until ${formatDateOnly(occupancy.vacantUntil)}` : ''}
               </div>
             )}
             {occupancy.upcoming ? (
@@ -168,7 +169,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
                         {r.title}
                       </Link>
                       <div className="muted" style={{ fontSize: 12 }}>
-                        {new Date(r.createdAt).toLocaleDateString()}
+                        {formatDateOnly(r.createdAt)}
                       </div>
                     </td>
                     <td className="muted">{r.category}</td>

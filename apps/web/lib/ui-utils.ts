@@ -1,5 +1,13 @@
 import type { MaintenanceRequest, RequestStatus, ReviewStatus } from '@/lib/types'
 
+const DISPLAY_TIME_ZONE = 'UTC'
+
+export function formatDateOnly(value: Date | string) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: DISPLAY_TIME_ZONE,
+  }).format(new Date(value))
+}
+
 export function getCityFromAddress(address: string) {
   const parts = address.split(',').map((part) => part.trim()).filter(Boolean)
   if (parts.length < 2) return 'Unknown city'
@@ -23,6 +31,7 @@ export function formatDateTime(value?: string) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: DISPLAY_TIME_ZONE,
   }).format(new Date(value))
 }
 
@@ -35,6 +44,7 @@ export function formatRelativeAge(value: string) {
     const date = new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
+      timeZone: DISPLAY_TIME_ZONE,
     }).format(new Date(value))
     return `on ${date}`
   }
