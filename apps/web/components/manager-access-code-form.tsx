@@ -70,7 +70,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
         </div>
       ) : null}
       <button className="button primary" type="submit" disabled={pending || disabled || (role === 'vendor' && requests.length === 0)}>
-        {pending ? 'Creating code...' : 'Create and email access code'}
+        {pending ? 'Sending new code...' : 'Send new access code'}
       </button>
     </form>
   )

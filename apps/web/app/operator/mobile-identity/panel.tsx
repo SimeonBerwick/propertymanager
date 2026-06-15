@@ -220,8 +220,9 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
       {currentIdentity && (
         <section className="card stack">
           <div>
-            <div className="kicker">One-time access code</div>
-            <h4 style={{ margin: '4px 0 0' }}>Create tenant access</h4>
+            <div className="kicker">Access recovery</div>
+            <h4 style={{ margin: '4px 0 0' }}>Correct details and resend access</h4>
+            <div className="muted">If the renter changed their email or phone, update and save the current renter above, then send new access below.</div>
           </div>
           <ManagerAccessCodeForm
             role="tenant"
@@ -237,7 +238,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           <form action={inviteAction}>
             <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button primary" disabled={invitePending || isArchived}>
-              {invitePending ? 'Creating invite…' : 'Create invite link'}
+              {invitePending ? 'Sending access...' : 'Resend portal access'}
             </button>
           </form>
           <form action={deactivateAction}>

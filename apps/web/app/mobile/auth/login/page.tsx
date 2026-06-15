@@ -1,4 +1,5 @@
 import { ReturningLoginForm } from './form'
+import { AccessRecoveryPanel } from '@/components/access-recovery-panel'
 
 export default async function ReturningLoginPage({
   searchParams,
@@ -16,6 +17,7 @@ export default async function ReturningLoginPage({
       {error === 'magic-link' ? <div className="notice error">That secure sign-in link is invalid, expired, or already used. Request a new one below.</div> : null}
       {error === 'rate-limit' ? <div className="notice error">Too many sign-in messages were requested. Wait a few minutes and try again.</div> : null}
       <ReturningLoginForm next={next} />
+      <AccessRecoveryPanel role="tenant" />
     </div>
   )
 }

@@ -1,53 +1,79 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useMemo, useState } from 'react'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
+import { suggestRequestDetails } from '@/lib/request-guidance'
 import { submitTenantMobileRequestAction, type MobileRequestState } from './actions'
 
 const INITIAL_STATE: MobileRequestState = { error: null }
 
 export function TenantNewRequestForm() {
   const [state, formAction, isPending] = useActionState(submitTenantMobileRequestAction, INITIAL_STATE)
+  const [problem, setProblem] = useState('')
+  const [description, setDescription] = useState('')
+  const [categoryOverride, setCategoryOverride] = useState<string | null>(null)
+  const [urgencyOverride, setUrgencyOverride] = useState<string | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const suggestion = useMemo(() => suggestRequestDetails(problem, description), [problem, description])
+  const category = categoryOverride ?? suggestion.category
+  const urgency = urgencyOverride ?? suggestion.urgency
 
   return (
     <form action={formAction} className="stack">
       {state.error && <div className="notice error">{state.error}</div>}
       <label className="field">
         <span className="field-label">Issue title</span>
-        <input className="input" type="text" name="title" placeholder="Kitchen sink leaking under cabinet" required />
+        <input className="input" type="text" name="title" placeholder="Kitchen sink leaking under cabinet" value={problem} onChange={(event) => setProblem(event.target.value)} required />
       </label>
       <label className="field">
         <span className="field-label">Describe the problem</span>
-        <textarea className="input textarea" name="description" rows={5} required />
-      </label>
-      <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">Category</span>
-          <select className="input" name="category" defaultValue={REQUEST_CATEGORIES[0]} required>
-            {REQUEST_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field-label">Urgency</span>
-          <select className="input" name="urgency" defaultValue="medium" required>
-            {REQUEST_URGENCIES.map((urgency) => <option key={urgency} value={urgency}>{urgency}</option>)}
-          </select>
-        </label>
-      </div>
-      <input type="hidden" name="preferredCurrency" value="usd" />
-      <label className="field">
-        <span className="field-label">Preferred language</span>
-        <select className="input" name="preferredLanguage" defaultValue="english" required>
-          <option value="english">English</option>
-          <option value="spanish">Spanish</option>
-          <option value="french">French</option>
-        </select>
+        <textarea className="input textarea" name="description" rows={5} value={description} onChange={(event) => setDescription(event.target.value)} required />
       </label>
       <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
         <span className="muted">Up to 3 images, 5 MB each.</span>
       </label>
+      <div className="notice" style={{ background: '#f5fff7', borderColor: '#b7ebc6' }}>
+        <strong>Suggested: {category} · {urgency} urgency</strong>
+        <div className="muted">Based on the problem and description. You can adjust this before submitting.</div>
+        <button type="button" className="button" style={{ marginTop: 10 }} onClick={() => setShowDetails((value) => !value)}>
+          {showDetails ? 'Hide details' : 'Adjust details'}
+        </button>
+      </div>
+      <input type="hidden" name="preferredCurrency" value="usd" />
+      {!showDetails ? (
+        <>
+          <input type="hidden" name="category" value={category} />
+          <input type="hidden" name="urgency" value={urgency} />
+          <input type="hidden" name="preferredLanguage" value="english" />
+        </>
+      ) : (
+        <div className="stack">
+          <div className="grid cols-2">
+            <label className="field">
+              <span className="field-label">Category</span>
+              <select className="input" name="category" value={category} onChange={(event) => setCategoryOverride(event.target.value)} required>
+                {REQUEST_CATEGORIES.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span className="field-label">Urgency</span>
+              <select className="input" name="urgency" value={urgency} onChange={(event) => setUrgencyOverride(event.target.value)} required>
+                {REQUEST_URGENCIES.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className="field">
+            <span className="field-label">Preferred language</span>
+            <select className="input" name="preferredLanguage" defaultValue="english" required>
+              <option value="english">English</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+            </select>
+          </label>
+        </div>
+      )}
       <button type="submit" className="button primary" disabled={isPending}>
         {isPending ? 'Submitting…' : 'Submit request'}
       </button>
