@@ -830,6 +830,7 @@ body { min-height: 100vh; }
   .brandLogo { width: 220px; }
   .header { gap: 14px; margin-bottom: 22px; }
   .card { padding: 16px; border-radius: 16px; }
+  .card:has(.table) { min-width: 0; overflow-x: auto; }
   .pageTitle { font-size: 34px; }
   .sectionTitle { font-size: 24px; }
   .kicker { font-size: 12px; }
@@ -848,7 +849,7 @@ body { min-height: 100vh; }
   .requestSectionNav { position: static; }
   .automationSentence { align-items: stretch; flex-direction: column; }
   .automationSentence .input { width: 100%; }
-  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); }
+  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; width: auto; max-width: calc(100vw - 16px); bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); }
   .managerMobileNav a { display: grid; gap: 2px; justify-items: center; padding: 7px 2px; border-radius: 12px; color: var(--muted); font-size: 10px; }
   .managerMobileNav a span { font-size: 17px; line-height: 1; }
   .managerMobileNav a.isActive { color: var(--accent); background: var(--accent-soft); }

@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { getCityFromAddress, getRequestFlowState, reviewStateLabel } from '@/lib/ui-utils'
+import { formatDateOnly, formatDateTime, getCityFromAddress, getRequestFlowState, reviewStateLabel } from '@/lib/ui-utils'
+
+describe('date formatting', () => {
+  test('formats timestamps consistently across server and browser time zones', () => {
+    expect(formatDateTime('2026-03-13T16:00:00Z')).toBe('Mar 13, 4:00 PM')
+    expect(formatDateOnly('2026-01-01T00:00:00Z')).toBe('1/1/2026')
+  })
+})
 
 describe('getCityFromAddress', () => {
   test('extracts a city from common property address formats', () => {
