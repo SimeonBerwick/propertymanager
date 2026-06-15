@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createVendorSession } from '@/lib/vendor-session'
 import { writeAuditLog } from '@/lib/audit-log'
 import { createVendorOtpChallenge, findReturningVendorByIdentifier, VendorOtpRateLimitError } from '@/lib/vendor-otp-lib'
+import { verifyManagerAccessCode } from '@/lib/manager-access-code'
 
 export type VendorReturningLoginState = { error: string | null }
 
@@ -15,7 +16,15 @@ export async function startVendorLoginAction(
   const next = String(formData.get('next') ?? '').trim()
 
   if (!identifier) {
-    return { error: 'Email or phone number is required.' }
+    return { error: 'Email, phone number, or access code is required.' }
+  }
+
+  if (/^\d{6}$/.test(identifier)) {
+    const result = await verifyManagerAccessCode('vendor', identifier)
+    if (!result.ok) return { error: accessCodeMessage(result.code) }
+    if (result.role !== 'vendor') return { error: 'This access code is not valid for vendor access.' }
+    await createVendorSession(result.vendorId, result.requestId, result.expiresAt)
+    redirect(`/vendor/requests/${result.requestId}` as never)
   }
 
   const match = await findReturningVendorByIdentifier(identifier)
@@ -61,6 +70,13 @@ export async function startVendorLoginAction(
   }
 
   redirect(`/vendor/auth/login/verify?${paramsString.toString()}` as never)
+}
+
+function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {
+  if (code === 'not_started') return 'This access code is not active yet.'
+  if (code === 'expired') return 'This access code has expired.'
+  if (code === 'locked') return 'Too many attempts. Try again later or ask your property manager for a new code.'
+  return 'This access code is invalid or has already been used.'
 }
 
 export async function startVendorDevLoginAction(formData: FormData) {

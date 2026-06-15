@@ -43,6 +43,15 @@ export default async function TenantMobileDashboardPage({
 
   return (
     <div className="stack">
+      <section className="card row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <div>
+          <div className="kicker">Need help?</div>
+          <h2 style={{ margin: '4px 0' }}>Report a problem</h2>
+          <div className="muted">Tell your property manager what happened and add photos in a few steps.</div>
+        </div>
+        <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
+      </section>
+
       <section className="grid cols-3">
         <Link
           href={'/mobile?filter=open' as Route}

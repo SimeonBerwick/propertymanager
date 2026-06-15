@@ -30,7 +30,7 @@ export interface TenantMobileScope {
   unitLabel: string
 }
 
-export async function createTenantMobileSession(tenantIdentityId: string) {
+export async function createTenantMobileSession(tenantIdentityId: string, maximumExpiresAt?: Date) {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({
     where: { id: tenantIdentityId },
     include: { property: true, unit: true },
@@ -42,7 +42,8 @@ export async function createTenantMobileSession(tenantIdentityId: string) {
 
   const rawSecret = randomBytes(32).toString('hex')
   const secretHash = sha256(rawSecret)
-  const expiresAt = addDays(new Date(), SESSION_TTL_DAYS)
+  const defaultExpiresAt = addDays(new Date(), SESSION_TTL_DAYS)
+  const expiresAt = maximumExpiresAt && maximumExpiresAt < defaultExpiresAt ? maximumExpiresAt : defaultExpiresAt
   const userAgent = (await headers()).get('user-agent')?.slice(0, 500) ?? null
 
   const session = await prisma.tenantSession.create({

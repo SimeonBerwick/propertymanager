@@ -317,6 +317,10 @@ export async function deactivateMobileIdentityAction(
       where: { tenantIdentityId, revokedAt: null },
       data: { revokedAt: new Date() },
     })
+    await tx.managerAccessCode.updateMany({
+      where: { tenantIdentityId, redeemedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
     await tx.tenantIdentity.update({
       where: { id: tenantIdentityId },
       data: { status: 'inactive' },

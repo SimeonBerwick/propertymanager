@@ -43,7 +43,15 @@ export default async function VendorDashboardPage({
   }))
   const openRequests = requestViews.filter(({ request, viewState }) => viewState.isOpenWork && !['closed', 'declined', 'canceled', 'completed'].includes(request.status))
   const pendingBids = requestViews.filter(({ viewState }) => viewState.isPendingBid)
-  const awardedRequests = requestViews.filter(({ viewState }) => viewState.isAwardedToViewer)
+  const awardedRequests = openRequests.filter(({ viewState }) => viewState.isAwardedToViewer)
+  const scheduledVisits = openRequests.filter(({ request, viewState }) => viewState.canSeeSchedule && request.vendorScheduledStart)
+  const requiredUpdates = openRequests.filter(({ viewState }) => viewState.canControlDispatch)
+  const attentionItems = [
+    ...pendingBids.map((item) => ({ ...item, attentionLabel: 'Respond to bid invite' })),
+    ...awardedRequests.map((item) => ({ ...item, attentionLabel: 'Send an update on awarded work' })),
+    ...scheduledVisits.map((item) => ({ ...item, attentionLabel: 'Prepare for scheduled visit' })),
+    ...requiredUpdates.map((item) => ({ ...item, attentionLabel: 'Update work status' })),
+  ].filter((item, index, items) => items.findIndex((candidate) => candidate.request.id === item.request.id) === index).slice(0, 5)
   const billingRequests = requests.filter((request) => request.billingDocuments.length > 0)
   const payableDocs = requests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
   const commercialCount = commercialItems.length
@@ -85,6 +93,27 @@ export default async function VendorDashboardPage({
             <button type="submit" className="button">Sign out</button>
           </form>
         </div>
+      </section>
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Next actions</div>
+          <h2 style={{ margin: '4px 0' }}>What needs your attention today</h2>
+          <div className="muted">Pending bids, awarded work, scheduled visits, and work updates are shown first.</div>
+        </div>
+        {attentionItems.length ? attentionItems.map(({ request, viewState, attentionLabel }) => (
+          <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
+            <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <div className="kicker">{attentionLabel}</div>
+                <div style={{ fontWeight: 700, marginTop: 4 }}>{request.title}</div>
+                <div className="muted">{request.property.name} · {request.unit.label} · {viewState.statusLabel}</div>
+                {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Visit {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
+              </div>
+              <span className="button primary">Open</span>
+            </div>
+          </Link>
+        )) : <div className="muted">Nothing needs action right now.</div>}
       </section>
 
       <section className="grid cols-4">

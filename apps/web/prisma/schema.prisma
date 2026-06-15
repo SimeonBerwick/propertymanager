@@ -74,6 +74,11 @@ enum VendorOtpChannel {
   email
 }
 
+enum ManagerAccessCodeRole {
+  tenant
+  vendor
+}
+
 enum TenantEventVisibility {
   internal
   tenant_visible
@@ -700,6 +705,7 @@ model VendorSession {
   id                String    @id @default(cuid())
   vendorId          String
   orgId             String?
+  requestId         String?
   sessionSecretHash String    @unique
   issuedAt          DateTime  @default(now())
   expiresAt         DateTime
@@ -711,6 +717,7 @@ model VendorSession {
 
   @@index([vendorId, revokedAt])
   @@index([orgId])
+  @@index([requestId])
 }
 
 model VendorOtpChallenge {
@@ -733,6 +740,35 @@ model VendorOtpChallenge {
 
   @@index([vendorId, purpose, createdAt])
   @@index([orgId, purpose])
+}
+
+model ManagerAccessCode {
+  id               String                @id @default(cuid())
+  orgId            String
+  createdByUserId  String
+  role             ManagerAccessCodeRole
+  tenantIdentityId String?
+  vendorId         String?
+  propertyId       String?
+  unitId           String?
+  requestId        String?
+  codeLookup       String
+  codeHash         String
+  codeSalt         String
+  validFrom        DateTime              @default(now())
+  expiresAt        DateTime
+  attemptCount     Int                   @default(0)
+  maxAttempts      Int                   @default(5)
+  lockedUntil      DateTime?
+  redeemedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime              @default(now())
+
+  @@index([role, codeLookup])
+  @@index([orgId, role, createdAt])
+  @@index([tenantIdentityId, revokedAt])
+  @@index([vendorId, revokedAt])
+  @@index([requestId, revokedAt])
 }
 
 model BillingDocument {

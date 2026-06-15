@@ -8,6 +8,7 @@ const INITIAL_STATE: VendorReturningLoginState = { error: null }
 export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string; next?: string }) {
   const [identifier, setIdentifier] = useState(defaultEmail ?? '')
   const [state, formAction, isPending] = useActionState(startVendorLoginAction, INITIAL_STATE)
+  const isAccessCode = /^\d{6}$/.test(identifier.trim())
 
   return (
     <div className="stack">
@@ -15,13 +16,13 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         <input type="hidden" name="next" value={next ?? ''} />
         {state.error && <div className="notice error">{state.error}</div>}
         <label className="field">
-          <span className="field-label">Email or phone number</span>
+          <span className="field-label">Email, phone, or access code</span>
           <input
             className="input"
             type="text"
             name="identifier"
             autoComplete="username"
-            placeholder="vendor@example.com or +16025551212"
+            placeholder="Email, phone number, or 6-digit code"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             required
@@ -29,9 +30,9 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         </label>
         <div className="stack" style={{ gap: 8 }}>
           <button type="submit" className="button primary" disabled={isPending}>
-            {isPending ? 'Sending secure link...' : 'Send secure sign-in link'}
+            {isPending ? 'Checking access...' : isAccessCode ? 'Use access code' : 'Send secure sign-in link'}
           </button>
-          <div className="muted">Open the link in the message for one-tap access, or enter the included code. This device stays signed in for up to 90 days.</div>
+          <div className="muted">We automatically detect the access method. Secure links and sign-in codes are sent when you enter email or phone.</div>
         </div>
       </form>
       {process.env.NODE_ENV !== 'production' ? (
