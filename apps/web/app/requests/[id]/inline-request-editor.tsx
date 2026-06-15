@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { updateRequestDetailsAction, type RequestActionState } from '@/lib/request-detail-actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL: RequestActionState = { error: null }
 
@@ -19,8 +20,7 @@ export function InlineRequestEditor({ request }: { request: { id: string, title:
       <label className="field"><span className="field-label">Category</span><select className="input" name="category" defaultValue={request.category}>{REQUEST_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></label>
       <label className="field"><span className="field-label">Urgency</span><select className="input" name="urgency" defaultValue={request.urgency}>{REQUEST_URGENCIES.map((value) => <option key={value}>{value}</option>)}</select></label>
     </div>
-    {state.error ? <div className="notice error">{state.error}</div> : null}
-    {state.success ? <div className="notice success">{state.message}</div> : null}
+    <ActionFeedback error={state.error} success={state.success ? state.message ?? 'Request details saved.' : null} />
     <div className="row"><button type="button" className="button" onClick={() => setEditing(false)}>Cancel</button><button className="button primary" disabled={pending}>{pending ? 'Saving...' : 'Save details'}</button></div>
   </form>
 }

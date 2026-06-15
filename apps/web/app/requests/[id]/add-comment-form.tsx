@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { addCommentFormAction, type RequestActionState } from '@/lib/request-detail-actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -38,8 +39,7 @@ export function AddCommentForm({ requestId }: { requestId: string }) {
           {isPending ? 'Saving…' : 'Add comment'}
         </button>
       </div>
-      {state.error && <div className="notice error">{state.error}</div>}
-      {state.success && <div className="notice success">Comment added.</div>}
+      <ActionFeedback error={state.error} success={state.success && 'Comment added.'} />
     </form>
   )
 }

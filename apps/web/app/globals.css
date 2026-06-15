@@ -520,6 +520,13 @@ body { min-height: 100vh; }
 .onboardingSteps strong, .onboardingSteps small { display: block; }
 .onboardingSteps small { margin-top: 4px; color: var(--muted); line-height: 1.35; }
 .managerMobileNav { display: none; }
+.actionFeedback { display: flex; justify-content: space-between; gap: 12px; align-items: center; width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 11px; }
+.actionFeedback div { display: grid; gap: 2px; }
+.actionFeedback strong { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.actionFeedback span { line-height: 1.4; }
+.actionFeedbackSuccess { border-color: var(--success-border); background: var(--success-bg); color: var(--success-text); }
+.actionFeedbackError { border-color: var(--error-border); background: var(--error-bg); color: var(--danger); }
+.actionFeedback button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; }
 .guidedWorkflow { display: grid; gap: 14px; }
 .workflowSteps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .workflowStep { display: grid; gap: 6px; justify-items: center; padding: 12px 8px; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); text-align: center; font-size: 12px; }

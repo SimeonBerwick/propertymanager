@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { sendExceptionSummaryNow, type ExceptionActionState } from './actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: ExceptionActionState = { error: null }
 
@@ -14,9 +15,8 @@ export function SendSummaryForm() {
         <button type="submit" className="button primary" disabled={pending}>
           {pending ? 'Sending…' : 'Send daily summary now'}
         </button>
-        {state.error ? <div className="notice error">{state.error}</div> : null}
-        {state.success ? <div className="notice success">Summary sent.</div> : null}
       </form>
+      <ActionFeedback error={state.error} success={state.success && 'Summary sent.'} />
     </div>
   )
 }

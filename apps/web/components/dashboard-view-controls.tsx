@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { Route } from 'next'
+import { ActionFeedback } from '@/components/action-feedback'
 
 type SavedView = { name: string, query: string }
 const STORAGE_KEY = 'pm-dashboard-saved-views'
@@ -12,6 +13,7 @@ export function DashboardViewControls() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [views, setViews] = useState<SavedView[]>([])
+  const [feedback, setFeedback] = useState<{ message: string, deleted?: SavedView } | null>(null)
 
   useEffect(() => {
     try {
@@ -35,6 +37,18 @@ export function DashboardViewControls() {
       query: searchParams.toString(),
     }]
     persist(next)
+    setFeedback({ message: `Saved view "${name.trim()}".` })
+  }
+
+  function deleteView(view: SavedView) {
+    persist(views.filter((candidate) => candidate.name !== view.name))
+    setFeedback({ message: `Deleted view "${view.name}".`, deleted: view })
+  }
+
+  function undoDelete() {
+    if (!feedback?.deleted) return
+    persist([...views, feedback.deleted])
+    setFeedback({ message: `Restored view "${feedback.deleted.name}".` })
   }
 
   return (
@@ -49,12 +63,13 @@ export function DashboardViewControls() {
             type="button"
             className="savedViewRemove"
             aria-label={`Delete ${view.name} view`}
-            onClick={() => persist(views.filter((candidate) => candidate.name !== view.name))}
+            onClick={() => deleteView(view)}
           >
             x
           </button>
         </span>
       ))}
+      <ActionFeedback success={feedback?.message} onUndo={feedback?.deleted ? undoDelete : undefined} />
     </div>
   )
 }

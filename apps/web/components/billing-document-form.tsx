@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { createBillingDocumentAction, type BillingActionState } from '@/lib/billing-actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: BillingActionState = { error: null }
 
@@ -103,8 +104,7 @@ export function BillingDocumentForm({
         <span className="field-label">Description</span>
         <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="What this bill or remittance covers" rows={4} />
       </label>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Billing document created.</div> : null}
+      <ActionFeedback error={state.error} success={state.success && 'Billing document created.'} />
       <button type="submit" className="button primary" disabled={pending}>
         {pending ? 'Saving…' : 'Create billing document'}
       </button>

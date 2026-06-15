@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { MaintenanceRequest } from '@/lib/types'
 import { updateTenantBillbackAction, type RequestActionState } from '@/lib/request-detail-actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -38,8 +39,7 @@ export function RequestBillbackForm({
         <span className="field-label">Reason</span>
         <textarea className="input" rows={3} name="tenantBillbackReason" defaultValue={reason ?? ''} placeholder="Why the tenant is responsible, or why it was waived" />
       </label>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Bill-back decision saved.</div> : null}
+      <ActionFeedback error={state.error} success={state.success && 'Bill-back decision saved.'} />
       <button type="submit" className="button" disabled={pending}>
         {pending ? 'Saving…' : 'Save bill-back decision'}
       </button>

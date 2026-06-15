@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from 'react'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { createAutomationRuleAction, createRequestTemplateAction, type WorkflowActionState } from './actions'
+import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL: WorkflowActionState = { error: null }
 
@@ -55,8 +56,7 @@ export function AutomationRuleForm() {
         {actionOptions.length ? <select className="input" name="actionValue" value={actionValue} onChange={(event) => setActionValue(event.target.value)}>{actionOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select> : <input className="input" name="actionValue" value={actionValue} onChange={(event) => setActionValue(event.target.value)} placeholder="for example: plumbing-review" required />}
       </div>
       <div className="automationPreview">Requests matching this sentence will be updated automatically during each workflow sweep.</div>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Automation rule created.</div> : null}
+      <ActionFeedback error={state.error} success={state.success ? 'Automation rule created.' : null} />
       <button className="button primary" disabled={pending}>{pending ? 'Creating...' : 'Create rule'}</button>
     </form>
   )
@@ -73,8 +73,7 @@ export function RequestTemplateForm() {
         <label className="field"><span className="field-label">Category</span><select className="input" name="category">{REQUEST_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label className="field"><span className="field-label">Urgency</span><select className="input" name="urgency">{REQUEST_URGENCIES.map((value) => <option key={value}>{value}</option>)}</select></label>
       </div>
-      {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Request template created.</div> : null}
+      <ActionFeedback error={state.error} success={state.success ? 'Request template created.' : null} />
       <button className="button primary" disabled={pending}>{pending ? 'Creating...' : 'Create template'}</button>
     </form>
   )
