@@ -1,10 +1,33 @@
-import type { MaintenanceRequest } from '@/lib/types'
+import type { MaintenanceRequest, Urgency } from '@/lib/types'
+import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
   'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 >
 
 export const WORKFLOW_STEPS = ['Review', 'Assign vendor', 'Schedule', 'Complete work', 'Close'] as const
+
+const CATEGORY_KEYWORDS: Array<{ category: typeof REQUEST_CATEGORIES[number]; keywords: string[] }> = [
+  { category: 'Plumbing', keywords: ['leak', 'pipe', 'sink', 'toilet', 'faucet', 'drain', 'water'] },
+  { category: 'HVAC', keywords: ['heat', 'heating', 'air conditioning', 'ac ', 'a/c', 'furnace', 'thermostat'] },
+  { category: 'Electrical', keywords: ['power', 'electric', 'outlet', 'breaker', 'light', 'sparking'] },
+  { category: 'Appliance', keywords: ['fridge', 'refrigerator', 'oven', 'stove', 'dishwasher', 'washer', 'dryer'] },
+  { category: 'Exterior', keywords: ['roof', 'gutter', 'fence', 'gate', 'outside', 'exterior'] },
+  { category: 'Pest', keywords: ['pest', 'roach', 'mouse', 'mice', 'rat', 'ants', 'termites'] },
+  { category: 'Safety', keywords: ['smoke', 'carbon monoxide', 'gas', 'fire', 'break-in', 'unsafe'] },
+]
+
+export function suggestRequestDetails(problem: string, description: string) {
+  const text = `${problem} ${description}`.toLowerCase()
+  const category = CATEGORY_KEYWORDS.find((option) => option.keywords.some((keyword) => text.includes(keyword)))?.category ?? 'Other'
+
+  let urgency: Urgency = 'medium'
+  if (['fire', 'gas leak', 'carbon monoxide', 'sparking', 'flood', 'break-in'].some((keyword) => text.includes(keyword))) urgency = 'urgent'
+  else if (['no heat', 'no power', 'active leak', 'overflow', 'unsafe'].some((keyword) => text.includes(keyword))) urgency = 'high'
+  else if (['minor', 'slow', 'cosmetic', 'when convenient'].some((keyword) => text.includes(keyword))) urgency = 'low'
+
+  return { category, urgency }
+}
 
 export function getWorkflowStep(request: GuidanceRequest) {
   if (['closed', 'declined', 'canceled'].includes(request.status)) return 4

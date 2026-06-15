@@ -73,8 +73,9 @@ export default async function VendorDetailPage({
         </section>
         <section className="card stack">
           <div>
-            <div className="kicker">One-time access code</div>
-            <h3 style={{ margin: '4px 0 0' }}>Create scoped vendor access</h3>
+            <div className="kicker">Access recovery</div>
+            <h3 style={{ margin: '4px 0 0' }}>Correct details and resend access</h3>
+            <p className="muted" style={{ marginBottom: 0 }}>If the vendor changed their email or phone, update and save the vendor above, then send a new scoped access code.</p>
           </div>
           <ManagerAccessCodeForm
             role="vendor"

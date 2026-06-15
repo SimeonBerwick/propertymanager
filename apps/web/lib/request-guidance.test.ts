@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { getAttentionScore, getRecommendedAction, getWorkflowStep } from './request-guidance'
+import { getAttentionScore, getRecommendedAction, getWorkflowStep, suggestRequestDetails } from './request-guidance'
 
 const base = { id: 'r1', urgency: 'medium' as const, reviewState: 'none' as const, assignedVendorName: undefined, vendorScheduledStart: undefined, vendorScheduledEnd: undefined, claimedAt: undefined }
 
 describe('request guidance', () => {
+  it('suggests category and urgency from the tenant description', () => {
+    expect(suggestRequestDetails('Kitchen sink leak', 'Water is actively flooding the cabinet')).toEqual({
+      category: 'Plumbing',
+      urgency: 'urgent',
+    })
+    expect(suggestRequestDetails('Bedroom wall', 'Minor cosmetic paint damage')).toEqual({
+      category: 'Other',
+      urgency: 'low',
+    })
+  })
+
   it('guides a new request into review', () => {
     const request = { ...base, status: 'requested' as const }
     expect(getRecommendedAction(request).label).toContain('Review')
