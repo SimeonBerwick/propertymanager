@@ -19,11 +19,8 @@ import { createOtpChallenge, verifyOtpChallenge } from '@/lib/tenant-otp-lib'
 import { scaffoldTenant } from '@/test/helpers'
 
 // Suppress actual SMS/email delivery in all tests in this file.
-vi.mock('@/lib/tenant-delivery', () => ({
-  getTenantDeliveryAdapter: () => ({
-    sendOtp: vi.fn().mockResolvedValue(undefined),
-    sendInviteLink: vi.fn().mockResolvedValue({ delivered: true }),
-  }),
+vi.mock('@/lib/portal-auth-delivery', () => ({
+  sendPortalAuthChallenge: vi.fn().mockResolvedValue(undefined),
 }))
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

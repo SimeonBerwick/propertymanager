@@ -3,9 +3,9 @@ import { VendorLoginForm } from './form'
 export default async function VendorLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; next?: string; context?: string }>
+  searchParams: Promise<{ email?: string; next?: string; context?: string; error?: string }>
 }) {
-  const { email, next, context } = await searchParams
+  const { email, next, context, error } = await searchParams
 
   return (
     <div className="card stack" style={{ maxWidth: 560, margin: '48px auto' }}>
@@ -16,8 +16,10 @@ export default async function VendorLoginPage({
       <div className="muted">
         {context === 'dispatch-link'
           ? 'Use your vendor portal account to open this dispatched request. The link is only a shortcut into sign-in.'
-          : 'Enter the email attached to your vendor account.'}
+          : 'Enter the email or phone number attached to your vendor account.'}
       </div>
+      {error === 'magic-link' ? <div className="notice error">That secure sign-in link is invalid, expired, or already used. Request a new one below.</div> : null}
+      {error === 'rate-limit' ? <div className="notice error">Too many sign-in messages were requested. Wait a few minutes and try again.</div> : null}
       <VendorLoginForm defaultEmail={email} next={next} />
     </div>
   )

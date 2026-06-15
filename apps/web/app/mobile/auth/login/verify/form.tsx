@@ -5,12 +5,13 @@ import { verifyReturningLoginAction, type ReturningVerifyState } from './actions
 
 const INITIAL_STATE: ReturningVerifyState = { error: null }
 
-export function ReturningLoginVerifyForm({ challengeId }: { challengeId: string }) {
+export function ReturningLoginVerifyForm({ challengeId, next }: { challengeId: string; next?: string }) {
   const [state, formAction, isPending] = useActionState(verifyReturningLoginAction, INITIAL_STATE)
 
   return (
     <form action={formAction} className="stack">
       <input type="hidden" name="challengeId" value={challengeId} />
+      <input type="hidden" name="next" value={next ?? ''} />
       {state.error && <div className="notice error">{state.error}</div>}
       <label className="field">
         <span className="field-label">Verification code</span>

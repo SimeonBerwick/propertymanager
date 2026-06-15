@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
+import { normalizePhoneToE164 } from '@/lib/phone'
 
 const TENANT_VISIBLE_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
 
@@ -89,11 +90,16 @@ export async function getTenantOwnedPhotoById(photoId: string, session: TenantMo
 
 export async function findReturningTenantIdentityByIdentifier(identifier: string) {
   const trimmed = identifier.trim().toLowerCase()
-  if (!trimmed || !trimmed.includes('@')) {
+  if (!trimmed) {
     return { ok: false as const, code: 'invalid' as const }
   }
 
-  const where = { email: trimmed, status: 'active' as const }
+  const normalizedIdentifier = trimmed.includes('@') ? trimmed : normalizePhoneToE164(trimmed)
+  if (!normalizedIdentifier) return { ok: false as const, code: 'invalid' as const }
+
+  const where = trimmed.includes('@')
+    ? { email: trimmed, status: 'active' as const }
+    : { phoneE164: normalizedIdentifier, status: 'active' as const }
   const matches = (await prisma.tenantIdentity.findMany({ where })).filter((identity) => canTenantIdentityAccessPortal(identity))
 
   if (matches.length > 1) {
@@ -103,6 +109,8 @@ export async function findReturningTenantIdentityByIdentifier(identifier: string
   if (matches.length === 1) {
     return { ok: true as const, tenantIdentity: matches[0] }
   }
+
+  if (!trimmed.includes('@')) return { ok: false as const, code: 'invalid' as const }
 
   const fallbackMatches = (await prisma.tenantIdentity.findMany({
     where: {

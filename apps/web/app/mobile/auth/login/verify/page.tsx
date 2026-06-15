@@ -3,9 +3,9 @@ import { ReturningLoginVerifyForm } from './form'
 export default async function ReturningLoginVerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ challengeId?: string; masked?: string; devCode?: string }>
+  searchParams: Promise<{ challengeId?: string; masked?: string; devCode?: string; next?: string }>
 }) {
-  const { challengeId, masked, devCode } = await searchParams
+  const { challengeId, masked, devCode, next } = await searchParams
 
   if (!challengeId) {
     return (
@@ -25,7 +25,7 @@ export default async function ReturningLoginVerifyPage({
         <div className="kicker">Tenant portal</div>
         <h2 style={{ marginTop: 4 }}>Enter code</h2>
       </div>
-      <div className="muted">We sent a one-time code to {masked ?? 'your email address'}. It expires after 10 minutes.</div>
+      <div className="muted">We sent a secure sign-in link and one-time code to {masked ?? 'your contact method'}. They expire after 10 minutes.</div>
       {devCode && process.env.NODE_ENV !== 'production' && (
         <div
           className="notice"
@@ -43,7 +43,7 @@ export default async function ReturningLoginVerifyPage({
           Access code: <strong>{devCode}</strong>
         </div>
       )}
-      <ReturningLoginVerifyForm challengeId={challengeId} />
+      <ReturningLoginVerifyForm challengeId={challengeId} next={next} />
       <div className="muted" style={{ fontSize: '0.875rem' }}>
         <a href="/mobile/auth/login">Use a different email</a>
       </div>

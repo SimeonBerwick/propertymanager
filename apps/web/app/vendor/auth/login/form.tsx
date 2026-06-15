@@ -15,12 +15,13 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         <input type="hidden" name="next" value={next ?? ''} />
         {state.error && <div className="notice error">{state.error}</div>}
         <label className="field">
-          <span className="field-label">Email</span>
+          <span className="field-label">Email or phone number</span>
           <input
             className="input"
-            type="email"
+            type="text"
             name="identifier"
-            placeholder="vendor@example.com"
+            autoComplete="username"
+            placeholder="vendor@example.com or +16025551212"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             required
@@ -28,9 +29,9 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         </label>
         <div className="stack" style={{ gap: 8 }}>
           <button type="submit" className="button primary" disabled={isPending}>
-            {isPending ? 'Sending code…' : 'Email me a sign-in code'}
+            {isPending ? 'Sending secure link...' : 'Send secure sign-in link'}
           </button>
-          <div className="muted">The code expires after 10 minutes. After verification, this device stays signed in for up to 90 days or until you sign out.</div>
+          <div className="muted">Open the link in the message for one-tap access, or enter the included code. This device stays signed in for up to 90 days.</div>
         </div>
       </form>
       {process.env.NODE_ENV !== 'production' ? (

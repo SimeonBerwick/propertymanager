@@ -14,6 +14,7 @@ export async function verifyReturningLoginAction(
 ): Promise<ReturningVerifyState> {
   const challengeId = String(formData.get('challengeId') ?? '')
   const code = String(formData.get('code') ?? '').trim()
+  const next = String(formData.get('next') ?? '').trim()
 
   if (!challengeId || !code) {
     return { error: 'Challenge and code are required.' }
@@ -40,5 +41,5 @@ export async function verifyReturningLoginAction(
     summary: 'Completed returning tenant login.',
     metadata: { challengeId },
   })
-  redirect('/mobile' as never)
+  redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
 }

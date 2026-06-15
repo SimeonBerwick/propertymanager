@@ -12,13 +12,10 @@ export async function startReturningLoginAction(
   formData: FormData,
 ): Promise<ReturningLoginState> {
   const identifier = String(formData.get('identifier') ?? '').trim().toLowerCase()
+  const next = String(formData.get('next') ?? '').trim()
 
   if (!identifier) {
-    return { error: 'Email is required.' }
-  }
-
-  if (!identifier.includes('@')) {
-    return { error: 'V1 sign-in is email-only. Use the email attached to your tenant access.' }
+    return { error: 'Email or phone number is required.' }
   }
 
   const match = await findReturningTenantIdentityByIdentifier(identifier)
@@ -30,7 +27,7 @@ export async function startReturningLoginAction(
     }
   }
 
-  const channel = 'email'
+  const channel = identifier.includes('@') ? 'email' : 'sms'
   await writeAuditLog({
     orgId: match.tenantIdentity.orgId,
     actorUserId: null,
@@ -42,18 +39,19 @@ export async function startReturningLoginAction(
   })
   let otp
   try {
-    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel)
+    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel, { next })
   } catch (error) {
     if (error instanceof OtpRateLimitError) {
       return { error: 'Too many code requests. Try again later.' }
     }
-    throw error
+    return { error: error instanceof Error ? error.message : 'Could not send a sign-in message.' }
   }
   const paramsString = new URLSearchParams({
     challengeId: otp.challengeId,
     mode: 'returning',
     masked: otp.destinationMasked,
   })
+  if (next.startsWith('/')) paramsString.set('next', next)
 
   if (process.env.NODE_ENV !== 'production') {
     paramsString.set('devCode', otp.code)

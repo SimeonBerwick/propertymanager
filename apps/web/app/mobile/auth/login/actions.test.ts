@@ -4,11 +4,8 @@ import { clearRateLimitState } from '@/lib/rate-limit'
 import { scaffoldTenant, scaffoldLandlord, createActiveTenantIdentity } from '@/test/helpers'
 
 // Prevent real OTP delivery during tests
-vi.mock('@/lib/tenant-delivery', () => ({
-  getTenantDeliveryAdapter: vi.fn().mockReturnValue({
-    sendOtp: vi.fn().mockResolvedValue(undefined),
-    sendInviteLink: vi.fn().mockResolvedValue({ delivered: true }),
-  }),
+vi.mock('@/lib/portal-auth-delivery', () => ({
+  sendPortalAuthChallenge: vi.fn().mockResolvedValue(undefined),
 }))
 
 const PREV = { error: null }
@@ -28,10 +25,11 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/required/i)
   })
 
-  test('rejects phone login because V1 is email-only', async () => {
+  test('starts phone login for a matching tenant', async () => {
     const { identity } = await scaffoldTenant()
-    const result = await startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 }))
-    expect(result.error).toMatch(/email-only/i)
+    await expect(
+      startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
   })
 
   test('returns error when identifier matches no tenant', async () => {

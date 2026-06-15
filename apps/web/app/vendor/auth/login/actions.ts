@@ -15,11 +15,7 @@ export async function startVendorLoginAction(
   const next = String(formData.get('next') ?? '').trim()
 
   if (!identifier) {
-    return { error: 'Email is required.' }
-  }
-
-  if (!identifier.includes('@')) {
-    return { error: 'Vendor sign-in is email-only in V1.' }
+    return { error: 'Email or phone number is required.' }
   }
 
   const match = await findReturningVendorByIdentifier(identifier)
@@ -31,24 +27,25 @@ export async function startVendorLoginAction(
     }
   }
 
+  const channel = identifier.includes('@') ? 'email' : 'sms'
   await writeAuditLog({
     orgId: match.vendor.orgId,
     actorUserId: null,
     entityType: 'vendor',
     entityId: match.vendor.id,
     action: 'vendor.returningLoginStarted',
-    summary: 'Started returning vendor login via email.',
-    metadata: { channel: 'email' },
+    summary: `Started returning vendor login via ${channel}.`,
+    metadata: { channel },
   })
 
   let otp
   try {
-    otp = await createVendorOtpChallenge(match.vendor.id, 'returning_login', 'email')
+    otp = await createVendorOtpChallenge(match.vendor.id, 'returning_login', channel, { next })
   } catch (error) {
     if (error instanceof VendorOtpRateLimitError) {
       return { error: 'Too many code requests. Try again later.' }
     }
-    throw error
+    return { error: error instanceof Error ? error.message : 'Could not send a sign-in message.' }
   }
 
   const paramsString = new URLSearchParams({
