@@ -111,4 +111,57 @@ describe('submitVendorResponse', () => {
     expect(applyRequestAutomationMock).toHaveBeenCalledWith(request.id)
     expect(redirectMock).toHaveBeenCalledWith('/vendor/respond/token-1?submitted=1')
   })
+
+  test('completed update on an awarded tender preserves the awarded bid amount', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Awarded Vendor', email: 'awarded@example.com' },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'accepted',
+    })
+    const tender = await prisma.requestTender.create({
+      data: { requestId: request.id, status: 'awarded', sentAt: new Date(), awardedAt: new Date(), closedAt: new Date() },
+    })
+    const invite = await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: vendor.id,
+        status: 'awarded',
+        bidAmountCents: 40000,
+        bidCurrency: 'usd',
+        awardedAt: new Date(),
+      },
+    })
+
+    validateVendorDispatchTokenMock.mockResolvedValue({
+      ok: true,
+      linkId: 'dispatch-link-2',
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      vendorEmail: vendor.email,
+      requestId: request.id,
+      requestTitle: request.title,
+      propertyName: property.name,
+      unitLabel: unit.label,
+      tenderInviteId: invite.id,
+    })
+
+    await submitVendorResponse(
+      { error: null },
+      formData({ token: 'token-2', dispatchStatus: 'completed', note: 'Work complete' }),
+    )
+
+    const updatedInvite = await prisma.tenderInvite.findUnique({ where: { id: invite.id } })
+    expect(updatedInvite?.status).toBe('awarded')
+    expect(updatedInvite?.bidAmountCents).toBe(40000)
+    expect(updatedInvite?.bidCurrency).toBe('usd')
+    expect(redirectMock).toHaveBeenCalledWith('/vendor/respond/token-2?submitted=1')
+  })
 })

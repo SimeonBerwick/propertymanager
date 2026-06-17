@@ -87,17 +87,20 @@ export async function submitVendorPortalResponse(
       const tenderInviteId = tenderInvite?.id
       const canControlDispatch = request.assignedVendorId === session.vendorId || tenderInvite?.status === 'awarded'
       if (tenderInviteId) {
+        const nextInviteStatus = dispatchStatus === 'declined'
+          ? 'declined'
+          : tenderInvite?.status === 'awarded'
+            ? 'awarded'
+            : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled'
+              ? 'bid_submitted'
+              : 'viewed'
         await tx.tenderInvite.update({
           where: { id: tenderInviteId },
           data: {
-            status: dispatchStatus === 'declined'
-              ? 'declined'
-              : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled'
-                ? 'bid_submitted'
-                : 'viewed',
-            bidAmountCents,
-            bidCurrency: bidAmountRaw ? 'usd' : null,
-            bidSource: bidAmountRaw ? 'vendor_submitted' : null,
+            status: nextInviteStatus,
+            bidAmountCents: bidAmountRaw ? bidAmountCents : undefined,
+            bidCurrency: bidAmountRaw ? 'usd' : undefined,
+            bidSource: bidAmountRaw ? 'vendor_submitted' : undefined,
             availabilityNote: availabilityNote || null,
             proposedStart: scheduledStart,
             proposedEnd: scheduledEnd,

@@ -92,12 +92,19 @@ export async function submitVendorResponse(
       const canControlDispatch = currentRequest.assignedVendorId === validation.vendorId || currentInvite?.status === 'awarded'
 
       if (validation.tenderInviteId) {
+        const nextInviteStatus = dispatchStatus === 'declined'
+          ? 'declined'
+          : currentInvite?.status === 'awarded'
+            ? 'awarded'
+            : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled'
+              ? 'bid_submitted'
+              : 'viewed'
         await tx.tenderInvite.update({
           where: { id: validation.tenderInviteId },
           data: {
-            status: dispatchStatus === 'declined' ? 'declined' : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled' ? 'bid_submitted' : 'viewed',
-            bidAmountCents,
-            bidCurrency: bidAmountRaw ? 'usd' : null,
+            status: nextInviteStatus,
+            bidAmountCents: bidAmountRaw ? bidAmountCents : undefined,
+            bidCurrency: bidAmountRaw ? 'usd' : undefined,
             availabilityNote: availabilityNote || null,
             proposedStart: scheduledStart,
             proposedEnd: scheduledEnd,
