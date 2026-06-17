@@ -11,6 +11,7 @@ import {
   updateStatusFormAction,
   updateVendorFormAction,
   addCommentFormAction,
+  approveVendorCommercialItemAction,
   awardTenderInviteAction,
   updateDispatchFormAction,
 } from '@/lib/request-detail-actions'
@@ -386,6 +387,78 @@ describe('awardTenderInviteAction', () => {
     expect(refreshedWinningInvite?.status).toBe('awarded')
     expect(refreshedLosingBid?.status).toBe('declined')
     expect(refreshedWinningBid?.status).toBe('submitted')
+  })
+})
+
+describe('approveVendorCommercialItemAction', () => {
+  beforeEach(() => {
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('approving an overcost posts a draft vendor remittance for awarded bid plus approved extras', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Desert Air Service', email: 'desert@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'completed',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      preferredCurrency: 'usd',
+    })
+
+    const tender = await prisma.requestTender.create({
+      data: { requestId: request.id, status: 'awarded', sentAt: new Date(), awardedAt: new Date(), closedAt: new Date() },
+    })
+    await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: vendor.id,
+        status: 'awarded',
+        bidAmountCents: 50000,
+        bidCurrency: 'usd',
+        awardedAt: new Date(),
+      },
+    })
+    const overcost = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'overcost',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 12500,
+        title: 'Additional parts',
+      },
+    })
+
+    const result = await approveVendorCommercialItemAction(
+      PREV,
+      formData({ requestId: request.id, itemId: overcost.id }),
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.message).toMatch(/remittance draft posted/i)
+
+    const [refreshedOvercost, draft] = await Promise.all([
+      prisma.vendorCommercialItem.findUnique({ where: { id: overcost.id } }),
+      prisma.billingDocument.findFirst({
+        where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },
+        include: { events: true },
+      }),
+    ])
+
+    expect(refreshedOvercost?.status).toBe('approved')
+    expect(draft?.totalCents).toBe(62500)
+    expect(draft?.sentTo).toBe(vendor.email)
+    expect(draft?.description).toContain('Approved bid: USD 500.00')
+    expect(draft?.description).toContain('Additional parts: USD 125.00')
+    expect(draft?.events[0]?.eventType).toBe('created')
   })
 })
 

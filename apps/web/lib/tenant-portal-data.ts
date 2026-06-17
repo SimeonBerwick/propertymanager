@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 import { normalizePhoneToE164 } from '@/lib/phone'
@@ -6,12 +7,18 @@ import { normalizePhoneToE164 } from '@/lib/phone'
 const TENANT_VISIBLE_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
 
 export function buildTenantRequestOwnershipWhere(session: TenantMobileScope) {
-  const ownershipClauses: Array<{ tenantIdentityId: string } | { tenantIdentityId: null; submittedByEmail: string }> = [
+  const ownershipClauses: Prisma.MaintenanceRequestWhereInput[] = [
     { tenantIdentityId: session.tenantIdentityId },
   ]
 
   if (session.email) {
     ownershipClauses.push({ tenantIdentityId: null, submittedByEmail: session.email })
+  }
+
+  if (session.tenancyStartedAt) {
+    const createdAt: Prisma.DateTimeFilter = { gte: new Date(session.tenancyStartedAt) }
+    if (session.tenancyEndedAt) createdAt.lte = new Date(session.tenancyEndedAt)
+    ownershipClauses.push({ tenantIdentityId: null, createdAt })
   }
 
   return {

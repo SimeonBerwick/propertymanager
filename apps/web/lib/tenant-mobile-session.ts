@@ -26,6 +26,8 @@ export interface TenantMobileScope {
   tenantName: string
   phoneE164: string
   email?: string | null
+  tenancyStartedAt?: string | null
+  tenancyEndedAt?: string | null
   propertyName: string
   unitLabel: string
 }
@@ -141,6 +143,8 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
     tenantName: identity.tenantName,
     phoneE164: identity.phoneE164,
     email: identity.email,
+    tenancyStartedAt: (identity.leaseStartDate ?? identity.createdAt).toISOString(),
+    tenancyEndedAt: identity.leaseEndDate?.toISOString() ?? null,
     propertyName: identity.property.name,
     unitLabel: identity.unit.label,
   }

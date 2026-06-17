@@ -30,7 +30,8 @@ export function suggestRequestDetails(problem: string, description: string) {
 }
 
 export function getWorkflowStep(request: GuidanceRequest) {
-  if (['closed', 'declined', 'canceled'].includes(request.status)) return 4
+  if (request.status === 'closed') return WORKFLOW_STEPS.length
+  if (['declined', 'canceled'].includes(request.status)) return 0
   if (request.status === 'completed') return 4
   if (request.status === 'in_progress') return 3
   if (request.status === 'scheduled' || request.vendorScheduledStart) return 3
@@ -41,6 +42,9 @@ export function getWorkflowStep(request: GuidanceRequest) {
 
 export function getRecommendedAction(request: GuidanceRequest) {
   const href = `/requests/${request.id}#actions`
+  if (['closed', 'declined', 'canceled'].includes(request.status)) {
+    return { label: 'Review request history', detail: 'No immediate action is required.', href, tone: 'clear' as const }
+  }
   if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {
     return { label: 'Assign a replacement vendor', detail: 'The previous vendor cannot complete this request.', href, tone: 'urgent' as const }
   }

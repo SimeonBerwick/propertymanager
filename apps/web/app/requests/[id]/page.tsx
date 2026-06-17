@@ -64,6 +64,25 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
   const latestCommercialReply = [...data.vendorCommercialItems]
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
+  const awardedTenderBid = data.tenders
+    .flatMap((tender) => tender.invites)
+    .filter((invite) => invite.status === 'awarded' && invite.bidAmountCents != null)
+    .sort((a, b) => new Date(b.awardedAt ?? b.respondedAt ?? b.invitedAt).getTime() - new Date(a.awardedAt ?? a.respondedAt ?? a.invitedAt).getTime())[0]
+  const approvedVendorBid = data.vendorCommercialItems
+    .filter((item) => item.itemType === 'bid' && item.status === 'approved')
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
+  const approvedBidCents = awardedTenderBid?.bidAmountCents ?? approvedVendorBid?.amountCents ?? 0
+  const approvedVendorExtrasCents = data.vendorCommercialItems
+    .filter((item) => item.status === 'approved' && item.itemType !== 'bid')
+    .reduce((sum, item) => sum + item.amountCents, 0)
+  const pendingVendorExtrasCents = data.vendorCommercialItems
+    .filter((item) => item.status === 'submitted' && item.itemType !== 'bid')
+    .reduce((sum, item) => sum + item.amountCents, 0)
+  const vendorAmountOwedCents = approvedBidCents + approvedVendorExtrasCents
+  const vendorAmountIfPendingApprovedCents = vendorAmountOwedCents + pendingVendorExtrasCents
+  const postedVendorRemittanceCents = data.billingDocuments
+    .filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
+    .reduce((sum, doc) => sum + doc.totalCents, 0)
 
   return (
     <div className="stack requestDetailPage">
@@ -226,7 +245,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : 'Not yet reviewed'}</div></div>
               </div>
               <RequestSignalStrip request={data.request} />
-              {data.request.reviewState && data.request.reviewState !== 'none' ? (
+              {data.request.reviewState && !['none', 'approved'].includes(data.request.reviewState) ? (
                 <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}</div>
               ) : null}
               {isStaleClaim(data.request) ? (
@@ -361,6 +380,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 amountCents={data.request.tenantBillbackAmountCents}
                 reason={data.request.tenantBillbackReason}
               />
+            </div>
+          </div>
+          <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
+            <div className="kicker">Vendor amount owed</div>
+            <div className="detailFactsGrid" style={{ marginTop: 10 }}>
+              <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Owed now</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Vendor docs posted</strong><div className="muted">{formatMoney(postedVendorRemittanceCents, data.request.preferredCurrency)}</div></div>
+            </div>
+            <div className="muted" style={{ marginTop: 10 }}>
+              Approving a vendor bid, fee, or overcost posts or updates a draft vendor remittance. Use the billing document actions below to open, send, or mark payment.
             </div>
           </div>
           <BillingSummaryCards documents={data.billingDocuments} />
