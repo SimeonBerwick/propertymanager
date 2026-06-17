@@ -2,8 +2,8 @@ import { sendNotification } from '@/lib/notify'
 
 export interface TenantDeliveryAdapter {
   sendOtp(input: { to: string; code: string; tenantName: string }): Promise<void>
-  sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string }): Promise<void>
-  sendInviteLink(input: { to: string; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }>
+  sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string; ownerUserId?: string }): Promise<{ delivered: boolean }>
+  sendInviteLink(input: { to: string; inviteLink: string; tenantName: string; ownerUserId?: string }): Promise<{ delivered: boolean }>
 }
 
 class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
@@ -21,7 +21,7 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
     })
   }
 
-  async sendInviteLink(input: { to: string; inviteLink: string; tenantName: string }): Promise<{ delivered: boolean }> {
+  async sendInviteLink(input: { to: string; inviteLink: string; tenantName: string; ownerUserId?: string }): Promise<{ delivered: boolean }> {
     const result = await sendNotification({
       to: input.to,
       subject: 'Your tenant portal invite link',
@@ -33,12 +33,12 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
         ``,
         `If you did not expect this invite, ignore this message.`,
       ].join('\n'),
-    })
+    }, { ownerUserId: input.ownerUserId })
     return { delivered: result.ok }
   }
 
-  async sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string }) {
-    await sendNotification({
+  async sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string; ownerUserId?: string }) {
+    const result = await sendNotification({
       to: input.to,
       subject: 'Your tenant portal access code',
       text: [
@@ -50,7 +50,8 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
         '',
         'If you did not expect this code, contact your property manager.',
       ].join('\n'),
-    })
+    }, { ownerUserId: input.ownerUserId })
+    return { delivered: result.ok }
   }
 }
 

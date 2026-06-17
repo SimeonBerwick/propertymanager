@@ -1,5 +1,4 @@
 import { VendorLoginForm } from './form'
-import { AccessRecoveryPanel } from '@/components/access-recovery-panel'
 
 export default async function VendorLoginPage({
   searchParams,
@@ -16,13 +15,12 @@ export default async function VendorLoginPage({
       </div>
       <div className="muted">
         {context === 'dispatch-link'
-          ? 'Use your vendor portal account to open this dispatched request. The link is only a shortcut into sign-in.'
-          : 'Enter your email, phone number, or manager-issued access code.'}
+          ? 'Use your vendor portal account to open this dispatched request.'
+          : 'Enter your email or manager-issued access code. No password is needed.'}
       </div>
-      {error === 'magic-link' ? <div className="notice error">That secure sign-in link is invalid, expired, or already used. Request a new one below.</div> : null}
+      {error === 'magic-link' ? <div className="notice error">That login link is invalid, expired, or already used. Request a new one below.</div> : null}
       {error === 'rate-limit' ? <div className="notice error">Too many sign-in messages were requested. Wait a few minutes and try again.</div> : null}
       <VendorLoginForm defaultEmail={email} next={next} />
-      <AccessRecoveryPanel role="vendor" />
     </div>
   )
 }

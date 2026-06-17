@@ -3,9 +3,10 @@ import { randomBytes, createHash } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
+import { sendNotification } from '@/lib/notify'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
-const SESSION_TTL_DAYS = 90
+const SESSION_TTL_DAYS = 365
 
 function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex')
@@ -84,6 +85,21 @@ export async function createVendorSession(vendorId: string, requestId?: string |
     summary: 'Created vendor portal session.',
     metadata: { sessionId: session.id, requestId: requestId ?? null },
   })
+
+  if (vendor.email) {
+    await sendNotification({
+      to: vendor.email,
+      subject: 'New vendor portal sign-in',
+      text: [
+        `Hi ${vendor.name},`,
+        '',
+        'Your vendor portal account was just signed in.',
+        '',
+        'If this was you, no action is needed.',
+        'If this was not you, contact your property manager right away.',
+      ].join('\n'),
+    }, { ownerUserId: vendor.orgId ?? undefined })
+  }
 
   return session
 }

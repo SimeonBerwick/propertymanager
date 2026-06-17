@@ -48,13 +48,13 @@ export async function sendPortalAuthChallenge(input: {
   const text = [
     `Hi ${input.recipientName},`,
     '',
-    `Open this secure link to sign in to the ${portalLabel}:`,
+    `Use this login link to open the ${portalLabel}:`,
     input.magicLink,
     '',
     `Or enter this code: ${input.code}`,
     'The link and code expire after 10 minutes and can only be used once.',
     '',
-    'If you did not request this, ignore this message.',
+    'If you did not request this, contact your property manager.',
   ].join('\n')
 
   if (input.channel === 'sms') {
@@ -64,7 +64,7 @@ export async function sendPortalAuthChallenge(input: {
 
   const result = await sendNotification({
     to: input.to,
-    subject: `Your secure ${portalLabel} sign-in link`,
+    subject: `Your ${portalLabel} login link`,
     text,
   })
   if (!result.ok) throw new Error('Email delivery failed. Try again.')

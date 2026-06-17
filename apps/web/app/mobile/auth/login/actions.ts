@@ -1,9 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createOtpChallenge, OtpRateLimitError } from '@/lib/tenant-otp-lib'
+import { prisma } from '@/lib/prisma'
 import { findReturningTenantIdentityByIdentifier } from '@/lib/tenant-portal-data'
-import { writeAuditLog } from '@/lib/audit-log'
 import { verifyManagerAccessCode } from '@/lib/manager-access-code'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 
@@ -24,7 +23,19 @@ export async function startReturningLoginAction(
     const result = await verifyManagerAccessCode('tenant', identifier)
     if (!result.ok) return { error: accessCodeMessage(result.code) }
     if (result.role !== 'tenant') return { error: 'This access code is not valid for tenant access.' }
-    await createTenantMobileSession(result.tenantIdentityId, result.expiresAt)
+    try {
+      await prisma.tenantIdentity.updateMany({
+        where: { id: result.tenantIdentityId, status: 'pending_invite' },
+        data: { status: 'active', verifiedAt: new Date() },
+      })
+      await createTenantMobileSession(result.tenantIdentityId)
+    } catch (error) {
+      return {
+        error: error instanceof Error && /not active/i.test(error.message)
+          ? 'This renter access code is no longer active. Ask your property manager for a new code.'
+          : 'Could not finish renter sign-in. Try again or ask your property manager for a new code.',
+      }
+    }
     redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
   }
 
@@ -32,42 +43,22 @@ export async function startReturningLoginAction(
   if (!match.ok) {
     return {
       error: match.code === 'ambiguous'
-        ? 'More than one active tenant identity matches this login. Contact support to continue.'
-        : 'We could not start login with that identifier.',
+        ? 'More than one active tenant identity matches this login.'
+        : 'We could not find an active renter account with that email or phone number.',
     }
   }
 
-  const channel = identifier.includes('@') ? 'email' : 'sms'
-  await writeAuditLog({
-    orgId: match.tenantIdentity.orgId,
-    actorUserId: null,
-    entityType: 'tenantIdentity',
-    entityId: match.tenantIdentity.id,
-    action: 'tenantIdentity.returningLoginStarted',
-    summary: `Started returning tenant login via ${channel}.`,
-    metadata: { channel },
-  })
-  let otp
   try {
-    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel, { next })
+    await createTenantMobileSession(match.tenantIdentity.id)
   } catch (error) {
-    if (error instanceof OtpRateLimitError) {
-      return { error: 'Too many code requests. Try again later.' }
+    return {
+      error: error instanceof Error && /not active/i.test(error.message)
+        ? 'This renter account is no longer active.'
+        : 'Could not finish renter sign-in.',
     }
-    return { error: error instanceof Error ? error.message : 'Could not send a sign-in message.' }
-  }
-  const paramsString = new URLSearchParams({
-    challengeId: otp.challengeId,
-    mode: 'returning',
-    masked: otp.destinationMasked,
-  })
-  if (next.startsWith('/')) paramsString.set('next', next)
-
-  if (process.env.NODE_ENV !== 'production') {
-    paramsString.set('devCode', otp.code)
   }
 
-  redirect(`/mobile/auth/login/verify?${paramsString.toString()}` as never)
+  redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
 }
 
 function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {

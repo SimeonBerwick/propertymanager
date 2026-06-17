@@ -19,9 +19,9 @@ export function ReturningLoginForm({ next }: { next?: string }) {
         <input className="input" type="text" name="identifier" autoComplete="username" placeholder="Email, phone number, or 6-digit code" value={identifier} onChange={(event) => setIdentifier(event.target.value)} required />
       </label>
       <button type="submit" className="button primary" disabled={isPending}>
-        {isPending ? 'Checking access...' : isAccessCode ? 'Use access code' : 'Send secure sign-in link'}
+        {isPending ? 'Signing in...' : isAccessCode ? 'Use access code' : 'Sign in'}
       </button>
-      <div className="muted">We automatically detect the access method. Secure links and sign-in codes are sent when you enter email or phone.</div>
+      <div className="muted">Use the one-time code from your property manager the first time. After that, your email or phone number signs you in on this device.</div>
     </form>
   )
 }

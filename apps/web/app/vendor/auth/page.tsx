@@ -16,7 +16,7 @@ export default async function VendorAuthLandingPage() {
         <h2 style={{ marginTop: 4 }}>Vendor portal</h2>
       </div>
       <p className="muted" style={{ margin: 0 }}>
-        Verify the email attached to your vendor account with a short-lived sign-in code. After verification, this device stays signed in for up to 90 days or until you sign out.
+        Use your access code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/vendor/auth/login' as Route} className="button primary">Vendor sign in</Link>

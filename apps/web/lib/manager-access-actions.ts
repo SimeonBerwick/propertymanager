@@ -13,6 +13,7 @@ export type ManagerAccessCodeState = {
   code?: string
   expiresAt?: string
   scope?: string
+  deliveryWarning?: string
 }
 
 function value(formData: FormData, key: string) {
@@ -46,15 +47,22 @@ export async function createTenantAccessCodeAction(
       validFrom,
       expiresAt,
     })
-    await getTenantDeliveryAdapter().sendManagerAccessCode({
+    const delivery = await getTenantDeliveryAdapter().sendManagerAccessCode({
       to: result.email,
       code: result.code,
       tenantName: result.name,
       expiresAt: result.expiresAt,
       accessLink: `${getAppBaseUrl('tenant manager access codes')}/mobile/auth/login`,
+      ownerUserId: session.userId,
     })
     revalidatePath('/access')
-    return { error: null, code: result.code, expiresAt: result.expiresAt.toISOString(), scope: 'Tenant portal for this unit' }
+    return {
+      error: null,
+      code: result.code,
+      expiresAt: result.expiresAt.toISOString(),
+      scope: 'Tenant portal for this unit',
+      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Gmail or Outlook.`,
+    }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not create tenant access code.' }
   }
@@ -78,16 +86,23 @@ export async function createVendorAccessCodeAction(
       expiresAt,
     })
     const request = await prisma.maintenanceRequest.findUnique({ where: { id: requestId }, select: { title: true } })
-    await getVendorDeliveryAdapter().sendManagerAccessCode({
+    const delivery = await getVendorDeliveryAdapter().sendManagerAccessCode({
       to: result.email,
       code: result.code,
       vendorName: result.name,
       requestTitle: request?.title ?? 'assigned work order',
       expiresAt: result.expiresAt,
       accessLink: `${getAppBaseUrl('vendor manager access codes')}/vendor/auth/login`,
+      ownerUserId: session.userId,
     })
     revalidatePath('/access')
-    return { error: null, code: result.code, expiresAt: result.expiresAt.toISOString(), scope: request?.title ?? 'Selected work order' }
+    return {
+      error: null,
+      code: result.code,
+      expiresAt: result.expiresAt.toISOString(),
+      scope: request?.title ?? 'Selected work order',
+      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Gmail or Outlook.`,
+    }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not create vendor access code.' }
   }
