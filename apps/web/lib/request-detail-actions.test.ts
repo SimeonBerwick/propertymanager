@@ -460,6 +460,62 @@ describe('approveVendorCommercialItemAction', () => {
     expect(draft?.description).toContain('Additional parts: USD 125.00')
     expect(draft?.events[0]?.eventType).toBe('created')
   })
+
+  test('approving an overcost includes the assigned vendor submitted bid when no tender award exists', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Pipe Pros', email: 'pipe@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'closed',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      preferredCurrency: 'usd',
+    })
+    await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'bid',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 40000,
+        title: 'Approved repair bid',
+      },
+    })
+    const overcost = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'overcost',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 10000,
+        title: 'Approved extras',
+      },
+    })
+
+    const result = await approveVendorCommercialItemAction(
+      PREV,
+      formData({ requestId: request.id, itemId: overcost.id }),
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.message).toMatch(/remittance draft posted/i)
+
+    const draft = await prisma.billingDocument.findFirst({
+      where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },
+    })
+
+    expect(draft?.totalCents).toBe(50000)
+    expect(draft?.description).toContain('Approved bid: USD 400.00')
+    expect(draft?.description).toContain('Approved extras: USD 100.00')
+  })
 })
 
 describe('updateDispatchFormAction', () => {

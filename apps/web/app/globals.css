@@ -467,6 +467,19 @@ body { min-height: 100vh; }
   flex-wrap: wrap;
   align-items: flex-end;
 }
+.billingStatusStack {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.inlineNotice {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--text);
+  padding: 10px 12px;
+}
 .billingLayout {
   display: grid;
   grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
@@ -819,7 +832,7 @@ body { min-height: 100vh; }
   .attentionRow { grid-template-columns: 1fr; }
   .guidedWorkflowCompact .recommendedAction { min-width: 0; }
   .onboardingHead, .onboardingSteps { grid-template-columns: 1fr; }
-  .header, .sectionHead, .row, .billingRow, .billingActionsRow, .billingStatusForm { flex-direction: column; align-items: flex-start; }
+  .header, .sectionHead, .row, .billingRow, .billingActionsRow, .billingStatusForm, .billingStatusStack { flex-direction: column; align-items: flex-start; }
   .billingForm { position: static; }
   .page { padding: 18px; }
   .header .nav { width: 100%; }

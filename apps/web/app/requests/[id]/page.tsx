@@ -68,21 +68,28 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     .flatMap((tender) => tender.invites)
     .filter((invite) => invite.status === 'awarded' && invite.bidAmountCents != null)
     .sort((a, b) => new Date(b.awardedAt ?? b.respondedAt ?? b.invitedAt).getTime() - new Date(a.awardedAt ?? a.respondedAt ?? a.invitedAt).getTime())[0]
-  const approvedVendorBid = data.vendorCommercialItems
-    .filter((item) => item.itemType === 'bid' && item.status === 'approved')
+  const acceptedVendorBid = data.vendorCommercialItems
+    .filter((item) => (
+      item.itemType === 'bid'
+      && (item.status === 'approved' || (item.status === 'submitted' && item.vendorId === data.request.assignedVendorId))
+    ))
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
-  const approvedBidCents = awardedTenderBid?.bidAmountCents ?? approvedVendorBid?.amountCents ?? 0
+  const payableVendorId = awardedTenderBid?.vendorId ?? acceptedVendorBid?.vendorId ?? data.request.assignedVendorId
+  const approvedBidCents = awardedTenderBid?.bidAmountCents ?? acceptedVendorBid?.amountCents ?? 0
   const approvedVendorExtrasCents = data.vendorCommercialItems
-    .filter((item) => item.status === 'approved' && item.itemType !== 'bid')
+    .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
   const pendingVendorExtrasCents = data.vendorCommercialItems
-    .filter((item) => item.status === 'submitted' && item.itemType !== 'bid')
+    .filter((item) => item.status === 'submitted' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
   const vendorAmountOwedCents = approvedBidCents + approvedVendorExtrasCents
   const vendorAmountIfPendingApprovedCents = vendorAmountOwedCents + pendingVendorExtrasCents
-  const postedVendorRemittanceCents = data.billingDocuments
-    .filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
-    .reduce((sum, doc) => sum + doc.totalCents, 0)
+  const postedVendorRemittances = data.billingDocuments.filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
+  const postedVendorRemittanceCents = postedVendorRemittances.reduce((sum, doc) => sum + doc.totalCents, 0)
+  const postedVendorRemittanceBalanceCents = postedVendorRemittances.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
+  const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorRemittanceCents, 0)
+  const vendorOutstandingCents = postedVendorRemittanceBalanceCents + unpostedVendorOwedCents
+  const isCompleteButUnpaid = ['completed', 'closed'].includes(data.request.status) && vendorOutstandingCents > 0
 
   return (
     <div className="stack requestDetailPage">
@@ -98,8 +105,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
           <div className="requestHeroMeta">
-            <StatusBadge status={data.request.status} />
-            <RequestFlowBadge request={data.request} />
+            {isCompleteButUnpaid ? <span className="badge billing-partial">Complete - unpaid</span> : <StatusBadge status={data.request.status} />}
+            {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={data.request} />}
             <span className="muted">{data.request.category}</span>
             <span className="muted">Submitted {new Date(data.request.createdAt).toLocaleString()}</span>
           </div>
@@ -388,10 +395,17 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Owed now</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Outstanding</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
               <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Vendor docs posted</strong><div className="muted">{formatMoney(postedVendorRemittanceCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Vendor docs balance</strong><div className="muted">{formatMoney(postedVendorRemittanceBalanceCents, data.request.preferredCurrency)}</div></div>
             </div>
+            {isCompleteButUnpaid ? (
+              <div className="inlineNotice" style={{ marginTop: 10 }}>
+                Work is complete, but vendor billing is not fully paid.
+              </div>
+            ) : null}
             <div className="muted" style={{ marginTop: 10 }}>
               Approving a vendor bid, fee, or overcost posts or updates a draft vendor remittance. Use the billing document actions below to open, send, or mark payment.
             </div>

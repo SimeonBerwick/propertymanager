@@ -1169,16 +1169,19 @@ async function upsertVendorRemittanceDraft(
       orderBy: { awardedAt: 'desc' },
     }),
     tx.vendorCommercialItem.findMany({
-      where: { requestId: input.requestId, vendorId: input.vendorId, status: 'approved' },
+      where: { requestId: input.requestId, vendorId: input.vendorId, status: { in: ['approved', 'submitted'] } },
       orderBy: { submittedAt: 'asc' },
     }),
   ])
 
   if (!request) return null
 
-  const approvedBid = commercialItems.find((item) => item.itemType === 'bid')
-  const bidCents = awardedInvite?.bidAmountCents ?? approvedBid?.amountCents ?? 0
-  const extraItems = commercialItems.filter((item) => item.itemType !== 'bid')
+  const approvedBid = commercialItems.find((item) => item.itemType === 'bid' && item.status === 'approved')
+  const assignedSubmittedBid = request.assignedVendorId === input.vendorId
+    ? commercialItems.find((item) => item.itemType === 'bid' && item.status === 'submitted')
+    : undefined
+  const bidCents = awardedInvite?.bidAmountCents ?? approvedBid?.amountCents ?? assignedSubmittedBid?.amountCents ?? 0
+  const extraItems = commercialItems.filter((item) => item.itemType !== 'bid' && item.status === 'approved')
   const extrasCents = extraItems.reduce((sum, item) => sum + item.amountCents, 0)
   const totalCents = bidCents + extrasCents
   if (totalCents <= 0) return null
