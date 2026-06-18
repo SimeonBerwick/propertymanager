@@ -53,7 +53,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.getByRole('button', { name: 'Submit maintenance request' }).click()
   await expect(page.getByRole('heading', { name: 'Request received' })).toBeVisible()
 
-  await page.goto('/dashboard')
+  await page.goto('/dashboard?queue=open')
   const requestRow = page.locator('.inboxRow').filter({ hasText: requestTitle })
   await expect(requestRow).toBeVisible()
   await requestRow.getByRole('link', { name: 'Open' }).click()

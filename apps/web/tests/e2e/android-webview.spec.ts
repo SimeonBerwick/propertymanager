@@ -33,7 +33,7 @@ async function signInManager(page: Page) {
   await page.getByLabel('Password').fill(process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'play-review-password-2026')
   await page.getByRole('button', { name: /^Sign in$/ }).click()
   await expect(page).toHaveURL(/\/dashboard/)
-  await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Maintenance queue|Today/ }).first()).toBeVisible()
 }
 
 async function signInTenantWithMagicLink(page: Page) {
@@ -128,7 +128,7 @@ test('vendor OTP magic link, persistent session, photo upload, and support link 
 
 test('privacy, support, deletion, email, and back-button links are reachable in Android WebView', async ({ page }) => {
   await page.goto('/privacy')
-  await expect(page.getByText(/Privacy|policy/i)).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Privacy Policy/i })).toBeVisible()
 
   await page.goto('/support')
   await expect(page.getByText(/Simeonware support/)).toBeVisible()
