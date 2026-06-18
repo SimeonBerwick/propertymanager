@@ -76,7 +76,7 @@ test('manager login persists and CSV downloads work in Android WebView', async (
 test('tenant OTP magic link, persistent session, photo upload, links, and back navigation work in Android WebView', async ({ page }) => {
   await signInTenantWithMagicLink(page)
   await page.reload()
-  await expect(page.getByText(/Request history|Report a problem/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Report a problem' }).first()).toBeVisible()
 
   await page.goto('/mobile/requests/play-review-request-vendor')
   await expect(page.locator('a[href^="mailto:"]').first()).toHaveAttribute('href', /play-review-vendor@simeonware\.com/)
@@ -105,7 +105,7 @@ test('tenant OTP magic link, persistent session, photo upload, links, and back n
 test('vendor OTP magic link, persistent session, photo upload, and support link work in Android WebView', async ({ page }) => {
   await signInVendorWithMagicLink(page)
   await page.reload()
-  await expect(page.getByText(/Vendor portal|Open work/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Open work' })).toBeVisible()
 
   await page.goto('/vendor/requests/play-review-request-vendor')
   await expect(page.getByText(/Vendor request|Request detail/)).toBeVisible()
