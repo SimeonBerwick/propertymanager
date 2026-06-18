@@ -17,6 +17,7 @@ if (!smokeToken) {
 const smokeUsers = {
   landlord: process.env.HOSTED_SMOKE_LANDLORD_EMAIL ?? 'landlord@sample.com',
   tenant: process.env.HOSTED_SMOKE_TENANT_EMAIL ?? 'taylor@example.com',
+  vendor: process.env.HOSTED_SMOKE_VENDOR_EMAIL ?? 'vendor@example.com',
 }
 
 function runCurl(path, args = []) {
@@ -128,10 +129,36 @@ function main() {
     expectMatch(requestPage, /Uploaded images|No photos uploaded/, 'tenant request detail media')
   }
 
+  const vendorCookie = getSmokeSessionCookie('vendor', smokeUsers.vendor)
+  let firstVendorRequestPath = null
+  if (vendorCookie) {
+    const vendorHead = head('/vendor', vendorCookie)
+    expectStatus(vendorHead, 200, 'vendor portal')
+    const vendor = get('/vendor', vendorCookie)
+    expectMatch(vendor, /Vendor portal|Work orders|Request detail|Paid and closed|Open work/, 'vendor portal')
+
+    firstVendorRequestPath = findFirstHref(
+      vendor,
+      /href="(\/vendor\/requests\/[^\"?#]+(?:\?[^\"]*)?)"/,
+      'vendor request link',
+    )
+    const vendorRequestPage = get(firstVendorRequestPath, vendorCookie)
+    expectMatch(vendorRequestPage, /Request detail|Work order/, 'vendor request detail')
+    expectMatch(vendorRequestPage, /Property manager|Billing|Photos|Uploaded images/, 'vendor request detail body')
+  }
+
   console.log(JSON.stringify({
     ok: true,
     baseUrl,
-    checked: ['/api/health', '/login', landlordCookie ? '/dashboard' : null, tenantCookie ? '/mobile' : null, firstRequestPath].filter(Boolean),
+    checked: [
+      '/api/health',
+      '/login',
+      landlordCookie ? '/dashboard' : null,
+      tenantCookie ? '/mobile' : null,
+      firstRequestPath,
+      vendorCookie ? '/vendor' : null,
+      firstVendorRequestPath,
+    ].filter(Boolean),
   }, null, 2))
 }
 

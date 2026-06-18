@@ -198,6 +198,19 @@ describe('getTenantMobileSession', () => {
     expect(scope).toBeNull()
   })
 
+  test('returns null when the manager subscription is past due', async () => {
+    const { identity, property, unit, user } = await scaffoldTenant()
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { subscriptionStatus: 'past_due' },
+    })
+    await seedSession(identity.id, user.id, property.id, unit.id)
+
+    const scope = await getTenantMobileSession()
+    expect(scope).toBeNull()
+    expect(mockCookieStore.delete).toHaveBeenCalledWith('pm_tenant_session')
+  })
+
   test('updates lastSeenAt on successful retrieval', async () => {
     const { identity, property, unit, user } = await scaffoldTenant()
     const { session } = await seedSession(identity.id, user.id, property.id, unit.id)

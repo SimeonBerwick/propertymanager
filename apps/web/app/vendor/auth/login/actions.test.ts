@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { startVendorLoginAction } from '@/app/vendor/auth/login/actions'
 import { createVendorManagerAccessCode } from '@/lib/manager-access-code'
 import { clearRateLimitState } from '@/lib/rate-limit'
+import { createVendorSession, getVendorSession } from '@/lib/vendor-session'
 import { createMaintenanceRequest, scaffoldLandlord } from '@/test/helpers'
 
 const mockCookieStore = vi.hoisted(() => {
@@ -94,5 +95,33 @@ describe('startVendorLoginAction', () => {
 
     const session = await prisma.vendorSession.findFirst({ where: { vendorId: vendor.id } })
     expect(session).not.toBeNull()
+  })
+})
+
+describe('getVendorSession', () => {
+  beforeEach(() => {
+    mockCookieStore._reset()
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
+    vi.mocked(headers).mockResolvedValue({ get: () => 'test-agent/1.0' } as unknown as Awaited<ReturnType<typeof headers>>)
+  })
+
+  test('returns null when the manager subscription is past due', async () => {
+    const { user } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Blocked Vendor' },
+    })
+    await createVendorSession(vendor.id)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { subscriptionStatus: 'past_due' },
+    })
+
+    const session = await getVendorSession()
+    expect(session).toBeNull()
+    expect(mockCookieStore.set).toHaveBeenLastCalledWith(
+      'pm_vendor_session',
+      '',
+      expect.objectContaining({ expires: new Date(0) }),
+    )
   })
 })

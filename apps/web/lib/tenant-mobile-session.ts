@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
+import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 365
@@ -100,7 +101,17 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
     include: {
       tenantIdentity: {
         include: {
-          property: true,
+          property: {
+            include: {
+              owner: {
+                select: {
+                  subscriptionStatus: true,
+                  trialEndsAt: true,
+                  subscriptionEndsAt: true,
+                },
+              },
+            },
+          },
           unit: true,
         },
       },
@@ -123,6 +134,21 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
       action: 'tenantIdentity.sessionRejected',
       summary: 'Rejected tenant mobile session because identity or inventory is inactive.',
       metadata: { sessionId: session.id },
+    })
+    cookieStore.delete(TENANT_COOKIE)
+    return null
+  }
+
+  const subscriptionAccess = evaluatePortalSubscriptionAccess(identity.property.owner)
+  if (!subscriptionAccess.allowed) {
+    await writeAuditLog({
+      orgId: identity.orgId,
+      actorUserId: null,
+      entityType: 'tenantIdentity',
+      entityId: identity.id,
+      action: 'tenantIdentity.sessionRejected',
+      summary: 'Rejected tenant mobile session because the manager subscription is not active.',
+      metadata: { sessionId: session.id, reason: subscriptionAccess.gate.reason },
     })
     cookieStore.delete(TENANT_COOKIE)
     return null

@@ -30,7 +30,7 @@ export function hashIdentifier(value: string) {
 }
 
 export async function logAppEvent(level: LogLevel, event: string, details: LogDetails = {}) {
-  const headerStore = await headers()
+  const headerStore = await headers().catch(() => null)
   const safeDetails = sanitize(details) as Record<string, unknown>
   getLogSink(level)(JSON.stringify({
     ts: new Date().toISOString(),
@@ -39,14 +39,14 @@ export async function logAppEvent(level: LogLevel, event: string, details: LogDe
     app: 'property-manager-v1-web',
     env: process.env.NODE_ENV ?? 'development',
     requestId:
-      headerStore.get('x-request-id')
-      ?? headerStore.get('x-vercel-id')
-      ?? headerStore.get('cf-ray')
+      headerStore?.get('x-request-id')
+      ?? headerStore?.get('x-vercel-id')
+      ?? headerStore?.get('cf-ray')
       ?? undefined,
     route:
-      headerStore.get('x-pathname')
-      ?? headerStore.get('next-url')
-      ?? headerStore.get('referer')
+      headerStore?.get('x-pathname')
+      ?? headerStore?.get('next-url')
+      ?? headerStore?.get('referer')
       ?? undefined,
     ...safeDetails,
   }))
