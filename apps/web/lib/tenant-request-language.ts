@@ -1,20 +1,18 @@
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import type { RequestStatus } from '@/lib/types'
 
-const STATUS_LABELS: Record<RequestStatus, string> = {
-  requested: 'Sent to your property manager',
-  approved: 'Approved and being arranged',
-  declined: 'Not approved',
-  vendor_selected: 'Vendor being scheduled',
-  scheduled: 'Visit scheduled',
-  in_progress: 'Work in progress',
-  completed: 'Work completed',
-  closed: 'Closed',
-  canceled: 'Canceled',
-  reopened: 'Reopened for follow-up',
+export function tenantRequestStatusLabel(status: RequestStatus) {
+  return deriveRequestCloseoutLanguage({ status }).tenantLabel
 }
 
-export function tenantRequestStatusLabel(status: RequestStatus) {
-  return STATUS_LABELS[status]
+export function tenantRequestCloseoutLabel(request: {
+  status: RequestStatus
+  billingDocuments?: Array<{ status?: string | null, totalCents: number, paidCents: number }>
+}) {
+  return deriveRequestCloseoutLanguage({
+    status: request.status,
+    billingDocuments: request.billingDocuments,
+  }).tenantLabel
 }
 
 export function tenantRequestNextStep(request: {

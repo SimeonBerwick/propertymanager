@@ -1,6 +1,14 @@
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
+
 type VendorInviteState = {
   status?: string
   awardedAt?: string | Date | null
+}
+
+type BillingDocumentLike = {
+  status?: string | null
+  totalCents: number
+  paidCents: number
 }
 
 type VendorRequestStateInput = {
@@ -8,7 +16,7 @@ type VendorRequestStateInput = {
   requestStatus: string
   viewerVendorId: string
   latestInvite?: VendorInviteState | null
-  vendorPaidInFull?: boolean
+  billingDocuments?: BillingDocumentLike[]
 }
 
 export type VendorRequestViewState = {
@@ -38,11 +46,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
   const isAwardedToViewer = inviteAwarded
 
   if (['closed', 'declined', 'canceled'].includes(input.requestStatus)) {
-    const statusLabel = input.requestStatus === 'closed'
-      ? input.vendorPaidInFull
-        ? 'Paid and closed'
-        : 'Closed'
-      : input.requestStatus.replaceAll('_', ' ')
+    const closeoutLanguage = deriveRequestCloseoutLanguage({
+      status: input.requestStatus,
+      billingDocuments: input.billingDocuments,
+    })
+    const statusLabel = closeoutLanguage.vendorLabel
 
     return {
       canControlDispatch: false,
@@ -55,11 +63,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       tenderLabel: statusLabel,
       heroNotice: {
         title: statusLabel,
-        detail: input.requestStatus === 'closed'
-          ? input.vendorPaidInFull
-            ? 'The property manager marked this work order paid and closed.'
-            : 'The property manager closed this work order.'
-          : 'This work order is no longer active.',
+        detail: closeoutLanguage.detail,
         tone: input.requestStatus === 'closed' ? 'success' : 'info',
       },
     }

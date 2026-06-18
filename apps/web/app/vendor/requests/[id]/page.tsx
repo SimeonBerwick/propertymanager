@@ -10,11 +10,7 @@ import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { vendorSignoutAction } from '@/app/vendor/auth/signout/actions'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
-
-function isVendorRemittancePaidInFull(request: { billingDocuments: Array<{ status: string, totalCents: number, paidCents: number }> }) {
-  const remittances = request.billingDocuments
-  return remittances.length > 0 && remittances.every((document) => document.status === 'paid' || Math.max(0, document.totalCents - document.paidCents) === 0)
-}
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 export default async function VendorRequestDetailPage({
   params,
@@ -37,7 +33,11 @@ export default async function VendorRequestDetailPage({
     requestStatus: request.status,
     viewerVendorId: session.vendorId,
     latestInvite,
-    vendorPaidInFull: isVendorRemittancePaidInFull(request),
+    billingDocuments: request.billingDocuments,
+  })
+  const closeoutLanguage = deriveRequestCloseoutLanguage({
+    status: request.status,
+    billingDocuments: request.billingDocuments,
   })
   const heroNotice = awardedInvite && viewState.isAwardedToViewer
     ? {
@@ -196,8 +196,8 @@ export default async function VendorRequestDetailPage({
           <div className="kicker">Billing</div>
           <h3 style={{ marginTop: 4 }}>Vendor remittance records</h3>
         </div>
-        {request.status === 'closed' && isVendorRemittancePaidInFull(request) ? (
-          <div className="notice success"><strong>Paid and closed</strong><span>The property manager marked this work order paid and closed.</span></div>
+        {request.status === 'closed' && closeoutLanguage.paymentState !== 'none' ? (
+          <div className={`notice ${closeoutLanguage.isPaid ? 'success' : ''}`}><strong>{closeoutLanguage.vendorLabel}</strong><span>{closeoutLanguage.detail}</span></div>
         ) : null}
         {request.billingDocuments.length ? request.billingDocuments.map((document) => {
           const balanceCents = document.totalCents - document.paidCents

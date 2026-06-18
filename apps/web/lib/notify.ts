@@ -14,6 +14,7 @@ import { getRuntimeFailures, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { logFallbackEmail, sendViaConnectedMailbox, type NotificationContext } from '@/lib/mailbox-service'
 import { prisma } from '@/lib/prisma'
 import { sendPushNotification } from '@/lib/push'
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 
 export interface NotificationMessage {
@@ -294,24 +295,12 @@ export interface StatusChangedParams {
   toStatus: RequestStatus
 }
 
-const STATUS_LABELS: Record<RequestStatus, string> = {
-  requested: 'Requested, awaiting triage',
-  approved: 'Approved, work can move forward',
-  declined: 'Declined',
-  vendor_selected: 'Vendor selected',
-  scheduled: 'Scheduled, a vendor has been booked',
-  in_progress: 'In progress, work is underway',
-  completed: 'Completed, pending final closure',
-  closed: 'Closed, work is complete',
-  canceled: 'Canceled',
-  reopened: 'Reopened for more work or review',
-}
-
 /**
  * Returns a tenant notification for a status transition.
  * Only call when tenantEmail is known.
  */
 export function buildStatusChangedMessage(p: StatusChangedParams): NotificationMessage {
+  const statusLabel = deriveRequestCloseoutLanguage({ status: p.toStatus }).tenantLabel
   const closingText = p.toStatus === 'closed'
     ? 'The work is complete. Please reply if you have any concerns.'
     : "We'll keep you updated as the work progresses."
@@ -327,7 +316,7 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
       `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
-      `  New status   : ${STATUS_LABELS[p.toStatus]}`,
+      `  New status   : ${statusLabel}`,
       ``,
       closingText,
     ].join('\n'),
@@ -338,7 +327,7 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}
         ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
-        ${dtRow('New status', STATUS_LABELS[p.toStatus])}
+        ${dtRow('New status', statusLabel)}
       </table>
       <p style="margin:14px 0 0 0">${esc(closingText)}</p>
     `),
