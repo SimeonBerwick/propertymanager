@@ -228,6 +228,8 @@ export async function updateBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+    revalidatePath('/vendor')
+    revalidatePath(`/vendor/requests/${requestId}`)
     return { error: null, success: true }
   } catch {
     return { error: 'Could not update billing document.' }
