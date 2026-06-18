@@ -227,10 +227,15 @@ export async function updateBillingDocumentAction(
     })
 
     revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
     return { error: null, success: true }
   } catch {
     return { error: 'Could not update billing document.' }
   }
+}
+
+export async function markBillingDocumentPaidFromDashboardAction(formData: FormData): Promise<void> {
+  await updateBillingDocumentAction({ error: null }, formData)
 }
 
 export async function resendBillingDocumentAction(

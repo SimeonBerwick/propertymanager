@@ -3,7 +3,10 @@ import type { Route } from 'next'
 import type { MaintenanceRequest } from '@/lib/types'
 import { getRecommendedAction, getWorkflowStep, WORKFLOW_STEPS } from '@/lib/request-guidance'
 
-type GuidedRequest = Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'>
+type GuidedRequest = Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'> & {
+  vendorPayableBalanceCents?: number
+  vendorPayableTo?: string
+}
 
 export function GuidedRequestWorkflow({ request, compact = false }: { request: GuidedRequest, compact?: boolean }) {
   const currentStep = getWorkflowStep(request)

@@ -18,6 +18,12 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   propertyName: string
   propertyAddress: string
   unitLabel: string
+  vendorPayableDocumentId?: string
+  vendorPayableTo?: string
+  vendorPayableCurrency?: MaintenanceRequest['preferredCurrency']
+  vendorPayableTotalCents?: number
+  vendorPayablePaidCents?: number
+  vendorPayableBalanceCents?: number
 }
 
 export interface DashboardData {
@@ -98,6 +104,12 @@ function mapUnit(u: any): Unit {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow {
+  const vendorPayable = Array.isArray(r.billingDocuments)
+    ? r.billingDocuments
+        .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void' && doc.totalCents > doc.paidCents)
+        .sort((a: any, b: any) => (b.totalCents - b.paidCents) - (a.totalCents - a.paidCents) || new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime())[0]
+    : undefined
+
   return {
     id: r.id,
     propertyId: r.propertyId,
@@ -143,6 +155,12 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     propertyName: r.property?.name ?? 'Unknown property',
     propertyAddress: r.property?.address ?? 'Unknown address',
     unitLabel: r.unit?.label ?? 'Unknown unit',
+    vendorPayableDocumentId: vendorPayable?.id,
+    vendorPayableTo: vendorPayable ? (vendorPayable.sentTo || r.assignedVendorName || 'Vendor') : undefined,
+    vendorPayableCurrency: vendorPayable?.currency,
+    vendorPayableTotalCents: vendorPayable?.totalCents,
+    vendorPayablePaidCents: vendorPayable?.paidCents,
+    vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
   }
 }
 
@@ -251,7 +269,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       }),
       prisma.maintenanceRequest.findMany({
         where: { property: { ownerId: userId } },
-        include: { property: true, unit: true },
+        include: {
+          property: true,
+          unit: true,
+          billingDocuments: {
+            where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+            orderBy: { updatedAt: 'desc' },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.user.findMany({
@@ -326,7 +351,17 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
       include: {
         _count: { select: { units: true } },
         units: { orderBy: [{ isActive: 'desc' }, { label: 'asc' }] },
-        requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
+        requests: {
+          include: {
+            property: true,
+            unit: true,
+            billingDocuments: {
+              where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+              orderBy: { updatedAt: 'desc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
     if (!dbProperty) return null
