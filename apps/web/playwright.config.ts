@@ -14,7 +14,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'bash ./scripts/start-e2e.sh',
+    command: 'node ./scripts/start-e2e.mjs',
     url: `${baseURL}/login`,
     reuseExistingServer: false,
     timeout: 120_000,
