@@ -888,20 +888,6 @@ model AutomationRule {
   @@index([orgId, enabled])
 }
 
-model RequestTemplate {
-  id          String   @id @default(cuid())
-  orgId       String
-  name        String
-  title       String
-  description String
-  category    String
-  urgency     Urgency  @default(medium)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([orgId, name])
-}
-
 model ProductEvent {
   id           String   @id @default(cuid())
   orgId        String?

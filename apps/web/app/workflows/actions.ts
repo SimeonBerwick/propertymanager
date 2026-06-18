@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import { validateWorkflowRule } from '@/lib/workflow-rules'
@@ -44,30 +43,11 @@ export async function toggleAutomationRuleAction(formData: FormData) {
   revalidatePath('/workflows')
 }
 
-export async function createRequestTemplateAction(_prev: WorkflowActionState, formData: FormData): Promise<WorkflowActionState> {
-  const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
-  const name = text(formData, 'name')
-  const title = text(formData, 'title')
-  const description = text(formData, 'description')
-  const category = text(formData, 'category')
-  const urgency = text(formData, 'urgency')
-  if (!name || !title || !description) return { error: 'Name, title, and description are required.' }
-  if (!REQUEST_CATEGORIES.includes(category as never) || !REQUEST_URGENCIES.includes(urgency as never)) return { error: 'Choose valid template options.' }
-
-  const template = await prisma.requestTemplate.create({ data: { orgId: session.userId, name, title, description, category, urgency: urgency as 'low' | 'medium' | 'high' | 'urgent' } })
-  await prisma.productEvent.create({ data: { orgId: session.userId, eventName: 'request_template_created', metadataJson: JSON.stringify({ templateId: template.id }) } }).catch(() => null)
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'requestTemplate', entityId: template.id, action: 'requestTemplate.created', summary: `Created request template ${name}.` })
-  revalidatePath('/workflows')
-  return { error: null, success: true }
-}
-
 export async function deleteWorkflowItemAction(formData: FormData) {
   const session = await getLandlordSession()
   if (!session) return
   const id = text(formData, 'id')
   const kind = text(formData, 'kind')
   if (kind === 'rule') await prisma.automationRule.deleteMany({ where: { id, orgId: session.userId } })
-  if (kind === 'template') await prisma.requestTemplate.deleteMany({ where: { id, orgId: session.userId } })
   revalidatePath('/workflows')
 }
