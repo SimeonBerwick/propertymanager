@@ -1,11 +1,25 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { startReturningLoginAction } from '@/app/mobile/auth/login/actions'
+import { prisma } from '@/lib/prisma'
+import { createTenantManagerAccessCode } from '@/lib/manager-access-code'
 import { clearRateLimitState } from '@/lib/rate-limit'
-import { scaffoldTenant, scaffoldLandlord, createActiveTenantIdentity } from '@/test/helpers'
+import { scaffoldTenant, scaffoldLandlord, createActiveTenantIdentity, createTenantIdentity } from '@/test/helpers'
+import { cookies, headers } from 'next/headers'
 
-// Prevent real OTP delivery during tests
-vi.mock('@/lib/portal-auth-delivery', () => ({
-  sendPortalAuthChallenge: vi.fn().mockResolvedValue(undefined),
+const mockCookieStore = vi.hoisted(() => {
+  const store = new Map<string, string>()
+  return {
+    _store: store,
+    get: vi.fn((name: string) => (store.has(name) ? { value: store.get(name) } : undefined)),
+    set: vi.fn((name: string, value: string) => { store.set(name, value) }),
+    delete: vi.fn((name: string) => { store.delete(name) }),
+    _reset: () => store.clear(),
+  }
+})
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockResolvedValue(mockCookieStore),
+  headers: vi.fn().mockResolvedValue({ get: () => 'test-agent/1.0' }),
 }))
 
 const PREV = { error: null }
@@ -19,17 +33,23 @@ function formData(fields: Record<string, string>) {
 describe('startReturningLoginAction', () => {
   beforeEach(() => {
     clearRateLimitState()
+    mockCookieStore._reset()
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as unknown as Awaited<ReturnType<typeof cookies>>)
+    vi.mocked(headers).mockResolvedValue({ get: () => 'test-agent/1.0' } as unknown as Awaited<ReturnType<typeof headers>>)
   })
   test('returns error when identifier is empty', async () => {
     const result = await startReturningLoginAction(PREV, formData({ identifier: '' }))
     expect(result.error).toMatch(/required/i)
   })
 
-  test('starts phone login for a matching tenant', async () => {
+  test('signs in directly by phone for a matching tenant', async () => {
     const { identity } = await scaffoldTenant()
     await expect(
       startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile/)
+
+    const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
+    expect(session).not.toBeNull()
   })
 
   test('returns error when identifier matches no tenant', async () => {
@@ -49,42 +69,46 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/more than one/i)
   })
 
-  test('redirects with email channel params on valid email login', async () => {
+  test('signs in directly by email for a matching tenant', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const email = 'tenant@example.com'
-    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
+    const identity = await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
 
     await expect(
       startReturningLoginAction(PREV, formData({ identifier: email })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*mode=returning/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile/)
+
+    const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
+    expect(session).not.toBeNull()
   })
 
-  test('includes devCode param in non-production environment', async () => {
+  test('activates a pending renter and signs them in with a manager access code', async () => {
     const { user, property, unit } = await scaffoldLandlord()
-    const email = 'tenant@example.com'
-    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
-    try {
-      await startReturningLoginAction(PREV, formData({ identifier: email }))
-    } catch (err: unknown) {
-      const url = (err as Error).message.replace('NEXT_REDIRECT:', '')
-      const params = new URLSearchParams(url.split('?')[1])
-      // NODE_ENV is 'test' (not 'production') so devCode should be present
-      expect(params.get('devCode')).toBeTruthy()
-    }
-  })
+    const identity = await createTenantIdentity(user.id, property.id, unit.id, {
+      status: 'pending_invite',
+      email: 'pending-code@example.com',
+      leaseStartDate: new Date(Date.now() - 60 * 1000),
+    })
+    const issued = await createTenantManagerAccessCode({
+      actorUserId: user.id,
+      tenantIdentityId: identity.id,
+      validFrom: new Date(Date.now() - 60 * 1000),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    })
 
-  test('rate limits repeated OTP issuance requests for the same identifier', async () => {
-    const { user, property, unit } = await scaffoldLandlord()
-    const email = 'tenant@example.com'
-    await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
+    await expect(
+      startReturningLoginAction(PREV, formData({ identifier: issued.code })),
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile/)
 
-    for (let i = 0; i < 2; i++) {
-      await expect(
-        startReturningLoginAction(PREV, formData({ identifier: email })),
-      ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
-    }
-
-    const blocked = await startReturningLoginAction(PREV, formData({ identifier: email }))
-    expect(blocked.error).toMatch(/too many code requests/i)
+    const updated = await prisma.tenantIdentity.findUnique({ where: { id: identity.id } })
+    const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
+    expect(updated?.status).toBe('active')
+    expect(updated?.verifiedAt).not.toBeNull()
+    expect(session?.expiresAt.getTime()).toBeGreaterThan(Date.now() + 300 * 24 * 60 * 60 * 1000)
+    expect(mockCookieStore.set).toHaveBeenCalledWith(
+      'pm_tenant_session',
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true }),
+    )
   })
 })

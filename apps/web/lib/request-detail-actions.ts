@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
@@ -10,6 +11,7 @@ import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
+import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -634,6 +636,14 @@ export async function approveVendorCommercialItemAction(
           },
         })
       }
+
+      await upsertVendorRemittanceDraft(tx, {
+        requestId,
+        vendorId: item.vendorId,
+        vendorName: item.vendor.name,
+        vendorEmail: item.vendor.email,
+        userId: session.userId,
+      })
     })
 
     await writeAuditLog({
@@ -649,7 +659,7 @@ export async function approveVendorCommercialItemAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
-    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved and vendor assigned.' : 'Vendor submission approved.' }
+    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and remittance draft posted.' : 'Vendor submission approved and remittance draft posted.' }
   } catch {
     return { error: 'Could not approve vendor submission.' }
   }
@@ -1137,6 +1147,121 @@ function centsFromDollarsInput(raw: string) {
   if (!value) return 0
   if (!/^\d+(\.\d{1,2})?$/.test(value)) return null
   return Math.round(Number(value) * 100)
+}
+
+async function upsertVendorRemittanceDraft(
+  tx: Prisma.TransactionClient,
+  input: {
+    requestId: string
+    vendorId: string
+    vendorName: string
+    vendorEmail: string | null
+    userId: string
+  },
+) {
+  const [request, awardedInvite, commercialItems] = await Promise.all([
+    tx.maintenanceRequest.findUnique({
+      where: { id: input.requestId },
+      include: { property: true, unit: true },
+    }),
+    tx.tenderInvite.findFirst({
+      where: { requestId: input.requestId, vendorId: input.vendorId, status: 'awarded' },
+      orderBy: { awardedAt: 'desc' },
+    }),
+    tx.vendorCommercialItem.findMany({
+      where: { requestId: input.requestId, vendorId: input.vendorId, status: { in: ['approved', 'submitted'] } },
+      orderBy: { submittedAt: 'asc' },
+    }),
+  ])
+
+  if (!request) return null
+
+  const approvedBid = commercialItems.find((item) => item.itemType === 'bid' && item.status === 'approved')
+  const assignedSubmittedBid = request.assignedVendorId === input.vendorId
+    ? commercialItems.find((item) => item.itemType === 'bid' && item.status === 'submitted')
+    : undefined
+  const bidCents = awardedInvite?.bidAmountCents ?? approvedBid?.amountCents ?? assignedSubmittedBid?.amountCents ?? 0
+  const extraItems = commercialItems.filter((item) => item.itemType !== 'bid' && item.status === 'approved')
+  const extrasCents = extraItems.reduce((sum, item) => sum + item.amountCents, 0)
+  const totalCents = bidCents + extrasCents
+  if (totalCents <= 0) return null
+
+  const title = `Vendor remittance - ${input.vendorName}`
+  const descriptionLines = [
+    `Amount owed to ${input.vendorName} for ${request.title}.`,
+    bidCents > 0 ? `Approved bid: USD ${(bidCents / 100).toFixed(2)}` : null,
+    ...extraItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
+  ].filter(Boolean) as string[]
+  const description = descriptionLines.join('\n')
+  const pdfHtml = renderBillingPdfHtml({
+    title,
+    recipientLabel: input.vendorName,
+    documentType: 'vendor_remittance',
+    status: 'draft',
+    amountCents: totalCents,
+    paidCents: 0,
+    currency: request.preferredCurrency,
+    description,
+    requestTitle: request.title,
+    propertyName: request.property.name,
+    unitLabel: request.unit.label,
+  })
+
+  const existingDraft = await tx.billingDocument.findFirst({
+    where: {
+      requestId: input.requestId,
+      recipientType: 'vendor',
+      documentType: 'vendor_remittance',
+      status: 'draft',
+      sentTo: input.vendorEmail,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  if (existingDraft) {
+    const updated = await tx.billingDocument.update({
+      where: { id: existingDraft.id },
+      data: {
+        totalCents,
+        paidCents: 0,
+        title,
+        description,
+        pdfUrl: `data:text/html;charset=utf-8,${encodeURIComponent(pdfHtml)}`,
+        events: {
+          create: {
+            actorUserId: input.userId,
+            eventType: 'payment_state_updated',
+            note: 'Updated draft from approved vendor submissions.',
+          },
+        },
+      },
+    })
+    return updated
+  }
+
+  return tx.billingDocument.create({
+    data: {
+      requestId: input.requestId,
+      recipientType: 'vendor',
+      documentType: 'vendor_remittance',
+      status: 'draft',
+      currency: request.preferredCurrency,
+      totalCents,
+      paidCents: 0,
+      title,
+      description,
+      pdfUrl: `data:text/html;charset=utf-8,${encodeURIComponent(pdfHtml)}`,
+      sentTo: input.vendorEmail,
+      createdByUserId: input.userId,
+      events: {
+        create: {
+          actorUserId: input.userId,
+          eventType: 'created',
+          note: 'Draft vendor remittance created from approved vendor submissions.',
+        },
+      },
+    },
+  })
 }
 
 export async function updateTenantBillbackAction(

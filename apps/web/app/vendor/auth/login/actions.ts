@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createVendorSession } from '@/lib/vendor-session'
 import { writeAuditLog } from '@/lib/audit-log'
-import { createVendorOtpChallenge, findReturningVendorByIdentifier, VendorOtpRateLimitError } from '@/lib/vendor-otp-lib'
+import { findReturningVendorByIdentifier } from '@/lib/vendor-otp-lib'
 import { verifyManagerAccessCode } from '@/lib/manager-access-code'
 
 export type VendorReturningLoginState = { error: string | null }
@@ -23,7 +23,7 @@ export async function startVendorLoginAction(
     const result = await verifyManagerAccessCode('vendor', identifier)
     if (!result.ok) return { error: accessCodeMessage(result.code) }
     if (result.role !== 'vendor') return { error: 'This access code is not valid for vendor access.' }
-    await createVendorSession(result.vendorId, result.requestId, result.expiresAt)
+    await createVendorSession(result.vendorId, result.requestId)
     redirect(`/vendor/requests/${result.requestId}` as never)
   }
 
@@ -31,45 +31,22 @@ export async function startVendorLoginAction(
   if (!match.ok) {
     return {
       error: match.code === 'ambiguous'
-        ? 'More than one active vendor matches this email. Contact support to continue.'
-        : 'We could not start login with that email.',
+        ? 'More than one active vendor matches this email or phone number.'
+        : 'We could not find an active vendor account with that email or phone number.',
     }
   }
 
-  const channel = identifier.includes('@') ? 'email' : 'sms'
-  await writeAuditLog({
-    orgId: match.vendor.orgId,
-    actorUserId: null,
-    entityType: 'vendor',
-    entityId: match.vendor.id,
-    action: 'vendor.returningLoginStarted',
-    summary: `Started returning vendor login via ${channel}.`,
-    metadata: { channel },
-  })
-
-  let otp
   try {
-    otp = await createVendorOtpChallenge(match.vendor.id, 'returning_login', channel, { next })
+    await createVendorSession(match.vendor.id)
   } catch (error) {
-    if (error instanceof VendorOtpRateLimitError) {
-      return { error: 'Too many code requests. Try again later.' }
+    return {
+      error: error instanceof Error && /not active/i.test(error.message)
+        ? 'This vendor account is no longer active.'
+        : 'Could not finish vendor sign-in.',
     }
-    return { error: error instanceof Error ? error.message : 'Could not send a sign-in message.' }
   }
 
-  const paramsString = new URLSearchParams({
-    challengeId: otp.challengeId,
-    masked: otp.destinationMasked,
-  })
-  if (next.startsWith('/')) {
-    paramsString.set('next', next)
-  }
-
-  if (process.env.NODE_ENV !== 'production') {
-    paramsString.set('devCode', otp.code)
-  }
-
-  redirect(`/vendor/auth/login/verify?${paramsString.toString()}` as never)
+  redirect((next.startsWith('/vendor') ? next : '/vendor') as never)
 }
 
 function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {

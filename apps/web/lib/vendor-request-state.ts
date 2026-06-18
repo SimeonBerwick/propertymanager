@@ -8,6 +8,7 @@ type VendorRequestStateInput = {
   requestStatus: string
   viewerVendorId: string
   latestInvite?: VendorInviteState | null
+  vendorPaidInFull?: boolean
 }
 
 export type VendorRequestViewState = {
@@ -35,6 +36,34 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
   const assignedToAnotherVendor = !!input.assignedVendorId && input.assignedVendorId !== input.viewerVendorId
   const canControlDispatch = assignedToViewer || inviteAwarded
   const isAwardedToViewer = inviteAwarded
+
+  if (['closed', 'declined', 'canceled'].includes(input.requestStatus)) {
+    const statusLabel = input.requestStatus === 'closed'
+      ? input.vendorPaidInFull
+        ? 'Paid and closed'
+        : 'Closed'
+      : input.requestStatus.replaceAll('_', ' ')
+
+    return {
+      canControlDispatch: false,
+      canSeeSchedule: false,
+      shouldShowOccupant: false,
+      isAwardedToViewer,
+      isOpenWork: false,
+      isPendingBid: false,
+      statusLabel,
+      tenderLabel: statusLabel,
+      heroNotice: {
+        title: statusLabel,
+        detail: input.requestStatus === 'closed'
+          ? input.vendorPaidInFull
+            ? 'The property manager marked this work order paid and closed.'
+            : 'The property manager closed this work order.'
+          : 'This work order is no longer active.',
+        tone: input.requestStatus === 'closed' ? 'success' : 'info',
+      },
+    }
+  }
 
   if (assignedToAnotherVendor) {
     return {

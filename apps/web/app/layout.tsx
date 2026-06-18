@@ -14,6 +14,7 @@ import { MenuBehavior } from '@/components/menu-behavior'
 import { CommandPalette } from '@/components/command-palette'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { ManagerMobileNav } from '@/components/manager-mobile-nav'
+import { PublicMarketingNav } from '@/components/public-marketing-nav'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -95,14 +96,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 </>
               )}
               {!session.isLoggedIn && (
-                <>
-                  <Link href="/#features">Features</Link>
-                  <Link href="/#how-it-works">How it works</Link>
-                  <Link href="/#pricing">Pricing</Link>
-                  <Link href="/support">Support</Link>
-                  <Link href="/login" className="button">Sign in</Link>
-                  <Link href="/signup" className="button primary">Start free trial</Link>
-                </>
+                <PublicMarketingNav />
               )}
             </div>
           </header>

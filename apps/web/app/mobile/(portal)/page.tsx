@@ -20,7 +20,7 @@ export default async function TenantMobileDashboardPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined
 
   const requests = await getTenantOwnedRequestsForDashboard(session)
-  const filter = resolvedSearchParams?.filter === 'open' || resolvedSearchParams?.filter === 'charges'
+  const filter = resolvedSearchParams?.filter === 'open' || resolvedSearchParams?.filter === 'charges' || resolvedSearchParams?.filter === 'all'
     ? resolvedSearchParams.filter
     : 'open'
 

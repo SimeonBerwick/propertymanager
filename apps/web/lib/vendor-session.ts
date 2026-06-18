@@ -3,9 +3,11 @@ import { randomBytes, createHash } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
+import { sendNotification } from '@/lib/notify'
+import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
-const SESSION_TTL_DAYS = 90
+const SESSION_TTL_DAYS = 365
 
 function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex')
@@ -35,7 +37,7 @@ export interface VendorPortalScope {
   phone?: string | null
 }
 
-export async function createVendorSession(vendorId: string, requestId?: string | null, maximumExpiresAt?: Date) {
+export async function createVendorSession(vendorId: string, requestId?: string | null, maximumExpiresAt?: Date, options: { notify?: boolean } = {}) {
   const vendor = await prisma.vendor.findUnique({
     where: { id: vendorId },
     select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true },
@@ -85,6 +87,21 @@ export async function createVendorSession(vendorId: string, requestId?: string |
     metadata: { sessionId: session.id, requestId: requestId ?? null },
   })
 
+  if (options.notify !== false && vendor.email) {
+    await sendNotification({
+      to: vendor.email,
+      subject: 'New vendor portal sign-in',
+      text: [
+        `Hi ${vendor.name},`,
+        '',
+        'Your vendor portal account was just signed in.',
+        '',
+        'If this was you, no action is needed.',
+        'If this was not you, contact your property manager right away.',
+      ].join('\n'),
+    }, { ownerUserId: vendor.orgId ?? undefined })
+  }
+
   return session
 }
 
@@ -120,6 +137,31 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
       action: 'vendor.sessionRejected',
       summary: 'Rejected vendor session because the vendor is inactive.',
       metadata: { sessionId: session.id },
+    })
+    await clearVendorCookie()
+    return null
+  }
+
+  const owner = session.vendor.orgId
+    ? await prisma.user.findUnique({
+        where: { id: session.vendor.orgId },
+        select: {
+          subscriptionStatus: true,
+          trialEndsAt: true,
+          subscriptionEndsAt: true,
+        },
+      })
+    : null
+  const subscriptionAccess = evaluatePortalSubscriptionAccess(owner)
+  if (!subscriptionAccess.allowed) {
+    await writeAuditLog({
+      orgId: session.vendor.orgId,
+      actorUserId: null,
+      entityType: 'vendor',
+      entityId: session.vendor.id,
+      action: 'vendor.sessionRejected',
+      summary: 'Rejected vendor session because the manager subscription is not active.',
+      metadata: { sessionId: session.id, reason: subscriptionAccess.gate.reason },
     })
     await clearVendorCookie()
     return null

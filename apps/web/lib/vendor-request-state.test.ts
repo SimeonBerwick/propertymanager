@@ -41,4 +41,19 @@ describe('deriveVendorRequestViewState', () => {
     expect(result.isOpenWork).toBe(false)
     expect(result.statusLabel).toMatch(/declined/i)
   })
+
+  test('shows paid and closed when a closed work order has paid vendor remittance', () => {
+    const result = deriveVendorRequestViewState({
+      assignedVendorId: 'vendor-1',
+      requestStatus: 'closed',
+      viewerVendorId: 'vendor-1',
+      latestInvite: { status: 'awarded' },
+      vendorPaidInFull: true,
+    })
+
+    expect(result.canControlDispatch).toBe(false)
+    expect(result.isOpenWork).toBe(false)
+    expect(result.statusLabel).toBe('Paid and closed')
+    expect(result.heroNotice?.title).toBe('Paid and closed')
+  })
 })

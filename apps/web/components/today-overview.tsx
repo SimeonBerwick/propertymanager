@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
+import { NeedsAttentionList } from '@/components/needs-attention-list'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
 import { buildTodayOverview } from '@/lib/today-overview'
@@ -80,19 +80,12 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
           action={<Link href="/exceptions" className="button">View all exceptions</Link>}
         >
           {overview.needsYourAction.length ? (
-            <div className="attentionList">
-              {overview.needsYourAction.slice(0, 5).map((request) => (
-                <article className="attentionRow" key={request.id}>
-                  <Link href={`/requests/${request.id}`}>
-                    <RequestIdentity request={request} />
-                  </Link>
-                  <GuidedRequestWorkflow request={request} compact />
-                </article>
-              ))}
+            <>
+              <NeedsAttentionList requests={overview.needsYourAction} />
               {overview.needsYourAction.length > 5 ? (
                 <div className="muted">Showing the 5 highest-pressure actions. {overview.needsYourAction.length - 5} more remain.</div>
               ) : null}
-            </div>
+            </>
           ) : (
             <div className="emptyState"><strong>You are caught up</strong><span>No requests need an immediate manager decision.</span></div>
           )}

@@ -30,9 +30,9 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         </label>
         <div className="stack" style={{ gap: 8 }}>
           <button type="submit" className="button primary" disabled={isPending}>
-            {isPending ? 'Checking access...' : isAccessCode ? 'Use access code' : 'Send secure sign-in link'}
+            {isPending ? 'Signing in...' : isAccessCode ? 'Use access code' : 'Sign in'}
           </button>
-          <div className="muted">We automatically detect the access method. Secure links and sign-in codes are sent when you enter email or phone.</div>
+          <div className="muted">Use the one-time code from the property manager the first time. After that, your email or phone number signs you in on this device.</div>
         </div>
       </form>
       {process.env.NODE_ENV !== 'production' ? (

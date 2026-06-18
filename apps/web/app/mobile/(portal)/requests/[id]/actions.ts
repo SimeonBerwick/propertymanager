@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { prisma } from '@/lib/prisma'
+import { buildTenantRequestOwnershipWhere } from '@/lib/tenant-portal-data'
 
 export type TenantRequestActionState = { error: string | null; success?: boolean }
 
@@ -19,11 +20,7 @@ export async function cancelTenantMobileRequestAction(
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
       id: requestId,
-      unitId: session.unitId,
-      OR: [
-        { tenantIdentityId: session.tenantIdentityId },
-        ...(session.email ? [{ tenantIdentityId: null, submittedByEmail: session.email }] : []),
-      ],
+      ...buildTenantRequestOwnershipWhere(session),
     },
     select: { id: true, status: true },
   })

@@ -26,4 +26,26 @@ describe('request guidance', () => {
     expect(getRecommendedAction(request).tone).toBe('urgent')
     expect(getAttentionScore(request)).toBeGreaterThan(8)
   })
+
+  it('treats closed requests as fully complete with no immediate action', () => {
+    const request = { ...base, status: 'closed' as const, reviewState: 'vendor_completed_pending_review' as const }
+    expect(getWorkflowStep(request)).toBe(5)
+    expect(getRecommendedAction(request)).toMatchObject({
+      label: 'Review request history',
+      tone: 'clear',
+    })
+    expect(getAttentionScore(request)).toBe(0)
+  })
+
+  it('keeps closed requests actionable when a vendor balance is still owed', () => {
+    const request = { ...base, status: 'closed' as const, vendorPayableBalanceCents: 50000, vendorPayableTo: 'ACME Plumbing' }
+
+    expect(getWorkflowStep(request)).toBe(5)
+    expect(getRecommendedAction(request)).toMatchObject({
+      label: 'Mark vendor paid',
+      detail: 'Amount owed to ACME Plumbing is still open.',
+      tone: 'review',
+    })
+    expect(getAttentionScore(request)).toBeGreaterThan(0)
+  })
 })

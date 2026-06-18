@@ -63,4 +63,19 @@ describe('buildTodayOverview', () => {
     expect(overview.overdue.map((item) => item.id)).toEqual(['morning'])
     expect(overview.needsYourAction[0].id).toBe('morning')
   })
+
+  test('lists closed requests with unpaid vendor balances under needs your action', () => {
+    const unpaidClosed = request({
+      id: 'closed-unpaid',
+      status: 'closed',
+      assignedVendorName: 'ACME Plumbing',
+      vendorPayableBalanceCents: 50000,
+      vendorPayableTo: 'ACME Plumbing',
+    })
+    const closedPaid = request({ id: 'closed-paid', status: 'closed' })
+
+    const overview = buildTodayOverview([closedPaid, unpaidClosed], NOW)
+
+    expect(overview.needsYourAction.map((item) => item.id)).toEqual(['closed-unpaid'])
+  })
 })

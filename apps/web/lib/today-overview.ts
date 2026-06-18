@@ -21,6 +21,7 @@ function isOverdue(request: DashboardRequestRow, now: Date) {
 }
 
 function needsManagerAction(request: DashboardRequestRow, now: Date) {
+  if ((request.vendorPayableBalanceCents ?? 0) > 0) return true
   if (!isOpen(request)) return false
   if (request.status === 'requested' || request.status === 'completed') return true
   if (isOverdue(request, now)) return true
@@ -32,6 +33,7 @@ function needsManagerAction(request: DashboardRequestRow, now: Date) {
 
 function actionScore(request: DashboardRequestRow, now: Date) {
   let score = 0
+  if ((request.vendorPayableBalanceCents ?? 0) > 0) score += request.status === 'closed' ? 18 : 16
   if (isOverdue(request, now)) score += 20
   if (request.urgency === 'urgent') score += 12
   if (request.urgency === 'high') score += 8

@@ -2,7 +2,7 @@ import { sendNotification } from '@/lib/notify'
 
 export interface VendorDeliveryAdapter {
   sendOtp(input: { to: string; code: string; vendorName: string }): Promise<void>
-  sendManagerAccessCode(input: { to: string; code: string; vendorName: string; requestTitle: string; expiresAt: Date; accessLink: string }): Promise<void>
+  sendManagerAccessCode(input: { to: string; code: string; vendorName: string; requestTitle: string; expiresAt: Date; accessLink: string; ownerUserId?: string }): Promise<{ delivered: boolean }>
 }
 
 class DefaultVendorDeliveryAdapter implements VendorDeliveryAdapter {
@@ -20,8 +20,8 @@ class DefaultVendorDeliveryAdapter implements VendorDeliveryAdapter {
     })
   }
 
-  async sendManagerAccessCode(input: { to: string; code: string; vendorName: string; requestTitle: string; expiresAt: Date; accessLink: string }) {
-    await sendNotification({
+  async sendManagerAccessCode(input: { to: string; code: string; vendorName: string; requestTitle: string; expiresAt: Date; accessLink: string; ownerUserId?: string }) {
+    const result = await sendNotification({
       to: input.to,
       subject: 'Your work-order access code',
       text: [
@@ -33,7 +33,8 @@ class DefaultVendorDeliveryAdapter implements VendorDeliveryAdapter {
         '',
         'This code grants access only to the listed work order.',
       ].join('\n'),
-    })
+    }, { ownerUserId: input.ownerUserId })
+    return { delivered: result.ok }
   }
 }
 

@@ -29,6 +29,11 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       <div className="muted">
         Generate a one-time code for {recipientName}. The code is emailed automatically and can be used once.
       </div>
+      {role === 'vendor' && requests.length === 0 ? (
+        <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
+          Assign this vendor to a request first. Vendor access codes must be scoped to one work order.
+        </div>
+      ) : null}
       {role === 'vendor' ? (
         <label className="field">
           <span className="field-label">Work-order access scope</span>
@@ -67,6 +72,11 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
         <div className="notice success">
           Access code: <strong style={{ letterSpacing: 3 }}>{state.code}</strong>
           <div className="muted">Scope: {state.scope}. Expires {new Date(state.expiresAt!).toLocaleString()}.</div>
+        </div>
+      ) : null}
+      {state.deliveryWarning ? (
+        <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
+          {state.deliveryWarning}
         </div>
       ) : null}
       <button className="button primary" type="submit" disabled={pending || disabled || (role === 'vendor' && requests.length === 0)}>

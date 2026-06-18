@@ -3,7 +3,10 @@ import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
   'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
->
+> & {
+  vendorPayableBalanceCents?: number
+  vendorPayableTo?: string
+}
 
 export const WORKFLOW_STEPS = ['Review', 'Assign vendor', 'Schedule', 'Complete work', 'Close'] as const
 
@@ -30,7 +33,8 @@ export function suggestRequestDetails(problem: string, description: string) {
 }
 
 export function getWorkflowStep(request: GuidanceRequest) {
-  if (['closed', 'declined', 'canceled'].includes(request.status)) return 4
+  if (request.status === 'closed') return WORKFLOW_STEPS.length
+  if (['declined', 'canceled'].includes(request.status)) return 0
   if (request.status === 'completed') return 4
   if (request.status === 'in_progress') return 3
   if (request.status === 'scheduled' || request.vendorScheduledStart) return 3
@@ -41,6 +45,12 @@ export function getWorkflowStep(request: GuidanceRequest) {
 
 export function getRecommendedAction(request: GuidanceRequest) {
   const href = `/requests/${request.id}#actions`
+  if ((request.vendorPayableBalanceCents ?? 0) > 0) {
+    return { label: 'Mark vendor paid', detail: `Amount owed to ${request.vendorPayableTo ?? 'vendor'} is still open.`, href, tone: 'review' as const }
+  }
+  if (['closed', 'declined', 'canceled'].includes(request.status)) {
+    return { label: 'Review request history', detail: 'No immediate action is required.', href, tone: 'clear' as const }
+  }
   if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {
     return { label: 'Assign a replacement vendor', detail: 'The previous vendor cannot complete this request.', href, tone: 'urgent' as const }
   }
@@ -72,6 +82,7 @@ export function getRecommendedAction(request: GuidanceRequest) {
 }
 
 export function getAttentionScore(request: GuidanceRequest) {
+  if ((request.vendorPayableBalanceCents ?? 0) > 0) return request.status === 'closed' ? 7 : 6
   if (['closed', 'declined', 'canceled'].includes(request.status)) return 0
   let score = request.urgency === 'urgent' ? 8 : request.urgency === 'high' ? 5 : 0
   const recommendation = getRecommendedAction(request)

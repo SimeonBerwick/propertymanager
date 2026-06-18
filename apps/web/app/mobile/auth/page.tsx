@@ -9,7 +9,7 @@ export default function MobileAuthLandingPage() {
         <h2 style={{ marginTop: 4 }}>Mobile portal</h2>
       </div>
       <p className="muted" style={{ margin: 0 }}>
-        Use your invite link to activate access, or verify your email with a short-lived sign-in code. After verification, this device stays signed in for up to one year or until you sign out.
+        Use your invite or access code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/mobile/auth/login' as Route} className="button primary">Tenant sign in</Link>

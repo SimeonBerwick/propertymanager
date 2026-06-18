@@ -72,6 +72,21 @@ describe('buildTenantRequestOwnershipWhere', () => {
     expect(where.OR).toHaveLength(2)
     expect(where.OR).toContainEqual({ tenantIdentityId: null, submittedByEmail: 'alice@example.com' })
   })
+
+  test('with tenancy dates: includes legacy same-unit request history window', () => {
+    const scope = makeScope({
+      tenancyStartedAt: '2026-01-01T00:00:00.000Z',
+      tenancyEndedAt: '2026-03-01T00:00:00.000Z',
+    })
+    const where = buildTenantRequestOwnershipWhere(scope)
+    expect(where.OR).toContainEqual({
+      tenantIdentityId: null,
+      createdAt: {
+        gte: new Date('2026-01-01T00:00:00.000Z'),
+        lte: new Date('2026-03-01T00:00:00.000Z'),
+      },
+    })
+  })
 })
 
 // ─── findReturningTenantIdentityByIdentifier ──────────────────────────────────
@@ -320,6 +335,41 @@ describe('getTenantOwnedRequestById', () => {
 
     expect(result).not.toBeNull()
     expect(result?.billingDocuments.map((doc) => doc.title)).toEqual(['Visible tenant invoice'])
+  })
+
+  test('allows legacy unlinked same-unit request history from inside the tenant lease window only', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const oldTenant = await createTenantIdentity(user.id, property.id, unit.id, {
+      tenantName: 'Old Tenant',
+      email: 'old@example.com',
+      phoneE164: '+16025550101',
+      status: 'active',
+      leaseStartDate: new Date('2026-01-01T00:00:00.000Z'),
+      leaseEndDate: new Date('2026-03-01T00:00:00.000Z'),
+    })
+    const newTenant = await createTenantIdentity(user.id, property.id, unit.id, {
+      tenantName: 'New Tenant',
+      email: 'new@example.com',
+      phoneE164: '+16025550202',
+      status: 'active',
+      leaseStartDate: new Date('2026-04-01T00:00:00.000Z'),
+    })
+    const legacyRequest = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      tenantIdentityId: null,
+      submittedByEmail: null,
+      createdAt: new Date('2026-02-01T00:00:00.000Z'),
+    })
+
+    const oldScope = makeScope(oldTenant.id, unit.id, oldTenant.email ?? undefined)
+    oldScope.tenancyStartedAt = oldTenant.leaseStartDate?.toISOString()
+    oldScope.tenancyEndedAt = oldTenant.leaseEndDate?.toISOString()
+    const newScope = makeScope(newTenant.id, unit.id, newTenant.email ?? undefined)
+    newScope.tenancyStartedAt = newTenant.leaseStartDate?.toISOString()
+    newScope.tenancyEndedAt = newTenant.leaseEndDate?.toISOString()
+
+    await expect(getTenantOwnedRequestById(legacyRequest.id, oldScope)).resolves.not.toBeNull()
+    await expect(getTenantOwnedRequestById(legacyRequest.id, newScope)).resolves.toBeNull()
   })
 })
 

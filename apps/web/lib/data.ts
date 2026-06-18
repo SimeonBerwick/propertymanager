@@ -13,11 +13,18 @@ import type {
 import type { BillingDocumentView } from '@/lib/billing-types'
 import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 import { prisma } from '@/lib/prisma'
+import { logAppError } from '@/lib/observability'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
   propertyName: string
   propertyAddress: string
   unitLabel: string
+  vendorPayableDocumentId?: string
+  vendorPayableTo?: string
+  vendorPayableCurrency?: MaintenanceRequest['preferredCurrency']
+  vendorPayableTotalCents?: number
+  vendorPayablePaidCents?: number
+  vendorPayableBalanceCents?: number
 }
 
 export interface DashboardData {
@@ -98,6 +105,12 @@ function mapUnit(u: any): Unit {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow {
+  const vendorPayable = Array.isArray(r.billingDocuments)
+    ? r.billingDocuments
+        .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void' && doc.totalCents > doc.paidCents)
+        .sort((a: any, b: any) => (b.totalCents - b.paidCents) - (a.totalCents - a.paidCents) || new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime())[0]
+    : undefined
+
   return {
     id: r.id,
     propertyId: r.propertyId,
@@ -143,6 +156,12 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     propertyName: r.property?.name ?? 'Unknown property',
     propertyAddress: r.property?.address ?? 'Unknown address',
     unitLabel: r.unit?.label ?? 'Unknown unit',
+    vendorPayableDocumentId: vendorPayable?.id,
+    vendorPayableTo: vendorPayable ? (vendorPayable.sentTo || r.assignedVendorName || 'Vendor') : undefined,
+    vendorPayableCurrency: vendorPayable?.currency,
+    vendorPayableTotalCents: vendorPayable?.totalCents,
+    vendorPayablePaidCents: vendorPayable?.paidCents,
+    vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
   }
 }
 
@@ -211,6 +230,10 @@ function csvToList(value: unknown): string[] {
     : []
 }
 
+async function logDataError(event: string, error: unknown, details: Record<string, unknown> = {}) {
+  await logAppError(event, error, details).catch(() => undefined)
+}
+
 function mapVendor(v: any): Vendor {
   return {
     id: v.id,
@@ -251,7 +274,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       }),
       prisma.maintenanceRequest.findMany({
         where: { property: { ownerId: userId } },
-        include: { property: true, unit: true },
+        include: {
+          property: true,
+          unit: true,
+          billingDocuments: {
+            where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+            orderBy: { updatedAt: 'desc' },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.user.findMany({
@@ -275,7 +305,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       })),
       queueCounts: queueCounts(requestRows, userId),
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.dashboard.load_failed', error, { userId })
     return { properties: [], requestRows: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
   }
 }
@@ -283,7 +314,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 export async function getLandlordBySlug(slug: string): Promise<{ id: string } | null> {
   try {
     return await prisma.user.findUnique({ where: { slug }, select: { id: true } })
-  } catch {
+  } catch (error) {
+    await logDataError('data.landlord_by_slug.load_failed', error, { slug })
     return null
   }
 }
@@ -299,7 +331,8 @@ export async function getProperties(userId?: string, orgSlug?: string, includeIn
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     })
     return dbProperties.map(mapProperty)
-  } catch {
+  } catch (error) {
+    await logDataError('data.properties.load_failed', error, { userId, orgSlug, includeInactive })
     return []
   }
 }
@@ -314,7 +347,8 @@ export async function getAllUnits(userId?: string, orgSlug?: string, includeInac
       orderBy: [{ isActive: 'desc' }, { propertyId: 'asc' }, { label: 'asc' }],
     })
     return dbUnits.map(mapUnit)
-  } catch {
+  } catch (error) {
+    await logDataError('data.units.load_failed', error, { userId, orgSlug, includeInactive })
     return []
   }
 }
@@ -326,7 +360,17 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
       include: {
         _count: { select: { units: true } },
         units: { orderBy: [{ isActive: 'desc' }, { label: 'asc' }] },
-        requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
+        requests: {
+          include: {
+            property: true,
+            unit: true,
+            billingDocuments: {
+              where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+              orderBy: { updatedAt: 'desc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
     if (!dbProperty) return null
@@ -335,7 +379,8 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
       units: dbProperty.units.map(mapUnit),
       requests: mapRequestsWithClaimOwners(dbProperty.requests, await prisma.user.findMany({ where: { id: { in: dbProperty.requests.map((r) => r.claimedByUserId).filter(Boolean) as string[] } }, select: { id: true, email: true, displayName: true } })),
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.property_detail.load_failed', error, { propertyId, userId })
     return null
   }
 }
@@ -504,7 +549,8 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       billingDocuments,
       vendorCommercialItems,
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.request_detail.load_failed', error, { requestId, userId })
     return null
   }
 }
@@ -846,7 +892,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
       trends,
       trendAlerts: buildTrendAlerts(trends),
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.report.load_failed', error, { userId })
     return {
       propertyStats: [],
       agingRequests: [],
@@ -890,7 +937,8 @@ export async function getVendorDetailData(vendorId: string, userId: string): Pro
       requests: requestRows.map((row) => mapRequestRow(row)),
       scorecard: reportData.vendorScorecards.find((item) => item.vendorId === vendorId) ?? null,
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.vendor_detail.load_failed', error, { vendorId, userId })
     return null
   }
 }
@@ -913,7 +961,8 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
       openCount: requests.filter((r) => !['closed', 'declined', 'canceled'].includes(r.status)).length,
       closedCount: requests.filter((r) => ['closed', 'declined', 'canceled'].includes(r.status)).length,
     }
-  } catch {
+  } catch (error) {
+    await logDataError('data.unit_detail.load_failed', error, { unitId, userId })
     return null
   }
 }
