@@ -45,7 +45,7 @@ async function signInTenantWithMagicLink(page: Page) {
 
   await page.goto(`/mobile/auth/login/magic?challengeId=${otp.challengeId}&code=${otp.code}&next=/mobile`)
   await expect(page).toHaveURL(/\/mobile$/)
-  await expect(page.getByText(/Report a problem|Request history/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Report a problem' }).first()).toBeVisible()
 }
 
 async function signInVendorWithMagicLink(page: Page) {
@@ -57,7 +57,7 @@ async function signInVendorWithMagicLink(page: Page) {
 
   await page.goto(`/vendor/auth/login/magic?challengeId=${otp.challengeId}&code=${otp.code}&next=/vendor`)
   await expect(page).toHaveURL(/\/vendor$/)
-  await expect(page.getByText(/Vendor portal|Open work/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Open work' })).toBeVisible()
 }
 
 test('manager login persists and CSV downloads work in Android WebView', async ({ page }) => {
