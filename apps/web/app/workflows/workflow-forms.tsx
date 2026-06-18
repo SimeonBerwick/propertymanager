@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
-import { createAutomationRuleAction, createRequestTemplateAction, type WorkflowActionState } from './actions'
+import { createAutomationRuleAction, type WorkflowActionState } from './actions'
 import { ActionFeedback } from '@/components/action-feedback'
 
 const INITIAL: WorkflowActionState = { error: null }
@@ -58,23 +58,6 @@ export function AutomationRuleForm() {
       <div className="automationPreview">Requests matching this sentence will be updated automatically during each workflow sweep.</div>
       <ActionFeedback error={state.error} success={state.success ? 'Automation rule created.' : null} />
       <button className="button primary" disabled={pending}>{pending ? 'Creating...' : 'Create rule'}</button>
-    </form>
-  )
-}
-
-export function RequestTemplateForm() {
-  const [state, action, pending] = useActionState(createRequestTemplateAction, INITIAL)
-  return (
-    <form action={action} className="stack">
-      <label className="field"><span className="field-label">Template name</span><input className="input" name="name" placeholder="Leaking faucet" required /></label>
-      <label className="field"><span className="field-label">Default title</span><input className="input" name="title" required /></label>
-      <label className="field"><span className="field-label">Default description</span><textarea className="input textarea" name="description" rows={4} required /></label>
-      <div className="grid cols-2">
-        <label className="field"><span className="field-label">Category</span><select className="input" name="category">{REQUEST_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></label>
-        <label className="field"><span className="field-label">Urgency</span><select className="input" name="urgency">{REQUEST_URGENCIES.map((value) => <option key={value}>{value}</option>)}</select></label>
-      </div>
-      <ActionFeedback error={state.error} success={state.success ? 'Request template created.' : null} />
-      <button className="button primary" disabled={pending}>{pending ? 'Creating...' : 'Create template'}</button>
     </form>
   )
 }

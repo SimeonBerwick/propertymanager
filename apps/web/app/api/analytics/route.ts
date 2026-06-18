@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { prisma } from '@/lib/prisma'
 
-const ALLOWED_EVENTS = ['page_view', 'intake_draft_saved', 'intake_template_used', 'intake_started', 'search_opened']
+const ALLOWED_EVENTS = ['page_view', 'intake_draft_saved', 'intake_started', 'search_opened']
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as { eventName?: string, metadata?: Record<string, unknown> } | null

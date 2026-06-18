@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { awardTenderInviteAction, type RequestActionState, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -18,19 +19,6 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   closed: ['reopened'],
   canceled: ['reopened'],
   reopened: ['approved', 'vendor_selected', 'scheduled'],
-}
-
-const STATUS_LABELS: Record<RequestStatus, string> = {
-  requested: 'Requested',
-  approved: 'Approved',
-  declined: 'Declined',
-  vendor_selected: 'Vendor selected',
-  scheduled: 'Scheduled',
-  in_progress: 'In progress',
-  completed: 'Completed',
-  closed: 'Closed',
-  canceled: 'Canceled',
-  reopened: 'Reopened',
 }
 
 export function RequestControlPanel({
@@ -61,7 +49,7 @@ export function RequestControlPanel({
           <span className="field-label">Next status</span>
           <select className="input" name="toStatus" defaultValue={nextStatuses[0] ?? request.status} disabled={!nextStatuses.length}>
             {nextStatuses.map((status) => (
-              <option key={status} value={status}>{STATUS_LABELS[status]}</option>
+              <option key={status} value={status}>{deriveRequestCloseoutLanguage({ status }).managerLabel}</option>
             ))}
           </select>
         </label>

@@ -12,10 +12,9 @@ interface SubmitRequestFormProps {
   properties: Property[]
   units: Unit[]
   orgSlug?: string
-  templates?: Array<{ id: string, name: string, title: string, description: string, category: string, urgency: string }>
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug, templates = [] }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -79,16 +78,6 @@ export function SubmitRequestForm({ properties, units, orgSlug, templates = [] }
     return () => window.clearTimeout(timeout)
   }, [category, description, draftKey, hydrated, orgSlug, selectedPropertyId, selectedUnitId, tenantEmail, tenantName, title, urgency])
 
-  function applyTemplate(templateId: string) {
-    const template = templates.find((item) => item.id === templateId)
-    if (!template) return
-    setTitle(template.title)
-    setDescription(template.description)
-    setCategory(template.category as (typeof REQUEST_CATEGORIES)[number])
-    setUrgency(template.urgency)
-    trackProductEvent('intake_template_used', { templateId, orgSlug })
-  }
-
   if (!properties.length) {
     return (
       <div className="notice">
@@ -101,7 +90,6 @@ export function SubmitRequestForm({ properties, units, orgSlug, templates = [] }
     <form action={formAction} className="stack">
       {orgSlug && <input type="hidden" name="orgSlug" value={orgSlug} />}
       {state.error && <div className="notice error">{state.error}</div>}
-      {templates.length ? <label className="field"><span className="field-label">Start from a common request</span><select className="input" defaultValue="" onChange={(event) => applyTemplate(event.target.value)}><option value="">Choose a template</option>{templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}</select></label> : null}
       <div className="notice">Drafts save automatically on this device. You can close this page and continue later.</div>
 
       <div className="grid cols-2">

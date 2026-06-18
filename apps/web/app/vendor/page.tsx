@@ -7,16 +7,12 @@ import { vendorSignoutAction } from './auth/signout/actions'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 type VendorDashboardFilter = 'open' | 'bids' | 'billing' | 'commercial'
 
 function isActiveFilter(current: VendorDashboardFilter, target: VendorDashboardFilter) {
   return current === target
-}
-
-function isVendorRemittancePaidInFull(request: { billingDocuments: Array<{ status: string, totalCents: number, paidCents: number }> }) {
-  const remittances = request.billingDocuments
-  return remittances.length > 0 && remittances.every((document) => document.status === 'paid' || Math.max(0, document.totalCents - document.paidCents) === 0)
 }
 
 export default async function VendorDashboardPage({
@@ -44,7 +40,7 @@ export default async function VendorDashboardPage({
       requestStatus: request.status,
       viewerVendorId: session.vendorId,
       latestInvite: request.tenderInvites[0],
-      vendorPaidInFull: isVendorRemittancePaidInFull(request),
+      billingDocuments: request.billingDocuments,
     }),
   }))
   const openRequests = requestViews.filter(({ request, viewState }) => viewState.isOpenWork && !['closed', 'declined', 'canceled', 'completed'].includes(request.status))
@@ -73,7 +69,7 @@ export default async function VendorDashboardPage({
               requestStatus: request.status,
               viewerVendorId: session.vendorId,
               latestInvite: request.tenderInvites[0],
-              vendorPaidInFull: isVendorRemittancePaidInFull(request),
+              billingDocuments: request.billingDocuments,
             }),
           }))
         : []
@@ -207,7 +203,7 @@ export default async function VendorDashboardPage({
                       const balanceCents = Math.max(0, document.totalCents - document.paidCents)
                       return `${billingStatusLabel(document.status)} remittance: ${formatMoney(balanceCents, document.currency)}`
                     }).join(' · ')}
-                    {request.status === 'closed' && isVendorRemittancePaidInFull(request) ? <span> &middot; Paid and closed</span> : null}
+                    {request.status === 'closed' ? <span> &middot; {deriveRequestCloseoutLanguage({ status: request.status, billingDocuments: request.billingDocuments }).vendorLabel}</span> : null}
                   </div>
                 ) : null}
               </div>

@@ -21,6 +21,7 @@ import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
+import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -89,7 +90,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
   const postedVendorRemittanceBalanceCents = postedVendorRemittances.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorRemittanceCents, 0)
   const vendorOutstandingCents = postedVendorRemittanceBalanceCents + unpostedVendorOwedCents
-  const isCompleteButUnpaid = ['completed', 'closed'].includes(data.request.status) && vendorOutstandingCents > 0
+  const closeoutLanguage = deriveRequestCloseoutLanguage({
+    status: data.request.status,
+    outstandingCents: ['completed', 'closed'].includes(data.request.status) ? vendorOutstandingCents : null,
+  })
+  const isCompleteButUnpaid = ['completed', 'closed'].includes(data.request.status) && closeoutLanguage.isUnpaid
 
   return (
     <div className="stack requestDetailPage">
@@ -105,7 +110,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
           <div className="requestHeroMeta">
-            {isCompleteButUnpaid ? <span className="badge billing-partial">Complete - unpaid</span> : <StatusBadge status={data.request.status} />}
+            {isCompleteButUnpaid ? <span className="badge billing-partial">{closeoutLanguage.managerLabel}</span> : <StatusBadge status={data.request.status} />}
             {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={data.request} />}
             <span className="muted">{data.request.category}</span>
             <span className="muted">Submitted {new Date(data.request.createdAt).toLocaleString()}</span>
@@ -403,7 +408,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
             {isCompleteButUnpaid ? (
               <div className="inlineNotice" style={{ marginTop: 10 }}>
-                Work is complete, but vendor billing is not fully paid.
+                {closeoutLanguage.detail}
               </div>
             ) : null}
             <div className="muted" style={{ marginTop: 10 }}>

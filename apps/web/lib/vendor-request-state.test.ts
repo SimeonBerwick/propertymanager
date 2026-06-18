@@ -48,12 +48,27 @@ describe('deriveVendorRequestViewState', () => {
       requestStatus: 'closed',
       viewerVendorId: 'vendor-1',
       latestInvite: { status: 'awarded' },
-      vendorPaidInFull: true,
+      billingDocuments: [{ status: 'paid', totalCents: 12000, paidCents: 12000 }],
     })
 
     expect(result.canControlDispatch).toBe(false)
     expect(result.isOpenWork).toBe(false)
     expect(result.statusLabel).toBe('Paid and closed')
     expect(result.heroNotice?.title).toBe('Paid and closed')
+  })
+
+  test('shows closed unpaid when a closed work order still has vendor balance', () => {
+    const result = deriveVendorRequestViewState({
+      assignedVendorId: 'vendor-1',
+      requestStatus: 'closed',
+      viewerVendorId: 'vendor-1',
+      latestInvite: { status: 'awarded' },
+      billingDocuments: [{ status: 'sent', totalCents: 12000, paidCents: 2000 }],
+    })
+
+    expect(result.canControlDispatch).toBe(false)
+    expect(result.isOpenWork).toBe(false)
+    expect(result.statusLabel).toBe('Closed - unpaid')
+    expect(result.heroNotice?.detail).toMatch(/payment still needs attention/i)
   })
 })

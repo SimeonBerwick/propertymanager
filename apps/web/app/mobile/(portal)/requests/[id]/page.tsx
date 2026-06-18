@@ -4,7 +4,7 @@ import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
-import { tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
+import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 
 function classifyCommentSource(
   comment: {
@@ -66,7 +66,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         </div>
         <div className="tenantStatusSummary">
           <div className="kicker">Current status</div>
-          <strong>{tenantRequestStatusLabel(request.status)}</strong>
+          <strong>{tenantRequestCloseoutLabel(request)}</strong>
           <div>{tenantRequestNextStep(request)}</div>
         </div>
         <div className="muted">{request.category}</div>

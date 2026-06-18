@@ -3,7 +3,7 @@ import type { Route } from 'next'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestsForDashboard } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
-import { tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
+import { tenantRequestCloseoutLabel, tenantRequestNextStep } from '@/lib/tenant-request-language'
 
 type TenantDashboardFilter = 'open' | 'all' | 'charges'
 
@@ -93,7 +93,7 @@ export default async function TenantMobileDashboardPage({
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {tenantRequestStatusLabel(request.status)}
+                  {tenantRequestCloseoutLabel(request)}
                   {request.vendorScheduledStart ? ` · Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
                 </div>
                 <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
