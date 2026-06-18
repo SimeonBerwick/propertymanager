@@ -64,16 +64,18 @@ jobs:
           npm run prisma:seed
 
       - name: Install Playwright Chromium
+        if: github.event_name == 'workflow_dispatch'
         run: npx playwright install --with-deps chromium
 
       - name: Run unit + integration tests
         run: npm test
 
       - name: Run Playwright browser workflow
+        if: github.event_name == 'workflow_dispatch'
         run: npm run test:e2e
 
       - name: Upload Playwright artifacts
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v7
         with:
           name: property-manager-playwright-artifacts
