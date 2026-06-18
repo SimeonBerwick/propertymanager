@@ -64,7 +64,7 @@ test('manager login persists and CSV downloads work in Android WebView', async (
   await signInManager(page)
   await page.reload()
   await expect(page).toHaveURL(/\/dashboard/)
-  await expect(page.getByText(/Unclaimed|requests need review|Needs your action/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Needs your action|Maintenance queue/ }).first()).toBeVisible()
 
   await page.goto('/ops')
   const downloadPromise = page.waitForEvent('download')
@@ -135,7 +135,7 @@ test('privacy, support, deletion, email, and back-button links are reachable in 
   await expect(page.locator('a[href^="mailto:support@simeonware.com"]').first()).toBeVisible()
 
   await page.goto('/account-deletion')
-  await expect(page.getByText(/Request account deletion/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Request account deletion' })).toBeVisible()
   await expect(page.locator('a[href^="mailto:support@simeonware.com"]').first()).toBeVisible()
 
   await page.getByRole('link', { name: /Privacy/ }).click()
