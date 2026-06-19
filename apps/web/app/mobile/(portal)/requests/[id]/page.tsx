@@ -84,7 +84,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
             {request.vendorScheduledStart ? (
               <div className="muted">
                 Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
-                {request.vendorScheduledEnd ? ` → ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
+                {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
               </div>
             ) : (
               <div className="muted">No appointment window has been confirmed yet.</div>
@@ -116,13 +116,13 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
           <div key={entry.id}>
             <div style={{ fontWeight: 600 }}>
-              {entry.vendor?.name ? `${entry.vendor.name} · ` : ''}{entry.status}
+              {entry.vendor?.name ? `${entry.vendor.name} - ` : ''}{entry.status}
             </div>
             {entry.note ? <div>{entry.note}</div> : null}
             {(entry.scheduledStart || entry.scheduledEnd) ? (
               <div className="muted">
-                {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '—'}
-                {entry.scheduledEnd ? ` → ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '-'}
+                {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
               </div>
             ) : null}
             <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
@@ -138,7 +138,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         {request.events.length ? request.events.map((event) => (
           <div key={event.id}>
             <div style={{ fontWeight: 600 }}>
-              {event.fromStatus ? `${tenantRequestStatusLabel(event.fromStatus)} → ${tenantRequestStatusLabel(event.toStatus)}` : tenantRequestStatusLabel(event.toStatus)}
+              {event.fromStatus ? `${tenantRequestStatusLabel(event.fromStatus)} to ${tenantRequestStatusLabel(event.toStatus)}` : tenantRequestStatusLabel(event.toStatus)}
             </div>
             <div className="muted">{new Date(event.createdAt).toLocaleString()}</div>
           </div>
@@ -156,7 +156,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               const source = classifyCommentSource(comment, request.assignedVendorName)
               return (
                 <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  {source.label}{source.byline ? ` · ${source.byline}` : ''}
+                  {source.label}{source.byline ? ` - ${source.byline}` : ''}
                 </div>
               )
             })()}
@@ -166,7 +166,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         )) : <div className="muted">No comments yet.</div>}
       </section>
 
-      <section className="card stack">
+      <section className="card stack" id="charges">
         <div>
           <div className="kicker">Billing</div>
           <h3 style={{ marginTop: 4 }}>Charges for this request</h3>
@@ -179,10 +179,10 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               <div style={{ fontWeight: 600 }}>{document.title}</div>
               {document.description ? <div>{document.description}</div> : null}
               <div className="muted">
-                {billingStatusLabel(document.status)} · {new Date(document.createdAt).toLocaleString()}
+                {billingStatusLabel(document.status)} - {new Date(document.createdAt).toLocaleString()}
               </div>
               <div className="muted">
-                Total: {formatMoney(document.totalCents, document.currency)} · Paid: {formatMoney(document.paidCents, document.currency)} · Balance: {formatMoney(balanceCents, document.currency)}
+                Total: {formatMoney(document.totalCents, document.currency)} - Paid: {formatMoney(document.paidCents, document.currency)} - Balance: {formatMoney(balanceCents, document.currency)}
               </div>
               {document.pdfUrl ? (
                 <div>

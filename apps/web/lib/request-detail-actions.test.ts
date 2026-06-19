@@ -21,6 +21,11 @@ vi.mock('@/lib/landlord-session')
 vi.mock('@/lib/notify', () => ({
   sendNotification: vi.fn().mockResolvedValue(undefined),
   buildStatusChangedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildTenantCommentMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildTenantQueueViewedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildTenantVendorUpdateMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildVendorAssignedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildVendorAwardedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
 }))
 
 const PREV = { error: null }

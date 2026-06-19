@@ -6,12 +6,17 @@ import { markVendorDispatchLinkUsed, validateVendorDispatchToken } from '@/lib/v
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
 import { applyRequestAutomation } from '@/lib/automation'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 import type { DispatchStatus, RequestStatus } from '@/lib/types'
 import { logServerActionError } from '@/lib/observability'
 
 export type VendorResponseState = { error: string | null }
 
 const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', 'scheduled', 'completed', 'canceled']
+
+function tenantRequestActionUrl(requestId: string) {
+  return `${getAppBaseUrl('tenant vendor update notifications')}/mobile/requests/${requestId}`
+}
 
 export async function submitVendorResponse(
   _prev: VendorResponseState,
@@ -260,6 +265,7 @@ export async function submitVendorResponse(
       scheduledStart: scheduledStart?.toISOString(),
       scheduledEnd: scheduledEnd?.toISOString(),
       photoCount: savedPhotoPaths.length || undefined,
+      actionUrl: tenantRequestActionUrl(tenantNotification.requestId),
     }), { ownerUserId: tenantNotification.ownerUserId, requestId: tenantNotification.requestId })
   }
 

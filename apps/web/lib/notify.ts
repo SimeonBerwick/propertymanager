@@ -22,6 +22,7 @@ export interface NotificationMessage {
   subject: string
   text: string
   requestId?: string
+  actionUrl?: string
   /** Optional HTML body. When present, email clients that support HTML will
    *  render it; clients that don't fall back to `text`. */
   html?: string
@@ -193,6 +194,19 @@ function dtRow(label: string, value: string): string {
   </tr>`
 }
 
+function actionButton(label: string, href?: string): string {
+  if (!href) return ''
+  return `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        <tr>
+          <td bgcolor="#1a56db" style="background-color:#1a56db">
+            <a href="${esc(href)}" style="display:inline-block;padding:10px 16px;color:#ffffff;text-decoration:none;font-weight:bold;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px">${esc(label)}</a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:10px 0 0 0;color:#6b7280;font-size:12px;line-height:18px;word-break:break-all;overflow-wrap:break-word">${esc(href)}</p>`
+}
+
 function escLines(s: string): string {
   return esc(s).replace(/\r\n|\r|\n/g, '<br>')
 }
@@ -212,6 +226,8 @@ export interface NewRequestParams {
   description: string
   preferredCurrency: string
   preferredLanguage: string
+  tenantActionUrl?: string
+  landlordActionUrl?: string
 }
 
 /**
@@ -233,8 +249,10 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       `  Urgency      : ${p.urgency}`,
       `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}`,
       ``,
+      p.tenantActionUrl ? `Open request: ${p.tenantActionUrl}` : '',
+      p.tenantActionUrl ? `` : '',
       `We'll be in touch once a vendor is scheduled. Reply to this email if you have questions.`,
-    ].join('\n'),
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
       <p style="margin:0 0 14px 0">We received your maintenance request and it&rsquo;s in our queue.</p>
@@ -246,8 +264,11 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
         ${dtRow('Urgency', p.urgency)}
         ${dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french'))}
       </table>
+      ${actionButton('Open request', p.tenantActionUrl)}
       <p style="margin:14px 0 0 0">We&rsquo;ll be in touch once a vendor is scheduled. Reply to this email if you have questions.</p>
     `),
+    requestId: p.requestId,
+    actionUrl: p.tenantActionUrl,
   }
 
   const landlordMsg: NotificationMessage = {
@@ -267,7 +288,9 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       ``,
       `Description:`,
       p.description,
-    ].join('\n'),
+      ``,
+      p.landlordActionUrl ? `Open request: ${p.landlordActionUrl}` : '',
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">A new maintenance request was submitted.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
@@ -282,7 +305,10 @@ export function buildNewRequestMessages(p: NewRequestParams): [NotificationMessa
       </table>
       <p style="margin:14px 0 8px 0;font-weight:bold">Description</p>
       <p style="margin:0;background-color:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px">${escLines(p.description)}</p>
+      ${actionButton('Open request', p.landlordActionUrl)}
     `),
+    requestId: p.requestId,
+    actionUrl: p.landlordActionUrl,
   }
 
   return [tenantMsg, landlordMsg]
@@ -297,6 +323,7 @@ export interface StatusChangedParams {
   tenantName: string
   fromStatus: RequestStatus
   toStatus: RequestStatus
+  actionUrl?: string
 }
 
 /**
@@ -322,8 +349,10 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
       `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       `  New status   : ${statusLabel}`,
       ``,
+      p.actionUrl ? `Open request: ${p.actionUrl}` : '',
+      p.actionUrl ? `` : '',
       closingText,
-    ].join('\n'),
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
       <p style="margin:0 0 14px 0">Your maintenance request has been updated.</p>
@@ -333,8 +362,11 @@ export function buildStatusChangedMessage(p: StatusChangedParams): NotificationM
         ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
         ${dtRow('New status', statusLabel)}
       </table>
+      ${actionButton('Open request', p.actionUrl)}
       <p style="margin:14px 0 0 0">${esc(closingText)}</p>
     `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -352,9 +384,11 @@ export interface VendorAssignedParams {
   preferredCurrency?: string
   preferredLanguage?: string
   responseLink?: string
+  actionUrl?: string
 }
 
 export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
+  const actionUrl = p.actionUrl ?? p.responseLink
   return {
     to: p.vendorEmail,
     subject: `New maintenance assignment - ${p.title}`,
@@ -372,7 +406,7 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
       p.preferredLanguage ? `  Language     : ${languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')}` : '',
       p.tenantName || p.tenantEmail ? `  Tenant       : ${[p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')}` : '',
       ``,
-      p.responseLink ? `Respond here: ${p.responseLink}` : 'Please contact the operator to confirm scheduling and next steps.',
+      actionUrl ? `Respond here: ${actionUrl}` : 'Please contact the operator to confirm scheduling and next steps.',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
@@ -387,8 +421,96 @@ export function buildVendorAssignedMessage(p: VendorAssignedParams): Notificatio
         ${p.preferredLanguage ? dtRow('Language', languageLabel(p.preferredLanguage as 'english' | 'spanish' | 'french')) : ''}
         ${p.tenantName || p.tenantEmail ? dtRow('Tenant', [p.tenantName, p.tenantEmail].filter(Boolean).join(' - ')) : ''}
       </table>
-      <p style="margin:14px 0 0 0">${p.responseLink ? `Respond here: <a href="${esc(p.responseLink)}" style="color:#1a56db;text-decoration:underline;word-break:break-all;overflow-wrap:break-word">${esc(p.responseLink)}</a>` : 'Please contact the operator to confirm scheduling and next steps.'}</p>
+      ${actionButton('Respond to assignment', actionUrl)}
+      ${actionUrl ? '' : '<p style="margin:14px 0 0 0">Please contact the operator to confirm scheduling and next steps.</p>'}
     `),
+    requestId: p.requestId,
+    actionUrl,
+  }
+}
+
+export interface VendorAwardedParams extends VendorAssignedParams {
+  bidAmountLabel?: string
+}
+
+export function buildVendorAwardedMessage(p: VendorAwardedParams): NotificationMessage {
+  const actionUrl = p.actionUrl ?? p.responseLink
+  return {
+    to: p.vendorEmail,
+    subject: `Bid awarded - ${p.title}`,
+    text: [
+      `Hi ${p.vendorName},`,
+      ``,
+      `Your bid was awarded. Please open the work order and send the next update.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Property     : ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel}`,
+      p.bidAmountLabel ? `  Bid          : ${p.bidAmountLabel}` : '',
+      ``,
+      actionUrl ? `Open work order: ${actionUrl}` : 'Please sign in to the vendor portal to update this work order.',
+    ].filter(Boolean).join('\n'),
+    html: htmlEmail(`
+      <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
+      <p style="margin:0 0 14px 0">Your bid was awarded. Please open the work order and send the next update.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+        ${p.bidAmountLabel ? dtRow('Bid', p.bidAmountLabel) : ''}
+      </table>
+      ${actionButton('Open work order', actionUrl)}
+      ${actionUrl ? '' : '<p style="margin:14px 0 0 0">Please sign in to the vendor portal to update this work order.</p>'}
+    `),
+    requestId: p.requestId,
+    actionUrl,
+  }
+}
+
+export interface VendorOverdueUpdateParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  vendorName: string
+  vendorEmail: string
+  scheduledEnd?: string
+  actionUrl?: string
+}
+
+export function buildVendorOverdueUpdateMessage(p: VendorOverdueUpdateParams): NotificationMessage {
+  const dueLine = p.scheduledEnd ? new Date(p.scheduledEnd).toLocaleString() : 'the scheduled completion time'
+  return {
+    to: p.vendorEmail,
+    subject: `Update overdue - ${p.title}`,
+    text: [
+      `Hi ${p.vendorName},`,
+      ``,
+      `This work order needs an update. The scheduled window ended at ${dueLine}.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Property     : ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel}`,
+      ``,
+      p.actionUrl ? `Send update: ${p.actionUrl}` : 'Please sign in to the vendor portal and send an update.',
+    ].filter(Boolean).join('\n'),
+    html: htmlEmail(`
+      <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
+      <p style="margin:0 0 14px 0">This work order needs an update. The scheduled window ended at ${esc(dueLine)}.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+      </table>
+      ${actionButton('Send update', p.actionUrl)}
+      ${p.actionUrl ? '' : '<p style="margin:14px 0 0 0">Please sign in to the vendor portal and send an update.</p>'}
+    `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -405,6 +527,7 @@ export interface TenantVendorUpdateParams {
   scheduledStart?: string
   scheduledEnd?: string
   photoCount?: number
+  actionUrl?: string
 }
 
 export interface TenantQueueViewedParams {
@@ -414,6 +537,7 @@ export interface TenantQueueViewedParams {
   unitLabel: string
   tenantEmail: string
   tenantName: string
+  actionUrl?: string
 }
 
 export interface TenantCommentNotificationParams {
@@ -424,6 +548,7 @@ export interface TenantCommentNotificationParams {
   tenantEmail: string
   tenantName: string
   comment: string
+  actionUrl?: string
 }
 
 export interface BillingDocumentNotificationParams {
@@ -435,6 +560,7 @@ export interface BillingDocumentNotificationParams {
   amountLabel: string
   paidLabel: string
   balanceLabel: string
+  actionUrl?: string
 }
 
 export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): NotificationMessage {
@@ -458,6 +584,7 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
       scheduleLine ? `  Schedule     : ${scheduleLine}` : '',
       p.photoCount ? `  Photos       : ${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}` : '',
       p.note ? `Note: ${p.note}` : '',
+      p.actionUrl ? `Open request: ${p.actionUrl}` : '',
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
@@ -472,7 +599,10 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
         ${p.photoCount ? dtRow('Photos', `${p.photoCount} new photo${p.photoCount === 1 ? '' : 's'}`) : ''}
       </table>
       ${p.note ? `<p style="margin:14px 0 0 0"><strong>Note:</strong> ${esc(p.note)}</p>` : ''}
+      ${actionButton('Open request', p.actionUrl)}
     `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -489,8 +619,10 @@ export function buildTenantQueueViewedMessage(p: TenantQueueViewedParams): Notif
       `  Issue        : ${p.title}`,
       `  Unit         : ${p.unitLabel} - ${p.propertyName}`,
       ``,
+      p.actionUrl ? `Open request: ${p.actionUrl}` : '',
+      p.actionUrl ? `` : '',
       `We'll send another update when scheduling or work status changes.`,
-    ].join('\n'),
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
       <p style="margin:0 0 14px 0">A property manager has opened your maintenance request and it is now being reviewed.</p>
@@ -499,8 +631,11 @@ export function buildTenantQueueViewedMessage(p: TenantQueueViewedParams): Notif
         ${dtRow('Issue', p.title)}
         ${dtRow('Unit', `${p.unitLabel} - ${p.propertyName}`)}
       </table>
+      ${actionButton('Open request', p.actionUrl)}
       <p style="margin:14px 0 0 0">We&rsquo;ll send another update when scheduling or work status changes.</p>
     `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -519,7 +654,9 @@ export function buildTenantCommentMessage(p: TenantCommentNotificationParams): N
       ``,
       `Message:`,
       p.comment,
-    ].join('\n'),
+      ``,
+      p.actionUrl ? `Open request: ${p.actionUrl}` : '',
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
       <p style="margin:0 0 14px 0">There is a new message on your maintenance request.</p>
@@ -530,7 +667,10 @@ export function buildTenantCommentMessage(p: TenantCommentNotificationParams): N
       </table>
       <p style="margin:14px 0 8px 0;font-weight:bold">Message</p>
       <p style="margin:0;background-color:#f9fafb;border-left:4px solid #1a56db;padding:12px 16px">${escLines(p.comment)}</p>
+      ${actionButton('Open request', p.actionUrl)}
     `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -543,7 +683,9 @@ export interface LandlordExceptionSummaryParams {
     unitLabel: string
     autoFlag?: string
     reviewState?: string
+    actionUrl?: string
   }>
+  actionUrl?: string
 }
 
 export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummaryParams): NotificationMessage {
@@ -554,7 +696,7 @@ export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummary
       `Daily exception summary`,
       ``,
       ...p.requests.map((request) =>
-        `- ${request.title} (${request.propertyName} / ${request.unitLabel}) - flag=${request.autoFlag ?? 'none'} - review=${request.reviewState ?? 'none'}`,
+        `- ${request.title} (${request.propertyName} / ${request.unitLabel}) - flag=${request.autoFlag ?? 'none'} - review=${request.reviewState ?? 'none'}${request.actionUrl ? ` - ${request.actionUrl}` : ''}`,
       ),
     ].join('\n'),
     html: htmlEmail(`
@@ -562,14 +704,16 @@ export function buildLandlordExceptionSummaryMessage(p: LandlordExceptionSummary
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${p.requests.map((request) => `
           <tr>
-            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#111827;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.title)}</td>
+            <td style="padding:8px 12px 8px 0;vertical-align:top;color:#111827;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${request.actionUrl ? `<a href="${esc(request.actionUrl)}" style="color:#1a56db;text-decoration:underline">${esc(request.title)}</a>` : esc(request.title)}</td>
             <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(`${request.propertyName} / ${request.unitLabel}`)}</td>
             <td style="padding:8px 12px 8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.autoFlag ?? 'none')}</td>
             <td style="padding:8px 0;vertical-align:top;color:#6b7280;font-size:14px;line-height:20px;font-family:Arial,Helvetica,sans-serif;overflow-wrap:break-word">${esc(request.reviewState ?? 'none')}</td>
           </tr>
         `).join('')}
       </table>
+      ${actionButton('Open exceptions', p.actionUrl)}
     `),
+    actionUrl: p.actionUrl,
   }
 }
 
@@ -586,7 +730,9 @@ export function buildBillingDocumentMessage(p: BillingDocumentNotificationParams
       `Amount: ${p.amountLabel}`,
       `Paid: ${p.paidLabel}`,
       `Balance: ${p.balanceLabel}`,
-    ].join('\n'),
+      ``,
+      p.actionUrl ? `Open details: ${p.actionUrl}` : '',
+    ].filter((line, index, lines) => line !== '' || lines[index - 1] !== '').join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">${esc(p.title)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
@@ -597,6 +743,8 @@ export function buildBillingDocumentMessage(p: BillingDocumentNotificationParams
         ${dtRow('Paid', p.paidLabel)}
         ${dtRow('Balance', p.balanceLabel)}
       </table>
+      ${actionButton('Open details', p.actionUrl)}
     `),
+    actionUrl: p.actionUrl,
   }
 }

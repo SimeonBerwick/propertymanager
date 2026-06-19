@@ -7,6 +7,7 @@ import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-uploa
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
 import { logServerActionError } from '@/lib/observability'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 export type MobileRequestState = { error: string | null }
 
@@ -162,6 +163,8 @@ export async function submitTenantMobileRequestAction(
       description,
       preferredCurrency,
       preferredLanguage,
+      tenantActionUrl: `${getAppBaseUrl('tenant new request notification links')}/mobile/requests/${requestId}`,
+      landlordActionUrl: `${getAppBaseUrl('landlord new request notification links')}/requests/${requestId}`,
     })
     await Promise.all([
       sendNotification(tenantMsg, { ownerUserId: activeUnit.property.owner.id, requestId }),

@@ -10,6 +10,7 @@ import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
 import { getLandlordBySlug } from '@/lib/data'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { logServerActionError } from '@/lib/observability'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -196,6 +197,8 @@ export async function submitMaintenanceRequest(
       description,
       preferredCurrency,
       preferredLanguage,
+      tenantActionUrl: `${getAppBaseUrl('tenant new request notification links')}/mobile/requests/${createdRequestId}`,
+      landlordActionUrl: `${getAppBaseUrl('landlord new request notification links')}/requests/${createdRequestId}`,
     })
     await Promise.all([
       sendNotification(tenantMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),

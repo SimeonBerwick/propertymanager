@@ -6,7 +6,15 @@ import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
-import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage, buildTenantCommentMessage } from '@/lib/notify'
+import {
+  sendNotification,
+  buildStatusChangedMessage,
+  buildTenantCommentMessage,
+  buildTenantQueueViewedMessage,
+  buildTenantVendorUpdateMessage,
+  buildVendorAssignedMessage,
+  buildVendorAwardedMessage,
+} from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
@@ -96,6 +104,14 @@ function toClosedTerminal(status: RequestStatus) {
   return ['closed', 'declined', 'canceled'].includes(status)
 }
 
+function tenantRequestActionUrl(requestId: string, section?: string) {
+  return `${getAppBaseUrl('tenant notification links')}/mobile/requests/${requestId}${section ? `#${section}` : ''}`
+}
+
+function vendorRespondActionUrl(token: string) {
+  return `${getAppBaseUrl('vendor notification links')}/vendor/respond/${token}`
+}
+
 export async function updateStatusFormAction(
   _prev: RequestActionState,
   formData: FormData,
@@ -180,6 +196,7 @@ export async function updateStatusFormAction(
         tenantName,
         fromStatus,
         toStatus,
+        actionUrl: tenantRequestActionUrl(requestId),
       }),
       { ownerUserId: session.userId, requestId },
     )
@@ -489,7 +506,7 @@ export async function awardTenderInviteAction(
         requestId,
         request: { property: { ownerId: session.userId } },
       },
-      include: { vendor: true },
+      include: { vendor: true, request: { include: { property: true, unit: true } } },
     })
     if (!invite) return { error: 'Tender invite not found.' }
 
@@ -567,6 +584,61 @@ export async function awardTenderInviteAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+
+    if (invite.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
+      const dispatchLink = await createVendorDispatchLink(requestId, invite.vendorId, inviteId).catch(() => null)
+      await sendNotification(buildVendorAwardedMessage({
+        requestId,
+        title: invite.request.title,
+        propertyName: invite.request.property.name,
+        unitLabel: invite.request.unit.label,
+        vendorName: invite.vendor.name,
+        vendorEmail: invite.vendor.email,
+        tenantName: invite.request.submittedByName ?? undefined,
+        tenantEmail: invite.request.submittedByEmail ?? undefined,
+        urgency: invite.request.urgency,
+        category: invite.request.category,
+        preferredCurrency: invite.request.preferredCurrency,
+        preferredLanguage: invite.request.preferredLanguage,
+        bidAmountLabel: invite.bidAmountCents != null ? `USD ${(invite.bidAmountCents / 100).toFixed(2)}` : undefined,
+        responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
+      }), { ownerUserId: session.userId, requestId })
+    }
+
+    if (
+      invite.request.submittedByEmail &&
+      invite.request.submittedByName &&
+      await areEmailNotificationsEnabled(session.userId)
+    ) {
+      if (invite.proposedStart) {
+        await sendNotification(buildTenantVendorUpdateMessage({
+          requestId,
+          title: invite.request.title,
+          propertyName: invite.request.property.name,
+          unitLabel: invite.request.unit.label,
+          tenantEmail: invite.request.submittedByEmail,
+          tenantName: invite.request.submittedByName,
+          vendorName: invite.vendor.name,
+          dispatchStatus: 'scheduled',
+          scheduledStart: invite.proposedStart.toISOString(),
+          scheduledEnd: invite.proposedEnd?.toISOString(),
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      } else {
+        await sendNotification(buildStatusChangedMessage({
+          requestId,
+          title: invite.request.title,
+          propertyName: invite.request.property.name,
+          unitLabel: invite.request.unit.label,
+          tenantEmail: invite.request.submittedByEmail,
+          tenantName: invite.request.submittedByName,
+          fromStatus: invite.request.status,
+          toStatus: 'vendor_selected',
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      }
+    }
+
     return { error: null, success: true, message: 'Tender awarded.' }
   } catch (error) {
     await logServerActionError('request.tender.award', error, { requestId, tenderId, inviteId })
@@ -593,7 +665,7 @@ export async function approveVendorCommercialItemAction(
       },
       include: {
         vendor: true,
-        request: true,
+        request: { include: { property: true, unit: true } },
       },
     })
 
@@ -665,6 +737,25 @@ export async function approveVendorCommercialItemAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+    if (item.itemType === 'bid' && item.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
+      const dispatchLink = await createVendorDispatchLink(requestId, item.vendorId).catch(() => null)
+      await sendNotification(buildVendorAwardedMessage({
+        requestId,
+        title: item.request.title,
+        propertyName: item.request.property.name,
+        unitLabel: item.request.unit.label,
+        vendorName: item.vendor.name,
+        vendorEmail: item.vendor.email,
+        tenantName: item.request.submittedByName ?? undefined,
+        tenantEmail: item.request.submittedByEmail ?? undefined,
+        urgency: item.request.urgency,
+        category: item.request.category,
+        preferredCurrency: item.request.preferredCurrency,
+        preferredLanguage: item.request.preferredLanguage,
+        bidAmountLabel: `USD ${(item.amountCents / 100).toFixed(2)}`,
+        responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
+      }), { ownerUserId: session.userId, requestId })
+    }
     return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
   } catch (error) {
     await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId })
@@ -684,6 +775,18 @@ export async function updateDispatchFormAction(
   const note = ((formData.get('note') as string) ?? '').trim()
   const scheduledStartRaw = ((formData.get('scheduledStart') as string) ?? '').trim()
   const scheduledEndRaw = ((formData.get('scheduledEnd') as string) ?? '').trim()
+  let tenantNotification:
+    | {
+        tenantEmail: string
+        tenantName: string
+        title: string
+        propertyName: string
+        unitLabel: string
+        vendorName: string
+        fromStatus: RequestStatus
+        toStatus?: RequestStatus
+      }
+    | undefined
 
   if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid work status.' }
 
@@ -697,7 +800,7 @@ export async function updateDispatchFormAction(
   try {
     const request = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
-      select: { id: true, assignedVendorId: true },
+      include: { property: true, unit: true },
     })
 
     if (!request) return { error: 'Request not found.' }
@@ -735,6 +838,19 @@ export async function updateDispatchFormAction(
       },
     })
 
+    if (request.submittedByEmail && request.submittedByName) {
+      tenantNotification = {
+        tenantEmail: request.submittedByEmail,
+        tenantName: request.submittedByName,
+        title: request.title,
+        propertyName: request.property.name,
+        unitLabel: request.unit.label,
+        vendorName: awardedInvite?.vendor.name ?? request.assignedVendorName ?? 'Vendor',
+        fromStatus: request.status,
+        toStatus: requestStatus,
+      }
+    }
+
     if (requestStatus) {
       await prisma.statusEvent.create({
         data: { requestId, toStatus: requestStatus, actorUserId: session.userId },
@@ -766,6 +882,36 @@ export async function updateDispatchFormAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+    if (tenantNotification && await areEmailNotificationsEnabled(session.userId)) {
+      if (dispatchStatus === 'scheduled' || scheduledStart || scheduledEnd || dispatchStatus === 'completed') {
+        await sendNotification(buildTenantVendorUpdateMessage({
+          requestId,
+          title: tenantNotification.title,
+          propertyName: tenantNotification.propertyName,
+          unitLabel: tenantNotification.unitLabel,
+          tenantEmail: tenantNotification.tenantEmail,
+          tenantName: tenantNotification.tenantName,
+          vendorName: tenantNotification.vendorName,
+          dispatchStatus,
+          note: note || undefined,
+          scheduledStart: scheduledStart?.toISOString(),
+          scheduledEnd: scheduledEnd?.toISOString(),
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      } else if (tenantNotification.toStatus && tenantNotification.toStatus !== tenantNotification.fromStatus) {
+        await sendNotification(buildStatusChangedMessage({
+          requestId,
+          title: tenantNotification.title,
+          propertyName: tenantNotification.propertyName,
+          unitLabel: tenantNotification.unitLabel,
+          tenantEmail: tenantNotification.tenantEmail,
+          tenantName: tenantNotification.tenantName,
+          fromStatus: tenantNotification.fromStatus,
+          toStatus: tenantNotification.toStatus,
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      }
+    }
     return { error: null, success: true }
   } catch (error) {
     await logServerActionError('request.dispatch.update', error, { requestId, dispatchStatus })
@@ -935,6 +1081,7 @@ export async function quickRequestAction(
           unitLabel: request.unit.label,
           tenantEmail: request.submittedByEmail!,
           tenantName: request.submittedByName!,
+          actionUrl: tenantRequestActionUrl(requestId),
         }), { ownerUserId: session.userId, requestId })
       }
 
@@ -1144,6 +1291,7 @@ export async function addCommentFormAction(
         tenantEmail: request.submittedByEmail,
         tenantName: request.submittedByName,
         comment: body,
+        actionUrl: tenantRequestActionUrl(requestId),
       }), { ownerUserId: session.userId, requestId })
     }
     return { error: null, success: true }
