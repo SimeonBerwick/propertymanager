@@ -35,6 +35,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (pathname.startsWith('/.well-known/')) {
+    return response
+  }
+
   if (pathname === '/privacy' || pathname === '/terms' || pathname === '/support' || pathname === '/account-deletion') {
     return response
   }
@@ -81,5 +85,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon.svg).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon.svg|\\.well-known).*)'],
 }
