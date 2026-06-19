@@ -1,0 +1,2 @@
+ALTER TABLE "Unit" ADD COLUMN "city" TEXT;
+ALTER TABLE "Unit" ADD COLUMN "state" TEXT;

@@ -263,6 +263,8 @@ model Unit {
   id               String   @id @default(cuid())
   propertyId       String
   label            String
+  city             String?
+  state            String?
   tenantName       String?
   tenantEmail      String?
   sizeSqFt         Int?
