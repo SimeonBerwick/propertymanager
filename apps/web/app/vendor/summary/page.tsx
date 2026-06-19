@@ -20,7 +20,7 @@ export default async function VendorSummaryPage() {
 
       <section className="grid cols-3">
         <div className="card">
-          <div className="kicker">Commercial items</div>
+          <div className="kicker">Invoices</div>
           <h2>{items.length}</h2>
           <div className="muted">Submitted to property manager</div>
         </div>
@@ -39,19 +39,19 @@ export default async function VendorSummaryPage() {
       <section className="card stack">
         <div>
           <div className="kicker">Vendor summary</div>
-          <h3 style={{ marginTop: 4 }}>Commercial submissions</h3>
+          <h3 style={{ marginTop: 4 }}>Submitted invoices</h3>
         </div>
         {items.length ? items.map((item) => (
           <Link key={item.id} href={`/vendor/requests/${item.requestId}` as Route} className="timelineRow" style={{ textDecoration: 'none' }}>
             <div style={{ fontWeight: 600 }}>{item.title}</div>
             <div className="muted">
-              {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {item.propertyName} · {item.unitLabel}
+              {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {item.propertyName} - {item.unitLabel}
             </div>
             <div>{item.requestTitle}</div>
             {item.description ? <div className="muted">{item.description}</div> : null}
             <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
           </Link>
-        )) : <div className="muted">No vendor commercial submissions yet.</div>}
+        )) : <div className="muted">No vendor invoices submitted yet.</div>}
       </section>
     </div>
   )

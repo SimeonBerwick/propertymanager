@@ -19,12 +19,12 @@ const PRESETS = {
   },
   vendor_partial: {
     recipientType: 'vendor',
-    title: 'Vendor partial payment remittance',
+    title: 'Vendor partial payment',
     description: 'Partial payment statement for completed maintenance work.',
   },
   vendor_paid: {
     recipientType: 'vendor',
-    title: 'Vendor paid-in-full remittance',
+    title: 'Vendor paid-in-full payment',
     description: 'Paid-in-full statement for completed maintenance work.',
   },
 } as const
@@ -71,7 +71,7 @@ export function BillingDocumentForm({
           <span className="field-label">Recipient type</span>
           <select className="input" name="recipientType" value={preset.recipientType} onChange={() => undefined}>
             <option value="tenant">Tenant invoice</option>
-            <option value="vendor">Vendor remittance</option>
+            <option value="vendor">Vendor payment</option>
           </select>
         </label>
         <label className="field">
@@ -102,11 +102,11 @@ export function BillingDocumentForm({
       </div>
       <label className="field">
         <span className="field-label">Description</span>
-        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="What this bill or remittance covers" rows={4} />
+        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="What this invoice or payment covers" rows={4} />
       </label>
-      <ActionFeedback error={state.error} success={state.success && 'Billing document created.'} />
+      <ActionFeedback error={state.error} success={state.success && 'Invoice or payment created.'} />
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Saving…' : 'Create billing document'}
+        {pending ? 'Saving...' : 'Create invoice or payment'}
       </button>
     </form>
   )

@@ -37,7 +37,71 @@ describe('submitVendorPortalResponse', () => {
     vi.mocked(requireVendorSession).mockReset()
   })
 
-  test('non-awarded tender vendor cannot mutate request dispatch state or history by sending a bid update', async () => {
+  test('accepting an unassigned invite without a bid awards and assigns the work order', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Desert Air Service', email: 'desert@example.com', phone: '+16025550123' },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'approved',
+    })
+    const tender = await prisma.requestTender.create({
+      data: {
+        requestId: request.id,
+        status: 'open',
+        sentAt: new Date(),
+      },
+    })
+    const invite = await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: vendor.id,
+        status: 'invited',
+      },
+    })
+
+    vi.mocked(requireVendorSession).mockResolvedValue({
+      sessionId: 'vendor-session',
+      vendorId: vendor.id,
+      orgId: user.id,
+      vendorName: vendor.name,
+      email: vendor.email,
+      phone: vendor.phone,
+    })
+
+    await expect(submitVendorPortalResponse(
+      { error: null },
+      formData({
+        requestId: request.id,
+        dispatchStatus: 'accepted',
+        note: 'We can take it',
+      }),
+    )).rejects.toThrow(/NEXT_REDIRECT/)
+
+    const [refreshedRequest, refreshedTender, refreshedInvite, dispatchEvent] = await Promise.all([
+      prisma.maintenanceRequest.findUnique({ where: { id: request.id } }),
+      prisma.requestTender.findUnique({ where: { id: tender.id } }),
+      prisma.tenderInvite.findUnique({ where: { id: invite.id } }),
+      prisma.vendorDispatchEvent.findFirst({ where: { requestId: request.id }, orderBy: { createdAt: 'desc' } }),
+    ])
+
+    expect(refreshedRequest?.assignedVendorId).toBe(vendor.id)
+    expect(refreshedRequest?.assignedVendorName).toBe(vendor.name)
+    expect(refreshedRequest?.assignedVendorEmail).toBe(vendor.email)
+    expect(refreshedRequest?.assignedVendorPhone).toBe(vendor.phone)
+    expect(refreshedRequest?.dispatchStatus).toBe('accepted')
+    expect(refreshedRequest?.status).toBe('vendor_selected')
+    expect(refreshedInvite?.status).toBe('awarded')
+    expect(refreshedInvite?.awardedAt).toBeTruthy()
+    expect(refreshedTender?.status).toBe('awarded')
+    expect(refreshedTender?.closedAt).toBeTruthy()
+    expect(dispatchEvent?.status).toBe('accepted')
+    expect(dispatchEvent?.vendorId).toBe(vendor.id)
+  })
+
+  test('non-awarded tender vendor cannot mutate request work status or history by sending a bid update', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const awardedVendor = await prisma.vendor.create({
       data: { orgId: user.id, name: 'Southwest Plumbing', email: 'southwest@example.com' },

@@ -73,6 +73,6 @@ export async function createVendorCommercialItemAction(
       vendorId: session.vendorId,
       itemType,
     })
-    return { error: 'Could not save vendor commercial item.' }
+    return { error: 'Could not save vendor invoice item.' }
   }
 }

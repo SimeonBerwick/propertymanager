@@ -395,7 +395,7 @@ describe('approveVendorCommercialItemAction', () => {
     vi.mocked(getLandlordSession).mockResolvedValue(null)
   })
 
-  test('approving an overcost posts a draft vendor remittance for awarded bid plus approved extras', async () => {
+  test('approving an overcost posts a draft vendor payment for awarded bid plus approved extras', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const vendor = await prisma.vendor.create({
@@ -443,7 +443,7 @@ describe('approveVendorCommercialItemAction', () => {
     )
 
     expect(result.error).toBeNull()
-    expect(result.message).toMatch(/remittance draft posted/i)
+    expect(result.message).toMatch(/payment draft posted/i)
 
     const [refreshedOvercost, draft] = await Promise.all([
       prisma.vendorCommercialItem.findUnique({ where: { id: overcost.id } }),
@@ -506,7 +506,7 @@ describe('approveVendorCommercialItemAction', () => {
     )
 
     expect(result.error).toBeNull()
-    expect(result.message).toMatch(/remittance draft posted/i)
+    expect(result.message).toMatch(/payment draft posted/i)
 
     const draft = await prisma.billingDocument.findFirst({
       where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },

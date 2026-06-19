@@ -665,7 +665,7 @@ export async function approveVendorCommercialItemAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
-    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and remittance draft posted.' : 'Vendor submission approved and remittance draft posted.' }
+    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
   } catch (error) {
     await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId })
     return { error: 'Could not approve vendor submission.' }
@@ -685,7 +685,7 @@ export async function updateDispatchFormAction(
   const scheduledStartRaw = ((formData.get('scheduledStart') as string) ?? '').trim()
   const scheduledEndRaw = ((formData.get('scheduledEnd') as string) ?? '').trim()
 
-  if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid dispatch status.' }
+  if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid work status.' }
 
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
   const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
@@ -759,7 +759,7 @@ export async function updateDispatchFormAction(
       entityType: 'request',
       entityId: requestId,
       action: 'request.dispatchUpdated',
-      summary: `Updated dispatch status to ${dispatchStatus}.`,
+      summary: `Updated work status to ${dispatchStatus}.`,
       metadata: { dispatchStatus, note, scheduledStart: scheduledStart?.toISOString() ?? null, scheduledEnd: scheduledEnd?.toISOString() ?? null },
     })
 
@@ -769,7 +769,7 @@ export async function updateDispatchFormAction(
     return { error: null, success: true }
   } catch (error) {
     await logServerActionError('request.dispatch.update', error, { requestId, dispatchStatus })
-    return { error: 'Could not update dispatch workflow.' }
+    return { error: 'Could not update work status.' }
   }
 }
 
@@ -1197,7 +1197,7 @@ async function upsertVendorRemittanceDraft(
   const totalCents = bidCents + extrasCents
   if (totalCents <= 0) return null
 
-  const title = `Vendor remittance - ${input.vendorName}`
+  const title = `Vendor payment - ${input.vendorName}`
   const descriptionLines = [
     `Amount owed to ${input.vendorName} for ${request.title}.`,
     bidCents > 0 ? `Approved bid: USD ${(bidCents / 100).toFixed(2)}` : null,
@@ -1268,7 +1268,7 @@ async function upsertVendorRemittanceDraft(
         create: {
           actorUserId: input.userId,
           eventType: 'created',
-          note: 'Draft vendor remittance created from approved vendor submissions.',
+          note: 'Draft vendor payment created from approved vendor submissions.',
         },
       },
     },

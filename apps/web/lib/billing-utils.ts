@@ -22,7 +22,7 @@ export function billingDocumentTypeLabel(type: BillingDocumentType) {
     case 'tenant_invoice':
       return 'Tenant invoice'
     case 'vendor_remittance':
-      return 'Vendor remittance'
+      return 'Vendor payment'
     default:
       return type
   }

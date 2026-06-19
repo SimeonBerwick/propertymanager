@@ -6,7 +6,7 @@ import { BillingDocumentActions } from '@/components/billing-document-actions'
 
 export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
-    return <div className="muted">No billing docs yet.</div>
+    return <div className="muted">No invoices or payments yet.</div>
   }
 
   return (
@@ -19,7 +19,7 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               <div>
                 <div style={{ fontWeight: 700 }}>{doc.title}</div>
                 <div className="muted" style={{ marginTop: 4 }}>
-                  {billingDocumentTypeLabel(doc.documentType)} · {doc.recipientType} · {new Date(doc.createdAt).toLocaleString()}
+                  {billingDocumentTypeLabel(doc.documentType)} - {doc.recipientType} - {new Date(doc.createdAt).toLocaleString()}
                 </div>
                 {doc.sentTo ? <div className="muted">Sent to: {doc.sentTo}</div> : null}
               </div>
@@ -31,7 +31,7 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               </div>
             </div>
             <div className="billingActionsRow">
-              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open doc</Link>
+              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open invoice/payment</Link>
               <BillingStatusForm document={doc} />
               <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} status={doc.status} />
             </div>

@@ -12,7 +12,7 @@ export function VendorCommercialItemForm({ requestId }: { requestId: string }) {
     <form action={action} className="stack">
       <input type="hidden" name="requestId" value={requestId} />
       {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Commercial item submitted to the property manager.</div> : null}
+      {state.success ? <div className="notice success">Invoice item submitted to the property manager.</div> : null}
       <label className="field">
         <span className="field-label">Submission type</span>
         <select className="input" name="itemType" defaultValue="bid">
@@ -34,10 +34,10 @@ export function VendorCommercialItemForm({ requestId }: { requestId: string }) {
       </div>
       <label className="field">
         <span className="field-label">Description</span>
-        <textarea className="input" name="description" rows={3} placeholder="Optional scope, rationale, or commercial note" />
+        <textarea className="input" name="description" rows={3} placeholder="Optional scope, reason, or invoice note" />
       </label>
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting…' : 'Submit to property manager'}
+        {pending ? 'Submitting...' : 'Submit to property manager'}
       </button>
     </form>
   )

@@ -59,13 +59,13 @@ export function RequestControlPanel({
         </label>
         <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
         <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
-          {statusPending ? 'Saving…' : 'Update status'}
+          {statusPending ? 'Saving...' : 'Update status'}
         </button>
       </form>
 
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
-          <div className="kicker">Dispatch</div>
+          <div className="kicker">Work status</div>
           <h3 style={{ marginTop: 4 }}>Send to vendor</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
@@ -81,7 +81,7 @@ export function RequestControlPanel({
         <div className="muted">Choose one vendor to assign directly, or use the tender section below to invite several.</div>
         <ActionFeedback error={vendorState.error} success={vendorState.success ? vendorState.message ?? 'Vendor updated.' : null} detail="The assignment is visible in the request timeline." />
         <button type="submit" className="button primary" disabled={vendorPending}>
-          {vendorPending ? 'Sending…' : 'Assign vendor'}
+          {vendorPending ? 'Sending...' : 'Assign vendor'}
         </button>
         {recommended.length ? <div className="muted">Available vendors: {recommended.map((vendor) => vendor.name).join(', ')}</div> : null}
       </form>
@@ -102,7 +102,7 @@ export function RequestControlPanel({
           )) : <div className="muted">No active vendors available.</div>}
         </div>
         <button type="submit" className="button" disabled={vendorPending || !vendors.length}>
-          {vendorPending ? 'Sending…' : 'Send tender request'}
+          {vendorPending ? 'Sending...' : 'Send tender request'}
         </button>
       </form>
 
@@ -122,7 +122,7 @@ export function RequestControlPanel({
                 <div className="muted">{invite.status.replaceAll('_', ' ')}</div>
               </div>
               <button type="submit" className="button primary" disabled={awardPending}>
-                {awardPending ? 'Awarding…' : 'Award bid'}
+                {awardPending ? 'Awarding...' : 'Award bid'}
               </button>
             </form>
           )))}

@@ -315,7 +315,7 @@ describe('getTenantOwnedRequestById', () => {
           currency: 'usd',
           totalCents: 7000,
           paidCents: 0,
-          title: 'Hidden vendor remittance',
+          title: 'Hidden vendor payment',
         },
         {
           requestId: request.id,
