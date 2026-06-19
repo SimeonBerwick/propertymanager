@@ -83,7 +83,7 @@ function withRequestSubject(msg: NotificationMessage, context: NotificationConte
 export async function sendNotification(msg: NotificationMessage, context: NotificationContext = {}): Promise<{ ok: boolean }> {
   const normalized = withRequestSubject(msg, context)
   try {
-    if (context.ownerUserId) {
+    if (context.ownerUserId && !context.bypassUserPreference) {
       const preference = await prisma.user.findUnique({
         where: { id: context.ownerUserId },
         select: { emailNotificationsEnabled: true },
@@ -91,10 +91,14 @@ export async function sendNotification(msg: NotificationMessage, context: Notifi
       if (preference?.emailNotificationsEnabled === false) return { ok: false }
     }
 
-    await sendPushNotification(normalized)
+    await sendPushNotification(normalized).catch((error) => {
+      console.error('[NOTIFY] Push delivery failed; continuing with email delivery:', error)
+    })
 
-    const mailbox = await sendViaConnectedMailbox(normalized, context)
-    if (mailbox.attempted && mailbox.ok) return { ok: true }
+    if (context.transportHint === 'connected-mailbox') {
+      const mailbox = await sendViaConnectedMailbox(normalized, context)
+      if (mailbox.attempted && mailbox.ok) return { ok: true }
+    }
 
     if (process.env.NOTIFY_TRANSPORT === 'smtp') {
       await sendViaSmtp(normalized)

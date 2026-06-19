@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { importTicketsCsv, importUnitsCsv, importVendorsCsv, toggleDailyCsvExportAction, type OpsCsvState } from '@/app/ops/actions'
+import { importTicketsCsv, importUnitsCsv, importVendorsCsv, sendSystemEmailTestAction, toggleDailyCsvExportAction, type OpsCsvState } from '@/app/ops/actions'
 
 const initialState: OpsCsvState = { error: null }
 
@@ -34,6 +34,23 @@ function UploadForm({
   )
 }
 
+function SystemEmailTestForm() {
+  const [formState, formAction, pending] = useActionState(sendSystemEmailTestAction, initialState)
+  return (
+    <form action={formAction} className="opsCsvBox stack">
+      <div>
+        <strong>System email delivery</strong>
+        <div className="muted">Sends a test through the app sender. This does not require Gmail or Outlook connection.</div>
+      </div>
+      <button className="button compactToggle" type="submit" disabled={pending} style={{ alignSelf: 'flex-start' }}>
+        {pending ? 'Sending' : 'Send test email'}
+      </button>
+      {formState.error ? <div className="muted" style={{ color: 'var(--danger)' }}>{formState.error}</div> : null}
+      {formState.success ? <div className="badge done" style={{ width: 'fit-content' }}>{formState.success}</div> : null}
+    </form>
+  )
+}
+
 export function OpsCsvPanel({
   dailyExportEnabled,
   dailyExportLastSentAt,
@@ -48,7 +65,7 @@ export function OpsCsvPanel({
       <div>
         <div className="kicker">CSV</div>
         <h3 style={{ marginTop: 4 }}>Import / export</h3>
-        <div className="muted">Downloads include stable IDs and update timestamps. Uploads preview changes by default and reject stale rows.</div>
+        <div className="muted">Downloads are direct browser files and do not require a connected inbox. Daily emails use the app sender and attach changed CSV files.</div>
       </div>
       <label className="field" style={{ maxWidth: 320 }}>
         <span className="field-label">Download changes since</span>
@@ -67,6 +84,7 @@ export function OpsCsvPanel({
           Save daily export preference
         </button>
       </form>
+      <SystemEmailTestForm />
       <div className="opsCsvGrid">
         <UploadForm title="Units" action={importUnitsCsv} state={initialState} downloadHref={`/api/ops/csv/units${suffix}`} />
         <UploadForm title="Vendors" action={importVendorsCsv} state={initialState} downloadHref={`/api/ops/csv/vendors${suffix}`} />

@@ -59,7 +59,7 @@ describe('daily CSV exports', () => {
           expect.objectContaining({ filename: 'tickets.csv' }),
         ],
       }),
-      { ownerUserId: user.id },
+      { ownerUserId: user.id, transportHint: 'system', bypassUserPreference: true },
     )
     expect(mocks.update).toHaveBeenCalledWith({
       where: { id: user.id },
@@ -93,5 +93,22 @@ describe('daily CSV exports', () => {
       reason: 'not-due',
     })
     expect(mocks.buildChangedCsvExports).not.toHaveBeenCalled()
+  })
+
+  test('daily CSV still sends when general email alerts are paused', async () => {
+    mocks.findUnique.mockResolvedValue({
+      ...user,
+      emailNotificationsEnabled: false,
+    })
+    mocks.buildChangedCsvExports.mockResolvedValue([
+      { kind: 'units', filename: 'units.csv', content: 'id\n1', rowCount: 1 },
+    ])
+    mocks.sendNotification.mockResolvedValue({ ok: true })
+
+    expect(await sendDailyCsvExportToLandlord(user.id, now)).toEqual({ ok: true, skipped: false, files: 1 })
+    expect(mocks.sendNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ to: user.email }),
+      { ownerUserId: user.id, transportHint: 'system', bypassUserPreference: true },
+    )
   })
 })

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
+import { sendNotification } from '@/lib/notify'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 365
@@ -83,6 +84,21 @@ export async function createTenantMobileSession(tenantIdentityId: string, maximu
     summary: 'Created tenant mobile session.',
     metadata: { sessionId: session.id },
   })
+
+  if (tenantIdentity.email) {
+    await sendNotification({
+      to: tenantIdentity.email,
+      subject: 'New tenant portal sign-in',
+      text: [
+        `Hi ${tenantIdentity.tenantName},`,
+        '',
+        'Your tenant portal account was just signed in.',
+        '',
+        'If this was you, no action is needed.',
+        'If this was not you, contact your property manager right away.',
+      ].join('\n'),
+    }, { ownerUserId: tenantIdentity.orgId, transportHint: 'system', bypassUserPreference: true })
+  }
 
   return session
 }

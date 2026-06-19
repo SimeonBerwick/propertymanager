@@ -2,6 +2,7 @@ import { buildChangedCsvExports } from '@/lib/csv-export'
 import { sendNotification } from '@/lib/notify'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -11,12 +12,11 @@ export async function sendDailyCsvExportToLandlord(userId: string, now = new Dat
     select: {
       id: true,
       email: true,
-      emailNotificationsEnabled: true,
       dailyCsvExportEnabled: true,
       dailyCsvExportLastSentAt: true,
     },
   })
-  if (!user?.dailyCsvExportEnabled || !user.emailNotificationsEnabled || !user.email) {
+  if (!user?.dailyCsvExportEnabled || !user.email) {
     return { ok: false, skipped: true, reason: 'disabled' }
   }
   if (user.dailyCsvExportLastSentAt && now.getTime() - user.dailyCsvExportLastSentAt.getTime() < DAY_MS) {
@@ -41,13 +41,18 @@ export async function sendDailyCsvExportToLandlord(userId: string, now = new Dat
       `Attached are records changed since ${since.toISOString()}.`,
       '',
       ...changed.map((file) => `- ${file.kind}: ${file.rowCount} changed record${file.rowCount === 1 ? '' : 's'}`),
+      '',
+      'You can also download current CSV exports while signed in:',
+      `- Units: ${getAppBaseUrl('daily CSV export links')}/api/ops/csv/units`,
+      `- Vendors: ${getAppBaseUrl('daily CSV export links')}/api/ops/csv/vendors`,
+      `- Tickets: ${getAppBaseUrl('daily CSV export links')}/api/ops/csv/tickets`,
     ].join('\n'),
     attachments: changed.map((file) => ({
       filename: file.filename,
       content: file.content,
       contentType: 'text/csv; charset=utf-8',
     })),
-  }, { ownerUserId: user.id })
+  }, { ownerUserId: user.id, transportHint: 'system', bypassUserPreference: true })
 
   if (!result.ok) return { ok: false, skipped: false, reason: 'delivery-failed' }
 

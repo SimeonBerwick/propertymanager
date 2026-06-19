@@ -99,7 +99,7 @@ export async function createVendorSession(vendorId: string, requestId?: string |
         'If this was you, no action is needed.',
         'If this was not you, contact your property manager right away.',
       ].join('\n'),
-    }, { ownerUserId: vendor.orgId ?? undefined })
+    }, { ownerUserId: vendor.orgId ?? undefined, transportHint: 'system', bypassUserPreference: true })
   }
 
   return session
