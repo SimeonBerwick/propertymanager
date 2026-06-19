@@ -49,7 +49,7 @@ export async function sendNativePushNotification(
           title: message.subject.replace(/\s+\[PMR:[^\]]+\]$/, ''),
           body: message.text.split(/\r?\n/).find((line) => line.trim())?.trim(),
         },
-        data: { url: destinationUrl(principalType, message.requestId) },
+        data: { url: message.actionUrl ?? destinationUrl(principalType, message.requestId) },
         android: { priority: 'high' },
       })
     } catch (error) {

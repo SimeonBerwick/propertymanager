@@ -9,6 +9,7 @@ import { isDatabaseAvailable } from '@/lib/db-status'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { writeAuditLog } from '@/lib/audit-log'
 import { checkUnitCapacity } from '@/lib/account-limits'
+import { logServerActionError } from '@/lib/observability'
 
 export type PropertyActionState = { error: string | null }
 
@@ -84,7 +85,8 @@ export async function createPropertyAction(
       summary: `Created property ${name}.`,
       metadata: { address },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('property.create', error, { ownerId })
     return { error: 'Could not create property. Please try again.' }
   }
 
@@ -132,7 +134,8 @@ export async function updatePropertyAction(
       summary: `Updated property ${name}.`,
       metadata: { address },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('property.update', error, { ownerId, propertyId })
     return { error: 'Could not update property. Please try again.' }
   }
 
@@ -179,7 +182,8 @@ export async function archivePropertyAction(
       action: 'property.archived',
       summary: 'Archived property and inactive-linked its units.',
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('property.archive', error, { ownerId, propertyId })
     return { error: 'Could not archive property. Please try again.' }
   }
 
@@ -221,7 +225,8 @@ export async function restorePropertyAction(
       action: 'property.restored',
       summary: 'Restored property to active state.',
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('property.restore', error, { ownerId, propertyId })
     return { error: 'Could not restore property. Please try again.' }
   }
 
@@ -291,7 +296,8 @@ export async function deletePropertyAction(
 
       await tx.property.delete({ where: { id: propertyId } })
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('property.delete', error, { ownerId, propertyId })
     return { error: 'Could not delete property. Please try again.' }
   }
 
@@ -312,6 +318,8 @@ export async function createUnitAction(
 
   const propertyId = readTrimmedString(formData, 'propertyId')
   const label = readTrimmedString(formData, 'label')
+  const city = readTrimmedString(formData, 'city')
+  const state = readTrimmedString(formData, 'state')
   const tenantName = readTrimmedString(formData, 'tenantName')
   const tenantEmail = readTrimmedString(formData, 'tenantEmail').toLowerCase()
   const sizeSqFt = readOptionalInt(formData, 'sizeSqFt', 'Size', 100000)
@@ -322,6 +330,8 @@ export async function createUnitAction(
   if (!propertyId) return { error: 'Property ID is required.' }
   if (!label) return { error: 'Unit label is required.' }
   if (label.length > 100) return { error: 'Unit label must be 100 characters or fewer.' }
+  if (city.length > 120) return { error: 'City must be 120 characters or fewer.' }
+  if (state.length > 80) return { error: 'State must be 80 characters or fewer.' }
   if (tenantName.length > 120) return { error: 'Tenant name must be 120 characters or fewer.' }
   if (tenantEmail.length > 254) return { error: 'Tenant email is too long.' }
   if (sizeSqFt.error) return { error: sizeSqFt.error }
@@ -348,6 +358,8 @@ export async function createUnitAction(
       data: {
         propertyId,
         label,
+        city: city || null,
+        state: state || null,
         tenantName: tenantName || null,
         tenantEmail: tenantEmail || null,
         sizeSqFt: sizeSqFt.value,
@@ -364,9 +376,10 @@ export async function createUnitAction(
       entityId: unit.id,
       action: 'unit.created',
       summary: `Created unit ${label}.`,
-      metadata: { propertyId, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
+      metadata: { propertyId, city: city || null, state: state || null, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('unit.create', error, { ownerId, propertyId })
     return { error: 'Could not create unit. Please try again.' }
   }
 
@@ -388,6 +401,8 @@ export async function updateUnitAction(
   const unitId = readTrimmedString(formData, 'unitId')
   const propertyId = readTrimmedString(formData, 'propertyId')
   const label = readTrimmedString(formData, 'label')
+  const city = readTrimmedString(formData, 'city')
+  const state = readTrimmedString(formData, 'state')
   const tenantName = readTrimmedString(formData, 'tenantName')
   const tenantEmail = readTrimmedString(formData, 'tenantEmail').toLowerCase()
   const sizeSqFt = readOptionalInt(formData, 'sizeSqFt', 'Size', 100000)
@@ -399,6 +414,8 @@ export async function updateUnitAction(
   if (!propertyId) return { error: 'Property ID is required.' }
   if (!label) return { error: 'Unit label is required.' }
   if (label.length > 100) return { error: 'Unit label must be 100 characters or fewer.' }
+  if (city.length > 120) return { error: 'City must be 120 characters or fewer.' }
+  if (state.length > 80) return { error: 'State must be 80 characters or fewer.' }
   if (tenantName.length > 120) return { error: 'Tenant name must be 120 characters or fewer.' }
   if (tenantEmail.length > 254) return { error: 'Tenant email is too long.' }
   if (sizeSqFt.error) return { error: sizeSqFt.error }
@@ -411,6 +428,8 @@ export async function updateUnitAction(
       where: { id: unitId, propertyId, property: { ownerId } },
       data: {
         label,
+        city: city || null,
+        state: state || null,
         tenantName: tenantName || null,
         tenantEmail: tenantEmail || null,
         sizeSqFt: sizeSqFt.value,
@@ -444,9 +463,10 @@ export async function updateUnitAction(
       entityId: unitId,
       action: 'unit.updated',
       summary: `Updated unit ${label}.`,
-      metadata: { propertyId, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
+      metadata: { propertyId, city: city || null, state: state || null, sizeSqFt: sizeSqFt.value, bedrooms: bedrooms.value, bathrooms: bathrooms.value, monthlyRentCents: monthlyRentCents.value },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('unit.update', error, { ownerId, propertyId, unitId })
     return { error: 'Could not update unit. Please try again.' }
   }
 
@@ -492,7 +512,8 @@ export async function archiveUnitAction(
       summary: 'Archived unit.',
       metadata: { propertyId },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('unit.archive', error, { ownerId, propertyId, unitId })
     return { error: 'Could not archive unit. Please try again.' }
   }
 
@@ -556,7 +577,8 @@ export async function restoreUnitAction(
       summary: 'Restored unit to active state.',
       metadata: { propertyId },
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('unit.restore', error, { ownerId, propertyId, unitId })
     return { error: 'Could not restore unit. Please try again.' }
   }
 
@@ -629,7 +651,8 @@ export async function deleteUnitAction(
 
       await tx.unit.delete({ where: { id: unitId } })
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('unit.delete', error, { ownerId, propertyId, unitId })
     return { error: 'Could not delete unit. Please try again.' }
   }
 

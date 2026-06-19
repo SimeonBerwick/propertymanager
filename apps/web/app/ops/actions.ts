@@ -6,8 +6,43 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import type { RequestStatus, Urgency } from '@prisma/client'
+import { sendNotification } from '@/lib/notify'
 
 export type OpsCsvState = { error: string | null; success?: string }
+
+export async function sendSystemEmailTestAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  })
+  if (!user?.email) return { error: 'No account email is available for the test.' }
+
+  const result = await sendNotification({
+    to: user.email,
+    subject: '[Simeonware] Email delivery test',
+    text: [
+      'This is a test from the app-owned Simeonware email sender.',
+      '',
+      'If you received this, login security alerts, daily CSV exports, and app notifications can reach this mailbox.',
+    ].join('\n'),
+  }, { ownerUserId: session.userId, transportHint: 'system', bypassUserPreference: true })
+
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'user',
+    entityId: session.userId,
+    action: result.ok ? 'email.systemTestSent' : 'email.systemTestFailed',
+    summary: result.ok ? 'Sent system email delivery test.' : 'System email delivery test failed.',
+  })
+
+  return result.ok
+    ? { error: null, success: `Test email sent to ${user.email}.` }
+    : { error: 'Test email was not delivered. Check NOTIFY_TRANSPORT=smtp, SMTP_URL, and NOTIFY_FROM in the hosted environment.' }
+}
 
 export async function toggleDailyCsvExportAction(formData: FormData) {
   const session = await getLandlordSession()
@@ -139,6 +174,8 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
     const property = existingProperty ?? (preview ? null : await findOrCreateProperty(session.userId, propertyName, value(row, 'propertyAddress', 'address')))
     const data = {
       label,
+      city: value(row, 'city') || null,
+      state: value(row, 'state') || null,
       tenantName: value(row, 'tenantName') || null,
       tenantEmail: value(row, 'tenantEmail', 'email').toLowerCase() || null,
       sizeSqFt: optionalInt(value(row, 'sizeSqFt', 'size')),

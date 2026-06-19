@@ -40,6 +40,8 @@ vi.mock('@/lib/notify', () => ({
   ]),
   buildStatusChangedMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'status', text: 'status' }),
   buildVendorAssignedMessage: vi.fn().mockReturnValue({ to: 'vendor@example.com', subject: 'vendor', text: 'vendor' }),
+  buildVendorAwardedMessage: vi.fn().mockReturnValue({ to: 'vendor@example.com', subject: 'awarded', text: 'awarded' }),
+  buildTenantVendorUpdateMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'vendor update', text: 'vendor update' }),
   buildTenantQueueViewedMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'queue', text: 'queue' }),
   buildTenantCommentMessage: vi.fn().mockReturnValue({ to: 'tenant@example.com', subject: 'comment', text: 'comment' }),
 }))

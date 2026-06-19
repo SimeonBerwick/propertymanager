@@ -6,7 +6,8 @@ import type { NotificationMessage } from '@/lib/notify'
 export interface NotificationContext {
   ownerUserId?: string | null
   requestId?: string | null
-  transportHint?: string
+  transportHint?: 'system' | 'connected-mailbox' | string
+  bypassUserPreference?: boolean
 }
 
 function base64Url(input: string | Buffer) {

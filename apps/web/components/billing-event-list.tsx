@@ -13,7 +13,7 @@ export function BillingEventList({ documents }: { documents: BillingDocumentView
   return (
     <div className="stack" style={{ gap: 10 }}>
       <div>
-        <div className="kicker">Billing activity</div>
+        <div className="kicker">Payment activity</div>
         <h3 style={{ margin: '4px 0 0' }}>Event timeline</h3>
       </div>
       {timeline.map((event) => (
@@ -22,7 +22,7 @@ export function BillingEventList({ documents }: { documents: BillingDocumentView
           <div>{event.documentTitle}</div>
           {event.note ? <div className="muted">{event.note}</div> : null}
           <div className="muted">
-            {(event.actorName || 'System')} · {new Date(event.createdAt).toLocaleString()}
+            {(event.actorName || 'System')} - {new Date(event.createdAt).toLocaleString()}
           </div>
         </div>
       ))}

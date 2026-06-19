@@ -16,7 +16,7 @@ cat >"$tmp_json" <<'EOF'
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["hosted-regression"]
+    "contexts": ["db-backed-test", "hosted-regression"]
   },
   "enforce_admins": true,
   "required_pull_request_reviews": null,

@@ -72,7 +72,7 @@ describe('billing slice QA rerun for 6a7fa22', () => {
     const partialResult = await createBillingDocumentAction(PREV, fd({
       requestId: request.id,
       recipientType: 'vendor',
-      title: 'Vendor partial payment remittance',
+      title: 'Vendor partial payment',
       description: 'Initial plumbing payout',
       amount: '400.00',
       paidAmount: '150.00',

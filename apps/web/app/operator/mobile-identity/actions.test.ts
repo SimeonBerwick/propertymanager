@@ -263,6 +263,7 @@ describe('sendMobileInviteAction', () => {
 
     vi.mocked(getTenantDeliveryAdapter).mockReturnValueOnce({
       sendOtp: vi.fn().mockResolvedValue(undefined),
+      sendManagerAccessCode: vi.fn().mockResolvedValue({ delivered: true }),
       sendInviteLink: vi.fn().mockResolvedValue({ delivered: false }),
     })
 

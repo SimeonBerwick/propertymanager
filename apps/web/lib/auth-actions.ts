@@ -1,6 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -8,6 +8,7 @@ import { getLandlordEmail, getDevFallbackPassword, assertProductionAuthEnv } fro
 import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
+import { sendNotification } from '@/lib/notify'
 
 function logAuthError(stage: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -91,6 +92,33 @@ function authenticateAgainstDevFallback(email: string, password: string) {
   }
 }
 
+async function sendLandlordLoginAlert(user: AuthenticatedLandlord) {
+  try {
+    const headerStore = await headers()
+    const userAgent = headerStore.get('user-agent')?.slice(0, 300) || 'Unknown device'
+    const forwardedFor = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim()
+    const ipAddress = forwardedFor || headerStore.get('x-real-ip') || 'Unknown IP'
+    const when = new Date().toISOString()
+
+    await sendNotification({
+      to: user.email,
+      subject: 'New property manager sign-in',
+      text: [
+        'Your Simeonware property manager account was just signed in.',
+        '',
+        `Time: ${when}`,
+        `IP address: ${ipAddress}`,
+        `Device: ${userAgent}`,
+        '',
+        'If this was you, no action is needed.',
+        'If this was not you, change your password and contact support immediately.',
+      ].join('\n'),
+    }, { ownerUserId: user.userId, transportHint: 'system', bypassUserPreference: true })
+  } catch (error) {
+    logAuthError('loginAlert', error)
+  }
+}
+
 export async function authenticateLogin(formData: FormData): Promise<{ error: string | null; user?: AuthenticatedLandlord }> {
   assertProductionAuthEnv()
 
@@ -153,6 +181,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.trialEndsAt = result.user.trialEndsAt
     session.subscriptionEndsAt = result.user.subscriptionEndsAt
     await session.save()
+    await sendLandlordLoginAlert(result.user)
   } catch (error) {
     logAuthError('session.save', error)
     throw error

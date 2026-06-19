@@ -73,7 +73,8 @@ For any companion-app or remote-node packaging path, treat these as required tru
 - `npm run test` covers server actions and DB-backed workflow integration
 - `npm run test:e2e` runs the Playwright browser workflow harness
 - The browser harness requires Playwright Linux dependencies on the host/container
-- CI runner: `.github/workflows/property-manager-playwright.yml`
+- DB-backed CI runner: `.github/workflows/property-manager-playwright.yml`
+- Release branches merge through GitHub PRs to `main`; production deploys come from `main`
 - Container path: `apps/web/Dockerfile.playwright`
 
 Example container run from repo root:

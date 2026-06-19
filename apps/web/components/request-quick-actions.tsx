@@ -13,7 +13,7 @@ function confirmQuickAction(event: React.MouseEvent<HTMLButtonElement>) {
   const action = event.currentTarget.dataset.action
   if (action === 'mark-reassignment-needed') {
     const confirmed = window.confirm(
-      'Clear this vendor assignment and mark reassignment needed? This removes current vendor contact details and dispatch state.',
+      'Clear this vendor assignment and mark reassignment needed? This removes current vendor contact details and work status.',
     )
 
     if (!confirmed) event.preventDefault()
@@ -49,7 +49,7 @@ export function RequestQuickActions({
       ? { key: 'needs-follow-up', label: 'Needs follow-up', tone: 'button', title: 'Keep this request in the follow-up queue for operator action.' }
       : null,
     request.assignedVendorName
-      ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and dispatch state, then marks reassignment needed.' }
+      ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and work status, then marks reassignment needed.' }
       : null,
     request.claimedAt && request.claimedByUserId && isStaleClaim(request)
       ? { key: 'take-over-claim', label: 'Take over claim', tone: 'button', title: 'Reassign stale queue claim ownership to yourself and keep this request moving.' }
@@ -81,7 +81,7 @@ export function RequestQuickActions({
               title={item.title}
               onClick={confirmQuickAction}
             >
-              {pending ? 'Saving…' : item.label}
+              {pending ? 'Saving...' : item.label}
             </button>
           </form>
         ))}

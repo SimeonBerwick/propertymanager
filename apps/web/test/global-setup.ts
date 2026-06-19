@@ -9,44 +9,43 @@ const TEST_DB_URL =
   process.env.DATABASE_URL ??
   'postgresql://postgres:postgres@127.0.0.1:5432/propertymanager_test?schema=public'
 
-function assertPostgresReachable(databaseUrl: string) {
-  const parsed = new URL(databaseUrl)
+async function waitForDatabase(url: string) {
+  const parsed = new URL(url)
   const host = parsed.hostname
   const port = Number(parsed.port || 5432)
+  const deadline = Date.now() + 15_000
 
-  return new Promise<void>((resolve, reject) => {
-    const socket = net.createConnection({ host, port })
-    const timeout = setTimeout(() => {
-      socket.destroy()
-      reject(new Error(`Timed out connecting to ${host}:${port}.`))
-    }, 3000)
+  while (Date.now() < deadline) {
+    if (await canConnect(host, port)) return
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
 
+  throw new Error(
+    `Test database is unavailable at ${host}:${port}. ` +
+    'Set TEST_DATABASE_URL or DATABASE_URL to a reachable Postgres instance before running the DB-backed test suite.',
+  )
+}
+
+function canConnect(host: string, port: number) {
+  return new Promise<boolean>((resolve) => {
+    const socket = net.createConnection({ host, port, timeout: 1000 })
     socket.once('connect', () => {
-      clearTimeout(timeout)
-      socket.end()
-      resolve()
+      socket.destroy()
+      resolve(true)
     })
-
-    socket.once('error', (error) => {
-      clearTimeout(timeout)
-      reject(error)
+    socket.once('timeout', () => {
+      socket.destroy()
+      resolve(false)
     })
+    socket.once('error', () => resolve(false))
   })
 }
 
 export async function setup() {
-  try {
-    await assertPostgresReachable(TEST_DB_URL)
-  } catch (error) {
-    throw new Error([
-      `Vitest DB setup could not reach Postgres for TEST_DATABASE_URL/DATABASE_URL (${TEST_DB_URL}).`,
-      'Start a local Postgres test database or set TEST_DATABASE_URL before running npm test.',
-      `Original error: ${error instanceof Error ? error.message : String(error)}`,
-    ].join('\n'))
-  }
-
   // Push schema to the test Postgres database and reset it before the suite.
-  execSync('npx prisma db push --force-reset --skip-generate', {
+  await waitForDatabase(TEST_DB_URL)
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+  execSync(`${npx} prisma db push --force-reset --skip-generate`, {
     env: { ...process.env, DATABASE_URL: TEST_DB_URL },
     cwd: ROOT,
     stdio: 'pipe',

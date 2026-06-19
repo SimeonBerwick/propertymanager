@@ -22,6 +22,10 @@ function destinationUrl(principalType: string, requestId?: string) {
   return `/requests/${requestId}`
 }
 
+function notificationUrl(message: NotificationMessage, principalType: string) {
+  return message.actionUrl ?? destinationUrl(principalType, message.requestId)
+}
+
 export async function sendPushNotification(message: NotificationMessage) {
   const config = getPushConfig()
 
@@ -50,7 +54,7 @@ export async function sendPushNotification(message: NotificationMessage) {
       }, JSON.stringify({
         title: message.subject.replace(/\s+\[PMR:[^\]]+\]$/, ''),
         body: message.text.split(/\r?\n/).find((line) => line.trim())?.trim(),
-        url: destinationUrl(subscription.principalType, message.requestId),
+        url: notificationUrl(message, subscription.principalType),
       }))
     } catch (error) {
       const statusCode = typeof error === 'object' && error && 'statusCode' in error ? error.statusCode : undefined

@@ -72,7 +72,7 @@ export default async function VendorRequestDetailPage({
           </div>
         ) : null}
         <div className="muted">
-          {request.property.name} · {request.unit.label} · {request.category} · {request.urgency} urgency · {viewState.statusLabel}
+          {request.property.name} - {request.unit.label} - {request.category} - {request.urgency} urgency - {viewState.statusLabel}
         </div>
         <div className="muted">
           Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
@@ -106,7 +106,7 @@ export default async function VendorRequestDetailPage({
                 <div style={{ fontWeight: 700 }}>{invite.status.replaceAll('_', ' ')}</div>
                 <div className="muted">
                   Invited {new Date(invite.invitedAt).toLocaleString()}
-                  {invite.bidAmountCents != null ? ` · Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : ''}
+                  {invite.bidAmountCents != null ? ` - Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : ''}
                 </div>
               </div>
               {invite.status === 'awarded' || invite.awardedAt ? <span className="badge done">Awarded</span> : null}
@@ -118,11 +118,11 @@ export default async function VendorRequestDetailPage({
       </section>
 
       <details className="advancedDisclosure">
-        <summary>Submit a bid, fee, overcost, or property-manager bill</summary>
+        <summary>Submit a bid, fee, extra cost, or invoice</summary>
         <section className="card stack">
           <div>
-            <div className="kicker">Commercial</div>
-            <h3 style={{ marginTop: 4 }}>Send a commercial item</h3>
+            <div className="kicker">Invoices</div>
+            <h3 style={{ marginTop: 4 }}>Send an invoice item</h3>
           </div>
           <VendorCommercialItemForm requestId={request.id} />
         </section>
@@ -138,7 +138,7 @@ export default async function VendorRequestDetailPage({
         </div>
         <div className="muted">
           {viewState.canSeeSchedule && request.vendorScheduledStart
-            ? `Visit window: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` → ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
+            ? `Visit window: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
             : 'No appointment window confirmed for your vendor account.'}
         </div>
       </section>
@@ -151,7 +151,7 @@ export default async function VendorRequestDetailPage({
           </div>
           <div className="muted">
             {request.submittedByName ?? 'Renter'}
-            {request.submittedByEmail ? ` · ${request.submittedByEmail}` : ''}
+            {request.submittedByEmail ? ` - ${request.submittedByEmail}` : ''}
           </div>
         </section>
       ) : null}
@@ -159,18 +159,18 @@ export default async function VendorRequestDetailPage({
       <section className="card stack">
         <div>
           <div className="kicker">Timeline</div>
-          <h3 style={{ marginTop: 4 }}>Dispatch history</h3>
+          <h3 style={{ marginTop: 4 }}>Work history</h3>
         </div>
         {request.dispatchHistory.length ? request.dispatchHistory.map((entry) => (
           <div key={entry.id}>
             <div style={{ fontWeight: 600 }}>
-              {(entry.vendor?.name ?? session.vendorName)} · {entry.status.replaceAll('_', ' ')}
+              {(entry.vendor?.name ?? session.vendorName)} - {entry.status.replaceAll('_', ' ')}
             </div>
             {entry.note ? <div>{entry.note}</div> : null}
             {entry.scheduledStart ? (
               <div className="muted">
                 {new Date(entry.scheduledStart).toLocaleString()}
-                {entry.scheduledEnd ? ` → ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
               </div>
             ) : null}
             <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
@@ -193,8 +193,8 @@ export default async function VendorRequestDetailPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Billing</div>
-          <h3 style={{ marginTop: 4 }}>Vendor remittance records</h3>
+          <div className="kicker">Payments</div>
+          <h3 style={{ marginTop: 4 }}>Payments</h3>
         </div>
         {request.status === 'closed' && closeoutLanguage.paymentState !== 'none' ? (
           <div className={`notice ${closeoutLanguage.isPaid ? 'success' : ''}`}><strong>{closeoutLanguage.vendorLabel}</strong><span>{closeoutLanguage.detail}</span></div>
@@ -207,35 +207,35 @@ export default async function VendorRequestDetailPage({
               <div style={{ fontWeight: 600 }}>{document.title}</div>
               {document.description ? <div>{document.description}</div> : null}
               <div className="muted">
-                {billingStatusLabel(document.status)} · {new Date(document.createdAt).toLocaleString()}
+                {billingStatusLabel(document.status)} - {new Date(document.createdAt).toLocaleString()}
               </div>
               <div className="muted">
-                Total: {formatMoney(document.totalCents, document.currency)} · Paid: {formatMoney(document.paidCents, document.currency)} · Balance: {formatMoney(balanceCents, document.currency)}
+                Total: {formatMoney(document.totalCents, document.currency)} - Paid: {formatMoney(document.paidCents, document.currency)} - Balance: {formatMoney(balanceCents, document.currency)}
               </div>
               {document.pdfUrl ? (
                 <div>
-                  <a href={`/api/billing/${document.id}`} target="_blank" rel="noreferrer">Open remittance</a>
+                  <a href={`/api/billing/${document.id}`} target="_blank" rel="noreferrer">Open payment</a>
                 </div>
               ) : null}
             </div>
           )
-        }) : <div className="muted">No vendor billing documents posted yet.</div>}
+        }) : <div className="muted">No vendor payments posted yet.</div>}
       </section>
 
       <section className="card stack">
         <div>
-          <div className="kicker">Commercial summary</div>
+          <div className="kicker">Invoice summary</div>
           <h3 style={{ marginTop: 4 }}>Items sent to the property manager</h3>
         </div>
         {request.vendorCommercialItems?.length ? request.vendorCommercialItems.map((item: any) => (
           <div key={item.id} className="timelineRow">
             <div style={{ fontWeight: 600 }}>{item.title}</div>
             <div className="muted">
-              {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {new Date(item.submittedAt).toLocaleString()}
+              {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
             </div>
             {item.description ? <div>{item.description}</div> : null}
           </div>
-        )) : <div className="muted">No commercial items submitted yet.</div>}
+        )) : <div className="muted">No invoice items submitted yet.</div>}
       </section>
 
       <section className="card stack">

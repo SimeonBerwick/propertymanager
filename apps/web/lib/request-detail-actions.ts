@@ -6,12 +6,21 @@ import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
-import { sendNotification, buildStatusChangedMessage, buildVendorAssignedMessage, buildTenantQueueViewedMessage, buildTenantCommentMessage } from '@/lib/notify'
+import {
+  sendNotification,
+  buildStatusChangedMessage,
+  buildTenantCommentMessage,
+  buildTenantQueueViewedMessage,
+  buildTenantVendorUpdateMessage,
+  buildVendorAssignedMessage,
+  buildVendorAwardedMessage,
+} from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
+import { logServerActionError } from '@/lib/observability'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -95,6 +104,14 @@ function toClosedTerminal(status: RequestStatus) {
   return ['closed', 'declined', 'canceled'].includes(status)
 }
 
+function tenantRequestActionUrl(requestId: string, section?: string) {
+  return `${getAppBaseUrl('tenant notification links')}/mobile/requests/${requestId}${section ? `#${section}` : ''}`
+}
+
+function vendorRespondActionUrl(token: string) {
+  return `${getAppBaseUrl('vendor notification links')}/vendor/respond/${token}`
+}
+
 export async function updateStatusFormAction(
   _prev: RequestActionState,
   formData: FormData,
@@ -150,7 +167,8 @@ export async function updateStatusFormAction(
       propertyName = updated.property.name
       unitLabel = updated.unit.label
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.status.update', error, { requestId, fromStatus, toStatus })
     return { error: 'Could not update status. Database may not be connected.' }
   }
 
@@ -178,6 +196,7 @@ export async function updateStatusFormAction(
         tenantName,
         fromStatus,
         toStatus,
+        actionUrl: tenantRequestActionUrl(requestId),
       }),
       { ownerUserId: session.userId, requestId },
     )
@@ -300,7 +319,8 @@ export async function updateVendorFormAction(
       revalidatePath(`/requests/${requestId}`)
       revalidatePath('/dashboard')
       return { error: null, success: true, message: `Tender sent to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'}.` }
-    } catch {
+    } catch (error) {
+      await logServerActionError('request.tender.send', error, { requestId, vendorIds: tenderVendorIds })
       return { error: 'Could not send tender invitations.' }
     }
   }
@@ -399,7 +419,8 @@ export async function updateVendorFormAction(
 
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.vendor.update', error, { requestId, vendorId, mode })
     return { error: 'Could not update vendor. Database may not be connected.' }
   }
 
@@ -460,7 +481,8 @@ export async function updatePreferencesFormAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.preferences.update', error, { requestId, preferredCurrency, preferredLanguage })
     return { error: 'Could not update preferences. Database may not be connected.' }
   }
 }
@@ -484,7 +506,7 @@ export async function awardTenderInviteAction(
         requestId,
         request: { property: { ownerId: session.userId } },
       },
-      include: { vendor: true },
+      include: { vendor: true, request: { include: { property: true, unit: true } } },
     })
     if (!invite) return { error: 'Tender invite not found.' }
 
@@ -562,8 +584,64 @@ export async function awardTenderInviteAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+
+    if (invite.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
+      const dispatchLink = await createVendorDispatchLink(requestId, invite.vendorId, inviteId).catch(() => null)
+      await sendNotification(buildVendorAwardedMessage({
+        requestId,
+        title: invite.request.title,
+        propertyName: invite.request.property.name,
+        unitLabel: invite.request.unit.label,
+        vendorName: invite.vendor.name,
+        vendorEmail: invite.vendor.email,
+        tenantName: invite.request.submittedByName ?? undefined,
+        tenantEmail: invite.request.submittedByEmail ?? undefined,
+        urgency: invite.request.urgency,
+        category: invite.request.category,
+        preferredCurrency: invite.request.preferredCurrency,
+        preferredLanguage: invite.request.preferredLanguage,
+        bidAmountLabel: invite.bidAmountCents != null ? `USD ${(invite.bidAmountCents / 100).toFixed(2)}` : undefined,
+        responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
+      }), { ownerUserId: session.userId, requestId })
+    }
+
+    if (
+      invite.request.submittedByEmail &&
+      invite.request.submittedByName &&
+      await areEmailNotificationsEnabled(session.userId)
+    ) {
+      if (invite.proposedStart) {
+        await sendNotification(buildTenantVendorUpdateMessage({
+          requestId,
+          title: invite.request.title,
+          propertyName: invite.request.property.name,
+          unitLabel: invite.request.unit.label,
+          tenantEmail: invite.request.submittedByEmail,
+          tenantName: invite.request.submittedByName,
+          vendorName: invite.vendor.name,
+          dispatchStatus: 'scheduled',
+          scheduledStart: invite.proposedStart.toISOString(),
+          scheduledEnd: invite.proposedEnd?.toISOString(),
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      } else {
+        await sendNotification(buildStatusChangedMessage({
+          requestId,
+          title: invite.request.title,
+          propertyName: invite.request.property.name,
+          unitLabel: invite.request.unit.label,
+          tenantEmail: invite.request.submittedByEmail,
+          tenantName: invite.request.submittedByName,
+          fromStatus: invite.request.status,
+          toStatus: 'vendor_selected',
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      }
+    }
+
     return { error: null, success: true, message: 'Tender awarded.' }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.tender.award', error, { requestId, tenderId, inviteId })
     return { error: 'Could not award tender invite.' }
   }
 }
@@ -587,7 +665,7 @@ export async function approveVendorCommercialItemAction(
       },
       include: {
         vendor: true,
-        request: true,
+        request: { include: { property: true, unit: true } },
       },
     })
 
@@ -659,8 +737,28 @@ export async function approveVendorCommercialItemAction(
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
-    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and remittance draft posted.' : 'Vendor submission approved and remittance draft posted.' }
-  } catch {
+    if (item.itemType === 'bid' && item.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
+      const dispatchLink = await createVendorDispatchLink(requestId, item.vendorId).catch(() => null)
+      await sendNotification(buildVendorAwardedMessage({
+        requestId,
+        title: item.request.title,
+        propertyName: item.request.property.name,
+        unitLabel: item.request.unit.label,
+        vendorName: item.vendor.name,
+        vendorEmail: item.vendor.email,
+        tenantName: item.request.submittedByName ?? undefined,
+        tenantEmail: item.request.submittedByEmail ?? undefined,
+        urgency: item.request.urgency,
+        category: item.request.category,
+        preferredCurrency: item.request.preferredCurrency,
+        preferredLanguage: item.request.preferredLanguage,
+        bidAmountLabel: `USD ${(item.amountCents / 100).toFixed(2)}`,
+        responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
+      }), { ownerUserId: session.userId, requestId })
+    }
+    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
+  } catch (error) {
+    await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId })
     return { error: 'Could not approve vendor submission.' }
   }
 }
@@ -677,8 +775,20 @@ export async function updateDispatchFormAction(
   const note = ((formData.get('note') as string) ?? '').trim()
   const scheduledStartRaw = ((formData.get('scheduledStart') as string) ?? '').trim()
   const scheduledEndRaw = ((formData.get('scheduledEnd') as string) ?? '').trim()
+  let tenantNotification:
+    | {
+        tenantEmail: string
+        tenantName: string
+        title: string
+        propertyName: string
+        unitLabel: string
+        vendorName: string
+        fromStatus: RequestStatus
+        toStatus?: RequestStatus
+      }
+    | undefined
 
-  if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid dispatch status.' }
+  if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid work status.' }
 
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
   const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
@@ -690,7 +800,7 @@ export async function updateDispatchFormAction(
   try {
     const request = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
-      select: { id: true, assignedVendorId: true },
+      include: { property: true, unit: true },
     })
 
     if (!request) return { error: 'Request not found.' }
@@ -728,6 +838,19 @@ export async function updateDispatchFormAction(
       },
     })
 
+    if (request.submittedByEmail && request.submittedByName) {
+      tenantNotification = {
+        tenantEmail: request.submittedByEmail,
+        tenantName: request.submittedByName,
+        title: request.title,
+        propertyName: request.property.name,
+        unitLabel: request.unit.label,
+        vendorName: awardedInvite?.vendor.name ?? request.assignedVendorName ?? 'Vendor',
+        fromStatus: request.status,
+        toStatus: requestStatus,
+      }
+    }
+
     if (requestStatus) {
       await prisma.statusEvent.create({
         data: { requestId, toStatus: requestStatus, actorUserId: session.userId },
@@ -752,16 +875,47 @@ export async function updateDispatchFormAction(
       entityType: 'request',
       entityId: requestId,
       action: 'request.dispatchUpdated',
-      summary: `Updated dispatch status to ${dispatchStatus}.`,
+      summary: `Updated work status to ${dispatchStatus}.`,
       metadata: { dispatchStatus, note, scheduledStart: scheduledStart?.toISOString() ?? null, scheduledEnd: scheduledEnd?.toISOString() ?? null },
     })
 
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
+    if (tenantNotification && await areEmailNotificationsEnabled(session.userId)) {
+      if (dispatchStatus === 'scheduled' || scheduledStart || scheduledEnd || dispatchStatus === 'completed') {
+        await sendNotification(buildTenantVendorUpdateMessage({
+          requestId,
+          title: tenantNotification.title,
+          propertyName: tenantNotification.propertyName,
+          unitLabel: tenantNotification.unitLabel,
+          tenantEmail: tenantNotification.tenantEmail,
+          tenantName: tenantNotification.tenantName,
+          vendorName: tenantNotification.vendorName,
+          dispatchStatus,
+          note: note || undefined,
+          scheduledStart: scheduledStart?.toISOString(),
+          scheduledEnd: scheduledEnd?.toISOString(),
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      } else if (tenantNotification.toStatus && tenantNotification.toStatus !== tenantNotification.fromStatus) {
+        await sendNotification(buildStatusChangedMessage({
+          requestId,
+          title: tenantNotification.title,
+          propertyName: tenantNotification.propertyName,
+          unitLabel: tenantNotification.unitLabel,
+          tenantEmail: tenantNotification.tenantEmail,
+          tenantName: tenantNotification.tenantName,
+          fromStatus: tenantNotification.fromStatus,
+          toStatus: tenantNotification.toStatus,
+          actionUrl: tenantRequestActionUrl(requestId),
+        }), { ownerUserId: session.userId, requestId })
+      }
+    }
     return { error: null, success: true }
-  } catch {
-    return { error: 'Could not update dispatch workflow.' }
+  } catch (error) {
+    await logServerActionError('request.dispatch.update', error, { requestId, dispatchStatus })
+    return { error: 'Could not update work status.' }
   }
 }
 
@@ -865,7 +1019,8 @@ export async function reviewVendorUpdateFormAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.review.update', error, { requestId, reviewAction: action })
     return { error: 'Could not apply review action.' }
   }
 }
@@ -926,6 +1081,7 @@ export async function quickRequestAction(
           unitLabel: request.unit.label,
           tenantEmail: request.submittedByEmail!,
           tenantName: request.submittedByName!,
+          actionUrl: tenantRequestActionUrl(requestId),
         }), { ownerUserId: session.userId, requestId })
       }
 
@@ -1073,7 +1229,8 @@ export async function quickRequestAction(
     revalidatePath('/dashboard')
     revalidatePath('/exceptions')
     return { error: null, success: true, message }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.quickAction', error, { requestId, quickAction })
     return { error: 'Could not apply quick action.' }
   }
 }
@@ -1134,10 +1291,12 @@ export async function addCommentFormAction(
         tenantEmail: request.submittedByEmail,
         tenantName: request.submittedByName,
         comment: body,
+        actionUrl: tenantRequestActionUrl(requestId),
       }), { ownerUserId: session.userId, requestId })
     }
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.comment.add', error, { requestId, visibility })
     return { error: 'Could not save comment. Database may not be connected.' }
   }
 }
@@ -1186,7 +1345,7 @@ async function upsertVendorRemittanceDraft(
   const totalCents = bidCents + extrasCents
   if (totalCents <= 0) return null
 
-  const title = `Vendor remittance - ${input.vendorName}`
+  const title = `Vendor payment - ${input.vendorName}`
   const descriptionLines = [
     `Amount owed to ${input.vendorName} for ${request.title}.`,
     bidCents > 0 ? `Approved bid: USD ${(bidCents / 100).toFixed(2)}` : null,
@@ -1257,7 +1416,7 @@ async function upsertVendorRemittanceDraft(
         create: {
           actorUserId: input.userId,
           eventType: 'created',
-          note: 'Draft vendor remittance created from approved vendor submissions.',
+          note: 'Draft vendor payment created from approved vendor submissions.',
         },
       },
     },
@@ -1310,7 +1469,8 @@ export async function updateTenantBillbackAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/reports')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.billback.update', error, { requestId, decision })
     return { error: 'Could not update tenant bill-back decision.' }
   }
 }
