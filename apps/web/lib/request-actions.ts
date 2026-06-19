@@ -9,6 +9,7 @@ import { getLandlordEmail } from '@/lib/auth-config'
 import { sendNotification, buildNewRequestMessages } from '@/lib/notify'
 import { getLandlordBySlug } from '@/lib/data'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
+import { logServerActionError } from '@/lib/observability'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -126,7 +127,8 @@ export async function submitMaintenanceRequest(
     unitLabel = unit.label
     propertyName = unit.property.name
     notificationOwner = unit.property.owner
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.verifyUnit', error, { propertyId, unitId, orgSlug })
     return { error: 'Could not verify property or unit. Please try again.' }
   }
 
@@ -173,7 +175,8 @@ export async function submitMaintenanceRequest(
 
     createdRequestId = request.id
     await prisma.productEvent.create({ data: { orgId: notificationOwner?.id, eventName: 'request_submitted', metadataJson: JSON.stringify({ requestId: request.id, category }) } }).catch(() => null)
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.submit', error, { propertyId, unitId, orgSlug, photoCount: savedPhotoPaths.length })
     await cleanupPhotos(savedPhotoPaths)
     return { error: 'Could not submit your request. Please try again or contact the property manager directly.' }
   }

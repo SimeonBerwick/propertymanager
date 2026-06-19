@@ -8,6 +8,7 @@ import { buildTenantVendorUpdateMessage, sendNotification } from '@/lib/notify'
 import { applyRequestAutomation } from '@/lib/automation'
 import type { DispatchStatus, RequestStatus } from '@/lib/types'
 import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
+import { logServerActionError } from '@/lib/observability'
 
 export type VendorPortalResponseState = { error: string | null }
 
@@ -46,7 +47,7 @@ export async function submitVendorPortalResponse(
       tenderInvites: {
         where: { vendorId: session.vendorId },
         orderBy: { createdAt: 'desc' },
-        select: { id: true, status: true },
+        select: { id: true, tenderId: true, status: true },
       },
       _count: { select: { photos: true } },
     },
@@ -85,26 +86,48 @@ export async function submitVendorPortalResponse(
     await prisma.$transaction(async (tx) => {
       const tenderInvite = request.tenderInvites[0]
       const tenderInviteId = tenderInvite?.id
-      const canControlDispatch = request.assignedVendorId === session.vendorId || tenderInvite?.status === 'awarded'
+      const acceptsWorkWithoutBid = !!tenderInvite
+        && !request.assignedVendorId
+        && !bidAmountRaw
+        && ['accepted', 'scheduled', 'completed'].includes(dispatchStatus)
+      const canControlDispatch = request.assignedVendorId === session.vendorId
+        || tenderInvite?.status === 'awarded'
+        || acceptsWorkWithoutBid
       if (tenderInviteId) {
+        const nextInviteStatus = dispatchStatus === 'declined'
+          ? 'declined'
+          : tenderInvite?.status === 'awarded'
+            ? 'awarded'
+            : acceptsWorkWithoutBid
+              ? 'awarded'
+              : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled'
+                ? 'bid_submitted'
+                : 'viewed'
         await tx.tenderInvite.update({
           where: { id: tenderInviteId },
           data: {
-            status: dispatchStatus === 'declined'
-              ? 'declined'
-              : dispatchStatus === 'completed' || dispatchStatus === 'accepted' || dispatchStatus === 'scheduled'
-                ? 'bid_submitted'
-                : 'viewed',
-            bidAmountCents,
-            bidCurrency: bidAmountRaw ? 'usd' : null,
-            bidSource: bidAmountRaw ? 'vendor_submitted' : null,
+            status: nextInviteStatus,
+            bidAmountCents: bidAmountRaw ? bidAmountCents : undefined,
+            bidCurrency: bidAmountRaw ? 'usd' : undefined,
+            bidSource: bidAmountRaw ? 'vendor_submitted' : undefined,
             availabilityNote: availabilityNote || null,
             proposedStart: scheduledStart,
             proposedEnd: scheduledEnd,
+            awardedAt: acceptsWorkWithoutBid ? new Date() : undefined,
             viewedAt: new Date(),
             respondedAt: new Date(),
           },
         })
+        if (acceptsWorkWithoutBid && tenderInvite?.tenderId) {
+          await tx.tenderInvite.updateMany({
+            where: { tenderId: tenderInvite.tenderId, id: { not: tenderInviteId }, status: { in: ['invited', 'viewed', 'bid_submitted', 'withdrawn'] } },
+            data: { status: 'not_awarded' },
+          })
+          await tx.requestTender.update({
+            where: { id: tenderInvite.tenderId },
+            data: { status: 'awarded', awardedAt: new Date(), closedAt: new Date() },
+          })
+        }
       }
 
       const reviewState = dispatchStatus === 'completed'
@@ -136,10 +159,10 @@ export async function submitVendorPortalResponse(
         await tx.maintenanceRequest.update({
           where: { id: request.id },
           data: {
-            assignedVendorId: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
-            assignedVendorName: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
-            assignedVendorEmail: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
-            assignedVendorPhone: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : undefined,
+            assignedVendorId: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.vendorId : undefined,
+            assignedVendorName: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.vendorName : undefined,
+            assignedVendorEmail: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.email : undefined,
+            assignedVendorPhone: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.phone : undefined,
             dispatchStatus,
             vendorScheduledStart: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledStart,
             vendorScheduledEnd: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledEnd,
@@ -204,7 +227,13 @@ export async function submitVendorPortalResponse(
         })
       }
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('vendorPortal.response.submit', error, {
+      requestId,
+      vendorId: session.vendorId,
+      dispatchStatus,
+      photoCount: savedPhotoPaths.length,
+    })
     await cleanupPhotos(savedPhotoPaths)
     return { error: 'Could not save vendor response.' }
   }

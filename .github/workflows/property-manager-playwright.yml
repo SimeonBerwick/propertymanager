@@ -1,6 +1,12 @@
-name: Property Manager Playwright
+name: Property Manager DB CI
 
 on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
   pull_request:
     branches:
@@ -15,8 +21,12 @@ on:
       - 'apps/web/**'
       - '.github/workflows/property-manager-playwright.yml'
 
+concurrency:
+  group: property-manager-db-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  playwright:
+  db-backed-test:
     runs-on: ubuntu-latest
     services:
       postgres:

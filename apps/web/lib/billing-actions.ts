@@ -9,6 +9,7 @@ import { centsFromDollars, deriveBillingStatus, formatMoney } from '@/lib/billin
 import { buildBillingDocumentMessage, sendNotification } from '@/lib/notify'
 import type { BillingDocumentStatus } from '@/lib/billing-types'
 import { writeAuditLog } from '@/lib/audit-log'
+import { logServerActionError } from '@/lib/observability'
 
 export type BillingActionState = { error: string | null; success?: boolean }
 
@@ -171,7 +172,8 @@ export async function createBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.create', error, { requestId, recipientType })
     return { error: 'Could not create billing document.' }
   }
 }
@@ -231,7 +233,8 @@ export async function updateBillingDocumentAction(
     revalidatePath('/vendor')
     revalidatePath(`/vendor/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.update', error, { requestId, billingDocumentId })
     return { error: 'Could not update billing document.' }
   }
 }
@@ -302,7 +305,8 @@ export async function resendBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.resend', error, { requestId, billingDocumentId })
     return { error: 'Could not resend billing document.' }
   }
 }
@@ -375,7 +379,8 @@ export async function duplicateBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.duplicate', error, { requestId, billingDocumentId })
     return { error: 'Could not duplicate billing document.' }
   }
 }
@@ -421,7 +426,8 @@ export async function voidBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.void', error, { requestId, billingDocumentId })
     return { error: 'Could not void billing document.' }
   }
 }

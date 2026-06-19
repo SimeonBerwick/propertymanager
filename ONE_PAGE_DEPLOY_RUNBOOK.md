@@ -4,11 +4,23 @@
 Get hosted production to real green, not fake green.
 
 ## Preconditions
+- changes are merged through GitHub PRs into `main`, not deployed from a dirty local branch
+- `Property Manager DB CI / db-backed-test` is green on the PR or `main`
+- `Property Manager Hosted Regression / hosted-regression` is green on the PR or `main`
 - Playwright browser gate passed
 - production Neon database exists
 - real SMTP credentials exist
 - real Cloudflare R2 bucket + credentials exist
 - real Upstash Redis REST instance + token exist
+
+## GitHub/main release path
+1. Start every release or hotfix from current `origin/main`.
+2. Open a PR back to `main`; do not merge from a local dirty worktree.
+3. Require these GitHub checks before merge:
+   - `db-backed-test` from `.github/workflows/property-manager-playwright.yml`
+   - `hosted-regression` from `.github/workflows/property-manager-hosted-regression.yml`
+4. Merge only after the PR is green and reviewed.
+5. Production deploys come from `main` only.
 
 ## Deploy order
 1. Enter env vars in Vercel using `VERCEL_ENV_COPY_BLOCK.md`
@@ -43,7 +55,7 @@ Why the extra hosted DB step exists:
 - hosted Neon Postgres needs one explicit reconciliation pass for the vendor auth and vendor commercial schema contract
 - `npm run hosted:db:reconcile` is idempotent and safe to re-run before production deploys
 
-To make it a real merge gate after the first green run:
+To enforce the merge gate after the first green run:
 - restore GitHub CLI auth with `gh auth login`
 - add the hosted workflow secrets in repo settings
 - run `./scripts/apply-propertymanager-branch-protection.sh`
@@ -54,6 +66,7 @@ Deployment is **PASS** only if all are true:
 - landlord login works
 - `/ops` has zero blocking failures
 - hosted regression suite is green
+- `main` contains the release commit and required GitHub checks are green
 - SMTP notifications send for real
 - private media upload/read works through R2
 - rate limiting works through Upstash
@@ -158,6 +171,7 @@ That order removes the most foundational failures first.
 
 ## Release truth
 Call production ready only when:
+- `main` contains the release commit and required GitHub checks are green
 - hosted regression gate is green
 - `/ops` is green
 - hosted functional checks are green

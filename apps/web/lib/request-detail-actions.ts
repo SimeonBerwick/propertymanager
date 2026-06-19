@@ -12,6 +12,7 @@ import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
+import { logServerActionError } from '@/lib/observability'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -150,7 +151,8 @@ export async function updateStatusFormAction(
       propertyName = updated.property.name
       unitLabel = updated.unit.label
     })
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.status.update', error, { requestId, fromStatus, toStatus })
     return { error: 'Could not update status. Database may not be connected.' }
   }
 
@@ -300,7 +302,8 @@ export async function updateVendorFormAction(
       revalidatePath(`/requests/${requestId}`)
       revalidatePath('/dashboard')
       return { error: null, success: true, message: `Tender sent to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'}.` }
-    } catch {
+    } catch (error) {
+      await logServerActionError('request.tender.send', error, { requestId, vendorIds: tenderVendorIds })
       return { error: 'Could not send tender invitations.' }
     }
   }
@@ -399,7 +402,8 @@ export async function updateVendorFormAction(
 
     await applyRequestAutomation(requestId)
     revalidatePath(`/requests/${requestId}`)
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.vendor.update', error, { requestId, vendorId, mode })
     return { error: 'Could not update vendor. Database may not be connected.' }
   }
 
@@ -460,7 +464,8 @@ export async function updatePreferencesFormAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.preferences.update', error, { requestId, preferredCurrency, preferredLanguage })
     return { error: 'Could not update preferences. Database may not be connected.' }
   }
 }
@@ -563,7 +568,8 @@ export async function awardTenderInviteAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true, message: 'Tender awarded.' }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.tender.award', error, { requestId, tenderId, inviteId })
     return { error: 'Could not award tender invite.' }
   }
 }
@@ -660,7 +666,8 @@ export async function approveVendorCommercialItemAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and remittance draft posted.' : 'Vendor submission approved and remittance draft posted.' }
-  } catch {
+  } catch (error) {
+    await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId })
     return { error: 'Could not approve vendor submission.' }
   }
 }
@@ -760,7 +767,8 @@ export async function updateDispatchFormAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.dispatch.update', error, { requestId, dispatchStatus })
     return { error: 'Could not update dispatch workflow.' }
   }
 }
@@ -865,7 +873,8 @@ export async function reviewVendorUpdateFormAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.review.update', error, { requestId, reviewAction: action })
     return { error: 'Could not apply review action.' }
   }
 }
@@ -1073,7 +1082,8 @@ export async function quickRequestAction(
     revalidatePath('/dashboard')
     revalidatePath('/exceptions')
     return { error: null, success: true, message }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.quickAction', error, { requestId, quickAction })
     return { error: 'Could not apply quick action.' }
   }
 }
@@ -1137,7 +1147,8 @@ export async function addCommentFormAction(
       }), { ownerUserId: session.userId, requestId })
     }
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.comment.add', error, { requestId, visibility })
     return { error: 'Could not save comment. Database may not be connected.' }
   }
 }
@@ -1310,7 +1321,8 @@ export async function updateTenantBillbackAction(
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/reports')
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('request.billback.update', error, { requestId, decision })
     return { error: 'Could not update tenant bill-back decision.' }
   }
 }

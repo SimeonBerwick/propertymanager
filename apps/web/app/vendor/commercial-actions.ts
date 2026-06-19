@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { centsFromDollars } from '@/lib/billing-utils'
 import { writeAuditLog } from '@/lib/audit-log'
 import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
+import { logServerActionError } from '@/lib/observability'
 
 export type VendorCommercialActionState = { error: string | null; success?: boolean }
 
@@ -66,7 +67,12 @@ export async function createVendorCommercialItemAction(
     revalidatePath(`/vendor/requests/${request.id}`)
     revalidatePath(`/requests/${request.id}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('vendorCommercialItem.create', error, {
+      requestId: request.id,
+      vendorId: session.vendorId,
+      itemType,
+    })
     return { error: 'Could not save vendor commercial item.' }
   }
 }
