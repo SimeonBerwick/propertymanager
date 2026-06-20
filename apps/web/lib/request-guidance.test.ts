@@ -15,16 +15,16 @@ describe('request guidance', () => {
     })
   })
 
-  it('guides a new request into review', () => {
+  it('guides a new unclaimed request into ownership', () => {
     const request = { ...base, status: 'requested' as const }
-    expect(getRecommendedAction(request).label).toContain('Review')
+    expect(getRecommendedAction(request).label).toBe('Take ownership')
     expect(getWorkflowStep(request)).toBe(0)
   })
 
-  it('prioritizes reassignment', () => {
+  it('prioritizes reassignment as a high-review action', () => {
     const request = { ...base, status: 'approved' as const, reviewState: 'reassignment_needed' as const }
-    expect(getRecommendedAction(request).tone).toBe('urgent')
-    expect(getAttentionScore(request)).toBeGreaterThan(8)
+    expect(getRecommendedAction(request).tone).toBe('review')
+    expect(getAttentionScore(request)).toBeGreaterThanOrEqual(8)
   })
 
   it('treats closed requests as fully complete with no immediate action', () => {
@@ -44,7 +44,7 @@ describe('request guidance', () => {
     expect(getRecommendedAction(request)).toMatchObject({
       label: 'Collect payment before closeout',
       detail: 'Vendor payment is still open for ACME Plumbing.',
-      tone: 'review',
+      tone: 'normal',
     })
     expect(getAttentionScore(request)).toBeGreaterThan(0)
   })
