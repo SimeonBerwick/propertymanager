@@ -67,7 +67,7 @@ export default async function DashboardPage({
 
   return (
     <div className="stack">
-      <TodayOverview requests={data.requestRows} now={now} />
+      <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} />
 
       <details className="advancedDisclosure dashboardWorkspaceDisclosure" open={selectedQueue !== 'all'}>
         <summary>Open full maintenance queue and workspace tools</summary>
