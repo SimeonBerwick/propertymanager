@@ -72,6 +72,8 @@ export interface RequestDetailData {
   tenders: RequestTenderView[]
   billingDocuments: BillingDocumentView[]
   vendorCommercialItems: VendorCommercialItemView[]
+  tenantAccessFailureCount: number
+  tenantStatusUpdatePending: boolean
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -395,6 +397,11 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         photos: { orderBy: { createdAt: 'asc' } },
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
         events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
+        outboundEmails: {
+          where: { status: 'sent' },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, to: true, createdAt: true, sentAt: true },
+        },
         dispatchHistory: { include: { vendor: true, actorUser: true }, orderBy: { createdAt: 'asc' } },
         billingDocuments: {
           orderBy: { createdAt: 'desc' },
@@ -445,6 +452,30 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       : []
 
     const request = mapRequestsWithClaimOwners([dbRequest], claimUsers)[0]
+    const latestTenantVisibleStatusEvent = [...dbRequest.events]
+      .filter((event) => event.visibility === 'tenant_visible')
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
+    const latestTenantEmailAt = dbRequest.submittedByEmail
+      ? dbRequest.outboundEmails
+          .filter((email) => email.to.toLowerCase() === dbRequest.submittedByEmail!.toLowerCase())
+          .map((email) => email.sentAt ?? email.createdAt)
+          .sort((a, b) => b.getTime() - a.getTime())[0]
+      : undefined
+    const tenantStatusUpdatePending = Boolean(
+      dbRequest.submittedByEmail
+      && latestTenantVisibleStatusEvent
+      && (!latestTenantEmailAt || latestTenantEmailAt.getTime() < latestTenantVisibleStatusEvent.createdAt.getTime()),
+    )
+    const tenantAccessFailureCount = dbRequest.tenantIdentityId
+      ? await prisma.productEvent.count({
+          where: {
+            orgId: userId,
+            eventName: { in: ['tenant_access.verification_failed', 'tenant_access.resend_requested'] },
+            createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+            metadataJson: { contains: `"tenantIdentityId":"${dbRequest.tenantIdentityId}"` },
+          },
+        })
+      : 0
 
     const vendorRows = await prisma.vendor.findMany({
       where: { orgId: userId, isActive: true },
@@ -548,6 +579,8 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       tenders,
       billingDocuments,
       vendorCommercialItems,
+      tenantAccessFailureCount,
+      tenantStatusUpdatePending,
     }
   } catch (error) {
     await logDataError('data.request_detail.load_failed', error, { requestId, userId })

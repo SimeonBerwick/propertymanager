@@ -38,6 +38,51 @@ describe('next action engine', () => {
     })
   })
 
+  it('helps renters who repeatedly fail portal access', () => {
+    expect(getRequestNextAction({ ...base, tenantAccessFailureCount: 3 })).toMatchObject({
+      priority: 'urgent',
+      primaryLabel: 'Help renter access portal',
+      href: '/units/u1/edit',
+      actionType: 'help_renter_access_portal',
+    })
+  })
+
+  it('prompts for a tenant update when status changed without a later notice', () => {
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, tenantStatusUpdatePending: true })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Send tenant update',
+      href: '/requests/r1#communication',
+      actionType: 'send_tenant_update',
+    })
+  })
+
+  it('reviews vendor completion updates before closeout', () => {
+    expect(getRequestNextAction({ ...base, status: 'in_progress' as const, reviewState: 'vendor_completed_pending_review' as const })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Review vendor update',
+      actionType: 'review_vendor_update',
+    })
+  })
+
+  it('closes completed requests when payment is settled', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, claimedAt: '2026-06-19T12:00:00.000Z' })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Close request',
+      reason: 'Work is complete and payments are settled.',
+      actionType: 'close_request',
+    })
+  })
+
+  it('keeps completed requests out of closeout when vendor payment is open', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, vendorPayableBalanceCents: 50000, vendorPayableTo: 'ACME Plumbing' })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Collect payment before closeout',
+      reason: 'Vendor payment is still open for ACME Plumbing.',
+      href: '/requests/r1#billing',
+      actionType: 'collect_payment_before_closeout',
+    })
+  })
+
   it('prioritizes overdue work above normal review work', () => {
     const actions = buildDashboardNextActions([
       { ...base, id: 'normal' },

@@ -21,6 +21,7 @@ import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
+import { RecommendedNextStepPanel } from '@/components/recommended-next-step-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 const VISIBILITY_LABELS: Record<string, string> = {
@@ -120,11 +121,17 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
+      <RecommendedNextStepPanel request={{
+        ...data.request,
+        tenantAccessFailureCount: data.tenantAccessFailureCount,
+        tenantStatusUpdatePending: data.tenantStatusUpdatePending,
+      }} />
+
       <GuidedRequestWorkflow request={data.request} />
 
       <nav className="requestSectionNav" aria-label="Request sections">
         <a href="#summary">Summary</a>
-        <a href="#actions">Next action</a>
+        <a href="#actions">Actions</a>
         <a href="#timeline">Timeline</a>
         <a href="#billing">Invoices and payments</a>
         <a href="#advanced">More details</a>
@@ -311,7 +318,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
         <div className="stack">
           <div id="actions">
-          <SectionCard kicker="Next action" title="Move this request forward" subtitle="Use the recommended action above, then complete the supporting details here.">
+          <SectionCard kicker="Actions" title="Move this request forward" subtitle="Complete status, vendor, tender, and closeout work here.">
             <RequestControlPanel
               request={data.request}
               vendors={data.availableVendors}
@@ -354,6 +361,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           ) : <div className="muted">No vendor photos yet.</div>}
         </SectionCard>
 
+        <div id="communication">
         <SectionCard kicker="Communication" title="Comments">
           {data.comments.length ? data.comments.map((comment) => (
             <div key={comment.id} className="commentRow">
@@ -371,6 +379,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <AddCommentForm requestId={data.request.id} />
           </div>
         </SectionCard>
+        </div>
       </div>
 
       <div id="billing">
