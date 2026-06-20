@@ -6,6 +6,7 @@ import { getReviewerOtpCode } from '@/lib/reviewer-access'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { sendPortalAuthChallenge, type AuthDeliveryChannel } from '@/lib/portal-auth-delivery'
 import { normalizePhoneToE164 } from '@/lib/phone'
+import { trackVendorAccessEvent } from '@/lib/access-friction'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -112,6 +113,12 @@ export async function createVendorOtpChallenge(
     summary: `Issued ${purpose} OTP via ${channel}.`,
     metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
   })
+  await trackVendorAccessEvent({
+    vendorId: vendor.id,
+    orgId: vendor.orgId,
+    type: 'code_sent',
+    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
+  })
 
   return {
     challengeId: challenge.id,
@@ -142,6 +149,12 @@ export async function verifyVendorOtpChallenge(challengeId: string, submittedCod
       summary: 'Rejected vendor OTP verification because the challenge is locked.',
       metadata: { challengeId: challenge.id },
     })
+    await trackVendorAccessEvent({
+      vendorId: challenge.vendorId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: 'locked' },
+    })
     return { ok: false, code: 'locked' }
   }
 
@@ -154,6 +167,12 @@ export async function verifyVendorOtpChallenge(challengeId: string, submittedCod
       action: 'vendor.otpExpired',
       summary: 'Vendor OTP verification failed because the code expired.',
       metadata: { challengeId: challenge.id },
+    })
+    await trackVendorAccessEvent({
+      vendorId: challenge.vendorId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: 'expired' },
     })
     return { ok: false, code: 'expired' }
   }
@@ -177,6 +196,12 @@ export async function verifyVendorOtpChallenge(challengeId: string, submittedCod
       action: lockedUntil ? 'vendor.otpLocked' : 'vendor.otpFailed',
       summary: lockedUntil ? 'Vendor OTP challenge locked after too many failed attempts.' : 'Vendor OTP verification failed with incorrect code.',
       metadata: { challengeId: challenge.id, attemptCount: nextAttemptCount },
+    })
+    await trackVendorAccessEvent({
+      vendorId: challenge.vendorId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: lockedUntil ? 'locked' : 'invalid', attemptCount: nextAttemptCount },
     })
     return { ok: false, code: nextAttemptCount >= challenge.maxAttempts ? 'locked' : 'invalid' }
   }

@@ -5,6 +5,7 @@ import { createVendorSession } from '@/lib/vendor-session'
 import { createVendorOtpChallenge, VendorOtpRateLimitError, verifyVendorOtpChallenge } from '@/lib/vendor-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
+import { trackVendorAccessEvent } from '@/lib/access-friction'
 
 export type VendorVerifyState = { error: string | null }
 
@@ -49,11 +50,17 @@ export async function resendVendorLoginAction(formData: FormData) {
   const next = String(formData.get('next') ?? '').trim()
   const challenge = await prisma.vendorOtpChallenge.findUnique({
     where: { id: challengeId },
-    select: { vendorId: true, channel: true, purpose: true },
+    select: { vendorId: true, orgId: true, channel: true, purpose: true },
   })
   if (!challenge || challenge.purpose !== 'returning_login') redirect('/vendor/auth/login' as never)
 
   try {
+    await trackVendorAccessEvent({
+      vendorId: challenge.vendorId,
+      orgId: challenge.orgId,
+      type: 'resend_requested',
+      metadata: { challengeId, purpose: challenge.purpose, channel: challenge.channel },
+    })
     const otp = await createVendorOtpChallenge(challenge.vendorId, 'returning_login', challenge.channel, { next })
     const params = new URLSearchParams({ challengeId: otp.challengeId, masked: otp.destinationMasked, resent: '1' })
     if (next.startsWith('/vendor')) params.set('next', next)

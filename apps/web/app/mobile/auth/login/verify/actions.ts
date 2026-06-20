@@ -5,6 +5,7 @@ import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { createOtpChallenge, OtpRateLimitError, verifyOtpChallenge } from '@/lib/tenant-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
+import { trackTenantAccessEvent } from '@/lib/access-friction'
 
 export type ReturningVerifyState = { error: string | null }
 
@@ -49,11 +50,17 @@ export async function resendReturningLoginAction(formData: FormData) {
   const next = String(formData.get('next') ?? '').trim()
   const challenge = await prisma.tenantOtpChallenge.findUnique({
     where: { id: challengeId },
-    select: { tenantIdentityId: true, channel: true, purpose: true },
+    select: { tenantIdentityId: true, orgId: true, channel: true, purpose: true },
   })
   if (!challenge || challenge.purpose !== 'returning_login') redirect('/mobile/auth/login' as never)
 
   try {
+    await trackTenantAccessEvent({
+      tenantIdentityId: challenge.tenantIdentityId,
+      orgId: challenge.orgId,
+      type: 'resend_requested',
+      metadata: { challengeId, purpose: challenge.purpose, channel: challenge.channel },
+    })
     const otp = await createOtpChallenge(challenge.tenantIdentityId, 'returning_login', challenge.channel, { next })
     const params = new URLSearchParams({ challengeId: otp.challengeId, masked: otp.destinationMasked, resent: '1' })
     if (next.startsWith('/mobile')) params.set('next', next)

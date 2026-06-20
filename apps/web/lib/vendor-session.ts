@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import { sendNotification } from '@/lib/notify'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
+import { trackVendorAccessEvent } from '@/lib/access-friction'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
 const SESSION_TTL_DAYS = 365
@@ -84,6 +85,12 @@ export async function createVendorSession(vendorId: string, requestId?: string |
     entityId: vendor.id,
     action: 'vendor.sessionCreated',
     summary: 'Created vendor portal session.',
+    metadata: { sessionId: session.id, requestId: requestId ?? null },
+  })
+  await trackVendorAccessEvent({
+    vendorId: vendor.id,
+    orgId: vendor.orgId,
+    type: 'portal_reached',
     metadata: { sessionId: session.id, requestId: requestId ?? null },
   })
 

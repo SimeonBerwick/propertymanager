@@ -6,6 +6,7 @@ import { isTenantIdentityActiveOn } from '@/lib/tenant-occupancy'
 import { getReviewerOtpCode } from '@/lib/reviewer-access'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { sendPortalAuthChallenge, type AuthDeliveryChannel } from '@/lib/portal-auth-delivery'
+import { trackTenantAccessEvent } from '@/lib/access-friction'
 
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
@@ -137,6 +138,12 @@ export async function createOtpChallenge(
     summary: `Issued ${purpose} OTP via ${channel}.`,
     metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
   })
+  await trackTenantAccessEvent({
+    tenantIdentityId: tenantIdentity.id,
+    orgId: tenantIdentity.orgId,
+    type: 'code_sent',
+    metadata: { challengeId: challenge.id, purpose, channel, destinationMasked: challenge.destinationMasked, reviewerAccess: Boolean(reviewerCode) },
+  })
 
   return {
     challengeId: challenge.id,
@@ -167,6 +174,12 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
       summary: 'Rejected OTP verification because the challenge is locked.',
       metadata: { challengeId: challenge.id },
     })
+    await trackTenantAccessEvent({
+      tenantIdentityId: challenge.tenantIdentityId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: 'locked' },
+    })
     return { ok: false, code: 'locked' }
   }
 
@@ -179,6 +192,12 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
       action: 'tenantIdentity.otpExpired',
       summary: 'OTP verification failed because the code expired.',
       metadata: { challengeId: challenge.id },
+    })
+    await trackTenantAccessEvent({
+      tenantIdentityId: challenge.tenantIdentityId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: 'expired' },
     })
     return { ok: false, code: 'expired' }
   }
@@ -202,6 +221,12 @@ export async function verifyOtpChallenge(challengeId: string, submittedCode: str
       action: lockedUntil ? 'tenantIdentity.otpLocked' : 'tenantIdentity.otpFailed',
       summary: lockedUntil ? 'OTP challenge locked after too many failed attempts.' : 'OTP verification failed with incorrect code.',
       metadata: { challengeId: challenge.id, attemptCount: nextAttemptCount },
+    })
+    await trackTenantAccessEvent({
+      tenantIdentityId: challenge.tenantIdentityId,
+      orgId: challenge.orgId,
+      type: 'verification_failed',
+      metadata: { challengeId: challenge.id, reason: lockedUntil ? 'locked' : 'invalid', attemptCount: nextAttemptCount },
     })
     return { ok: false, code: nextAttemptCount >= challenge.maxAttempts ? 'locked' : 'invalid' }
   }
