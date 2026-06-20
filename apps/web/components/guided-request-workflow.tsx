@@ -24,14 +24,16 @@ export function GuidedRequestWorkflow({ request, compact = false }: { request: G
           ))}
         </div>
       ) : null}
-      <div className={`recommendedAction recommendedAction-${recommendation.tone}`}>
-        <div>
-          <div className="kicker">Recommended next action</div>
-          <strong>{recommendation.label}</strong>
-          <div className="muted">{recommendation.detail}</div>
+      {compact ? (
+        <div className={`recommendedAction recommendedAction-${recommendation.tone}`}>
+          <div>
+            <div className="kicker">Recommended next action</div>
+            <strong>{recommendation.label}</strong>
+            <div className="muted">{recommendation.detail}</div>
+          </div>
+          <Link href={recommendation.href as Route} className="button primary">Open</Link>
         </div>
-        <Link href={recommendation.href as Route} className="button primary">{compact ? 'Open' : recommendation.label}</Link>
-      </div>
+      ) : null}
     </div>
   )
 }

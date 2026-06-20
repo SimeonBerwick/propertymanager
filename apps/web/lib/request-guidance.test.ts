@@ -42,8 +42,8 @@ describe('request guidance', () => {
 
     expect(getWorkflowStep(request)).toBe(5)
     expect(getRecommendedAction(request)).toMatchObject({
-      label: 'Mark vendor paid',
-      detail: 'Amount owed to ACME Plumbing is still open.',
+      label: 'Collect payment before closeout',
+      detail: 'Vendor payment is still open for ACME Plumbing.',
       tone: 'review',
     })
     expect(getAttentionScore(request)).toBeGreaterThan(0)
