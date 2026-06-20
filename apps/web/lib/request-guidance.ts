@@ -1,6 +1,6 @@
 import type { MaintenanceRequest, Urgency } from '@/lib/types'
 import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
-import { getRequestNextAction } from '@/lib/next-action-engine'
+import { getRequestNextAction } from '@/lib/recommended-actions'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
   'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
