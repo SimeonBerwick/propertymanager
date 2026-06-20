@@ -558,6 +558,22 @@ body { min-height: 100vh; }
 .attentionTitle { font-weight: 800; }
 .todayOverview { gap: 14px; }
 .todayOverviewHero { display: flex; justify-content: space-between; gap: 20px; align-items: center; border-color: var(--border-strong); background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 180%); }
+.nextActionPrimary { display: grid; grid-template-columns: minmax(220px, .9fr) minmax(280px, 1.1fr); gap: 16px; align-items: start; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
+.nextActionPrimary strong { display: block; font-size: 18px; line-height: 1.35; }
+.nextActionPrimary-urgent { border-color: var(--error-border); background: var(--error-bg); }
+.nextActionPrimary-high { border-color: var(--warn); }
+.nextActionSecondary, .nextActionGroupRows, .nextActionGroups { display: grid; gap: 10px; }
+.nextActionRow { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: inherit; text-decoration: none; }
+.nextActionRow:hover { border-color: var(--accent); }
+.nextActionRow strong { display: block; }
+.nextActionRow-urgent { border-color: var(--error-border); }
+.nextActionRow-high { border-color: var(--warn); }
+.nextActionReason { margin-top: 6px; color: var(--muted); font-size: 13px; }
+.nextActionGroup { display: grid; grid-template-columns: minmax(160px, .35fr) minmax(260px, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
+.nextActionGroup h3 { margin: 4px 0 0; }
+.caughtUpPanel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.caughtUpPanel a { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--table-row); color: inherit; text-decoration: none; font-weight: 700; }
+.caughtUpPanel a:hover { border-color: var(--accent); }
 .todayMetricGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .todayMetricCard { min-height: 132px; display: grid; align-content: space-between; gap: 8px; text-decoration: none; transition: transform .15s ease, border-color .15s ease; }
 .todayMetricCard strong { font-size: clamp(32px, 4vw, 44px); line-height: 1; }
@@ -828,6 +844,7 @@ body { min-height: 100vh; }
   .todayOverviewHero { align-items: flex-start; flex-direction: column; }
   .todayMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .todayScheduleRow { grid-template-columns: 1fr; }
+  .nextActionPrimary, .nextActionGroup, .caughtUpPanel { grid-template-columns: 1fr; }
   .tenantChargeNotice { align-items: flex-start; flex-direction: column; }
   .attentionRow { grid-template-columns: 1fr; }
   .guidedWorkflowCompact .recommendedAction { min-width: 0; }

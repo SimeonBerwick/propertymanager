@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { NeedsAttentionList } from '@/components/needs-attention-list'
+import type { Route } from 'next'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
+import { buildDashboardNextActions, groupDashboardNextActions, type DashboardNextAction } from '@/lib/dashboard-next-actions'
 import { buildTodayOverview } from '@/lib/today-overview'
 import { formatDateOnly, formatDateTime } from '@/lib/ui-utils'
 import type { DashboardRequestRow } from '@/lib/data'
@@ -10,7 +11,7 @@ function RequestIdentity({ request }: { request: DashboardRequestRow }) {
   return (
     <div>
       <strong className="attentionTitle">{request.title}</strong>
-      <div className="muted">{request.propertyName} · {request.unitLabel}</div>
+      <div className="muted">{request.propertyName} &middot; {request.unitLabel}</div>
     </div>
   )
 }
@@ -30,28 +31,83 @@ function CompactRequestList({ requests, empty }: { requests: DashboardRequestRow
   )
 }
 
+function ActionRow({ action, compact = false }: { action: DashboardNextAction, compact?: boolean }) {
+  return (
+    <Link href={action.href as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
+      <div>
+        <strong>{action.title}</strong>
+        <div className="muted">{action.propertyName} &middot; {action.unitLabel}</div>
+        {!compact ? <div className="nextActionReason">{action.reason}</div> : null}
+      </div>
+      <span className="button compactToggle">{action.label}</span>
+    </Link>
+  )
+}
+
 export function TodayOverview({ requests, now = new Date() }: { requests: DashboardRequestRow[], now?: Date }) {
   const overview = buildTodayOverview(requests, now)
-  const actionCount = overview.needsYourAction.length
+  const nextActions = buildDashboardNextActions(requests, now)
+  const primaryAction = nextActions[0]
+  const secondaryActions = nextActions.slice(1, 4)
+  const actionGroups = groupDashboardNextActions(nextActions)
+  const actionCount = nextActions.length
 
   return (
     <div className="stack todayOverview">
       <section className="card todayOverviewHero">
         <div>
-          <div className="kicker">Today · {formatDateOnly(now)}</div>
-          <h1 className="pageTitle">Today overview</h1>
+          <div className="kicker">Today &middot; {formatDateOnly(now)}</div>
+          <h1 className="pageTitle">{primaryAction ? 'Do this next' : 'All caught up'}</h1>
           <div className="muted">
-            {actionCount
-              ? `${actionCount} request${actionCount === 1 ? '' : 's'} need your decision or follow-up today.`
-              : 'You are caught up. Monitor today’s appointments and incoming updates.'}
+            {primaryAction
+              ? primaryAction.reason
+              : "No requests need a manager decision right now. Monitor today's appointments and incoming updates."}
           </div>
         </div>
-        <a href="#needs-your-action" className="button primary">Start today’s work</a>
+        {primaryAction ? (
+          <Link href={primaryAction.href as Route} className="button primary">{primaryAction.label}</Link>
+        ) : (
+          <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
+        )}
       </section>
+
+      {primaryAction ? (
+        <SectionCard
+          kicker="Do next"
+          title={primaryAction.title}
+          subtitle={`${primaryAction.propertyName} / ${primaryAction.unitLabel}`}
+          action={<Link href={primaryAction.href as Route} className="button primary">{primaryAction.label}</Link>}
+        >
+          <div className={`nextActionPrimary nextActionPrimary-${primaryAction.priority}`}>
+            <div>
+              <div className="kicker">{primaryAction.group}</div>
+              <strong>{primaryAction.reason}</strong>
+            </div>
+            {secondaryActions.length ? (
+              <div className="nextActionSecondary">
+                {secondaryActions.map((action) => <ActionRow key={action.id} action={action} compact />)}
+              </div>
+            ) : null}
+          </div>
+        </SectionCard>
+      ) : (
+        <SectionCard
+          kicker="All caught up"
+          title="No immediate decisions"
+          subtitle="The queue has no urgent reviews, overdue work, reassignment, completion review, or payment actions."
+          action={<Link href="/submit" className="button">Share request form</Link>}
+        >
+          <div className="caughtUpPanel">
+            <Link href="/dashboard?queue=scheduled-today">Monitor today's appointments</Link>
+            <Link href="/dashboard?queue=open">Review open work</Link>
+            <Link href="/access">Check team access</Link>
+          </div>
+        </SectionCard>
+      )}
 
       <section className="todayMetricGrid" aria-label="Today summary">
         <a href="#needs-your-action" className={`card todayMetricCard${actionCount ? ' todayMetricUrgent' : ''}`}>
-          <span className="kicker">Needs your action</span>
+          <span className="kicker">Recommended actions</span>
           <strong>{actionCount}</strong>
           <span className="muted">Decisions and follow-ups</span>
         </a>
@@ -74,18 +130,26 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
 
       <div id="needs-your-action">
         <SectionCard
-          kicker="Act"
-          title="Needs your action"
-          subtitle="The decisions and follow-ups most likely to block progress."
+          kicker="Needs attention"
+          title="Grouped blockers"
+          subtitle="The work is grouped by why it is blocked, so the next click is obvious."
           action={<Link href="/exceptions" className="button">View all exceptions</Link>}
         >
-          {overview.needsYourAction.length ? (
-            <>
-              <NeedsAttentionList requests={overview.needsYourAction} />
-              {overview.needsYourAction.length > 5 ? (
-                <div className="muted">Showing the 5 highest-pressure actions. {overview.needsYourAction.length - 5} more remain.</div>
-              ) : null}
-            </>
+          {actionGroups.length ? (
+            <div className="nextActionGroups">
+              {actionGroups.slice(0, 5).map((group) => (
+                <section className="nextActionGroup" key={group.label}>
+                  <div>
+                    <div className="kicker">{group.items.length} action{group.items.length === 1 ? '' : 's'}</div>
+                    <h3>{group.label}</h3>
+                  </div>
+                  <div className="nextActionGroupRows">
+                    {group.items.slice(0, 3).map((action) => <ActionRow key={action.id} action={action} />)}
+                  </div>
+                  {group.items.length > 3 ? <div className="muted">{group.items.length - 3} more in this group.</div> : null}
+                </section>
+              ))}
+            </div>
           ) : (
             <div className="emptyState"><strong>You are caught up</strong><span>No requests need an immediate manager decision.</span></div>
           )}
@@ -94,7 +158,7 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
 
       <SectionCard
         kicker="Schedule"
-        title="Today’s appointments"
+        title="Today's appointments"
         subtitle="Vendor visits in chronological order."
         action={<Link href="/dashboard?queue=scheduled-today" className="button">Open schedule queue</Link>}
       >
