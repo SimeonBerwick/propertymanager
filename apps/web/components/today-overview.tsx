@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
-import { buildDashboardNextActions, groupDashboardNextActions, type DashboardNextAction } from '@/lib/dashboard-next-actions'
+import { buildDashboardNextActions, groupDashboardNextActions, type RequestNextAction } from '@/lib/next-action-engine'
 import { buildTodayOverview } from '@/lib/today-overview'
 import { formatDateOnly, formatDateTime } from '@/lib/ui-utils'
 import type { DashboardRequestRow } from '@/lib/data'
@@ -31,7 +31,7 @@ function CompactRequestList({ requests, empty }: { requests: DashboardRequestRow
   )
 }
 
-function ActionRow({ action, compact = false }: { action: DashboardNextAction, compact?: boolean }) {
+function ActionRow({ action, compact = false }: { action: RequestNextAction, compact?: boolean }) {
   return (
     <Link href={action.href as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
       <div>
@@ -39,7 +39,7 @@ function ActionRow({ action, compact = false }: { action: DashboardNextAction, c
         <div className="muted">{action.propertyName} &middot; {action.unitLabel}</div>
         {!compact ? <div className="nextActionReason">{action.reason}</div> : null}
       </div>
-      <span className="button compactToggle">{action.label}</span>
+      <span className="button compactToggle">{action.primaryLabel}</span>
     </Link>
   )
 }
@@ -65,7 +65,7 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
           </div>
         </div>
         {primaryAction ? (
-          <Link href={primaryAction.href as Route} className="button primary">{primaryAction.label}</Link>
+          <Link href={primaryAction.href as Route} className="button primary">{primaryAction.primaryLabel}</Link>
         ) : (
           <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
         )}
@@ -76,7 +76,7 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
           kicker="Do next"
           title={primaryAction.title}
           subtitle={`${primaryAction.propertyName} / ${primaryAction.unitLabel}`}
-          action={<Link href={primaryAction.href as Route} className="button primary">{primaryAction.label}</Link>}
+          action={<Link href={primaryAction.href as Route} className="button primary">{primaryAction.primaryLabel}</Link>}
         >
           <div className={`nextActionPrimary nextActionPrimary-${primaryAction.priority}`}>
             <div>
