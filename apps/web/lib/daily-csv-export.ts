@@ -6,7 +6,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export async function sendDailyCsvExportToLandlord(userId: string, now = new Date()) {
+export async function sendDailyCsvExportToLandlord(userId: string, now = new Date(), options: { force?: boolean } = {}) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -19,7 +19,7 @@ export async function sendDailyCsvExportToLandlord(userId: string, now = new Dat
   if (!user?.dailyCsvExportEnabled || !user.email) {
     return { ok: false, skipped: true, reason: 'disabled' }
   }
-  if (user.dailyCsvExportLastSentAt && now.getTime() - user.dailyCsvExportLastSentAt.getTime() < DAY_MS) {
+  if (!options.force && user.dailyCsvExportLastSentAt && now.getTime() - user.dailyCsvExportLastSentAt.getTime() < DAY_MS) {
     return { ok: true, skipped: true, reason: 'not-due' }
   }
 

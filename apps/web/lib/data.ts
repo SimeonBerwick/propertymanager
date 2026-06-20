@@ -14,6 +14,9 @@ import type { BillingDocumentView } from '@/lib/billing-types'
 import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 import { prisma } from '@/lib/prisma'
 import { logAppError } from '@/lib/observability'
+import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
+import { getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
+import { sortRecommendedActions, type RecommendedAction } from '@/lib/recommended-actions'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
   propertyName: string
@@ -31,6 +34,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
 export interface DashboardData {
   properties: Property[]
   requestRows: DashboardRequestRow[]
+  masterQueueActions: RecommendedAction[]
   statusCounts: Record<RequestStatus, number>
   emailNotificationsEnabled: boolean
   mailboxConnections: Array<{
@@ -234,6 +238,205 @@ function csvToList(value: unknown): string[] {
     : []
 }
 
+function recentFrictionKey(metadataJson: string | null) {
+  if (!metadataJson) return null
+  try {
+    const metadata = JSON.parse(metadataJson) as { tenantIdentityId?: string; vendorId?: string; principalId?: string }
+    return metadata.tenantIdentityId ?? metadata.vendorId ?? metadata.principalId ?? null
+  } catch {
+    return null
+  }
+}
+
+function buildAccessQueueActions(units: any[], vendors: any[], recentAccessEvents: Array<{ metadataJson: string | null }>): RecommendedAction[] {
+  const frictionCounts = new Map<string, number>()
+  for (const event of recentAccessEvents) {
+    const key = recentFrictionKey(event.metadataJson)
+    if (key) frictionCounts.set(key, (frictionCounts.get(key) ?? 0) + 1)
+  }
+
+  const tenantActions = units.flatMap<RecommendedAction>((unit) => {
+    const occupancy = getUnitOccupancySnapshot(unit.tenantIdentities ?? [])
+    const identity = occupancy.current ?? occupancy.upcoming
+    if (!identity || !unit.isActive || !unit.property?.isActive) return []
+
+    const title = `${identity.tenantName} - ${unit.property.name} / ${unit.label}`
+    const frictionCount = frictionCounts.get(identity.id) ?? 0
+    if (frictionCount >= 3) {
+      return [{
+        id: `tenant-access:${identity.id}`,
+        priority: 'urgent',
+        title,
+        reason: `The renter has failed to access the portal ${frictionCount} times recently.`,
+        primaryLabel: 'Help renter access portal',
+        href: `/units/${unit.id}/edit`,
+        actionType: 'help_renter_access_portal',
+        group: 'Access help',
+        score: 90,
+        propertyName: unit.property.name,
+        unitLabel: unit.label,
+      }]
+    }
+
+    if (identity.status === 'pending_invite') {
+      return [{
+        id: `tenant-invite:${identity.id}`,
+        priority: 'normal',
+        title,
+        reason: 'The renter invite is still pending.',
+        primaryLabel: 'Resend renter invite',
+        href: `/units/${unit.id}/edit`,
+        actionType: 'resend_renter_invite',
+        group: 'Access actions',
+        score: 35,
+        propertyName: unit.property.name,
+        unitLabel: unit.label,
+      }]
+    }
+
+    if (identity.status === 'active' && !identity.lastLoginAt) {
+      return [{
+        id: `tenant-never-login:${identity.id}`,
+        priority: 'low',
+        title,
+        reason: 'Renter access is active, but the renter has never logged in.',
+        primaryLabel: 'Confirm renter access',
+        href: `/units/${unit.id}/edit`,
+        actionType: 'confirm_renter_access',
+        group: 'Access actions',
+        score: 10,
+        propertyName: unit.property.name,
+        unitLabel: unit.label,
+      }]
+    }
+
+    return []
+  })
+
+  const vendorActions = vendors.flatMap<RecommendedAction>((vendor) => {
+    const frictionCount = frictionCounts.get(vendor.id) ?? 0
+    if (frictionCount >= 3) {
+      return [{
+        id: `vendor-access:${vendor.id}`,
+        priority: 'urgent',
+        title: vendor.name,
+        reason: `The vendor has failed to access the portal ${frictionCount} times recently.`,
+        primaryLabel: 'Help vendor access portal',
+        href: `/vendors/${vendor.id}`,
+        actionType: 'help_vendor_access_portal',
+        group: 'Access help',
+        score: 90,
+      }]
+    }
+
+    if (vendor.isActive && !vendor.email) {
+      return [{
+        id: `vendor-email:${vendor.id}`,
+        priority: 'normal',
+        title: vendor.name,
+        reason: 'This vendor cannot receive login codes until an email is added.',
+        primaryLabel: 'Add vendor email',
+        href: `/vendors/${vendor.id}`,
+        actionType: 'add_vendor_email',
+        group: 'Access actions',
+        score: 32,
+      }]
+    }
+
+    if (vendor.isActive && vendor.email && !vendor.lastLoginAt) {
+      return [{
+        id: `vendor-never-login:${vendor.id}`,
+        priority: 'low',
+        title: vendor.name,
+        reason: 'Vendor access is active, but the vendor has never logged in.',
+        primaryLabel: 'Send vendor access code',
+        href: `/vendors/${vendor.id}`,
+        actionType: 'send_vendor_access_code',
+        group: 'Access actions',
+        score: 10,
+      }]
+    }
+
+    return []
+  })
+
+  return [...tenantActions, ...vendorActions]
+}
+
+function buildDeliveryQueueActions(failedEmails: any[], user: { dailyCsvExportEnabled?: boolean, dailyCsvExportLastSentAt?: Date | null } | null, now = new Date()): RecommendedAction[] {
+  const failedDeliveryActions = failedEmails.map<RecommendedAction>((email) => {
+    const isCsv = /csv|export/i.test(email.subject) || /csv/i.test(email.transport)
+    return {
+      id: `email-failed:${email.id}`,
+      priority: 'urgent',
+      title: `${isCsv ? 'CSV delivery failed' : 'Email delivery failed'}: ${email.subject}`,
+      reason: email.error ? String(email.error).slice(0, 180) : `Delivery to ${email.to} failed.`,
+      primaryLabel: email.requestId ? 'Open request' : 'Open ops',
+      href: email.requestId ? `/requests/${email.requestId}#communication` : '/ops',
+      actionType: isCsv ? 'review_csv_delivery_failure' : 'review_email_delivery_failure',
+      requestId: email.requestId ?? undefined,
+      group: isCsv ? 'CSV delivery failures' : 'Email delivery failures',
+      score: isCsv ? 98 : 96,
+    }
+  })
+
+  const staleCsv = user?.dailyCsvExportEnabled
+    && (!user.dailyCsvExportLastSentAt || now.getTime() - user.dailyCsvExportLastSentAt.getTime() > 36 * 60 * 60 * 1000)
+  const staleCsvAction: RecommendedAction[] = staleCsv
+    ? [{
+        id: 'csv-export:stale',
+        priority: 'high',
+        title: 'Daily CSV export needs attention',
+        reason: user?.dailyCsvExportLastSentAt
+          ? `The last successful CSV export was ${user.dailyCsvExportLastSentAt.toLocaleString()}.`
+          : 'Daily CSV export is enabled but no successful send is recorded.',
+        primaryLabel: 'Open CSV settings',
+        href: '/ops',
+        actionType: 'review_csv_export_schedule',
+        group: 'CSV delivery failures',
+        score: 65,
+      }]
+    : []
+
+  return [...failedDeliveryActions, ...staleCsvAction]
+}
+
+function buildMailboxQueueActions(mailboxConnections: Array<{ id: string, provider: string, status: string, email: string, syncError: string | null }>): RecommendedAction[] {
+  return mailboxConnections.flatMap<RecommendedAction>((connection) => {
+    if (connection.status !== 'needs_reauth' && !connection.syncError) return []
+    const provider = connection.provider === 'gmail' ? 'Gmail' : 'Outlook'
+    return [{
+      id: `mailbox:${connection.id}`,
+      priority: connection.status === 'needs_reauth' ? 'urgent' : 'high',
+      title: `${provider} mailbox needs reconnect`,
+      reason: connection.syncError ?? `${connection.email} needs to be reconnected before replies can sync.`,
+      primaryLabel: `Reconnect ${provider}`,
+      href: `/api/mailbox/oauth/${connection.provider}/start`,
+      actionType: 'reconnect_mailbox',
+      group: 'Mailbox reconnect issues',
+      score: connection.status === 'needs_reauth' ? 94 : 72,
+    }]
+  })
+}
+
+function buildSystemHealthQueueActions(): RecommendedAction[] {
+  if (!isHostedRuntimeEnforced()) return []
+
+  return getRuntimeChecks()
+    .filter((check) => check.blocking && !check.ok)
+    .map<RecommendedAction>((check) => ({
+      id: `system-health:${check.id}`,
+      priority: 'urgent',
+      title: `${check.label} is misconfigured`,
+      reason: check.detail,
+      primaryLabel: 'Open ops',
+      href: '/ops',
+      actionType: 'review_system_health',
+      group: 'System health',
+      score: 99,
+    }))
+}
+
 async function logDataError(event: string, error: unknown, details: Record<string, unknown> = {}) {
   await logAppError(event, error, details).catch(() => undefined)
 }
@@ -262,10 +465,10 @@ function vendorMatchScore(request: DashboardRequestRow, vendor: Vendor): number 
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
-    const [user, mailboxConnections, dbProperties, dbRequests, claimUsers] = await Promise.all([
+    const [user, mailboxConnections, dbProperties, dbRequests, claimUsers, accessUnits, accessVendors, recentAccessEvents, failedEmails] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { emailNotificationsEnabled: true },
+        select: { emailNotificationsEnabled: true, dailyCsvExportEnabled: true, dailyCsvExportLastSentAt: true },
       }),
       prisma.mailboxConnection.findMany({
         where: { userId },
@@ -296,11 +499,58 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         where: { id: { in: (await prisma.maintenanceRequest.findMany({ where: { property: { ownerId: userId }, claimedByUserId: { not: null } }, select: { claimedByUserId: true } })).map((r) => r.claimedByUserId!).filter(Boolean) } },
         select: { id: true, email: true, displayName: true },
       }),
+      prisma.unit.findMany({
+        where: { property: { ownerId: userId } },
+        include: {
+          property: { select: { id: true, name: true, isActive: true } },
+          tenantIdentities: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              tenantName: true,
+              email: true,
+              phoneE164: true,
+              status: true,
+              leaseStartDate: true,
+              leaseEndDate: true,
+              verifiedAt: true,
+              lastLoginAt: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
+      prisma.vendor.findMany({
+        where: { orgId: userId },
+        select: { id: true, name: true, email: true, isActive: true, lastLoginAt: true },
+      }),
+      prisma.productEvent.findMany({
+        where: {
+          orgId: userId,
+          eventName: { in: ['tenant_access.verification_failed', 'tenant_access.resend_requested', 'vendor_access.verification_failed', 'vendor_access.resend_requested'] },
+          createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+        },
+        select: { metadataJson: true },
+      }),
+      prisma.outboundEmail.findMany({
+        where: { userId, status: 'failed', createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, requestId: true, transport: true, to: true, subject: true, error: true, createdAt: true },
+      }),
     ])
     const requestRows = mapRequestsWithClaimOwners(dbRequests, claimUsers)
+    const masterQueueActions = sortRecommendedActions([
+      ...buildAccessQueueActions(accessUnits, accessVendors, recentAccessEvents),
+      ...buildDeliveryQueueActions(failedEmails, user),
+      ...buildMailboxQueueActions(mailboxConnections),
+      ...buildSystemHealthQueueActions(),
+    ])
     return {
       properties: dbProperties.map(mapProperty),
       requestRows,
+      masterQueueActions,
       statusCounts: countStatuses(requestRows),
       emailNotificationsEnabled: user?.emailNotificationsEnabled ?? true,
       mailboxConnections: mailboxConnections.map((connection) => ({
@@ -315,7 +565,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }
   } catch (error) {
     await logDataError('data.dashboard.load_failed', error, { userId })
-    return { properties: [], requestRows: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
+    return { properties: [], requestRows: [], masterQueueActions: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
   }
 }
 

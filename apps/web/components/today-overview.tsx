@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { SectionCard } from '@/components/section-card'
-import { buildDashboardNextActions, groupDashboardNextActions, type RequestNextAction } from '@/lib/recommended-actions'
+import { buildDashboardNextActions, groupDashboardNextActions, sortRecommendedActions, type RecommendedAction } from '@/lib/recommended-actions'
 import { buildTodayOverview } from '@/lib/today-overview'
 import { formatDateOnly, formatDateTime } from '@/lib/ui-utils'
 import type { DashboardRequestRow } from '@/lib/data'
@@ -31,12 +31,18 @@ function CompactRequestList({ requests, empty }: { requests: DashboardRequestRow
   )
 }
 
-function ActionRow({ action, compact = false }: { action: RequestNextAction, compact?: boolean }) {
+function actionSubtitle(action: RecommendedAction) {
+  return [action.propertyName, action.unitLabel].filter(Boolean).join(' / ')
+}
+
+function ActionRow({ action, compact = false }: { action: RecommendedAction, compact?: boolean }) {
+  const subtitle = actionSubtitle(action)
+
   return (
-    <Link href={action.href as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
+    <Link href={(action.href ?? '/dashboard') as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
       <div>
         <strong>{action.title}</strong>
-        <div className="muted">{action.propertyName} &middot; {action.unitLabel}</div>
+        {subtitle ? <div className="muted">{subtitle}</div> : null}
         {!compact ? <div className="nextActionReason">{action.reason}</div> : null}
       </div>
       <span className="button compactToggle">{action.primaryLabel}</span>
@@ -44,9 +50,12 @@ function ActionRow({ action, compact = false }: { action: RequestNextAction, com
   )
 }
 
-export function TodayOverview({ requests, now = new Date() }: { requests: DashboardRequestRow[], now?: Date }) {
+export function TodayOverview({ requests, masterQueueActions = [], now = new Date() }: { requests: DashboardRequestRow[], masterQueueActions?: RecommendedAction[], now?: Date }) {
   const overview = buildTodayOverview(requests, now)
-  const nextActions = buildDashboardNextActions(requests, now)
+  const nextActions = sortRecommendedActions([
+    ...buildDashboardNextActions(requests, now),
+    ...masterQueueActions,
+  ])
   const primaryAction = nextActions[0]
   const secondaryActions = nextActions.slice(1, 4)
   const actionGroups = groupDashboardNextActions(nextActions)
@@ -65,7 +74,7 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
           </div>
         </div>
         {primaryAction ? (
-          <Link href={primaryAction.href as Route} className="button primary">{primaryAction.primaryLabel}</Link>
+          <Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>
         ) : (
           <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
         )}
@@ -75,8 +84,8 @@ export function TodayOverview({ requests, now = new Date() }: { requests: Dashbo
         <SectionCard
           kicker="Do next"
           title={primaryAction.title}
-          subtitle={`${primaryAction.propertyName} / ${primaryAction.unitLabel}`}
-          action={<Link href={primaryAction.href as Route} className="button primary">{primaryAction.primaryLabel}</Link>}
+          subtitle={actionSubtitle(primaryAction) || primaryAction.group}
+          action={<Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>}
         >
           <div className={`nextActionPrimary nextActionPrimary-${primaryAction.priority}`}>
             <div>

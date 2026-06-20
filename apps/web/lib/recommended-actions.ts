@@ -14,6 +14,8 @@ export type RecommendedAction = {
   href?: string
   actionType?: string
   requestId?: string
+  propertyName?: string
+  unitLabel?: string
   group: string
   score: number
 }

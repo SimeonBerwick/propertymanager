@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import type { RequestStatus, Urgency } from '@prisma/client'
 import { sendNotification } from '@/lib/notify'
+import { sendDailyCsvExportToLandlord } from '@/lib/daily-csv-export'
+import { sendMobileInviteAction } from '@/app/operator/mobile-identity/actions'
 
 export type OpsCsvState = { error: string | null; success?: string }
 
@@ -42,6 +44,58 @@ export async function sendSystemEmailTestAction(_prev: OpsCsvState, _formData: F
   return result.ok
     ? { error: null, success: `Test email sent to ${user.email}.` }
     : { error: 'Test email was not delivered. Check NOTIFY_TRANSPORT=smtp, SMTP_URL, and NOTIFY_FROM in the hosted environment.' }
+}
+
+export async function sendDailyCsvExportNowAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const result = await sendDailyCsvExportToLandlord(session.userId, new Date(), { force: true })
+  revalidatePath('/ops')
+  revalidatePath('/dashboard')
+
+  if (result.ok && result.skipped && result.reason === 'no-changes') return { error: null, success: 'CSV delivery checked. No changed rows were found.' }
+  if (result.ok && result.skipped) return { error: null, success: 'CSV delivery checked.' }
+  if (result.ok) return { error: null, success: `CSV delivery sent with ${result.files ?? 0} attachment${result.files === 1 ? '' : 's'}.` }
+
+  return { error: result.reason === 'disabled' ? 'Daily CSV export is disabled or the account email is missing.' : 'CSV delivery failed. Check system email delivery.' }
+}
+
+export async function resendTenantInviteFromOpsAction(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
+  const result = await sendMobileInviteAction({ error: null }, formData)
+  revalidatePath('/ops')
+  revalidatePath('/dashboard')
+
+  if (result.error) return { error: result.error }
+  if (result.deliveryWarning) return { error: null, success: result.deliveryWarning }
+  return { error: null, success: result.inviteLink ? 'Renter invite sent.' : 'Renter invite created.' }
+}
+
+export async function updateVendorEmailFromOpsAction(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const vendorId = String(formData.get('vendorId') ?? '')
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  if (!vendorId) return { error: 'Vendor is missing.' }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: 'Enter a valid vendor email.' }
+
+  const vendor = await prisma.vendor.findFirst({ where: { id: vendorId, orgId: session.userId }, select: { id: true, name: true } })
+  if (!vendor) return { error: 'Vendor not found.' }
+
+  await prisma.vendor.update({ where: { id: vendor.id }, data: { email } })
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'vendor',
+    entityId: vendor.id,
+    action: 'vendor.emailUpdated',
+    summary: `Updated email for ${vendor.name}.`,
+  })
+  revalidatePath('/ops')
+  revalidatePath('/access')
+  revalidatePath(`/vendors/${vendor.id}`)
+  return { error: null, success: `Vendor email updated to ${email}.` }
 }
 
 export async function toggleDailyCsvExportAction(formData: FormData) {
