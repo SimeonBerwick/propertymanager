@@ -6,6 +6,7 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 import { sendNotification } from '@/lib/notify'
+import { trackTenantAccessEvent } from '@/lib/access-friction'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 365
@@ -82,6 +83,12 @@ export async function createTenantMobileSession(tenantIdentityId: string, maximu
     entityId: tenantIdentity.id,
     action: 'tenantIdentity.sessionCreated',
     summary: 'Created tenant mobile session.',
+    metadata: { sessionId: session.id },
+  })
+  await trackTenantAccessEvent({
+    tenantIdentityId: tenantIdentity.id,
+    orgId: tenantIdentity.orgId,
+    type: 'portal_reached',
     metadata: { sessionId: session.id },
   })
 
