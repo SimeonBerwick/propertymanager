@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DashboardRequestRow } from './data'
-import { buildDashboardNextActions, getRequestNextAction, groupDashboardNextActions } from './next-action-engine'
+import { buildDashboardNextActions, getRequestNextAction, groupDashboardNextActions } from './recommended-actions'
 
 const base: DashboardRequestRow = {
   id: 'r1',

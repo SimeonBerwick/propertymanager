@@ -1,5 +1,5 @@
 import type { DashboardRequestRow } from '@/lib/data'
-import { getRequestNextAction } from '@/lib/next-action-engine'
+import { getRequestNextAction } from '@/lib/recommended-actions'
 
 const CLOSED_STATUSES = ['closed', 'declined', 'canceled'] as const
 
