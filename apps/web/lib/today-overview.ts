@@ -1,13 +1,7 @@
 import type { DashboardRequestRow } from '@/lib/data'
+import { getRequestNextAction } from '@/lib/next-action-engine'
 
 const CLOSED_STATUSES = ['closed', 'declined', 'canceled'] as const
-const REVIEW_STATES = [
-  'needs_follow_up',
-  'vendor_update_pending_review',
-  'vendor_completed_pending_review',
-  'reassignment_needed',
-  'vendor_declined_reassignment_needed',
-] as const
 
 function isOpen(request: DashboardRequestRow) {
   return !CLOSED_STATUSES.includes(request.status as typeof CLOSED_STATUSES[number])
@@ -21,29 +15,11 @@ function isOverdue(request: DashboardRequestRow, now: Date) {
 }
 
 function needsManagerAction(request: DashboardRequestRow, now: Date) {
-  if ((request.vendorPayableBalanceCents ?? 0) > 0) return true
-  if (!isOpen(request)) return false
-  if (request.status === 'requested' || request.status === 'completed') return true
-  if (isOverdue(request, now)) return true
-  if (REVIEW_STATES.includes(request.reviewState as typeof REVIEW_STATES[number])) return true
-  if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) return true
-  if (!request.vendorScheduledStart && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) return true
-  return false
+  return getRequestNextAction(request, now).score > 0
 }
 
 function actionScore(request: DashboardRequestRow, now: Date) {
-  let score = 0
-  if ((request.vendorPayableBalanceCents ?? 0) > 0) score += request.status === 'closed' ? 18 : 16
-  if (isOverdue(request, now)) score += 20
-  if (request.urgency === 'urgent') score += 12
-  if (request.urgency === 'high') score += 8
-  if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') score += 10
-  if (request.reviewState === 'vendor_completed_pending_review' || request.status === 'completed') score += 7
-  if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') score += 6
-  if (request.status === 'requested') score += 5
-  if (!request.assignedVendorName) score += 3
-  if (!request.claimedAt) score += 1
-  return score
+  return getRequestNextAction(request, now).score
 }
 
 function completionTime(request: DashboardRequestRow) {

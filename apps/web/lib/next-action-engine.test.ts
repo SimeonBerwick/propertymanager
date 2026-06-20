@@ -30,10 +30,10 @@ describe('next action engine', () => {
     expect(getRequestNextAction(base)).toMatchObject({
       priority: 'normal',
       title: 'Kitchen sink',
-      reason: 'This new request is waiting for a manager decision.',
-      primaryLabel: 'Review request',
+      reason: 'This new request is unclaimed.',
+      primaryLabel: 'Take ownership',
       href: '/requests/r1#actions',
-      actionType: 'review_request',
+      actionType: 'claim_request',
       requestId: 'r1',
     })
   })
@@ -48,8 +48,8 @@ describe('next action engine', () => {
   })
 
   it('prompts for a tenant update when status changed without a later notice', () => {
-    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, tenantStatusUpdatePending: true })).toMatchObject({
-      priority: 'high',
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z', claimedAt: '2026-06-19T12:00:00.000Z', tenantStatusUpdatePending: true })).toMatchObject({
+      priority: 'normal',
       primaryLabel: 'Send tenant update',
       href: '/requests/r1#communication',
       actionType: 'send_tenant_update',
@@ -66,7 +66,7 @@ describe('next action engine', () => {
 
   it('closes completed requests when payment is settled', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, claimedAt: '2026-06-19T12:00:00.000Z' })).toMatchObject({
-      priority: 'high',
+      priority: 'normal',
       primaryLabel: 'Close request',
       reason: 'Work is complete and payments are settled.',
       actionType: 'close_request',
@@ -75,7 +75,7 @@ describe('next action engine', () => {
 
   it('keeps completed requests out of closeout when vendor payment is open', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, vendorPayableBalanceCents: 50000, vendorPayableTo: 'ACME Plumbing' })).toMatchObject({
-      priority: 'high',
+      priority: 'normal',
       primaryLabel: 'Collect payment before closeout',
       reason: 'Vendor payment is still open for ACME Plumbing.',
       href: '/requests/r1#billing',
@@ -83,9 +83,9 @@ describe('next action engine', () => {
     })
   })
 
-  it('prioritizes overdue work above normal review work', () => {
+  it('sorts dashboard actions by the priority ladder', () => {
     const actions = buildDashboardNextActions([
-      { ...base, id: 'normal' },
+      { ...base, id: 'payment', status: 'completed' as const, vendorPayableBalanceCents: 50000 },
       {
         ...base,
         id: 'overdue',
@@ -94,14 +94,31 @@ describe('next action engine', () => {
         assignedVendorName: 'ACME Plumbing',
         vendorScheduledEnd: '2026-06-18T12:00:00.000Z',
       },
+      { ...base, id: 'new-unclaimed' },
+      { ...base, id: 'assign', status: 'approved' as const },
+      { ...base, id: 'bid', status: 'vendor_selected' as const, assignedVendorName: 'ACME Plumbing', pendingBidCount: 1 },
+      { ...base, id: 'closeout', status: 'completed' as const, claimedAt: '2026-06-19T12:00:00.000Z' },
+      { ...base, id: 'urgent', urgency: 'urgent' as const },
     ], new Date('2026-06-19T12:00:00.000Z'))
 
-    expect(actions[0]).toMatchObject({
-      requestId: 'overdue',
-      priority: 'urgent',
-      primaryLabel: 'Follow up',
-      actionType: 'follow_up_overdue_work',
-    })
+    expect(actions.map((action) => action.requestId)).toEqual([
+      'urgent',
+      'new-unclaimed',
+      'assign',
+      'bid',
+      'overdue',
+      'payment',
+      'closeout',
+    ])
+  })
+
+  it('orders request-page-only access and tenant update signals by the same ladder', () => {
+    const actions = [
+      getRequestNextAction({ ...base, id: 'tenant-update', status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z', tenantStatusUpdatePending: true }),
+      getRequestNextAction({ ...base, id: 'access', tenantAccessFailureCount: 3 }),
+    ].sort((a, b) => b.score - a.score)
+
+    expect(actions.map((action) => action.requestId)).toEqual(['access', 'tenant-update'])
   })
 
   it('keeps caught-up requests out of the dashboard list', () => {

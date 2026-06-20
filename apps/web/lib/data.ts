@@ -25,6 +25,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   vendorPayableTotalCents?: number
   vendorPayablePaidCents?: number
   vendorPayableBalanceCents?: number
+  pendingBidCount?: number
 }
 
 export interface DashboardData {
@@ -164,6 +165,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayableTotalCents: vendorPayable?.totalCents,
     vendorPayablePaidCents: vendorPayable?.paidCents,
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
+    pendingBidCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : undefined,
   }
 }
 
@@ -283,6 +285,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
             where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
             orderBy: { updatedAt: 'desc' },
           },
+          tenderInvites: {
+            where: { status: 'bid_submitted' },
+            select: { id: true, status: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -370,6 +376,10 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
               where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
               orderBy: { updatedAt: 'desc' },
             },
+            tenderInvites: {
+              where: { status: 'bid_submitted' },
+              select: { id: true, status: true },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -411,6 +421,10 @@ export async function getRequestDetailData(requestId: string, userId: string): P
               include: { actorUser: true },
             },
           },
+        },
+        tenderInvites: {
+          where: { status: 'bid_submitted' },
+          select: { id: true, status: true },
         },
         tenders: {
           orderBy: { createdAt: 'desc' },
