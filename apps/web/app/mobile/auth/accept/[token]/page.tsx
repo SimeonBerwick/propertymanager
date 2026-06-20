@@ -3,6 +3,7 @@ import { consumeTenantInvite, validateTenantInviteToken } from '@/lib/tenant-inv
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { writeAuditLog } from '@/lib/audit-log'
 import { prisma } from '@/lib/prisma'
+import { trackTenantAccessEvent } from '@/lib/access-friction'
 
 export default async function MobileAcceptInvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -25,6 +26,12 @@ export default async function MobileAcceptInvitePage({ params }: { params: Promi
     entityId: result.tenantIdentityId,
     action: 'tenantIdentity.inviteOpened',
     summary: 'Tenant opened mobile invite link.',
+    metadata: { inviteId: result.inviteId },
+  })
+  await trackTenantAccessEvent({
+    tenantIdentityId: result.tenantIdentityId,
+    orgId: result.orgId,
+    type: 'invite_opened',
     metadata: { inviteId: result.inviteId },
   })
 

@@ -6,8 +6,97 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { prisma } from '@/lib/prisma'
 import { writeAuditLog } from '@/lib/audit-log'
 import type { RequestStatus, Urgency } from '@prisma/client'
+import { sendNotification } from '@/lib/notify'
+import { sendDailyCsvExportToLandlord } from '@/lib/daily-csv-export'
+import { sendMobileInviteAction } from '@/app/operator/mobile-identity/actions'
 
 export type OpsCsvState = { error: string | null; success?: string }
+
+export async function sendSystemEmailTestAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  })
+  if (!user?.email) return { error: 'No account email is available for the test.' }
+
+  const result = await sendNotification({
+    to: user.email,
+    subject: '[Simeonware] Email delivery test',
+    text: [
+      'This is a test from the app-owned Simeonware email sender.',
+      '',
+      'If you received this, login security alerts, daily CSV exports, and app notifications can reach this mailbox.',
+    ].join('\n'),
+  }, { ownerUserId: session.userId, transportHint: 'system', bypassUserPreference: true })
+
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'user',
+    entityId: session.userId,
+    action: result.ok ? 'email.systemTestSent' : 'email.systemTestFailed',
+    summary: result.ok ? 'Sent system email delivery test.' : 'System email delivery test failed.',
+  })
+
+  return result.ok
+    ? { error: null, success: `Test email sent to ${user.email}.` }
+    : { error: 'Test email was not delivered. Check NOTIFY_TRANSPORT=smtp, SMTP_URL, and NOTIFY_FROM in the hosted environment.' }
+}
+
+export async function sendDailyCsvExportNowAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const result = await sendDailyCsvExportToLandlord(session.userId, new Date(), { force: true })
+  revalidatePath('/ops')
+  revalidatePath('/dashboard')
+
+  if (result.ok && result.skipped && result.reason === 'no-changes') return { error: null, success: 'CSV delivery checked. No changed rows were found.' }
+  if (result.ok && result.skipped) return { error: null, success: 'CSV delivery checked.' }
+  if (result.ok) return { error: null, success: `CSV delivery sent with ${result.files ?? 0} attachment${result.files === 1 ? '' : 's'}.` }
+
+  return { error: result.reason === 'disabled' ? 'Daily CSV export is disabled or the account email is missing.' : 'CSV delivery failed. Check system email delivery.' }
+}
+
+export async function resendTenantInviteFromOpsAction(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
+  const result = await sendMobileInviteAction({ error: null }, formData)
+  revalidatePath('/ops')
+  revalidatePath('/dashboard')
+
+  if (result.error) return { error: result.error }
+  if (result.deliveryWarning) return { error: null, success: result.deliveryWarning }
+  return { error: null, success: result.inviteLink ? 'Renter invite sent.' : 'Renter invite created.' }
+}
+
+export async function updateVendorEmailFromOpsAction(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  const vendorId = String(formData.get('vendorId') ?? '')
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  if (!vendorId) return { error: 'Vendor is missing.' }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: 'Enter a valid vendor email.' }
+
+  const vendor = await prisma.vendor.findFirst({ where: { id: vendorId, orgId: session.userId }, select: { id: true, name: true } })
+  if (!vendor) return { error: 'Vendor not found.' }
+
+  await prisma.vendor.update({ where: { id: vendor.id }, data: { email } })
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'vendor',
+    entityId: vendor.id,
+    action: 'vendor.emailUpdated',
+    summary: `Updated email for ${vendor.name}.`,
+  })
+  revalidatePath('/ops')
+  revalidatePath('/access')
+  revalidatePath(`/vendors/${vendor.id}`)
+  return { error: null, success: `Vendor email updated to ${email}.` }
+}
 
 export async function toggleDailyCsvExportAction(formData: FormData) {
   const session = await getLandlordSession()
@@ -139,6 +228,8 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
     const property = existingProperty ?? (preview ? null : await findOrCreateProperty(session.userId, propertyName, value(row, 'propertyAddress', 'address')))
     const data = {
       label,
+      city: value(row, 'city') || null,
+      state: value(row, 'state') || null,
       tenantName: value(row, 'tenantName') || null,
       tenantEmail: value(row, 'tenantEmail', 'email').toLowerCase() || null,
       sizeSqFt: optionalInt(value(row, 'sizeSqFt', 'size')),

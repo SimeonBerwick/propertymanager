@@ -1,5 +1,6 @@
 import type { MaintenanceRequest, Urgency } from '@/lib/types'
 import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
+import { getRequestNextAction } from '@/lib/recommended-actions'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
   'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
@@ -44,41 +45,22 @@ export function getWorkflowStep(request: GuidanceRequest) {
 }
 
 export function getRecommendedAction(request: GuidanceRequest) {
-  const href = `/requests/${request.id}#actions`
-  if ((request.vendorPayableBalanceCents ?? 0) > 0) {
-    return { label: 'Mark vendor paid', detail: `Amount owed to ${request.vendorPayableTo ?? 'vendor'} is still open.`, href, tone: 'review' as const }
+  const nextAction = getRequestNextAction(request)
+  const tone = nextAction.priority === 'urgent'
+    ? 'urgent'
+    : nextAction.priority === 'high'
+      ? 'review'
+      : nextAction.priority === 'low'
+        ? 'clear'
+        : 'normal'
+
+  return {
+    label: nextAction.primaryLabel,
+    detail: nextAction.reason,
+    href: nextAction.href ?? `/requests/${request.id}#actions`,
+    tone: tone as 'urgent' | 'review' | 'clear' | 'normal',
+    actionType: nextAction.actionType,
   }
-  if (['closed', 'declined', 'canceled'].includes(request.status)) {
-    return { label: 'Review request history', detail: 'No immediate action is required.', href, tone: 'clear' as const }
-  }
-  if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {
-    return { label: 'Assign a replacement vendor', detail: 'The previous vendor cannot complete this request.', href, tone: 'urgent' as const }
-  }
-  if (request.reviewState === 'vendor_completed_pending_review' || request.status === 'completed') {
-    return { label: 'Review completion and close', detail: 'Confirm the work is complete before closing the request.', href, tone: 'review' as const }
-  }
-  if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {
-    return { label: 'Review the latest update', detail: 'This request is waiting for a manager decision.', href, tone: 'review' as const }
-  }
-  if (request.vendorScheduledEnd && new Date(request.vendorScheduledEnd).getTime() < Date.now() && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) {
-    return { label: 'Follow up on overdue work', detail: 'The scheduled completion time has passed.', href, tone: 'urgent' as const }
-  }
-  if (request.status === 'requested') {
-    return { label: 'Review and approve request', detail: 'Confirm the issue and decide how it should move forward.', href, tone: request.urgency === 'urgent' ? 'urgent' as const : 'normal' as const }
-  }
-  if (!request.assignedVendorName && ['approved', 'reopened', 'vendor_selected'].includes(request.status)) {
-    return { label: 'Assign a vendor', detail: 'Choose who should handle the work.', href, tone: 'normal' as const }
-  }
-  if (!request.vendorScheduledStart && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { label: 'Set the appointment', detail: 'Confirm when the vendor will perform the work.', href, tone: 'normal' as const }
-  }
-  if (request.status === 'scheduled') {
-    return { label: 'Start or monitor the work', detail: 'The appointment is set and ready to progress.', href, tone: 'normal' as const }
-  }
-  if (request.status === 'in_progress') {
-    return { label: 'Confirm progress with vendor', detail: 'Keep the tenant informed and confirm completion timing.', href, tone: 'normal' as const }
-  }
-  return { label: 'Review request history', detail: 'No immediate action is required.', href, tone: 'clear' as const }
 }
 
 export function getAttentionScore(request: GuidanceRequest) {

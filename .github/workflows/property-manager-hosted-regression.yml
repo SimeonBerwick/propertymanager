@@ -5,17 +5,9 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - '.github/workflows/property-manager-hosted-regression.yml'
   push:
     branches:
       - main
-    paths:
-      - 'apps/web/**'
-      - 'README.md'
-      - '.github/workflows/property-manager-hosted-regression.yml'
 
 jobs:
   hosted-regression:

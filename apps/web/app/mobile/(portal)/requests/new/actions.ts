@@ -6,6 +6,8 @@ import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
+import { logServerActionError } from '@/lib/observability'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 export type MobileRequestState = { error: string | null }
 
@@ -133,7 +135,13 @@ export async function submitTenantMobileRequestAction(
     })
     requestId = request.id
   } catch (error) {
-    console.error('[tenant-mobile] request submit failed', error)
+    await logServerActionError('tenantMobile.request.submit', error, {
+      orgId: session.orgId,
+      propertyId: session.propertyId,
+      unitId: session.unitId,
+      tenantIdentityId: session.tenantIdentityId,
+      photoCount: photoPaths.length,
+    })
     await cleanupPhotos(photoPaths)
     if (process.env.NODE_ENV !== 'production' && error instanceof Error) {
       return { error: `Could not submit your request. ${error.message}` }
@@ -155,6 +163,8 @@ export async function submitTenantMobileRequestAction(
       description,
       preferredCurrency,
       preferredLanguage,
+      tenantActionUrl: `${getAppBaseUrl('tenant new request notification links')}/mobile/requests/${requestId}`,
+      landlordActionUrl: `${getAppBaseUrl('landlord new request notification links')}/requests/${requestId}`,
     })
     await Promise.all([
       sendNotification(tenantMsg, { ownerUserId: activeUnit.property.owner.id, requestId }),

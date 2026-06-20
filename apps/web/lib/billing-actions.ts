@@ -9,11 +9,20 @@ import { centsFromDollars, deriveBillingStatus, formatMoney } from '@/lib/billin
 import { buildBillingDocumentMessage, sendNotification } from '@/lib/notify'
 import type { BillingDocumentStatus } from '@/lib/billing-types'
 import { writeAuditLog } from '@/lib/audit-log'
+import { logServerActionError } from '@/lib/observability'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 export type BillingActionState = { error: string | null; success?: boolean }
 
 function inferDocumentType(recipientType: string) {
   return recipientType === 'vendor' ? 'vendor_remittance' : 'tenant_invoice'
+}
+
+function billingActionUrl(recipientType: string, requestId: string) {
+  const baseUrl = getAppBaseUrl('billing notification links')
+  return recipientType === 'tenant'
+    ? `${baseUrl}/mobile/requests/${requestId}#charges`
+    : `${baseUrl}/vendor/requests/${requestId}`
 }
 
 async function getOwnedBillingDocument(sessionUserId: string, billingDocumentId: string, requestId: string) {
@@ -45,6 +54,7 @@ async function notifyBillingRecipient({
   currency,
   ownerUserId,
   requestId,
+  actionUrl,
 }: {
   to: string
   title: string
@@ -56,6 +66,7 @@ async function notifyBillingRecipient({
   currency: 'usd' | 'peso' | 'pound' | 'euro'
   ownerUserId: string
   requestId: string
+  actionUrl?: string
 }) {
   await sendNotification(buildBillingDocumentMessage({
     to,
@@ -66,6 +77,7 @@ async function notifyBillingRecipient({
     amountLabel: formatMoney(totalCents, currency),
     paidLabel: formatMoney(paidCents, currency),
     balanceLabel: formatMoney(totalCents - paidCents, currency),
+    actionUrl,
   }), { ownerUserId, requestId })
 }
 
@@ -166,12 +178,14 @@ export async function createBillingDocumentAction(
         currency: request.preferredCurrency,
         ownerUserId: session.userId,
         requestId,
+        actionUrl: billingActionUrl(recipientType, requestId),
       })
     }
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.create', error, { requestId, recipientType })
     return { error: 'Could not create billing document.' }
   }
 }
@@ -190,13 +204,7 @@ export async function updateBillingDocumentAction(
   if (paidCents === null) return { error: 'Invalid paid amount.' }
 
   try {
-    const doc = await prisma.billingDocument.findFirst({
-      where: {
-        id: billingDocumentId,
-        requestId,
-        request: { property: { ownerId: session.userId } },
-      },
-    })
+    const doc = await getOwnedBillingDocument(session.userId, billingDocumentId, requestId)
     if (!doc) return { error: 'Billing document not found.' }
     if (paidCents > doc.totalCents) return { error: 'Paid amount cannot exceed total.' }
 
@@ -226,12 +234,31 @@ export async function updateBillingDocumentAction(
       metadata: { requestId, paidCents, totalCents: doc.totalCents },
     })
 
+    if (doc.sentTo) {
+      await notifyBillingRecipient({
+        to: doc.sentTo,
+        title: doc.title,
+        recipientLabel: doc.recipientType === 'tenant'
+          ? (doc.request.submittedByName || doc.request.submittedByEmail || 'Tenant')
+          : (doc.request.assignedVendorName || 'Vendor'),
+        documentType: doc.documentType,
+        status,
+        totalCents: doc.totalCents,
+        paidCents,
+        currency: doc.currency,
+        ownerUserId: session.userId,
+        requestId,
+        actionUrl: billingActionUrl(doc.recipientType, requestId),
+      })
+    }
+
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     revalidatePath('/vendor')
     revalidatePath(`/vendor/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.update', error, { requestId, billingDocumentId })
     return { error: 'Could not update billing document.' }
   }
 }
@@ -298,11 +325,13 @@ export async function resendBillingDocumentAction(
       currency: doc.currency,
       ownerUserId: session.userId,
       requestId,
+      actionUrl: billingActionUrl(doc.recipientType, requestId),
     })
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.resend', error, { requestId, billingDocumentId })
     return { error: 'Could not resend billing document.' }
   }
 }
@@ -375,7 +404,8 @@ export async function duplicateBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.duplicate', error, { requestId, billingDocumentId })
     return { error: 'Could not duplicate billing document.' }
   }
 }
@@ -421,7 +451,8 @@ export async function voidBillingDocumentAction(
 
     revalidatePath(`/requests/${requestId}`)
     return { error: null, success: true }
-  } catch {
+  } catch (error) {
+    await logServerActionError('billing.void', error, { requestId, billingDocumentId })
     return { error: 'Could not void billing document.' }
   }
 }

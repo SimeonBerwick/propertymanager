@@ -21,6 +21,7 @@ import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
+import { RecommendedNextStepPanel } from '@/components/recommended-next-step-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
 const VISIBILITY_LABELS: Record<string, string> = {
@@ -85,11 +86,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     .reduce((sum, item) => sum + item.amountCents, 0)
   const vendorAmountOwedCents = approvedBidCents + approvedVendorExtrasCents
   const vendorAmountIfPendingApprovedCents = vendorAmountOwedCents + pendingVendorExtrasCents
-  const postedVendorRemittances = data.billingDocuments.filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
-  const postedVendorRemittanceCents = postedVendorRemittances.reduce((sum, doc) => sum + doc.totalCents, 0)
-  const postedVendorRemittanceBalanceCents = postedVendorRemittances.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
-  const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorRemittanceCents, 0)
-  const vendorOutstandingCents = postedVendorRemittanceBalanceCents + unpostedVendorOwedCents
+  const postedVendorPayments = data.billingDocuments.filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
+  const postedVendorPaymentCents = postedVendorPayments.reduce((sum, doc) => sum + doc.totalCents, 0)
+  const postedVendorPaymentBalanceCents = postedVendorPayments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
+  const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorPaymentCents, 0)
+  const vendorOutstandingCents = postedVendorPaymentBalanceCents + unpostedVendorOwedCents
   const closeoutLanguage = deriveRequestCloseoutLanguage({
     status: data.request.status,
     outstandingCents: ['completed', 'closed'].includes(data.request.status) ? vendorOutstandingCents : null,
@@ -105,7 +106,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <h1 className="pageTitle">{data.request.title}</h1>
             <div className="muted">
               <Link href={`/properties/${data.request.propertyId}`}>{data.request.propertyName}</Link>
-              {' · '}
+              {' - '}
               <Link href={`/units/${data.request.unitId}`}>{data.request.unitLabel}</Link>
             </div>
           </div>
@@ -120,13 +121,19 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
+      <RecommendedNextStepPanel request={{
+        ...data.request,
+        tenantAccessFailureCount: data.tenantAccessFailureCount,
+        tenantStatusUpdatePending: data.tenantStatusUpdatePending,
+      }} />
+
       <GuidedRequestWorkflow request={data.request} />
 
       <nav className="requestSectionNav" aria-label="Request sections">
         <a href="#summary">Summary</a>
-        <a href="#actions">Next action</a>
+        <a href="#actions">Actions</a>
         <a href="#timeline">Timeline</a>
-        <a href="#billing">Billing</a>
+        <a href="#billing">Invoices and payments</a>
         <a href="#advanced">More details</a>
       </nav>
 
@@ -167,7 +174,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   <div className="muted">{new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
                 </>
               ) : (
-                <div className="muted">No dispatch reply yet.</div>
+                <div className="muted">No work update yet.</div>
               )}
             </div>
 
@@ -199,8 +206,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   <h3 style={{ marginTop: 4 }}>{tender.title ?? 'Tender round'}</h3>
                   <div className="muted">
                     {tender.status.replaceAll('_', ' ')}
-                    {tender.sentAt ? ` · Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
-                    {tender.awardedAt ? ` · Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
+                    {tender.sentAt ? ` - Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
+                    {tender.awardedAt ? ` - Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
                   </div>
                 </div>
               </div>
@@ -217,17 +224,17 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     </div>
                     <div className="muted">
                       {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
-                      {invite.availabilityNote ? ` · ${invite.availabilityNote}` : ''}
+                      {invite.availabilityNote ? ` - ${invite.availabilityNote}` : ''}
                     </div>
                     {(invite.proposedStart || invite.proposedEnd) ? (
                       <div className="muted">
-                        {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '—'}
-                        {invite.proposedEnd ? ` → ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                        {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '-'}
+                        {invite.proposedEnd ? ` to ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
                       </div>
                     ) : null}
                     <div className="muted">
                       Invited {new Date(invite.invitedAt).toLocaleString()}
-                      {invite.respondedAt ? ` · Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
+                      {invite.respondedAt ? ` - Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
                     </div>
                   </div>
                 ))}
@@ -248,9 +255,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <p className="muted" style={{ marginBottom: 0 }}>{data.request.description}</p>
               </div>
               <div className="detailFactsGrid">
-                <div><strong>Submitted by</strong><div className="muted">{data.request.submittedByName ?? 'Unknown tenant'}{data.request.submittedByEmail ? ` · ${data.request.submittedByEmail}` : ''}</div></div>
+                <div><strong>Submitted by</strong><div className="muted">{data.request.submittedByName ?? 'Unknown tenant'}{data.request.submittedByEmail ? ` - ${data.request.submittedByEmail}` : ''}</div></div>
                 <div><strong>Preferred language</strong><div className="muted">{languageLabel(data.request.preferredLanguage)}</div></div>
-                <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` · ${data.request.triageTags.join(', ')}` : ''}</div></div>
+                <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` - ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
                 <div><strong>Queue claim</strong><div className="muted">{formatClaimStatus(data.request)}</div></div>
                 <div><strong>Claim owner</strong><div className="muted">{data.request.claimedByUserName ?? 'Unassigned'}</div></div>
@@ -258,7 +265,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
               <RequestSignalStrip request={data.request} />
               {data.request.reviewState && !['none', 'approved'].includes(data.request.reviewState) ? (
-                <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` · ${data.request.reviewNote}` : ''}</div>
+                <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` - ${data.request.reviewNote}` : ''}</div>
               ) : null}
               {isStaleClaim(data.request) ? (
                 <div className="notice">This request was claimed more than 24 hours ago and still has not been fully advanced.</div>
@@ -272,27 +279,27 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>
-                  {entry.vendorName ? `${entry.vendorName} · ` : ''}{entry.status}
+                  {entry.vendorName ? `${entry.vendorName} - ` : ''}{entry.status}
                 </div>
                 {entry.note ? <div>{entry.note}</div> : null}
                 {(entry.scheduledStart || entry.scheduledEnd) ? (
                   <div className="muted">
-                    {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '—'}
-                    {entry.scheduledEnd ? ` → ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                    {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '-'}
+                    {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
                   </div>
                 ) : null}
-                <div className="muted">{entry.actorName} · {new Date(entry.createdAt).toLocaleString()}</div>
+                <div className="muted">{entry.actorName} - {new Date(entry.createdAt).toLocaleString()}</div>
               </div>
-            )) : <div className="muted">No dispatch activity.</div>}
+            )) : <div className="muted">No work activity yet.</div>}
           </SectionCard>
           </div>
 
-          <SectionCard kicker="Commercial" title="Vendor submissions" subtitle="Bid, fee, overcost, and PM billing items sent from the vendor portal.">
+          <SectionCard kicker="Invoices" title="Vendor invoices" subtitle="Bids, fees, extra costs, and manager-billed items sent from the vendor portal.">
             {data.vendorCommercialItems.length ? data.vendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>{item.title}</div>
                 <div className="muted">
-                  {(item.vendorName ?? 'Vendor')} · {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {new Date(item.submittedAt).toLocaleString()}
+                  {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
                 </div>
                 <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
                 {item.description ? <div>{item.description}</div> : null}
@@ -304,14 +311,14 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   />
                 ) : null}
               </div>
-            )) : <div className="muted">No vendor commercial submissions yet.</div>}
+            )) : <div className="muted">No vendor invoices submitted yet.</div>}
           </SectionCard>
 
         </div>
 
         <div className="stack">
           <div id="actions">
-          <SectionCard kicker="Next action" title="Move this request forward" subtitle="Use the recommended action above, then complete the supporting details here.">
+          <SectionCard kicker="Actions" title="Move this request forward" subtitle="Complete status, vendor, tender, and closeout work here.">
             <RequestControlPanel
               request={data.request}
               vendors={data.availableVendors}
@@ -347,13 +354,14 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   key={photo.id}
                   href={`/api/landlord/media/${photo.id}`}
                   src={`/api/landlord/media/${photo.id}`}
-                  alt="Vendor dispatch photo"
+                  alt="Vendor work photo"
                 />
               ))}
             </div>
           ) : <div className="muted">No vendor photos yet.</div>}
         </SectionCard>
 
+        <div id="communication">
         <SectionCard kicker="Communication" title="Comments">
           {data.comments.length ? data.comments.map((comment) => (
             <div key={comment.id} className="commentRow">
@@ -371,19 +379,20 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             <AddCommentForm requestId={data.request.id} />
           </div>
         </SectionCard>
+        </div>
       </div>
 
       <div id="billing">
-      <SectionCard kicker="Billing" title="Billing" subtitle="Create, send, and track request-related charges when money movement is needed.">
+      <SectionCard kicker="Invoices and payments" title="Invoices and payments" subtitle="Create, send, and track request-related charges when money movement is needed.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Tenant responsibility</div>
             <div className="muted" style={{ marginTop: 6 }}>
               Current: {data.request.tenantBillbackDecision ?? 'none'}
               {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
-                ? ` · $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
+                ? ` - $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
                 : ''}
-              {data.request.tenantBillbackReason ? ` · ${data.request.tenantBillbackReason}` : ''}
+              {data.request.tenantBillbackReason ? ` - ${data.request.tenantBillbackReason}` : ''}
             </div>
             <div style={{ marginTop: 10 }}>
               <RequestBillbackForm
@@ -403,8 +412,8 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <div><strong>Outstanding</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
               <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Vendor docs posted</strong><div className="muted">{formatMoney(postedVendorRemittanceCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Vendor docs balance</strong><div className="muted">{formatMoney(postedVendorRemittanceBalanceCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Payments posted</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Payment balance</strong><div className="muted">{formatMoney(postedVendorPaymentBalanceCents, data.request.preferredCurrency)}</div></div>
             </div>
             {isCompleteButUnpaid ? (
               <div className="inlineNotice" style={{ marginTop: 10 }}>
@@ -412,7 +421,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
             ) : null}
             <div className="muted" style={{ marginTop: 10 }}>
-              Approving a vendor bid, fee, or overcost posts or updates a draft vendor remittance. Use the billing document actions below to open, send, or mark payment.
+              Approving a vendor bid, fee, or extra cost posts or updates a draft vendor payment. Use the invoice and payment actions below to open, send, or mark payment.
             </div>
           </div>
           <BillingSummaryCards documents={data.billingDocuments} />

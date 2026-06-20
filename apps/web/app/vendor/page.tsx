@@ -78,8 +78,8 @@ export default async function VendorDashboardPage({
     : filter === 'bids'
       ? 'Pending bids'
       : filter === 'billing'
-        ? 'Requests with billing docs'
-        : 'Submitted commercial items'
+        ? 'Requests with payments'
+        : 'Submitted invoices'
 
   return (
     <div className="stack">
@@ -110,7 +110,7 @@ export default async function VendorDashboardPage({
               <div>
                 <div className="kicker">{attentionLabel}</div>
                 <div style={{ fontWeight: 700, marginTop: 4 }}>{request.title}</div>
-                <div className="muted">{request.property.name} · {request.unit.label} · {viewState.statusLabel}</div>
+                <div className="muted">{request.property.name} - {request.unit.label} - {viewState.statusLabel}</div>
                 {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Visit {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
               </div>
               <span className="button primary">Open</span>
@@ -143,9 +143,9 @@ export default async function VendorDashboardPage({
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'billing') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'billing') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">Billing docs</div>
+          <div className="kicker">Payments</div>
           <h2>{payableDocs}</h2>
-          <div className="muted">Visible vendor remittance records</div>
+          <div className="muted">Visible payments</div>
         </Link>
         <Link
           href={'/vendor?filter=commercial' as Route}
@@ -154,13 +154,13 @@ export default async function VendorDashboardPage({
         >
           <div className="kicker">Submitted items</div>
           <h2>{commercialCount}</h2>
-          <div className="muted">Commercial submissions sent to property manager</div>
+          <div className="muted">Invoices sent to property manager</div>
         </Link>
       </section>
 
       <section className="card stack">
         <div>
-          <div className="kicker">{filter === 'commercial' ? 'Commercial' : 'Requests'}</div>
+          <div className="kicker">{filter === 'commercial' ? 'Invoices' : 'Requests'}</div>
           <h3 style={{ marginTop: 4 }}>{sectionTitle}</h3>
         </div>
         {awardedRequests.length ? (
@@ -175,21 +175,21 @@ export default async function VendorDashboardPage({
             <Link key={item.id} href={`/vendor/requests/${item.requestId}` as Route} className="card" style={{ textDecoration: 'none' }}>
               <div style={{ fontWeight: 600 }}>{item.title}</div>
               <div className="muted">
-                {vendorCommercialTypeLabel(item.itemType)} · {formatMoney(item.amountCents, item.currency)} · {item.propertyName} · {item.unitLabel}
+                {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {item.propertyName} - {item.unitLabel}
               </div>
               <div className="muted">Property manager: {item.propertyManagerName}</div>
               <div>{item.requestTitle}</div>
               {item.description ? <div className="muted">{item.description}</div> : null}
               <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
             </Link>
-          )) : <div className="muted">No vendor commercial submissions yet.</div>
+          )) : <div className="muted">No vendor invoices submitted yet.</div>
         ) : filteredRequests.length ? filteredRequests.map(({ request, viewState }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {request.property.name} · {request.unit.label} · {request.category} · {request.urgency} urgency · {viewState.statusLabel}
+                  {request.property.name} - {request.unit.label} - {request.category} - {request.urgency} urgency - {viewState.statusLabel}
                 </div>
                 <div className="muted">
                   Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
@@ -201,9 +201,9 @@ export default async function VendorDashboardPage({
                   <div className="muted" style={{ marginTop: 6 }}>
                     {request.billingDocuments.map((document) => {
                       const balanceCents = Math.max(0, document.totalCents - document.paidCents)
-                      return `${billingStatusLabel(document.status)} remittance: ${formatMoney(balanceCents, document.currency)}`
-                    }).join(' · ')}
-                    {request.status === 'closed' ? <span> &middot; {deriveRequestCloseoutLanguage({ status: request.status, billingDocuments: request.billingDocuments }).vendorLabel}</span> : null}
+                      return `${billingStatusLabel(document.status)} payment: ${formatMoney(balanceCents, document.currency)}`
+                    }).join(' - ')}
+                    {request.status === 'closed' ? <span> - {deriveRequestCloseoutLanguage({ status: request.status, billingDocuments: request.billingDocuments }).vendorLabel}</span> : null}
                   </div>
                 ) : null}
               </div>
@@ -221,7 +221,7 @@ export default async function VendorDashboardPage({
             {filter === 'bids'
               ? 'No pending bids right now.'
               : filter === 'billing'
-                ? 'No requests with visible vendor remittance records right now.'
+                ? 'No requests with visible payments right now.'
                 : 'No requests are assigned to this vendor account right now.'}
           </div>
         )}

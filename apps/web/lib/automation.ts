@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import { buildLandlordExceptionSummaryMessage, sendNotification } from '@/lib/notify'
+import { buildLandlordExceptionSummaryMessage, buildVendorOverdueUpdateMessage, sendNotification } from '@/lib/notify'
 import { ruleMatches } from '@/lib/workflow-rules'
+import { getAppBaseUrl } from '@/lib/runtime-env'
+import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 
 async function applyConfigurableRules(request: Record<string, unknown> & { id: string, property: { ownerId: string } }) {
   const rules = await prisma.automationRule.findMany({
@@ -29,7 +31,7 @@ async function applyConfigurableRules(request: Record<string, unknown> & { id: s
 export async function applyRequestAutomation(requestId: string) {
   const request = await prisma.maintenanceRequest.findUnique({
     where: { id: requestId },
-    include: { property: { include: { owner: true } } },
+    include: { property: { include: { owner: true } }, unit: true },
   }).catch(() => null)
 
   if (!request) return
@@ -63,18 +65,43 @@ export async function applyRequestAutomation(requestId: string) {
   await applyConfigurableRules({ ...request, autoFlag })
 
   const landlordEmail = request.property.owner.email
-  if (!landlordEmail || !shouldAlert || !autoFlag || request.property.owner.emailNotificationsEnabled === false) return
+  if (!shouldAlert || !autoFlag || request.property.owner.emailNotificationsEnabled === false) return
 
+  if (autoFlag === 'overdue_scheduled' && request.assignedVendorEmail && request.assignedVendorName) {
+    const dispatchLink = request.assignedVendorId
+      ? await createVendorDispatchLink(request.id, request.assignedVendorId).catch(() => null)
+      : null
+    const actionUrl = dispatchLink
+      ? `${getAppBaseUrl('vendor overdue notifications')}/vendor/respond/${dispatchLink.rawToken}`
+      : `${getAppBaseUrl('vendor overdue notifications')}/vendor/requests/${request.id}`
+
+    await sendNotification(buildVendorOverdueUpdateMessage({
+      requestId: request.id,
+      title: request.title,
+      propertyName: request.property.name,
+      unitLabel: request.unit.label,
+      vendorName: request.assignedVendorName,
+      vendorEmail: request.assignedVendorEmail,
+      scheduledEnd: request.vendorScheduledEnd?.toISOString(),
+      actionUrl,
+    }), { ownerUserId: request.property.owner.id, requestId: request.id })
+  }
+
+  if (!landlordEmail) return
+
+  const landlordActionUrl = `${getAppBaseUrl('landlord exception notification links')}/requests/${request.id}`
   await sendNotification({
     to: landlordEmail,
-    subject: `[Mission Control] ${autoFlag.replace(/_/g, ' ')} — ${request.title}`,
+    subject: `[Mission Control] ${autoFlag.replace(/_/g, ' ')} - ${request.title}`,
     text: [
       `Request ${request.id} requires attention.`,
       ``,
       `Issue: ${request.title}`,
       `Property: ${request.property.name}`,
       `Flag: ${autoFlag}`,
+      `Open request: ${landlordActionUrl}`,
     ].join('\n'),
+    actionUrl: landlordActionUrl,
   }, { ownerUserId: request.property.owner.id, requestId: request.id })
 }
 
@@ -117,7 +144,9 @@ export async function sendDailyExceptionSummaryToLandlord(userId: string) {
       unitLabel: request.unit.label,
       autoFlag: request.autoFlag ?? undefined,
       reviewState: request.reviewState ?? undefined,
+      actionUrl: `${getAppBaseUrl('daily exception summary links')}/requests/${request.id}`,
     })),
+    actionUrl: `${getAppBaseUrl('daily exception summary links')}/exceptions`,
   }), { ownerUserId: userId })
 
   return { ok: true }
