@@ -27,9 +27,9 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
       const capacitor = window.Capacitor
       const platform = capacitor?.getPlatform?.()
       const isNative = capacitor?.isNativePlatform?.() === true || (platform !== undefined && platform !== 'web')
-      const isMarkedAndroid = /Android/i.test(navigator.userAgent) && /SimeonwareAndroidApp/i.test(navigator.userAgent)
+      const isAndroid = /Android/i.test(navigator.userAgent)
 
-      if (isNative || isMarkedAndroid) {
+      if (isNative || isAndroid) {
         setRuntimeAndroidApp(true)
       }
     }
