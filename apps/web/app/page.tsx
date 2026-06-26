@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { headers } from 'next/headers'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { BILLING_PLANS, OFFERED_PLANS, planPriceLabel } from '@/lib/billing-plans'
+import { AndroidRuntimeMarker } from './android-runtime-marker'
 
 export default async function HomePage() {
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
@@ -10,6 +11,7 @@ export default async function HomePage() {
 
   return (
     <main className="marketingPage">
+      <AndroidRuntimeMarker />
       <section className="marketingHero">
         <div className="marketingHeroCopy">
           <div className="eyebrow">Maintenance coordination for property teams</div>
@@ -180,8 +182,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {!androidApp ? (
-      <section className="marketingSection" id="pricing">
+      <section className={`marketingSection webPricingSection ${androidApp ? 'serverHidden' : ''}`} id="pricing" data-web-pricing>
         <div className="sectionIntro">
           <div className="eyebrow">Simple pricing</div>
           <h2>Start free. Choose the capacity that fits.</h2>
@@ -207,20 +208,17 @@ export default async function HomePage() {
         <p className="pricingNote">Annual billing includes a 10% discount. No credit card is required to start your 30-day trial.</p>
       </section>
 
-
-      ) : (
-        <section className="marketingSection" id="pricing">
-          <div className="sectionIntro">
-            <div className="eyebrow">Subscription</div>
-            <h2>Check your subscription online.</h2>
-            <p>{ANDROID_SUBSCRIPTION_MESSAGE}</p>
-          </div>
-          <div className="heroActions">
-            <Link href="/signup" className="button primary">Start free month</Link>
-            <Link href="/login" className="button">Sign in</Link>
-          </div>
-        </section>
-      )}
+      <section className={`marketingSection appSubscriptionSection ${androidApp ? 'serverVisible' : ''}`} data-app-subscription>
+        <div className="sectionIntro">
+          <div className="eyebrow">Subscription</div>
+          <h2>Check your subscription online.</h2>
+          <p>{ANDROID_SUBSCRIPTION_MESSAGE}</p>
+        </div>
+        <div className="heroActions">
+          <Link href="/signup" className="button primary">Start free month</Link>
+          <Link href="/login" className="button">Sign in</Link>
+        </div>
+      </section>
 
       <section className="marketingSection">
         <div className="faqLayout">
