@@ -1,9 +1,18 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey } from '@/lib/billing-plans'
 import { signupAction, type SignupState } from './actions'
+
+declare global {
+  interface Window {
+    Capacitor?: {
+      getPlatform?: () => string
+      isNativePlatform?: () => boolean
+    }
+  }
+}
 
 const INITIAL_STATE: SignupState = { error: null }
 const PLANS = OFFERED_PLANS
@@ -11,6 +20,25 @@ const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
+  const [runtimeAndroidApp, setRuntimeAndroidApp] = useState(androidApp)
+
+  useEffect(() => {
+    const detectApp = () => {
+      const capacitor = window.Capacitor
+      const platform = capacitor?.getPlatform?.()
+      const isNative = capacitor?.isNativePlatform?.() === true || (platform !== undefined && platform !== 'web')
+      const isMarkedAndroid = /Android/i.test(navigator.userAgent) && /SimeonwareAndroidApp/i.test(navigator.userAgent)
+
+      if (isNative || isMarkedAndroid) {
+        setRuntimeAndroidApp(true)
+      }
+    }
+
+    detectApp()
+    const retry = window.setTimeout(detectApp, 250)
+
+    return () => window.clearTimeout(retry)
+  }, [])
 
   return (
     <form action={formAction} className="stack" style={{ gap: 18 }}>
@@ -45,7 +73,7 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
         <input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" />
       </label>
 
-      {androidApp ? (
+      {runtimeAndroidApp ? (
         <>
           <input type="hidden" name="plan" value="growth" />
           <input type="hidden" name="cadence" value="monthly" />
@@ -102,7 +130,7 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>
         <button type="submit" className="button primary" disabled={pending}>
-          {pending ? 'Creating account...' : androidApp ? 'Start free month' : 'Start 30-day free trial'}
+          {pending ? 'Creating account...' : runtimeAndroidApp ? 'Start free month' : 'Start 30-day free trial'}
         </button>
       </div>
     </form>

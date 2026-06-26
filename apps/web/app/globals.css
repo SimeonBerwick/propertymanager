@@ -819,6 +819,11 @@ body { min-height: 100vh; }
 .pricingCard li::before { content: "✓"; margin-right: 8px; color: #16834b; font-weight: 900; }
 .pricingCard .button { margin-top: auto; }
 .pricingNote { margin: -20px 0 0; color: var(--muted); text-align: center; font-size: 13px; }
+.webPricingSection.serverHidden { display: none; }
+.appSubscriptionSection { display: none; }
+.appSubscriptionSection.serverVisible,
+.simeonware-android-app .appSubscriptionSection { display: grid; }
+.simeonware-android-app .webPricingSection { display: none; }
 .faqLayout { display: grid; grid-template-columns: .78fr 1.22fr; gap: 70px; }
 .faqList { display: grid; gap: 10px; }
 .faqList details { border: 1px solid var(--border); border-radius: 16px; background: var(--card-strong); padding: 19px 21px; }
