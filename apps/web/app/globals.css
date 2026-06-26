@@ -308,9 +308,9 @@ body { min-height: 100vh; }
   color: var(--text);
 }
 .textarea { resize: vertical; min-height: 120px; }
-.notice { border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; background: rgba(96, 165, 250, 0.08); }
+.notice { border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; background: rgba(96, 165, 250, 0.08); color: var(--text); }
 .notice.success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
-.notice.error { background: var(--error-bg); border-color: var(--error-border); color: #fecaca; }
+.notice.error { background: var(--error-bg); border-color: var(--error-border); color: var(--error-text); }
 .dangerZone {
   border: 1px solid var(--error-border);
   border-radius: 16px;
@@ -345,6 +345,7 @@ body { min-height: 100vh; }
 .badge {
   display: inline-flex;
   align-items: center;
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 11px;
@@ -352,15 +353,13 @@ body { min-height: 100vh; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.badge.new, .badge.billing-sent { background: rgba(96, 165, 250, 0.18); color: #bfdbfe; }
-.badge.scheduled, .badge.billing-partial { background: rgba(251, 191, 36, 0.18); color: #fde68a; }
-.badge.in_progress, .badge.flow-follow-up { background: rgba(167, 139, 250, 0.18); color: #ddd6fe; }
-.badge.done, .badge.billing-paid, .badge.age-fresh { background: rgba(74, 222, 128, 0.16); color: #bbf7d0; }
-.badge.flow-new { background: rgba(96, 165, 250, 0.18); color: #bfdbfe; }
-.badge.flow-scheduled-today, .badge.age-warn { background: rgba(251, 191, 36, 0.18); color: #fde68a; }
-.badge.flow-overdue, .badge.age-old { background: rgba(248, 113, 113, 0.18); color: #fecaca; }
-.badge.flow-review { background: rgba(244, 114, 182, 0.18); color: #fbcfe8; }
-.badge.billing-draft { background: rgba(148, 163, 184, 0.14); color: #cbd5e1; }
+.badge.new, .badge.billing-sent, .badge.flow-new { background: rgba(96, 165, 250, 0.18); border-color: rgba(96, 165, 250, 0.32); color: #1d4ed8; }
+.badge.scheduled, .badge.billing-partial, .badge.flow-scheduled-today, .badge.age-warn { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.36); color: #92400e; }
+.badge.in_progress, .badge.flow-follow-up { background: rgba(167, 139, 250, 0.18); border-color: rgba(167, 139, 250, 0.34); color: #6d28d9; }
+.badge.done, .badge.billing-paid, .badge.age-fresh { background: rgba(74, 222, 128, 0.16); border-color: rgba(34, 197, 94, 0.32); color: #166534; }
+.badge.flow-overdue, .badge.age-old { background: rgba(248, 113, 113, 0.2); border-color: rgba(248, 113, 113, 0.38); color: #b91c1c; }
+.badge.flow-review { background: rgba(244, 114, 182, 0.18); border-color: rgba(244, 114, 182, 0.34); color: #be185d; }
+.badge.billing-draft { background: rgba(148, 163, 184, 0.14); border-color: rgba(148, 163, 184, 0.3); color: #475569; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { text-align: left; padding: 14px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .table th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -374,11 +373,11 @@ body { min-height: 100vh; }
 .metricDanger { border-color: rgba(248, 113, 113, 0.4); }
 .metricWarn { border-color: rgba(251, 191, 36, 0.4); }
 
-.badge.signalUrgent { background: rgba(248, 113, 113, 0.18); color: #fecaca; }
-.badge.signalHigh { background: rgba(249, 115, 22, 0.18); color: #fdba74; }
-.badge.signalMedium { background: rgba(251, 191, 36, 0.18); color: #fde68a; }
-.badge.signalWarn { background: rgba(244, 114, 182, 0.18); color: #fbcfe8; }
-.badge.signalNeutral { background: rgba(148, 163, 184, 0.14); color: #cbd5e1; }
+.badge.signalUrgent { background: rgba(248, 113, 113, 0.2); border-color: rgba(248, 113, 113, 0.38); color: #b91c1c; }
+.badge.signalHigh { background: rgba(249, 115, 22, 0.2); border-color: rgba(249, 115, 22, 0.36); color: #9a3412; }
+.badge.signalMedium { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.36); color: #92400e; }
+.badge.signalWarn { background: rgba(244, 114, 182, 0.18); border-color: rgba(244, 114, 182, 0.34); color: #be185d; }
+.badge.signalNeutral { background: rgba(148, 163, 184, 0.14); border-color: rgba(148, 163, 184, 0.3); color: #475569; }
 .requestDetailPage { gap: 18px; }
 .requestHero {
   display: grid;
