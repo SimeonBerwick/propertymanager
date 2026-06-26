@@ -224,7 +224,7 @@ export async function verifyVendorOtpChallenge(challengeId: string, submittedCod
   return { ok: true, challengeId: challenge.id, vendorId: challenge.vendorId }
 }
 
-export async function findReturningVendorByIdentifier(identifier: string) {
+export async function findReturningVendorsByIdentifier(identifier: string) {
   const trimmed = identifier.trim().toLowerCase()
   if (!trimmed) {
     return { ok: false as const, code: 'invalid' as const }
@@ -239,13 +239,20 @@ export async function findReturningVendorByIdentifier(identifier: string) {
     ? vendors
     : vendors.filter((vendor) => normalizePhoneToE164(vendor.phone ?? '') === normalizePhoneToE164(trimmed)))
 
-  if (matches.length > 1) {
-    return { ok: false as const, code: 'ambiguous' as const }
-  }
-
-  if (matches.length !== 1) {
+  if (!matches.length) {
     return { ok: false as const, code: 'invalid' as const }
   }
 
-  return { ok: true as const, vendor: matches[0] }
+  return { ok: true as const, vendors: matches, identifier: trimmed }
+}
+
+export async function findReturningVendorByIdentifier(identifier: string) {
+  const result = await findReturningVendorsByIdentifier(identifier)
+  if (!result.ok) return result
+
+  if (result.vendors.length > 1) {
+    return { ok: false as const, code: 'ambiguous' as const }
+  }
+
+  return { ok: true as const, vendor: result.vendors[0] }
 }

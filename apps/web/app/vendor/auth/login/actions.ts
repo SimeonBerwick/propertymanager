@@ -29,11 +29,13 @@ export async function startVendorLoginAction(
 
   const match = await findReturningVendorByIdentifier(identifier)
   if (!match.ok) {
-    return {
-      error: match.code === 'ambiguous'
-        ? 'More than one active vendor matches this email or phone number.'
-        : 'We could not find an active vendor account with that email or phone number.',
+    if (match.code === 'ambiguous') {
+      const params = new URLSearchParams({ identifier })
+      if (next.startsWith('/vendor')) params.set('next', next)
+      redirect(('/vendor/auth/accounts?' + params.toString()) as never)
     }
+
+    return { error: 'We could not find an active vendor account with that email or phone number.' }
   }
 
   try {
