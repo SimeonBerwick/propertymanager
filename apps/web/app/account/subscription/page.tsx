@@ -48,7 +48,7 @@ export default async function SubscriptionPage({
         <div className="sectionHead">
           <div>
             <div className="kicker">Subscription</div>
-            <h2 className="sectionTitle">Plan and billing</h2>
+            <h2 className="sectionTitle">{androidApp ? 'Subscription status' : 'Plan and billing'}</h2>
             <div className="muted sectionSubtitle">
               {androidApp ? 'Review your current subscription status.' : 'First month is free for new accounts. No card is required until the trial ends.'}
             </div>
@@ -64,28 +64,43 @@ export default async function SubscriptionPage({
         {params?.checkout === 'success' ? <div className="notice success">Checkout complete. Your subscription may take a moment to update.</div> : null}
         {params?.checkout === 'cancelled' ? <div className="notice">Checkout was cancelled.</div> : null}
 
-        <div className="grid cols-4">
-          <div className="billingRowCard stack" style={{ gap: 4 }}>
-            <div className="kicker">Status</div>
-            <strong>{user.subscriptionStatus.replaceAll('_', ' ')}</strong>
-            {!gate.allowed ? <span className="muted">{subscriptionGateMessage(gate)}</span> : null}
+        {androidApp ? (
+          <div className="grid cols-2">
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Status</div>
+              <strong>{user.subscriptionStatus.replaceAll('_', ' ')}</strong>
+              {!gate.allowed ? <span className="muted">{subscriptionGateMessage(gate)}</span> : null}
+            </div>
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Access through</div>
+              <strong>{(user.subscriptionEndsAt ?? user.trialEndsAt)?.toLocaleDateString() ?? 'Open'}</strong>
+              <span className="muted">Check subscription details online.</span>
+            </div>
           </div>
-          <div className="billingRowCard stack" style={{ gap: 4 }}>
-            <div className="kicker">Current plan</div>
-            <strong>{plan ? BILLING_PLANS[plan].name : 'Not selected'}</strong>
-            <span className="muted">{cadence ? CADENCE_LABELS[cadence] : androidApp ? 'Not set' : 'Choose a cadence'}</span>
+        ) : (
+          <div className="grid cols-4">
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Status</div>
+              <strong>{user.subscriptionStatus.replaceAll('_', ' ')}</strong>
+              {!gate.allowed ? <span className="muted">{subscriptionGateMessage(gate)}</span> : null}
+            </div>
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Current plan</div>
+              <strong>{plan ? BILLING_PLANS[plan].name : 'Not selected'}</strong>
+              <span className="muted">{cadence ? CADENCE_LABELS[cadence] : 'Choose a cadence'}</span>
+            </div>
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Active units</div>
+              <strong>{activeUnits}</strong>
+              <span className="muted">{plan ? BILLING_PLANS[plan].unitLimit + ' included' : 'Choose a plan'}</span>
+            </div>
+            <div className="billingRowCard stack" style={{ gap: 4 }}>
+              <div className="kicker">Access through</div>
+              <strong>{(user.subscriptionEndsAt ?? user.trialEndsAt)?.toLocaleDateString() ?? 'Open'}</strong>
+              <span className="muted">{user.subscriptionStatus === 'trialing' ? 'Trial end' : 'Billing period end'}</span>
+            </div>
           </div>
-          <div className="billingRowCard stack" style={{ gap: 4 }}>
-            <div className="kicker">Active units</div>
-            <strong>{activeUnits}</strong>
-            <span className="muted">{plan ? `${BILLING_PLANS[plan].unitLimit} included` : 'Choose a plan'}</span>
-          </div>
-          <div className="billingRowCard stack" style={{ gap: 4 }}>
-            <div className="kicker">Access through</div>
-            <strong>{(user.subscriptionEndsAt ?? user.trialEndsAt)?.toLocaleDateString() ?? 'Open'}</strong>
-            <span className="muted">{user.subscriptionStatus === 'trialing' ? 'Trial end' : 'Billing period end'}</span>
-          </div>
-        </div>
+        )}
       </section>
 
       <section className="card stack" style={{ maxWidth: 720 }}>

@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { headers } from 'next/headers'
+import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { BILLING_PLANS, OFFERED_PLANS, planPriceLabel } from '@/lib/billing-plans'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const androidApp = isAndroidWebView((await headers()).get('user-agent'))
   const plans = OFFERED_PLANS
 
   return (
@@ -16,14 +19,22 @@ export default function HomePage() {
             update, approval, and bill in one organized workspace.
           </p>
           <div className="heroActions">
-            <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
+            {androidApp ? (
+              <Link href="/signup" className="button primary buttonLarge">Start free month</Link>
+            ) : (
+              <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
+            )}
             <Link href="/#product-preview" className="button buttonLarge">See the product</Link>
           </div>
-          <div className="trustLine">
-            <span>No credit card required</span>
-            <span>Built for managers, tenants, and vendors</span>
-            <span>Cancel anytime</span>
-          </div>
+          {androidApp ? (
+            <div className="notice" style={{ maxWidth: 640 }}>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</div>
+          ) : (
+            <div className="trustLine">
+              <span>No credit card required</span>
+              <span>Built for managers, tenants, and vendors</span>
+              <span>Cancel anytime</span>
+            </div>
+          )}
         </div>
 
         <div className="productWindow" id="product-preview" aria-label="Simeonware product preview">
@@ -169,6 +180,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {!androidApp ? (
       <section className="marketingSection" id="pricing">
         <div className="sectionIntro">
           <div className="eyebrow">Simple pricing</div>
@@ -195,6 +207,21 @@ export default function HomePage() {
         <p className="pricingNote">Annual billing includes a 10% discount. No credit card is required to start your 30-day trial.</p>
       </section>
 
+
+      ) : (
+        <section className="marketingSection" id="pricing">
+          <div className="sectionIntro">
+            <div className="eyebrow">Subscription</div>
+            <h2>Check your subscription online.</h2>
+            <p>{ANDROID_SUBSCRIPTION_MESSAGE}</p>
+          </div>
+          <div className="heroActions">
+            <Link href="/signup" className="button primary">Start free month</Link>
+            <Link href="/login" className="button">Sign in</Link>
+          </div>
+        </section>
+      )}
+
       <section className="marketingSection">
         <div className="faqLayout">
           <div className="sectionIntro">
@@ -203,10 +230,20 @@ export default function HomePage() {
             <p>Have another question? <Link href="/support">Contact support.</Link></p>
           </div>
           <div className="faqList">
-            <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
-            <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 30 days before adding a payment method.</p></details>
-            <details><summary>What changes between plans?</summary><p>The active-unit capacity. The core maintenance coordination features are included across all plans.</p></details>
-            <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
+            {androidApp ? (
+              <>
+                <details><summary>Can I start in the app?</summary><p>Yes. Create your property manager account in the app to start your free month.</p></details>
+                <details><summary>Do tenants and vendors need their own signup?</summary><p>No. Property managers invite tenants and vendors into the workflows they need.</p></details>
+                <details><summary>Where can I see subscription details?</summary><p>Visit simeonware.com in a web browser to review subscription details and plan information.</p></details>
+              </>
+            ) : (
+              <>
+                <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
+                <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 30 days before adding a payment method.</p></details>
+                <details><summary>What changes between plans?</summary><p>The active-unit capacity. The core maintenance coordination features are included across all plans.</p></details>
+                <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -215,9 +252,17 @@ export default function HomePage() {
         <div>
           <div className="eyebrow">A clearer maintenance workflow starts here</div>
           <h2>Spend less time chasing updates.</h2>
-          <p>Start your 30-day free trial and bring your maintenance operation into one organized workspace.</p>
+          {androidApp ? (
+            <p>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</p>
+          ) : (
+            <p>Start your 30-day free trial and bring your maintenance operation into one organized workspace.</p>
+          )}
         </div>
-        <Link href="/signup" className="button primary buttonLarge">Start free trial</Link>
+        {androidApp ? (
+          <Link href="/signup" className="button primary buttonLarge">Start free month</Link>
+        ) : (
+          <Link href="/signup" className="button primary buttonLarge">Start free trial</Link>
+        )}
       </section>
     </main>
   )

@@ -9,7 +9,7 @@ const INITIAL_STATE: SignupState = { error: null }
 const PLANS = OFFERED_PLANS
 const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
-export function SignupForm() {
+export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
 
   return (
@@ -45,34 +45,46 @@ export function SignupForm() {
         <input className="input" name="password" type="password" minLength={8} required autoComplete="new-password" />
       </label>
 
-      <div className="grid cols-2">
-        {PLANS.map((plan) => (
-          <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
-            <span className="row" style={{ alignItems: 'center' }}>
-              <input type="radio" name="plan" value={plan} defaultChecked={plan === 'growth'} />
-              <strong>{BILLING_PLANS[plan].name}</strong>
-            </span>
-            <span className="muted">{BILLING_PLANS[plan].description}</span>
-            <span className="signalAccent">{planPriceLabel(plan, 'monthly')}</span>
-          </label>
-        ))}
-      </div>
+      {androidApp ? (
+        <>
+          <input type="hidden" name="plan" value="growth" />
+          <input type="hidden" name="cadence" value="monthly" />
+          <div className="notice">
+            Your free month starts when you create the account. Check simeonware.com in a web browser for subscription details and plan information.
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid cols-2">
+            {PLANS.map((plan) => (
+              <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
+                <span className="row" style={{ alignItems: 'center' }}>
+                  <input type="radio" name="plan" value={plan} defaultChecked={plan === 'growth'} />
+                  <strong>{BILLING_PLANS[plan].name}</strong>
+                </span>
+                <span className="muted">{BILLING_PLANS[plan].description}</span>
+                <span className="signalAccent">{planPriceLabel(plan, 'monthly')}</span>
+              </label>
+            ))}
+          </div>
 
-      <div className="grid cols-2">
-        {CADENCES.map((cadence) => (
-          <label key={cadence} className="row" style={{ alignItems: 'center' }}>
-            <input type="radio" name="cadence" value={cadence} defaultChecked={cadence === 'monthly'} />
-            <span>
-              <strong>{CADENCE_LABELS[cadence]}</strong>
-              <span className="muted"> {cadence === 'annual' ? '10% discount' : 'pay month to month'}</span>
-            </span>
-          </label>
-        ))}
-      </div>
+          <div className="grid cols-2">
+            {CADENCES.map((cadence) => (
+              <label key={cadence} className="row" style={{ alignItems: 'center' }}>
+                <input type="radio" name="cadence" value={cadence} defaultChecked={cadence === 'monthly'} />
+                <span>
+                  <strong>{CADENCE_LABELS[cadence]}</strong>
+                  <span className="muted"> {cadence === 'annual' ? '10% discount' : 'pay month to month'}</span>
+                </span>
+              </label>
+            ))}
+          </div>
 
-      <div className="notice">
-        Your complete 30-day trial starts when you create the account. No credit card required.
-      </div>
+          <div className="notice">
+            Your complete 30-day trial starts when you create the account. No credit card required.
+          </div>
+        </>
+      )}
 
       <label className="field">
         <span className="field-label">Promo code</span>
@@ -90,7 +102,7 @@ export function SignupForm() {
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>
         <button type="submit" className="button primary" disabled={pending}>
-          {pending ? 'Creating account...' : 'Start 30-day free trial'}
+          {pending ? 'Creating account...' : androidApp ? 'Start free month' : 'Start 30-day free trial'}
         </button>
       </div>
     </form>
