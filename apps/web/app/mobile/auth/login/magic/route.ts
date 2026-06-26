@@ -1,19 +1,24 @@
-import { redirect } from 'next/navigation'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { consumeTenantInvite } from '@/lib/tenant-invite-lib'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { verifyOtpChallenge } from '@/lib/tenant-otp-lib'
 import { writeAuditLog } from '@/lib/audit-log'
 
-export default async function TenantMagicLoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ challengeId?: string; code?: string; inviteId?: string; next?: string }>
-}) {
-  const { challengeId = '', code = '', inviteId, next } = await searchParams
+function redirectTo(request: NextRequest, path: string) {
+  return NextResponse.redirect(new URL(path, request.url))
+}
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const challengeId = searchParams.get('challengeId') ?? ''
+  const code = searchParams.get('code') ?? ''
+  const inviteId = searchParams.get('inviteId')
+  const next = searchParams.get('next')
   const result = await verifyOtpChallenge(challengeId, code)
+
   if (!result.ok) {
-    redirect('/mobile/auth/login?error=magic-link' as never)
+    return redirectTo(request, '/mobile/auth/login?error=magic-link')
   }
 
   if (inviteId) {
@@ -21,7 +26,7 @@ export default async function TenantMagicLoginPage({
       where: { id: inviteId, tenantIdentityId: result.tenantIdentityId, status: 'pending', revokedAt: null },
       select: { id: true },
     })
-    if (!invite) redirect('/mobile/auth/login?error=magic-link' as never)
+    if (!invite) return redirectTo(request, '/mobile/auth/login?error=magic-link')
     await prisma.tenantIdentity.update({
       where: { id: result.tenantIdentityId },
       data: { status: 'active', verifiedAt: new Date(), lastLoginAt: new Date() },
@@ -43,5 +48,6 @@ export default async function TenantMagicLoginPage({
     summary: 'Completed tenant sign-in through a secure one-tap link.',
     metadata: { challengeId, inviteId: inviteId ?? null },
   })
-  redirect((next?.startsWith('/mobile') ? next : '/mobile') as never)
+
+  return redirectTo(request, next?.startsWith('/mobile') ? next : '/mobile')
 }
