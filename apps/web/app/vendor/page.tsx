@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import { requireVendorSession } from '@/lib/vendor-session'
-import { getVendorCommercialSummary, getVendorRequestsForDashboard } from '@/lib/vendor-portal-data'
+import { getSiblingVendorAccountCount, getVendorCommercialSummary, getVendorRequestsForDashboard } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { vendorSignoutAction } from './auth/signout/actions'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
@@ -22,9 +22,10 @@ export default async function VendorDashboardPage({
 }) {
   const session = await requireVendorSession()
   const resolvedSearchParams = searchParams ? await searchParams : undefined
-  const [requests, commercialItems] = await Promise.all([
+  const [requests, commercialItems, siblingAccountCount] = await Promise.all([
     getVendorRequestsForDashboard(session),
     getVendorCommercialSummary(session),
+    getSiblingVendorAccountCount(session),
   ])
   const filter = resolvedSearchParams?.filter === 'open'
     || resolvedSearchParams?.filter === 'bids'
@@ -91,6 +92,7 @@ export default async function VendorDashboardPage({
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <PushNotificationControl />
+          {siblingAccountCount > 1 ? <Link href={`/vendor/auth/accounts?identifier=${encodeURIComponent(session.email ?? session.phone ?? '')}` as Route} className="button">Switch account</Link> : null}
           <Link href={'/support' as Route} className="button">Support</Link>
           <form action={vendorSignoutAction}>
             <button type="submit" className="button">Sign out</button>

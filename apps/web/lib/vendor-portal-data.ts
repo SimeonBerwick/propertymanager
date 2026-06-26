@@ -60,6 +60,102 @@ function vendorBillingDocumentsInclude() {
   }
 }
 
+
+export interface VendorAccountOption {
+  vendorId: string
+  vendorName: string
+  orgId?: string | null
+  propertyManagerName: string
+  propertyManagerCompany?: string | null
+  propertyManagerEmail: string
+  openWorkCount: number
+  pendingBidCount: number
+  paymentCount: number
+  newItemCount: number
+}
+
+function managerDisplayName(owner?: { businessName?: string | null; displayName?: string | null; email: string } | null) {
+  return owner?.displayName ?? owner?.email ?? 'Property manager'
+}
+
+function managerCompanyName(owner?: { businessName?: string | null } | null) {
+  return owner?.businessName ?? null
+}
+
+export async function getVendorAccountOptions(vendorIds: string[]): Promise<VendorAccountOption[]> {
+  if (!vendorIds.length) return []
+
+  const vendors = await prisma.vendor.findMany({
+    where: { id: { in: vendorIds }, isActive: true },
+    include: {
+      tenderInvites: {
+        where: { status: { in: [...VENDOR_TENDER_STATUSES] } },
+        include: { request: { include: { property: PROPERTY_WITH_MANAGER } } },
+      },
+      assignedRequests: {
+        where: { status: { notIn: ['closed', 'declined', 'canceled', 'completed'] } },
+        include: {
+          property: PROPERTY_WITH_MANAGER,
+          billingDocuments: vendorBillingDocumentsInclude(),
+        },
+      },
+      commercialItems: {
+        where: { status: { in: ['submitted', 'approved'] } },
+        select: { id: true },
+      },
+    },
+  })
+
+  const owners = await prisma.user.findMany({
+    where: { id: { in: vendors.map((vendor) => vendor.orgId).filter((value): value is string => Boolean(value)) } },
+    select: { id: true, businessName: true, displayName: true, email: true },
+  })
+  const ownersById = new Map(owners.map((owner) => [owner.id, owner]))
+
+  return vendors.map((vendor) => {
+    const firstOwner = vendor.assignedRequests[0]?.property.owner ?? vendor.tenderInvites[0]?.request.property.owner ?? (vendor.orgId ? ownersById.get(vendor.orgId) : null)
+    const pendingBidCount = vendor.tenderInvites.filter((invite) => invite.status === 'invited' || invite.status === 'viewed').length
+    const awardedTenderRequestIds = new Set(vendor.tenderInvites.filter((invite) => invite.status === 'awarded').map((invite) => invite.requestId))
+    const paymentCount = vendor.assignedRequests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
+    const openWorkCount = vendor.assignedRequests.length + awardedTenderRequestIds.size
+    const newItemCount = pendingBidCount + vendor.assignedRequests.filter((request) => request.reviewState !== 'approved' && request.dispatchStatus !== 'completed').length + paymentCount + vendor.commercialItems.length
+
+    return {
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      orgId: vendor.orgId,
+      propertyManagerName: managerDisplayName(firstOwner),
+      propertyManagerCompany: managerCompanyName(firstOwner),
+      propertyManagerEmail: firstOwner?.email ?? '',
+      openWorkCount,
+      pendingBidCount,
+      paymentCount,
+      newItemCount,
+    }
+  }).sort((a, b) => b.newItemCount - a.newItemCount || a.propertyManagerName.localeCompare(b.propertyManagerName))
+}
+
+export async function getSiblingVendorAccountCount(session: VendorPortalScope) {
+  const vendor = await prisma.vendor.findUnique({
+    where: { id: session.vendorId },
+    select: { email: true, phone: true },
+  })
+  if (!vendor?.email && !vendor?.phone) return 1
+
+  const matches = await prisma.vendor.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        ...(vendor.email ? [{ email: vendor.email }] : []),
+        ...(vendor.phone ? [{ phone: vendor.phone }] : []),
+      ],
+    },
+    select: { id: true },
+  })
+
+  return new Set(matches.map((match) => match.id)).size
+}
+
 export async function getVendorRequestsForDashboard(session: VendorPortalScope) {
   return prisma.maintenanceRequest.findMany({
     where: buildVendorRequestVisibilityWhere(session),
