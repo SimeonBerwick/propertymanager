@@ -4,9 +4,9 @@ import type { MaintenanceRequest } from '@/lib/types'
 
 const LABELS: Record<string, string> = {
   requested: 'Needs triage',
-  approved: 'Approved',
+  approved: 'Tender bid',
   declined: 'Declined',
-  vendor_selected: 'Vendor selected',
+  vendor_selected: 'Vendor selected for bid',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
   completed: 'Completed',

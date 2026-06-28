@@ -101,11 +101,11 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Assign a vendor', reason: 'Request is approved but no vendor is assigned.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
+    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendor bids', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
   if ((request.pendingBidCount ?? 0) > 0) {
-    return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Award bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for a decision.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
+    return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
   }
 
   if (isOverdue(request, now)) {
@@ -121,7 +121,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (!request.vendorScheduledStart && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:schedule`, primaryLabel: 'Set appointment', reason: 'The vendor is selected but the work is not scheduled.', group: 'Scheduling', priority: 'normal', actionType: 'schedule_work', score: SCORE.scheduleNeeded }
+    return { ...base, id: `${request.id}:schedule`, primaryLabel: 'Set appointment', reason: 'A vendor has been selected; confirm the work schedule.', group: 'Scheduling', priority: 'normal', actionType: 'schedule_work', score: SCORE.scheduleNeeded }
   }
 
   if (request.tenantStatusUpdatePending) {
