@@ -40,6 +40,15 @@ function statusLabel(s: string) {
   return STATUS_LABELS[s] ?? s
 }
 
+function tenderInviteLabel(status: string) {
+  if (status === 'bid_submitted') return 'Bid submitted'
+  if (status === 'viewed') return 'Invite viewed'
+  if (status === 'invited') return 'Invited to bid'
+  if (status === 'awarded') return 'Bid approved'
+  if (status === 'not_awarded') return 'Not selected'
+  return status.replaceAll('_', ' ')
+}
+
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
@@ -138,10 +147,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
       </nav>
 
       <details className="advancedDisclosure" id="advanced">
-        <summary>Vendor replies and tender details</summary>
+        <summary>Vendor bids and replies</summary>
         <SectionCard
           kicker="Tender"
-          title="Tender and reply signal"
+          title="Bid and reply signal"
           subtitle="Vendor decisions, bids, and incoming replies."
         >
         <div className="stack" style={{ gap: 16 }}>
@@ -151,7 +160,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               {latestTenderReply ? (
                 <>
                   <div className="signalTitle" style={{ fontSize: 18 }}>{latestTenderReply.invite.vendorName}</div>
-                  <div className="signalAccent">{latestTenderReply.invite.status.replaceAll('_', ' ')}</div>
+                  <div className="signalAccent">{tenderInviteLabel(latestTenderReply.invite.status)}</div>
                   <div className="muted">
                     {latestTenderReply.invite.bidAmountCents != null
                       ? `Bid USD ${(latestTenderReply.invite.bidAmountCents / 100).toFixed(2)}`
@@ -218,7 +227,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
-                        <div className="signalAccent">{invite.status.replaceAll('_', ' ')}</div>
+                        <div className="signalAccent">{tenderInviteLabel(invite.status)}</div>
                       </div>
                       {invite.awardedAt ? <span className="badge done">Awarded</span> : null}
                     </div>
@@ -318,7 +327,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
         <div className="stack">
           <div id="actions">
-          <SectionCard kicker="Actions" title="Move this request forward" subtitle="Complete status, vendor, tender, and closeout work here.">
+          <SectionCard kicker="Actions" title="Approval and vendor bids" subtitle="Approve the request, invite bids, select a vendor, and close out the work here.">
             <RequestControlPanel
               request={data.request}
               vendors={data.availableVendors}

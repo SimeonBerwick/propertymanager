@@ -149,11 +149,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: false,
       isOpenWork: true,
       isPendingBid: false,
-      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Assigned to you',
-      tenderLabel: 'Assigned',
+      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Directly assigned to you',
+      tenderLabel: 'Direct assignment',
       heroNotice: {
-        title: 'Assigned to you',
-        detail: 'This request is in your queue and needs clear vendor action.',
+        title: 'Directly assigned to you',
+        detail: 'The property manager assigned this work directly to your company.',
         tone: 'info',
       },
     }
@@ -168,7 +168,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isOpenWork: true,
       isPendingBid: false,
       statusLabel: 'Bid submitted',
-      tenderLabel: 'Tender: bid submitted',
+      tenderLabel: 'Bid submitted',
       heroNotice: {
         title: 'Bid submitted',
         detail: 'Your bid is in. Waiting on the property manager decision.',
@@ -186,7 +186,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isOpenWork: true,
       isPendingBid: true,
       statusLabel: 'Tender opened',
-      tenderLabel: 'Tender: viewed',
+      tenderLabel: 'Invite viewed',
       heroNotice: {
         title: 'Tender opened',
         detail: 'You have seen the invite, but the property manager has not awarded it yet.',
@@ -202,12 +202,12 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
     isAwardedToViewer: false,
     isOpenWork: true,
     isPendingBid: inviteStatus === 'invited',
-    statusLabel: inviteStatus === 'invited' ? 'New tender invite' : input.requestStatus.replaceAll('_', ' '),
-    tenderLabel: inviteStatus === 'invited' ? 'Tender: invited' : 'Assigned',
+    statusLabel: inviteStatus === 'invited' ? 'Invited to bid' : input.requestStatus.replaceAll('_', ' '),
+    tenderLabel: inviteStatus === 'invited' ? 'Invited to bid' : 'Direct assignment',
     heroNotice: inviteStatus === 'invited'
       ? {
-          title: 'New tender invite',
-          detail: 'Review the scope and respond from the vendor portal.',
+          title: 'Invited to bid',
+          detail: 'Review the scope, price, and availability before the property manager approves a vendor.',
           tone: 'info',
         }
       : null,

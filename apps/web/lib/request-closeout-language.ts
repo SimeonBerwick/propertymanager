@@ -32,9 +32,9 @@ export type RequestCloseoutLanguage = {
 
 const BASE_LABELS: Record<string, string> = {
   requested: 'Requested',
-  approved: 'Approved',
+  approved: 'Tender bid',
   declined: 'Declined',
-  vendor_selected: 'Vendor selected',
+  vendor_selected: 'Vendor selected for bid',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
   completed: 'Completed',

@@ -12,6 +12,15 @@ import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
+function tenderInviteLabel(status: string) {
+  if (status === 'bid_submitted') return 'Bid submitted'
+  if (status === 'viewed') return 'Invite viewed'
+  if (status === 'invited') return 'Invited to bid'
+  if (status === 'awarded') return 'Bid approved'
+  if (status === 'not_awarded') return 'Not selected'
+  return status.replaceAll('_', ' ')
+}
+
 export default async function VendorRequestDetailPage({
   params,
   searchParams,
@@ -84,11 +93,11 @@ export default async function VendorRequestDetailPage({
       {canSendUpdate ? <section className="card stack" id="vendor-next-action">
         <div>
           <div className="kicker">Next action</div>
-          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to tender invite' : 'Send work update'}</h3>
+          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : 'Send work update'}</h3>
         </div>
         <div className="muted">
           {viewState.isPendingBid
-            ? 'Tell the property manager whether you can take the job and provide your availability or bid.'
+            ? 'Send your bid amount, timing, and availability for manager approval.'
             : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
         </div>
         <VendorRequestResponseForm requestId={request.id} />
@@ -96,14 +105,14 @@ export default async function VendorRequestDetailPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Tender</div>
-          <h3 style={{ marginTop: 4 }}>Award and bid status</h3>
+          <div className="kicker">Bid invitation</div>
+          <h3 style={{ marginTop: 4 }}>Bid and approval status</h3>
         </div>
         {request.tenderInvites.length ? request.tenderInvites.map((invite) => (
           <div key={invite.id} className={`timelineRow${invite.status === 'awarded' || invite.awardedAt ? ' spotlightSuccess' : ''}`}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontWeight: 700 }}>{invite.status.replaceAll('_', ' ')}</div>
+                <div style={{ fontWeight: 700 }}>{tenderInviteLabel(invite.status)}</div>
                 <div className="muted">
                   Invited {new Date(invite.invitedAt).toLocaleString()}
                   {invite.bidAmountCents != null ? ` - Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : ''}
@@ -114,7 +123,7 @@ export default async function VendorRequestDetailPage({
             {invite.availabilityNote ? <div>{invite.availabilityNote}</div> : null}
             {invite.awardedAt ? <div className="signalAccent">Awarded {new Date(invite.awardedAt).toLocaleString()}</div> : null}
           </div>
-        )) : <div className="muted">This request is assigned directly rather than via tender.</div>}
+        )) : <div className="muted">This request is a direct assignment rather than a bid invitation.</div>}
       </section>
 
       <details className="advancedDisclosure">
