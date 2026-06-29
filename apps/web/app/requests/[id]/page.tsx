@@ -109,6 +109,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="stack requestDetailPage">
+      <RecommendedNextStepPanel request={{
+        ...data.request,
+        tenantAccessFailureCount: data.tenantAccessFailureCount,
+        tenantStatusUpdatePending: data.tenantStatusUpdatePending,
+      }} />
+
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
@@ -130,12 +136,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <InlineRequestEditor request={data.request} />
         </div>
       </section>
-
-      <RecommendedNextStepPanel request={{
-        ...data.request,
-        tenantAccessFailureCount: data.tenantAccessFailureCount,
-        tenantStatusUpdatePending: data.tenantStatusUpdatePending,
-      }} />
 
       <GuidedRequestWorkflow request={data.request} />
 
