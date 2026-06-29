@@ -14,7 +14,7 @@ The property-manager account has an active non-expiring subscription and sample 
 
 1. Open tenant access and choose returning tenant sign in.
 2. Enter the configured `ANDROID_REVIEWER_TENANT_EMAIL`.
-3. Enter the six-digit code supplied in the Play Console review-access field.
+3. If the app asks for a verification code after email entry, enter the six-digit code supplied in the Play Console review-access field.
 
 The tenant has an open-ended active lease and sample maintenance requests.
 
@@ -22,9 +22,9 @@ The tenant has an open-ended active lease and sample maintenance requests.
 
 1. Open vendor access and choose vendor sign in.
 2. Enter the configured `ANDROID_REVIEWER_VENDOR_EMAIL`.
-3. Enter the same six-digit code supplied in the Play Console review-access field.
+3. If the app asks for a verification code after email entry, enter the same six-digit code supplied in the Play Console review-access field.
 
-The vendor is active and has a scheduled sample assignment.
+The vendor is active and has a scheduled sample assignment. If the sample has already been completed during testing, it remains visible under recent work.
 
 ## Operations
 
