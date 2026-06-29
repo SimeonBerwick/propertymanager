@@ -82,6 +82,125 @@ describe('billing slice QA rerun for 6a7fa22', () => {
     expect(doc?.events.at(-1)?.eventType).toBe('email_delivery_failed')
   })
 
+  test('marking the last active bill paid closes a completed request waiting for review', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id) as never)
+
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      status: 'completed',
+      reviewState: 'vendor_completed_pending_review',
+      autoFlag: 'completion_review',
+      submittedByName: 'Casey Tenant',
+      submittedByEmail: 'tenant@example.com',
+      assignedVendorName: 'Pipe Pros',
+      assignedVendorEmail: 'vendor@example.com',
+      preferredCurrency: 'usd',
+    })
+
+    await prisma.billingDocument.create({
+      data: {
+        requestId: request.id,
+        recipientType: 'vendor',
+        documentType: 'vendor_remittance',
+        status: 'paid',
+        currency: 'usd',
+        totalCents: 60000,
+        paidCents: 60000,
+        title: 'Vendor paid-in-full payment',
+        sentTo: 'vendor@example.com',
+        createdByUserId: user.id,
+      },
+    })
+    const tenantInvoice = await prisma.billingDocument.create({
+      data: {
+        requestId: request.id,
+        recipientType: 'tenant',
+        documentType: 'tenant_invoice',
+        status: 'sent',
+        currency: 'usd',
+        totalCents: 20000,
+        paidCents: 0,
+        title: 'Tenant damage chargeback invoice',
+        sentTo: 'tenant@example.com',
+        createdByUserId: user.id,
+      },
+    })
+
+    const result = await updateBillingDocumentAction(PREV, fd({
+      billingDocumentId: tenantInvoice.id,
+      requestId: request.id,
+      paidAmount: '200.00',
+    }))
+
+    expect(result.error).toBeNull()
+
+    const closedRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    const closeEvent = await prisma.statusEvent.findFirst({
+      where: { requestId: request.id, toStatus: 'closed' },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    expect(closedRequest?.status).toBe('closed')
+    expect(closedRequest?.reviewState).toBe('approved')
+    expect(closedRequest?.autoFlag).toBeNull()
+    expect(closedRequest?.closedAt).not.toBeNull()
+    expect(closeEvent?.fromStatus).toBe('completed')
+  })
+
+  test('paid billing does not auto-close while vendor submissions are still pending', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id) as never)
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Pipe Pros', email: 'vendor@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      status: 'completed',
+      reviewState: 'vendor_completed_pending_review',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      preferredCurrency: 'usd',
+    })
+    await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'overcost',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 5000,
+        title: 'Pending extra part',
+      },
+    })
+    const invoice = await prisma.billingDocument.create({
+      data: {
+        requestId: request.id,
+        recipientType: 'vendor',
+        documentType: 'vendor_remittance',
+        status: 'sent',
+        currency: 'usd',
+        totalCents: 60000,
+        paidCents: 0,
+        title: 'Vendor payment',
+        sentTo: 'vendor@example.com',
+        createdByUserId: user.id,
+      },
+    })
+
+    const result = await updateBillingDocumentAction(PREV, fd({
+      billingDocumentId: invoice.id,
+      requestId: request.id,
+      paidAmount: '600.00',
+    }))
+
+    expect(result.error).toBeNull()
+
+    const stillOpenRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(stillOpenRequest?.status).toBe('completed')
+    expect(stillOpenRequest?.reviewState).toBe('vendor_completed_pending_review')
+  })
+
   test('create and send, draft, resend, duplicate-as-draft, payment updates, void, and summary coherence all behave sanely', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id) as never)
