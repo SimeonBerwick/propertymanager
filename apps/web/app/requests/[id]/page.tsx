@@ -86,6 +86,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
     ))
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
   const payableVendorId = awardedTenderBid?.vendorId ?? acceptedVendorBid?.vendorId ?? data.request.assignedVendorId
+  const hasVendorChosen = Boolean(payableVendorId || data.request.assignedVendorName || data.request.assignedVendorEmail)
   const approvedBidCents = awardedTenderBid?.bidAmountCents ?? acceptedVendorBid?.amountCents ?? 0
   const approvedVendorExtrasCents = data.vendorCommercialItems
     .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
@@ -142,7 +143,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         <a href="#summary">Summary</a>
         <a href="#actions">Actions</a>
         <a href="#timeline">Timeline</a>
-        <a href="#billing">Invoices and payments</a>
+        {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Invoices and payments</a> : null}
         <a href="#advanced">More details</a>
       </nav>
 
@@ -391,6 +392,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
+      {hasVendorChosen || data.billingDocuments.length ? (
       <div id="billing">
       <SectionCard kicker="Invoices and payments" title="Invoices and payments" subtitle="Create, send, and track request-related charges when money movement is needed.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
@@ -434,19 +436,24 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
           <BillingSummaryCards documents={data.billingDocuments} />
-          <BillingDocumentForm
-            requestId={data.request.id}
-            tenantEmail={data.request.submittedByEmail}
-            vendorEmail={data.request.assignedVendorEmail}
-            tenantBillbackDecision={data.request.tenantBillbackDecision}
-            tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
-            tenantBillbackReason={data.request.tenantBillbackReason}
-          />
+          {hasVendorChosen ? (
+            <BillingDocumentForm
+              requestId={data.request.id}
+              tenantEmail={data.request.submittedByEmail}
+              vendorEmail={data.request.assignedVendorEmail}
+              tenantBillbackDecision={data.request.tenantBillbackDecision}
+              tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
+              tenantBillbackReason={data.request.tenantBillbackReason}
+            />
+          ) : (
+            <div className="notice">Choose a vendor before creating invoices or payments for this request.</div>
+          )}
           <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
           <BillingEventList documents={data.billingDocuments} />
         </div>
       </SectionCard>
       </div>
+      ) : null}
     </div>
   )
 }

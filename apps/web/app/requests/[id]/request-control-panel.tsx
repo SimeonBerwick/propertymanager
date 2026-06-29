@@ -73,11 +73,17 @@ export function RequestControlPanel({
       .map((invite) => ({ tender, invite }))
   ))
 
+  const hasAssignedVendor = Boolean(request.assignedVendorName) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
+  const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
+  const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
+
   return (
     <div className="stack" style={{ gap: 16 }}>
-      <div className="notice">
-        <strong>Choose one vendor path.</strong> Use direct assignment when you already know who should do the work. Use bid invitations when you want vendors to send pricing or availability first. You do not need to do both.
-      </div>
+      {canChooseVendorPath ? (
+        <div className="notice">
+          <strong>Choose one vendor path.</strong> Use direct assignment when you already know who should do the work. Use bid invitations when you want vendors to send pricing or availability first. You do not need to do both.
+        </div>
+      ) : null}
       {bidDecisionInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
           <div>
@@ -135,6 +141,7 @@ export function RequestControlPanel({
         </button>
       </form>
 
+      {canChooseVendorPath ? (
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
           <div className="kicker">Path 1</div>
@@ -157,7 +164,9 @@ export function RequestControlPanel({
         </button>
         {recommended.length ? <div className="muted">Available vendors: {recommended.map((vendor) => vendor.name).join(', ')}</div> : null}
       </form>
+      ) : null}
 
+      {canChooseVendorPath ? (
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
           <div className="kicker">Path 2</div>
@@ -172,12 +181,14 @@ export function RequestControlPanel({
               <span>{vendor.name}</span>
             </label>
           )) : <div className="muted">No active vendors available.</div>}
-        </div>        <div className="muted">Use this when you want vendors to return pricing or available times before you choose who gets the job.</div>
+        </div>
+        <div className="muted">Use this when you want vendors to return pricing or available times before you choose who gets the job.</div>
 
         <button type="submit" className="button" disabled={vendorPending || !vendors.length}>
           {vendorPending ? 'Sending...' : 'Send bid invitations'}
         </button>
       </form>
+      ) : null}
 
       {openTenderInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
