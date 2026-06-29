@@ -117,15 +117,15 @@ export default async function HomePage() {
 
       <section className="marketingSection" id="features">
         <div className="sectionIntro">
-          <div className="eyebrow">Everything in one place</div>
-          <h2>Run a calmer maintenance operation.</h2>
-          <p>Simeonware replaces scattered emails, texts, and spreadsheets with a workflow everyone can follow.</p>
+          <div className="eyebrow">All-in-one maintenance manager</div>
+          <h2>The maintenance workflow property managers actually need.</h2>
+          <p>Simeonware keeps tenant requests, vendor bids, approvals, photos, billing records, and CSV integration together without forcing you into a full rent-accounting suite.</p>
         </div>
         <div className="featureGrid">
           <article className="featureCard featureCardLarge">
             <span className="featureNumber">01</span>
-            <h3>See what needs action now</h3>
-            <p>Prioritize urgent, overdue, unclaimed, and follow-up requests from one focused queue.</p>
+            <h3>One focused maintenance command center</h3>
+            <p>See urgent, overdue, unclaimed, scheduled, completion-review, and billing-follow-up work from one queue built around maintenance operations.</p>
             <div className="miniQueue">
               <span>New requests <strong>5</strong></span>
               <span>Needs follow-up <strong>3</strong></span>
@@ -134,25 +134,31 @@ export default async function HomePage() {
           </article>
           <article className="featureCard">
             <span className="featureNumber">02</span>
-            <h3>Coordinate vendors clearly</h3>
-            <p>Share request details, collect responses, review updates, and track scheduled work.</p>
+            <h3>Tenant, vendor, and manager portals</h3>
+            <p>Tenants report issues, vendors respond from their own view, and managers keep the full request history in one place.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">03</span>
-            <h3>Give tenants an easy path</h3>
-            <p>Collect complete issue reports and photos without forcing tenants into a complicated process.</p>
+            <h3>Vendor bids and approvals</h3>
+            <p>Invite vendors to bid, review price and timing, approve the right option, and keep completion updates tied to the original request.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">04</span>
-            <h3>Keep costs connected</h3>
-            <p>Track vendor billing, approvals, billbacks, and supporting records alongside the request.</p>
+            <h3>Costs stay connected to the job</h3>
+            <p>Track vendor billing records, approved overages, tenant billbacks, supporting notes, and closeout history beside the work order.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">05</span>
-            <h3>Report with confidence</h3>
-            <p>Review maintenance volume, aging, outcomes, and operational trends across your portfolio.</p>
+            <h3>Private photo and document trail</h3>
+            <p>Maintenance photos and supporting records stay attached to the request with role-based access for managers, tenants, and vendors.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">06</span>
+            <h3>CSV in and out for custom systems</h3>
+            <p>Upload and download units, vendors, and tickets by CSV so your maintenance data can fit into your own reports, spreadsheets, or custom workflows.</p>
           </article>
         </div>
+        <p className="featureNote">Simeonware focuses on maintenance coordination first. Online payment processing is planned as a separate feature rather than part of the core maintenance workflow.</p>
       </section>
 
       <section className="marketingSection processSection" id="how-it-works">
