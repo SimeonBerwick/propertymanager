@@ -40,7 +40,7 @@ function SystemEmailTestForm() {
     <form action={formAction} className="opsCsvBox stack">
       <div>
         <strong>System email delivery</strong>
-        <div className="muted">Sends a test through the app sender. This does not require Gmail or Outlook connection.</div>
+        <div className="muted">Sends a test through the app sender. This does not require an Outlook connection.</div>
       </div>
       <button className="button compactToggle" type="submit" disabled={pending} style={{ alignSelf: 'flex-start' }}>
         {pending ? 'Sending' : 'Send test email'}

@@ -90,9 +90,8 @@ export default async function DashboardPage({
                 <span className="mailboxMiniAddress">Secure email delivery active</span>
               )}
               <details className="actionMenu">
-                <summary>Connect inbox</summary>
+                <summary>Connect Outlook</summary>
                 <div className="actionMenuPanel">
-                  <a href="/api/mailbox/oauth/gmail/start">Connect Gmail</a>
                   <a href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
                 </div>
               </details>
