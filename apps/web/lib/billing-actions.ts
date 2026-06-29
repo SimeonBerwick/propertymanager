@@ -43,6 +43,62 @@ async function getOwnedBillingDocument(sessionUserId: string, billingDocumentId:
   })
 }
 
+
+async function closeCompletedRequestIfFullySettled(requestId: string, userId: string) {
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: userId } },
+    select: {
+      id: true,
+      status: true,
+      reviewState: true,
+      billingDocuments: {
+        select: { status: true, totalCents: true, paidCents: true },
+      },
+      vendorCommercialItems: {
+        where: { status: 'submitted' },
+        select: { id: true },
+      },
+    },
+  })
+
+  if (!request) return false
+  if (request.status !== 'completed' || request.reviewState !== 'vendor_completed_pending_review') return false
+  if (request.vendorCommercialItems.length > 0) return false
+
+  const activeDocuments = request.billingDocuments.filter((document) => document.status !== 'void')
+  if (!activeDocuments.length) return false
+  const allPaid = activeDocuments.every((document) => document.status === 'paid' && document.paidCents >= document.totalCents)
+  if (!allPaid) return false
+
+  await prisma.$transaction([
+    prisma.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'closed',
+        closedAt: new Date(),
+        reviewState: 'approved',
+        reviewNote: 'Automatically closed after completion and billing were fully paid.',
+        autoFlag: null,
+        autoFlaggedAt: null,
+      },
+    }),
+    prisma.statusEvent.create({
+      data: { requestId, fromStatus: 'completed', toStatus: 'closed', actorUserId: userId },
+    }),
+  ])
+
+  await writeAuditLog({
+    actorUserId: userId,
+    entityType: 'request',
+    entityId: requestId,
+    action: 'request.autoClosedAfterBillingSettled',
+    summary: 'Automatically closed completed request after all active billing documents were paid.',
+    metadata: { requestId },
+  })
+
+  return true
+}
+
 async function notifyBillingRecipient({
   to,
   title,
@@ -201,7 +257,9 @@ export async function createBillingDocumentAction(
       }
     }
 
+    await closeCompletedRequestIfFullySettled(requestId, session.userId)
     revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
     return { error: null, success: true }
   } catch (error) {
     await logServerActionError('billing.create', error, { requestId, recipientType })
@@ -271,6 +329,7 @@ export async function updateBillingDocumentAction(
       })
     }
 
+    await closeCompletedRequestIfFullySettled(requestId, session.userId)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     revalidatePath('/vendor')
@@ -483,7 +542,9 @@ export async function voidBillingDocumentAction(
       metadata: { requestId },
     })
 
+    await closeCompletedRequestIfFullySettled(requestId, session.userId)
     revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
     return { error: null, success: true }
   } catch (error) {
     await logServerActionError('billing.void', error, { requestId, billingDocumentId })
