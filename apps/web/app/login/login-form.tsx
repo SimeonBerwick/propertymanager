@@ -7,7 +7,7 @@ function SubmitButton() {
   const { pending } = useFormStatus()
 
   return (
-    <button type="submit" className="button primary" disabled={pending}>
+    <button type="submit" className="button primary" aria-disabled={pending}>
       {pending ? 'Signing in…' : 'Sign in'}
     </button>
   )

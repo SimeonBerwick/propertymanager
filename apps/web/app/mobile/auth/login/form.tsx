@@ -18,7 +18,7 @@ export function ReturningLoginForm({ next }: { next?: string }) {
         <span className="field-label">Email, phone, or access code</span>
         <input className="input" type="text" name="identifier" autoComplete="username" placeholder="Email, phone number, or 6-digit code" value={identifier} onChange={(event) => setIdentifier(event.target.value)} required />
       </label>
-      <button type="submit" className="button primary" disabled={isPending}>
+      <button type="submit" className="button primary" aria-disabled={isPending}>
         {isPending ? 'Signing in...' : isAccessCode ? 'Use access code' : 'Sign in'}
       </button>
       <div className="muted">Use the one-time code from your property manager the first time. After that, your email or phone number signs you in on this device.</div>
