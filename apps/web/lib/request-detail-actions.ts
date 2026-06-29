@@ -721,6 +721,7 @@ export async function approveVendorCommercialItemAction(
         vendorName: item.vendor.name,
         vendorEmail: item.vendor.email,
         userId: session.userId,
+        approvedItemId: item.id,
       })
     })
 
@@ -1316,6 +1317,7 @@ async function upsertVendorRemittanceDraft(
     vendorName: string
     vendorEmail: string | null
     userId: string
+    approvedItemId?: string
   },
 ) {
   const [request, awardedInvite, commercialItems] = await Promise.all([
@@ -1339,16 +1341,37 @@ async function upsertVendorRemittanceDraft(
   const assignedSubmittedBid = request.assignedVendorId === input.vendorId
     ? commercialItems.find((item) => item.itemType === 'bid' && item.status === 'submitted')
     : undefined
-  const bidCents = awardedInvite?.bidAmountCents ?? approvedBid?.amountCents ?? assignedSubmittedBid?.amountCents ?? 0
   const extraItems = commercialItems.filter((item) => item.itemType !== 'bid' && item.status === 'approved')
   const extrasCents = extraItems.reduce((sum, item) => sum + item.amountCents, 0)
+  const existingDraft = await tx.billingDocument.findFirst({
+    where: {
+      requestId: input.requestId,
+      recipientType: 'vendor',
+      documentType: 'vendor_remittance',
+      status: 'draft',
+      sentTo: input.vendorEmail,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  const previouslyApprovedExtrasCents = extraItems
+    .filter((item) => item.id !== input.approvedItemId)
+    .reduce((sum, item) => sum + item.amountCents, 0)
+  const existingBaseCents = existingDraft
+    ? Math.max(existingDraft.totalCents - previouslyApprovedExtrasCents, 0)
+    : 0
+  const recordedBidCents = Math.max(
+    awardedInvite?.bidAmountCents ?? 0,
+    approvedBid?.amountCents ?? 0,
+    assignedSubmittedBid?.amountCents ?? 0,
+  )
+  const bidCents = Math.max(recordedBidCents, existingBaseCents)
   const totalCents = bidCents + extrasCents
   if (totalCents <= 0) return null
 
   const title = `Vendor payment - ${input.vendorName}`
   const descriptionLines = [
     `Amount owed to ${input.vendorName} for ${request.title}.`,
-    bidCents > 0 ? `Approved bid: USD ${(bidCents / 100).toFixed(2)}` : null,
+    bidCents > 0 ? `${recordedBidCents > 0 ? 'Approved bid' : 'Approved vendor amount'}: USD ${(bidCents / 100).toFixed(2)}` : null,
     ...extraItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
   ].filter(Boolean) as string[]
   const description = descriptionLines.join('\n')
@@ -1364,17 +1387,6 @@ async function upsertVendorRemittanceDraft(
     requestTitle: request.title,
     propertyName: request.property.name,
     unitLabel: request.unit.label,
-  })
-
-  const existingDraft = await tx.billingDocument.findFirst({
-    where: {
-      requestId: input.requestId,
-      recipientType: 'vendor',
-      documentType: 'vendor_remittance',
-      status: 'draft',
-      sentTo: input.vendorEmail,
-    },
-    orderBy: { createdAt: 'desc' },
   })
 
   if (existingDraft) {
