@@ -15,6 +15,8 @@ import { CommandPalette } from '@/components/command-palette'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { ManagerMobileNav } from '@/components/manager-mobile-nav'
 import { PublicMarketingNav } from '@/components/public-marketing-nav'
+import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { getVendorSession } from '@/lib/vendor-session'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -34,6 +36,19 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
   const dbAvailable = await isDatabaseAvailable()
+  const [tenantPortalSession, vendorPortalSession] = dbAvailable && !session.isLoggedIn
+    ? await Promise.all([
+        getTenantMobileSession().catch(() => null),
+        getVendorSession().catch(() => null),
+      ])
+    : [null, null]
+  const logoHref: Route = session.isLoggedIn
+    ? '/dashboard'
+    : tenantPortalSession
+      ? '/mobile'
+      : vendorPortalSession
+        ? '/vendor'
+        : '/'
 
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
@@ -58,7 +73,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </div>
           )}
           <header className="header">
-            <BrandLogo href={session.isLoggedIn ? '/dashboard' : '/'} />
+            <BrandLogo href={logoHref} />
             <div className="nav">
               {session.isLoggedIn && (
                 <>
@@ -102,7 +117,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           </header>
           {children}
           <footer className="siteFooter">
-            <BrandLogo />
+            <BrandLogo href={logoHref} />
             <span>Property maintenance, clearly coordinated.</span>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
