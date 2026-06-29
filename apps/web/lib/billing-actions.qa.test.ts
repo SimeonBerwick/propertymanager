@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { prisma } from '@/lib/prisma'
+import { sendNotification } from '@/lib/notify'
 import { getLandlordSession } from '@/lib/landlord-session'
 import {
   createBillingDocumentAction,
@@ -15,7 +16,7 @@ type SessionShape = { userId: string; isLoggedIn: true }
 vi.mock('@/lib/landlord-session')
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/notify', () => ({
-  sendNotification: vi.fn().mockResolvedValue(undefined),
+  sendNotification: vi.fn().mockResolvedValue({ ok: true }),
   buildBillingDocumentMessage: vi.fn().mockImplementation((input) => input),
 }))
 
@@ -38,6 +39,47 @@ describe('billing slice QA rerun for 6a7fa22', () => {
     await prisma.vendorDispatchLink.deleteMany()
     await prisma.vendorDispatchEvent.deleteMany()
     vi.mocked(getLandlordSession).mockResolvedValue(null)
+    vi.mocked(sendNotification).mockReset()
+    vi.mocked(sendNotification).mockResolvedValue({ ok: true })
+  })
+
+  test('tenant chargeback reports when email delivery fails', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id) as never)
+    vi.mocked(sendNotification).mockResolvedValueOnce({ ok: false })
+
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      submittedByName: 'Casey Tenant',
+      submittedByEmail: 'tenant@example.com',
+      preferredCurrency: 'usd',
+    })
+
+    const result = await createBillingDocumentAction(PREV, fd({
+      requestId: request.id,
+      recipientType: 'tenant',
+      title: 'Tenant damage chargeback invoice',
+      description: 'Countertop repair',
+      amount: '250.00',
+      paidAmount: '0.00',
+      sendMode: 'send',
+      sentTo: 'tenant@example.com',
+    }))
+
+    expect(result.error).toMatch(/email was not delivered/i)
+    expect(sendNotification).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bypassUserPreference: true, ownerUserId: user.id, requestId: request.id }),
+    )
+
+    const doc = await prisma.billingDocument.findFirst({
+      where: { requestId: request.id, recipientType: 'tenant', documentType: 'tenant_invoice' },
+      include: { events: { orderBy: { createdAt: 'asc' } } },
+    })
+
+    expect(doc?.status).toBe('draft')
+    expect(doc?.sentAt).toBeNull()
+    expect(doc?.sentTo).toBe('tenant@example.com')
+    expect(doc?.events.at(-1)?.eventType).toBe('email_delivery_failed')
   })
 
   test('create and send, draft, resend, duplicate-as-draft, payment updates, void, and summary coherence all behave sanely', async () => {

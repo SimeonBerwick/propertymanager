@@ -466,6 +466,64 @@ describe('approveVendorCommercialItemAction', () => {
     expect(draft?.events[0]?.eventType).toBe('created')
   })
 
+  test('approving an overcost preserves an existing approved vendor invoice draft total', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Pipe Pros', email: 'pipe@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'completed',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      preferredCurrency: 'usd',
+    })
+    await prisma.billingDocument.create({
+      data: {
+        requestId: request.id,
+        recipientType: 'vendor',
+        documentType: 'vendor_remittance',
+        status: 'draft',
+        currency: 'usd',
+        totalCents: 40000,
+        paidCents: 0,
+        title: 'Vendor payment - Pipe Pros',
+        description: 'Previously approved vendor invoice.',
+        sentTo: vendor.email,
+        createdByUserId: user.id,
+      },
+    })
+    const overcost = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'overcost',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 20000,
+        title: 'Approved overage',
+      },
+    })
+
+    const result = await approveVendorCommercialItemAction(
+      PREV,
+      formData({ requestId: request.id, itemId: overcost.id }),
+    )
+
+    expect(result.error).toBeNull()
+
+    const draft = await prisma.billingDocument.findFirst({
+      where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },
+    })
+
+    expect(draft?.totalCents).toBe(60000)
+    expect(draft?.description).toContain('Approved vendor amount: USD 400.00')
+    expect(draft?.description).toContain('Approved overage: USD 200.00')
+  })
+
   test('approving an overcost includes the assigned vendor submitted bid when no tender award exists', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))

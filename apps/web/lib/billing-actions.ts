@@ -68,7 +68,7 @@ async function notifyBillingRecipient({
   requestId: string
   actionUrl?: string
 }) {
-  await sendNotification(buildBillingDocumentMessage({
+  const result = await sendNotification(buildBillingDocumentMessage({
     to,
     title,
     recipientLabel,
@@ -78,7 +78,8 @@ async function notifyBillingRecipient({
     paidLabel: formatMoney(paidCents, currency),
     balanceLabel: formatMoney(totalCents - paidCents, currency),
     actionUrl,
-  }), { ownerUserId, requestId })
+  }), { ownerUserId, requestId, bypassUserPreference: true })
+  return result.ok
 }
 
 export async function createBillingDocumentAction(
@@ -165,7 +166,7 @@ export async function createBillingDocumentAction(
     })
 
     if (sentTo) {
-      await notifyBillingRecipient({
+      const delivered = await notifyBillingRecipient({
         to: sentTo,
         title,
         recipientLabel: recipientType === 'tenant'
@@ -180,6 +181,24 @@ export async function createBillingDocumentAction(
         requestId,
         actionUrl: billingActionUrl(recipientType, requestId),
       })
+      if (!delivered) {
+        await prisma.billingDocument.update({
+          where: { id: billingDocument.id },
+          data: {
+            status: 'draft',
+            sentAt: null,
+            events: {
+              create: {
+                actorUserId: session.userId,
+                eventType: 'email_delivery_failed',
+                note: `Email delivery failed for ${sentTo}. Use Resend after checking the address and email settings.`,
+              },
+            },
+          },
+        })
+        revalidatePath(`/requests/${requestId}`)
+        return { error: `Billing document was saved, but email was not delivered to ${sentTo}. Use Resend after checking the address and email settings.` }
+      }
     }
 
     revalidatePath(`/requests/${requestId}`)
@@ -288,6 +307,37 @@ export async function resendBillingDocumentAction(
       ? deriveBillingStatus(doc.totalCents, doc.paidCents)
       : currentStatus) as BillingDocumentStatus
 
+    const delivered = await notifyBillingRecipient({
+      to: doc.sentTo,
+      title: doc.title,
+      recipientLabel: doc.recipientType === 'tenant'
+        ? (doc.request.submittedByName || doc.request.submittedByEmail || 'Tenant')
+        : (doc.request.assignedVendorName || 'Vendor'),
+      documentType: doc.documentType,
+      status: nextStatus,
+      totalCents: doc.totalCents,
+      paidCents: doc.paidCents,
+      currency: doc.currency,
+      ownerUserId: session.userId,
+      requestId,
+      actionUrl: billingActionUrl(doc.recipientType, requestId),
+    })
+    if (!delivered) {
+      await prisma.billingDocument.update({
+        where: { id: doc.id },
+        data: {
+          events: {
+            create: {
+              actorUserId: session.userId,
+              eventType: 'email_delivery_failed',
+              note: `Resend failed for ${doc.sentTo}. Check the address and email settings.`,
+            },
+          },
+        },
+      })
+      return { error: `Email was not delivered to ${doc.sentTo}. Check the address and email settings, then try Resend again.` }
+    }
+
     await prisma.billingDocument.update({
       where: { id: doc.id },
       data: {
@@ -310,22 +360,6 @@ export async function resendBillingDocumentAction(
       action: 'billingDocument.resent',
       summary: `Resent billing document to ${doc.sentTo}.`,
       metadata: { requestId, status: nextStatus },
-    })
-
-    await notifyBillingRecipient({
-      to: doc.sentTo,
-      title: doc.title,
-      recipientLabel: doc.recipientType === 'tenant'
-        ? (doc.request.submittedByName || doc.request.submittedByEmail || 'Tenant')
-        : (doc.request.assignedVendorName || 'Vendor'),
-      documentType: doc.documentType,
-      status: nextStatus,
-      totalCents: doc.totalCents,
-      paidCents: doc.paidCents,
-      currency: doc.currency,
-      ownerUserId: session.userId,
-      requestId,
-      actionUrl: billingActionUrl(doc.recipientType, requestId),
     })
 
     revalidatePath(`/requests/${requestId}`)
