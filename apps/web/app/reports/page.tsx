@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { getReportData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { StatusBadge } from '@/components/status-badge'
-import { TrendChart } from '@/components/trend-chart'
 import { languageLabel } from '@/lib/types'
 
 function ageBadgeClass(days: number) {
@@ -12,139 +11,20 @@ function ageBadgeClass(days: number) {
   return 'badge age-old'
 }
 
-function formatHours(hours: number | null) {
-  if (!hours) return '—'
-  return hours >= 72 ? `${(hours / 24).toFixed(1)}d` : `${hours.toFixed(1)}h`
-}
 
 export default async function ReportsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
   const data = await getReportData(session.userId)
-  const totalRequests = data.propertyStats.reduce((sum, p) => sum + p.totalCount, 0)
 
   return (
     <div className="stack reportsPage">
       <section className="card reportsHero">
         <div className="kicker">Reports</div>
         <h2 style={{ margin: '4px 0 0' }}>Performance</h2>
-        <div className="muted">Track workload, response speed, ownership, and vendor outcomes.</div>
+        <div className="muted">Review open work, property workload, vendor outcomes, and repeat problems.</div>
       </section>
 
-      {data.trendAlerts.length ? (
-        <section className="stack">
-          {data.trendAlerts.map((alert) => (
-            <div key={alert.kind} className={`notice ${alert.severity === 'critical' ? 'error' : ''}`}>
-              <strong>{alert.severity === 'critical' ? 'Critical trend alert' : 'Trend alert'}</strong>
-              <div>{alert.message}</div>
-            </div>
-          ))}
-        </section>
-      ) : null}
-
-      {/* ── Summary stat row ── */}
-      <section className="grid cols-3 reportMetricGrid">
-        <div className="card reportMetricCard">
-          <div className="kicker">Total requests</div>
-          <h2>{totalRequests}</h2>
-          <div className="muted">All time</div>
-        </div>
-        <div className="card reportMetricCard">
-          <div className="kicker">Open</div>
-          <h2>{data.totalOpen}</h2>
-          <div className="muted">Needs attention</div>
-        </div>
-        <div className="card reportMetricCard">
-          <div className="kicker">Closed</div>
-          <h2>{data.totalClosed}</h2>
-          <div className="muted">Completed</div>
-        </div>
-      </section>
-
-      <section className="grid cols-4 reportMetricGrid">
-        <div className="card reportMetricCard">
-          <div className="kicker">Time to assign</div>
-          <h2>{formatHours(data.avgTimeToAssignHours)}</h2>
-          <div className="muted">Average from intake to assignment</div>
-        </div>
-        <div className="card reportMetricCard">
-          <div className="kicker">Time to first review</div>
-          <h2>{formatHours(data.avgTimeToFirstReviewHours)}</h2>
-          <div className="muted">Average from intake to first operator review</div>
-        </div>
-        <div className="card reportMetricCard">
-          <div className="kicker">Time to schedule</div>
-          <h2>{formatHours(data.avgTimeToScheduleHours)}</h2>
-          <div className="muted">Average from intake to visit window</div>
-        </div>
-        <div className="card reportMetricCard">
-          <div className="kicker">Time to complete</div>
-          <h2>{data.avgTimeToCompleteDays ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '—'}</h2>
-          <div className="muted">Average request cycle time</div>
-        </div>
-      </section>
-
-      <section className="grid cols-3 reportMetricGrid">
-        <Link href="/dashboard?queue=unclaimed" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Unclaimed open</div>
-          <h2>{data.unclaimedOpenCount}</h2>
-          <div className="muted">Still waiting for an owner</div>
-        </Link>
-        <Link href="/dashboard?queue=stale-claimed" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Stale claimed open</div>
-          <h2>{data.staleClaimedOpenCount}</h2>
-          <div className="muted">Claims older than 24 hours</div>
-        </Link>
-        <Link href="/dashboard?queue=follow-up" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Avg open claim age</div>
-          <h2>{formatHours(data.avgClaimAgeHoursOpen)}</h2>
-          <div className="muted">Average age of open claims</div>
-        </Link>
-      </section>
-
-      <section className="grid cols-1">
-        <Link href="/dashboard?queue=follow-up" className="card reportMetricCard" style={{ textDecoration: 'none' }}>
-          <div className="kicker">Reopened</div>
-          <h2>{data.reopenCount}</h2>
-          <div className="muted">Reopened after review</div>
-        </Link>
-      </section>
-
-      <section className="card stack">
-        <div>
-          <div className="kicker">Trends</div>
-          <h3 style={{ marginTop: 4 }}>Last 14 days</h3>
-        </div>
-        {data.trends.length ? (
-          <>
-            <TrendChart points={data.trends} />
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Created</th>
-                  <th>Reviewed</th>
-                  <th>Claimed</th>
-                  <th>Completed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.trends.map((point) => (
-                  <tr key={point.day}>
-                    <td>{point.day}</td>
-                    <td>{point.created}</td>
-                    <td>{point.firstReviewed}</td>
-                    <td>{point.claimed}</td>
-                    <td>{point.completed}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        ) : (
-          <div className="muted">No trend data yet.</div>
-        )}
-      </section>
 
       {/* ── Open vs closed by property ── */}
       <section className="card stack">
@@ -234,50 +114,6 @@ export default async function ReportsPage() {
         )}
       </section>
 
-      <section className="card stack">
-        <div>
-          <div className="kicker">Operator ownership</div>
-          <h3 style={{ marginTop: 4 }}>Queue load by operator</h3>
-        </div>
-        {data.operatorMetrics.length ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Operator</th>
-                <th>Open claims</th>
-                <th>Stale claims</th>
-                <th>Avg claim age</th>
-                <th>Completed claims</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.operatorMetrics.map((operator) => (
-                <tr key={operator.operatorId}>
-                  <td>
-                    <Link href={`/dashboard?queue=my-claims&claimedBy=${operator.operatorId}`} style={{ fontWeight: 600 }}>
-                      {operator.operatorName}
-                    </Link>
-                  </td>
-                  <td>
-                    <Link href={`/dashboard?queue=my-claims&claimedBy=${operator.operatorId}`}>
-                      {operator.openClaims}
-                    </Link>
-                  </td>
-                  <td>
-                    <Link href={`/dashboard?queue=stale-claimed&claimedBy=${operator.operatorId}`}>
-                      {operator.staleClaims}
-                    </Link>
-                  </td>
-                  <td>{operator.avgClaimAgeHours ? `${operator.avgClaimAgeHours.toFixed(1)}h` : '—'}</td>
-                  <td>{operator.completedClaims}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="muted">No operator claim data yet.</div>
-        )}
-      </section>
 
       <section className="card stack">
         <div>

@@ -719,16 +719,23 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     const latestTenantVisibleStatusEvent = [...dbRequest.events]
       .filter((event) => event.visibility === 'tenant_visible')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
+    const latestTenantFacingCommentAt = dbRequest.comments
+      .filter((comment) => comment.visibility === 'external')
+      .map((comment) => comment.createdAt)
+      .sort((a, b) => b.getTime() - a.getTime())[0]
     const latestTenantEmailAt = dbRequest.submittedByEmail
       ? dbRequest.outboundEmails
           .filter((email) => email.to.toLowerCase() === dbRequest.submittedByEmail!.toLowerCase())
           .map((email) => email.sentAt ?? email.createdAt)
           .sort((a, b) => b.getTime() - a.getTime())[0]
       : undefined
+    const latestTenantUpdateAt = [latestTenantFacingCommentAt, latestTenantEmailAt]
+      .filter((date): date is Date => Boolean(date))
+      .sort((a, b) => b.getTime() - a.getTime())[0]
     const tenantStatusUpdatePending = Boolean(
       dbRequest.submittedByEmail
       && latestTenantVisibleStatusEvent
-      && (!latestTenantEmailAt || latestTenantEmailAt.getTime() < latestTenantVisibleStatusEvent.createdAt.getTime()),
+      && (!latestTenantUpdateAt || latestTenantUpdateAt.getTime() < latestTenantVisibleStatusEvent.createdAt.getTime()),
     )
     const tenantAccessFailureCount = dbRequest.tenantIdentityId
       ? await prisma.productEvent.count({

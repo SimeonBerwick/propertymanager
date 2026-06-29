@@ -13,13 +13,13 @@ export default async function WorkflowsPage() {
   ])
 
   return <main className="stack">
-    <section className="card stack"><div><div className="kicker">Workflows</div><h1 className="pageTitle">Automations</h1></div><p className="muted">Automatically route matching requests.</p></section>
+    <section className="card stack"><div><div className="kicker">Rules</div><h1 className="pageTitle">Rules</h1></div><p className="muted">Set simple rules for matching requests.</p></section>
     <section>
-      <div className="card stack"><h2 className="sectionTitle">New automation rule</h2><AutomationRuleForm /></div>
+      <div className="card stack"><h2 className="sectionTitle">New rule</h2><AutomationRuleForm /></div>
     </section>
     <section className="card stack"><div><div className="kicker">Onboarding analytics</div><h2 className="sectionTitle">Product adoption</h2></div><div className="filterChipRow">{eventCounts.length ? eventCounts.map((event) => <span className="filterChip" key={event.eventName}>{event.eventName.replaceAll('_', ' ')}: {event._count.eventName}</span>) : <span className="muted">Events will appear as people use the app.</span>}</div></section>
     <section>
-      <div className="card stack"><h2 className="sectionTitle">Automation rules</h2>{rules.length ? rules.map((rule) => <div className="workflowRow" key={rule.id}><div><strong>{rule.name}</strong><div className="muted">When {rule.conditionField} = {rule.conditionValue}, {rule.actionType.replaceAll('_', ' ')}: {rule.actionValue}</div><div className="muted">Applied {rule.runCount} times</div></div><div className="row"><form action={toggleAutomationRuleAction}><input type="hidden" name="id" value={rule.id}/><input type="hidden" name="enabled" value={String(!rule.enabled)}/><button className="button">{rule.enabled ? 'Pause' : 'Enable'}</button></form><form action={deleteWorkflowItemAction}><input type="hidden" name="id" value={rule.id}/><input type="hidden" name="kind" value="rule"/><button className="button">Delete</button></form></div></div>) : <div className="emptyState"><strong>No automation rules yet</strong><span>Create one to route matching requests automatically.</span></div>}</div>
+      <div className="card stack"><h2 className="sectionTitle">Rules</h2>{rules.length ? rules.map((rule) => <div className="workflowRow" key={rule.id}><div><strong>{rule.name}</strong><div className="muted">When {rule.conditionField} = {rule.conditionValue}, {rule.actionType.replaceAll('_', ' ')}: {rule.actionValue}</div><div className="muted">Applied {rule.runCount} times</div></div><div className="row"><form action={toggleAutomationRuleAction}><input type="hidden" name="id" value={rule.id}/><input type="hidden" name="enabled" value={String(!rule.enabled)}/><button className="button">{rule.enabled ? 'Pause' : 'Enable'}</button></form><form action={deleteWorkflowItemAction}><input type="hidden" name="id" value={rule.id}/><input type="hidden" name="kind" value="rule"/><button className="button">Delete</button></form></div></div>) : <div className="emptyState"><strong>No rules yet</strong><span>Create one to route matching requests.</span></div>}</div>
     </section>
   </main>
 }

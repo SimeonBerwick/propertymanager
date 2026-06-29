@@ -55,8 +55,8 @@ export function AutomationRuleForm() {
         </select>
         {actionOptions.length ? <select className="input" name="actionValue" value={actionValue} onChange={(event) => setActionValue(event.target.value)}>{actionOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select> : <input className="input" name="actionValue" value={actionValue} onChange={(event) => setActionValue(event.target.value)} placeholder="for example: plumbing-review" required />}
       </div>
-      <div className="automationPreview">Requests matching this sentence will be updated automatically during each workflow sweep.</div>
-      <ActionFeedback error={state.error} success={state.success ? 'Automation rule created.' : null} />
+      <div className="automationPreview">Requests matching this rule will be updated during each rule sweep.</div>
+      <ActionFeedback error={state.error} success={state.success ? 'Rule created.' : null} />
       <button className="button primary" disabled={pending}>{pending ? 'Creating...' : 'Create rule'}</button>
     </form>
   )

@@ -21,6 +21,9 @@ export default async function AccountSettingsDeletionPage() {
         <p className="muted" style={{ margin: 0 }}>
           Maintenance, billing, security, and legal records may be retained where required for legitimate business, accounting, fraud-prevention, or legal obligations.
         </p>
+        <p className="muted" style={{ margin: 0 }}>
+          If you have an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time.
+        </p>
       </section>
 
       <section className="card stack">

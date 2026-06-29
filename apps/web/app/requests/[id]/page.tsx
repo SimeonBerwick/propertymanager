@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { languageLabel } from '@/lib/types'
-import { reviewStateLabel, formatClaimStatus, formatDateTime, isStaleClaim } from '@/lib/ui-utils'
+import { reviewStateLabel, formatDateTime } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
@@ -269,16 +269,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 <div><strong>Preferred language</strong><div className="muted">{languageLabel(data.request.preferredLanguage)}</div></div>
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` - ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
-                <div><strong>Queue claim</strong><div className="muted">{formatClaimStatus(data.request)}</div></div>
-                <div><strong>Claim owner</strong><div className="muted">{data.request.claimedByUserName ?? 'Unassigned'}</div></div>
                 <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : 'Not yet reviewed'}</div></div>
               </div>
               <RequestSignalStrip request={data.request} />
               {data.request.reviewState && !['none', 'approved'].includes(data.request.reviewState) ? (
                 <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` - ${data.request.reviewNote}` : ''}</div>
-              ) : null}
-              {isStaleClaim(data.request) ? (
-                <div className="notice">This request was claimed more than 24 hours ago and still has not been fully advanced.</div>
               ) : null}
             </div>
           </SectionCard>
