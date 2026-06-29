@@ -93,7 +93,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     <div className="navMenuPanel">
                       <Link href="/access">Team access</Link>
                       <Link href="/ops">Data &amp; activity</Link>
-                      <Link href="/workflows">Workflows</Link>
+                      <Link href="/workflows">Rules</Link>
                       <Link href={'/account/settings' as Route}>Account settings</Link>
                       <Link href="/support">Support</Link>
                     </div>

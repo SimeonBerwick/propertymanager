@@ -60,6 +60,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
   const secondaryActions = nextActions.slice(1, 4)
   const actionGroups = groupDashboardNextActions(nextActions)
   const actionCount = nextActions.length
+  const hasScheduledToday = overview.scheduledToday.length > 0
 
   return (
     <div className="stack todayOverview">
@@ -70,13 +71,17 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
           <div className="muted">
             {primaryAction
               ? primaryAction.reason
-              : "No requests need a manager decision right now. Monitor today's appointments and incoming updates."}
+              : hasScheduledToday
+                ? "No requests need a manager decision right now. Monitor today's appointments and incoming updates."
+                : 'No requests need a manager decision right now.'}
           </div>
         </div>
         {primaryAction ? (
           <Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>
-        ) : (
+        ) : hasScheduledToday ? (
           <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
+        ) : (
+          <Link href="/dashboard?queue=open" className="button primary">Review open work</Link>
         )}
       </section>
 
@@ -107,7 +112,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
           action={<Link href="/submit" className="button">Share request form</Link>}
         >
           <div className="caughtUpPanel">
-            <Link href="/dashboard?queue=scheduled-today">Monitor today's appointments</Link>
+            {hasScheduledToday ? <Link href="/dashboard?queue=scheduled-today">Monitor today's appointments</Link> : null}
             <Link href="/dashboard?queue=open">Review open work</Link>
             <Link href="/access">Check team access</Link>
           </div>
@@ -115,16 +120,20 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
       )}
 
       <section className="todayMetricGrid" aria-label="Today summary">
-        <a href="#needs-your-action" className={`card todayMetricCard${actionCount ? ' todayMetricUrgent' : ''}`}>
-          <span className="kicker">Recommended actions</span>
-          <strong>{actionCount}</strong>
-          <span className="muted">Decisions and follow-ups</span>
-        </a>
-        <Link href="/dashboard?queue=scheduled-today" className="card todayMetricCard">
-          <span className="kicker">Scheduled today</span>
-          <strong>{overview.scheduledToday.length}</strong>
-          <span className="muted">Vendor appointments</span>
-        </Link>
+        {actionCount ? (
+          <a href="#needs-your-action" className="card todayMetricCard todayMetricUrgent">
+            <span className="kicker">Recommended actions</span>
+            <strong>{actionCount}</strong>
+            <span className="muted">Decisions and follow-ups</span>
+          </a>
+        ) : null}
+        {hasScheduledToday ? (
+          <Link href="/dashboard?queue=scheduled-today" className="card todayMetricCard">
+            <span className="kicker">Scheduled today</span>
+            <strong>{overview.scheduledToday.length}</strong>
+            <span className="muted">Vendor appointments</span>
+          </Link>
+        ) : null}
         <Link href="/dashboard?queue=overdue-scheduled" className={`card todayMetricCard${overview.overdue.length ? ' todayMetricUrgent' : ''}`}>
           <span className="kicker">Overdue</span>
           <strong>{overview.overdue.length}</strong>
@@ -137,14 +146,14 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
         </a>
       </section>
 
-      <div id="needs-your-action">
-        <SectionCard
-          kicker="Needs attention"
-          title="Needs attention"
-          subtitle="Requests that need a manager decision, follow-up, or review."
-          action={<Link href="/exceptions" className="button">View all exceptions</Link>}
-        >
-          {actionGroups.length ? (
+      {actionGroups.length ? (
+        <div id="needs-your-action">
+          <SectionCard
+            kicker="Needs attention"
+            title="Needs attention"
+            subtitle="Requests that need a manager decision, follow-up, or review."
+            action={<Link href="/exceptions" className="button">View all exceptions</Link>}
+          >
             <div className="nextActionGroups">
               {actionGroups.slice(0, 5).map((group) => (
                 <section className="nextActionGroup" key={group.label}>
@@ -159,19 +168,17 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
                 </section>
               ))}
             </div>
-          ) : (
-            <div className="emptyState"><strong>You are caught up</strong><span>No requests need an immediate manager decision.</span></div>
-          )}
-        </SectionCard>
-      </div>
+          </SectionCard>
+        </div>
+      ) : null}
 
-      <SectionCard
-        kicker="Schedule"
-        title="Today's appointments"
-        subtitle="Vendor visits in chronological order."
-        action={<Link href="/dashboard?queue=scheduled-today" className="button">Open schedule queue</Link>}
-      >
-        {overview.scheduledToday.length ? (
+      {hasScheduledToday ? (
+        <SectionCard
+          kicker="Schedule"
+          title="Today's appointments"
+          subtitle="Vendor visits in chronological order."
+          action={<Link href="/dashboard?queue=scheduled-today" className="button">Open schedule queue</Link>}
+        >
           <div className="todayScheduleList">
             {overview.scheduledToday.map((request) => (
               <Link href={`/requests/${request.id}`} className="todayScheduleRow" key={request.id}>
@@ -182,10 +189,8 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
               </Link>
             ))}
           </div>
-        ) : (
-          <div className="emptyState"><strong>No appointments today</strong><span>No vendor visits are scheduled for today.</span></div>
-        )}
-      </SectionCard>
+        </SectionCard>
+      ) : null}
 
       <div className="grid cols-2 todaySupportingGrid">
         <div id="waiting-on-others">

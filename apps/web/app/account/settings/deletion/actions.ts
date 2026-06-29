@@ -20,6 +20,9 @@ export async function requestAccountDeletionAction(
   if (formData.get('confirm') !== 'yes') {
     return { error: 'Confirm that you want to request account deletion.', success: null }
   }
+  if (formData.get('subscriptionConfirm') !== 'yes') {
+    return { error: 'Confirm the subscription cancellation and annual payment terms before requesting account deletion.', success: null }
+  }
 
   const reason = String(formData.get('reason') ?? '').trim().slice(0, 1000)
   const user = await prisma.user.findUnique({
@@ -60,6 +63,7 @@ export async function requestAccountDeletionAction(
       `${user.displayName ?? 'A property manager'} requested account deletion.`,
       `Account email: ${user.email}`,
       `Request ID: ${request.id}`,
+      'Subscription acknowledgement: user confirmed cancellation of future access and renewal, with no prorated refund for unused annual time.',
       reason ? `Reason: ${reason}` : '',
     ].filter(Boolean).join('\n'),
   })
