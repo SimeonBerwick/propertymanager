@@ -1,5 +1,5 @@
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
-import type { RequestStatus } from '@/lib/types'
+import type { RequestStatus, ReviewStatus } from '@/lib/types'
 
 export function tenantRequestStatusLabel(status: RequestStatus) {
   return deriveRequestCloseoutLanguage({ status }).tenantLabel
@@ -17,9 +17,16 @@ export function tenantRequestCloseoutLabel(request: {
 
 export function tenantRequestNextStep(request: {
   status: RequestStatus
+  reviewState?: ReviewStatus | null
+  reviewNote?: string | null
+  declineReason?: string | null
   assignedVendorName?: string | null
   vendorScheduledStart?: string | Date | null
 }) {
+  if (request.status === 'approved' && request.reviewState === 'vendor_declined_reassignment_needed') {
+    return 'The vendor could not continue with this request. Your property manager is reviewing it and choosing the next step.'
+  }
+
   switch (request.status) {
     case 'requested':
       return 'Your property manager will review the problem and decide the next step.'
@@ -41,7 +48,7 @@ export function tenantRequestNextStep(request: {
     case 'closed':
       return 'No further action is expected for this request.'
     case 'declined':
-      return 'Contact your property manager if the problem still needs attention.'
+      return request.declineReason || request.reviewNote || 'This request was declined by your property manager.'
     case 'canceled':
       return 'This request was canceled. Report the problem again if help is still needed.'
   }

@@ -118,7 +118,6 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
             <div style={{ fontWeight: 600 }}>
               {entry.vendor?.name ? `${entry.vendor.name} - ` : ''}{entry.status}
             </div>
-            {entry.note ? <div>{entry.note}</div> : null}
             {(entry.scheduledStart || entry.scheduledEnd) ? (
               <div className="muted">
                 {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '-'}

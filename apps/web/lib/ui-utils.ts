@@ -1,6 +1,6 @@
 import type { MaintenanceRequest, RequestStatus, ReviewStatus } from '@/lib/types'
 
-const DISPLAY_TIME_ZONE = 'UTC'
+const DISPLAY_TIME_ZONE = process.env.NEXT_PUBLIC_DISPLAY_TIME_ZONE || 'America/Phoenix'
 
 export function formatDateOnly(value: Date | string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -24,7 +24,7 @@ export function getCityFromAddress(address: string) {
   return stateOrStateZip.test(lastPart) ? parts.at(-2) ?? 'Unknown city' : lastPart
 }
 
-export function formatDateTime(value?: string) {
+export function formatDateTime(value?: Date | string | null) {
   if (!value) return 'Not scheduled'
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',

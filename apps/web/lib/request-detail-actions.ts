@@ -835,6 +835,9 @@ export async function updateDispatchFormAction(
         vendorScheduledEnd: scheduledEnd,
         status: requestStatus,
         reviewState,
+        reviewNote: dispatchStatus === 'declined' || dispatchStatus === 'canceled'
+          ? 'Vendor could not continue with this assignment. Reassignment needed.'
+          : undefined,
         actualCompletedAt: dispatchStatus === 'completed' ? new Date() : undefined,
       },
     })

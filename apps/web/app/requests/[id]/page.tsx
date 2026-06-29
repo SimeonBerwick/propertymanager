@@ -123,7 +123,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             {isCompleteButUnpaid ? <span className="badge billing-partial">{closeoutLanguage.managerLabel}</span> : <StatusBadge status={data.request.status} />}
             {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={data.request} />}
             <span className="muted">{data.request.category}</span>
-            <span className="muted">Submitted {new Date(data.request.createdAt).toLocaleString()}</span>
+            <span className="muted">Submitted {formatDateTime(data.request.createdAt)}</span>
           </div>
           <RequestSignalStrip request={data.request} />
           <InlineRequestEditor request={data.request} />
