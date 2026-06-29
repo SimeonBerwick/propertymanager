@@ -60,18 +60,18 @@ test('landlord can complete the core maintenance workflow in the browser', async
 
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
 
-  await page.locator('form').filter({ has: page.getByRole('button', { name: 'Update status' }) }).getByRole('combobox').selectOption('approved')
-  await page.getByRole('button', { name: 'Update status' }).click()
+  await page.locator('form').filter({ has: page.getByRole('button', { name: 'Save request decision' }) }).getByRole('combobox').selectOption('approved')
+  await page.getByRole('button', { name: 'Save request decision' }).click()
   await expect(page.getByText('Request status updated.')).toBeVisible()
 
-  const vendorForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Assign vendor' }) })
-  await vendorForm.getByLabel('Single vendor assignment').selectOption({ label: 'ACME Plumbing' })
-  await page.getByRole('button', { name: 'Assign vendor' }).click()
+  const vendorForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Assign this vendor' }) })
+  await vendorForm.getByLabel('Vendor to assign directly').selectOption({ label: 'ACME Plumbing' })
+  await page.getByRole('button', { name: 'Assign this vendor' }).click()
   await expect(page.getByText('Vendor updated.')).toBeVisible()
 
-  const statusForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Update status' }) })
+  const statusForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save request decision' }) })
   await statusForm.getByRole('combobox').selectOption('scheduled')
-  await page.getByRole('button', { name: 'Update status' }).click()
+  await page.getByRole('button', { name: 'Save request decision' }).click()
   await expect(page.getByText('Request status updated.')).toBeVisible()
 
   const commentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Add comment' }) })
@@ -82,15 +82,15 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await expect(page.getByText('Vendor scheduled for tomorrow morning.').last()).toBeVisible()
 
   await statusForm.getByRole('combobox').selectOption('in_progress')
-  await page.getByRole('button', { name: 'Update status' }).click()
+  await page.getByRole('button', { name: 'Save request decision' }).click()
   await expect(page.getByText('Request status updated.')).toBeVisible()
 
   await statusForm.getByRole('combobox').selectOption('completed')
-  await page.getByRole('button', { name: 'Update status' }).click()
+  await page.getByRole('button', { name: 'Save request decision' }).click()
   await expect(page.getByText('Request status updated.')).toBeVisible()
 
   await statusForm.getByRole('combobox').selectOption('closed')
-  await page.getByRole('button', { name: 'Update status' }).click()
+  await page.getByRole('button', { name: 'Save request decision' }).click()
   await expect(page.getByText('Request status updated.')).toBeVisible()
   await page.getByRole('link', { name: propertyName }).click()
   await expect(page.getByText(requestTitle)).toBeVisible()

@@ -22,8 +22,8 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
 }
 
 function statusOptionLabel(status: RequestStatus) {
-  if (status === 'approved') return 'Tender bid'
-  if (status === 'vendor_selected') return 'Vendor selected for bid'
+  if (status === 'approved') return 'Ready for vendor'
+  if (status === 'vendor_selected') return 'Vendor selected'
   return deriveRequestCloseoutLanguage({ status }).managerLabel
 }
 
@@ -75,6 +75,9 @@ export function RequestControlPanel({
 
   return (
     <div className="stack" style={{ gap: 16 }}>
+      <div className="notice">
+        <strong>Choose one vendor path.</strong> Use direct assignment when you already know who should do the work. Use bid invitations when you want vendors to send pricing or availability first. You do not need to do both.
+      </div>
       {bidDecisionInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
           <div>
@@ -109,12 +112,12 @@ export function RequestControlPanel({
       <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
           <div className="kicker">Approval</div>
-          <h3 style={{ marginTop: 4 }}>Manager decision</h3>
+          <h3 style={{ marginTop: 4 }}>Approve, decline, or close the request</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
         <input type="hidden" name="fromStatus" value={request.status} />
         <label className="field">
-          <span className="field-label">Next status</span>
+          <span className="field-label">Request decision</span>
           <select className="input" name="toStatus" defaultValue={nextStatuses[0] ?? request.status} disabled={!nextStatuses.length}>
             {nextStatuses.map((status) => (
               <option key={status} value={status}>{statusOptionLabel(status)}</option>
@@ -125,39 +128,40 @@ export function RequestControlPanel({
           <span className="field-label">Reason if needed</span>
           <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
         </label>
+        <div className="muted">This changes the request itself. It does not assign a vendor or send bid invitations.</div>
         <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
         <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
-          {statusPending ? 'Saving...' : 'Update status'}
+          {statusPending ? 'Saving...' : 'Save request decision'}
         </button>
       </form>
 
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
-          <div className="kicker">Vendor</div>
-          <h3 style={{ marginTop: 4 }}>Direct assignment</h3>
+          <div className="kicker">Path 1</div>
+          <h3 style={{ marginTop: 4 }}>Assign one vendor now</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
         <label className="field">
-          <span className="field-label">Single vendor assignment</span>
-          <select className="input" name="vendorId" defaultValue="">
+          <span className="field-label">Vendor to assign directly</span>
+          <select className="input" name="vendorId" aria-label="Vendor to assign directly" defaultValue="">
             <option value="">No vendor selected</option>
             {vendors.map((vendor) => (
               <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
             ))}
           </select>
         </label>
-        <div className="muted">Choose one vendor only when you are assigning the work directly. Use bid invitations below when you want pricing or availability first.</div>
+        <div className="muted">Use this when you already know the vendor for the job. This skips the bid process.</div>
         <ActionFeedback error={vendorState.error} success={vendorState.success ? vendorState.message ?? 'Vendor updated.' : null} detail="The assignment is visible in the request timeline." />
         <button type="submit" className="button primary" disabled={vendorPending}>
-          {vendorPending ? 'Sending...' : 'Assign direct vendor'}
+          {vendorPending ? 'Assigning...' : 'Assign this vendor'}
         </button>
         {recommended.length ? <div className="muted">Available vendors: {recommended.map((vendor) => vendor.name).join(', ')}</div> : null}
       </form>
 
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
-          <div className="kicker">Tender bid</div>
-          <h3 style={{ marginTop: 4 }}>Invite vendors to bid</h3>
+          <div className="kicker">Path 2</div>
+          <h3 style={{ marginTop: 4 }}>Ask vendors for bids first</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
         <input type="hidden" name="mode" value="tender" />
@@ -168,9 +172,10 @@ export function RequestControlPanel({
               <span>{vendor.name}</span>
             </label>
           )) : <div className="muted">No active vendors available.</div>}
-        </div>
+        </div>        <div className="muted">Use this when you want vendors to return pricing or available times before you choose who gets the job.</div>
+
         <button type="submit" className="button" disabled={vendorPending || !vendors.length}>
-          {vendorPending ? 'Sending...' : 'Send bid invite'}
+          {vendorPending ? 'Sending...' : 'Send bid invitations'}
         </button>
       </form>
 
