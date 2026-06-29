@@ -61,7 +61,7 @@ export async function createTenantAccessCodeAction(
       code: result.code,
       expiresAt: result.expiresAt.toISOString(),
       scope: 'Tenant portal for this unit',
-      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Gmail or Outlook.`,
+      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
     }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not create tenant access code.' }
@@ -101,7 +101,7 @@ export async function createVendorAccessCodeAction(
       code: result.code,
       expiresAt: result.expiresAt.toISOString(),
       scope: request?.title ?? 'Selected work order',
-      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Gmail or Outlook.`,
+      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
     }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not create vendor access code.' }

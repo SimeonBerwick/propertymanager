@@ -19,7 +19,6 @@ type RuntimeCheckId =
   | 'upstashRestToken'
   | 'rateLimitBackend'
   | 'mailboxTokenEncryptionKey'
-  | 'gmailOAuth'
   | 'outlookOAuth'
   | 'stripeSecretKey'
   | 'stripeWebhookSecret'
@@ -100,7 +99,6 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const upstashRestUrl = envValue('UPSTASH_REDIS_REST_URL')
   const upstashRestToken = envValue('UPSTASH_REDIS_REST_TOKEN')
   const mailboxTokenEncryptionKey = envValue('MAILBOX_TOKEN_ENCRYPTION_KEY') || sessionSecret
-  const gmailOAuth = !!envValue('GMAIL_OAUTH_CLIENT_ID') && !!envValue('GMAIL_OAUTH_CLIENT_SECRET')
   const outlookOAuth = !!envValue('OUTLOOK_OAUTH_CLIENT_ID') && !!envValue('OUTLOOK_OAUTH_CLIENT_SECRET')
   const stripeSecretKey = envValue('STRIPE_SECRET_KEY')
   const stripeWebhookSecret = envValue('STRIPE_WEBHOOK_SECRET')
@@ -261,15 +259,6 @@ export function getRuntimeChecks(): RuntimeCheck[] {
       detail: hasNonPlaceholderSecret(mailboxTokenEncryptionKey)
         ? 'Mailbox token encryption is configured.'
         : 'Set MAILBOX_TOKEN_ENCRYPTION_KEY to a random value at least 32 characters.',
-    },
-    {
-      id: 'gmailOAuth',
-      label: 'Gmail OAuth',
-      ok: gmailOAuth,
-      blocking: false,
-      detail: gmailOAuth
-        ? 'Gmail mailbox connection is configured.'
-        : 'Add GMAIL_OAUTH_CLIENT_ID and GMAIL_OAUTH_CLIENT_SECRET to enable Gmail connect.',
     },
     {
       id: 'outlookOAuth',

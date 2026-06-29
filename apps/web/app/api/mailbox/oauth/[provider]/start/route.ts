@@ -4,7 +4,7 @@ import { mailboxAuthorizationUrl } from '@/lib/mailbox-providers'
 import type { MailboxProvider } from '@prisma/client'
 
 function parseProvider(value: string): MailboxProvider | null {
-  return value === 'gmail' || value === 'outlook' ? value : null
+  return value === 'outlook' ? value : null
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ provider: string }> }) {
