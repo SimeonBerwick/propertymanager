@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 declare global {
   interface Window {
@@ -44,6 +45,7 @@ export function PublicMarketingNav() {
       <Link href="/#how-it-works">How it works</Link>
       <Link href="/#pricing">{androidAppView ? 'Subscription' : 'Pricing'}</Link>
       <Link href="/support">Support</Link>
+      <ThemeToggle />
       <Link href="/login" className="button">Sign in</Link>
       <Link href="/signup" className="button primary">{androidAppView ? 'Start free month' : 'Start free trial'}</Link>
     </>
