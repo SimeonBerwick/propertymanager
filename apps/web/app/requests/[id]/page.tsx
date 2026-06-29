@@ -49,10 +49,12 @@ function tenderInviteLabel(status: string) {
   return status.replaceAll('_', ' ')
 }
 
-export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ comment?: string }> }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login')
   const { id } = await params
+  const query = searchParams ? await searchParams : {}
+  const defaultCommentVisibility = query.comment === 'tenant' ? 'external' : 'internal'
   const data = await getRequestDetailData(id, session.userId)
 
   if (!data) {
@@ -381,7 +383,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
           )) : <div className="muted">No comments.</div>}
           <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
-            <AddCommentForm requestId={data.request.id} />
+            <AddCommentForm requestId={data.request.id} defaultVisibility={defaultCommentVisibility} />
           </div>
         </SectionCard>
         </div>
