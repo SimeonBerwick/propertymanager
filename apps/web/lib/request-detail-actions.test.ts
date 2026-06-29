@@ -617,6 +617,7 @@ describe('updateDispatchFormAction', () => {
 
     expect(updatedRequest?.status).toBe('approved')
     expect(updatedRequest?.reviewState).toBe('vendor_declined_reassignment_needed')
+    expect(updatedRequest?.reviewNote).toBe('Vendor could not continue with this assignment. Reassignment needed.')
     expect(updatedRequest?.assignedVendorId).toBe(vendor.id)
     expect(statusEvent?.toStatus).toBe('approved')
     expect(dispatchEvent?.status).toBe('declined')

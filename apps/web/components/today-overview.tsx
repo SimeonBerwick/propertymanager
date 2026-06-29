@@ -140,8 +140,8 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
       <div id="needs-your-action">
         <SectionCard
           kicker="Needs attention"
-          title="Grouped blockers"
-          subtitle="The work is grouped by why it is blocked, so the next click is obvious."
+          title="Needs attention"
+          subtitle="Requests that need a manager decision, follow-up, or review."
           action={<Link href="/exceptions" className="button">View all exceptions</Link>}
         >
           {actionGroups.length ? (

@@ -13,6 +13,18 @@ describe('tenant request language', () => {
     expect(tenantRequestNextStep({ status: 'scheduled', vendorScheduledStart: '2026-06-15T10:00:00.000Z' })).toMatch(/expected to attend/i)
   })
 
+  test('uses decline and reassignment notes instead of a generic contact message', () => {
+    expect(tenantRequestNextStep({
+      status: 'declined',
+      declineReason: 'Duplicate request already handled.',
+    })).toBe('Duplicate request already handled.')
+    expect(tenantRequestNextStep({
+      status: 'approved',
+      reviewState: 'vendor_declined_reassignment_needed',
+      reviewNote: 'Vendor is unavailable this week.',
+    })).toBe('The vendor could not continue with this request. Your property manager is reviewing it and choosing the next step.')
+  })
+
   test('uses shared closeout labels when tenant billing is present', () => {
     expect(tenantRequestCloseoutLabel({
       status: 'closed',
