@@ -4,7 +4,6 @@ import { headers } from 'next/headers'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { BILLING_PLANS, OFFERED_PLANS, planPriceLabel } from '@/lib/billing-plans'
 import { AndroidRuntimeMarker } from './android-runtime-marker'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function HomePage() {
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
@@ -27,8 +26,6 @@ export default async function HomePage() {
             ) : (
               <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
             )}
-            <Link href="/#product-preview" className="button buttonLarge">See the product</Link>
-            <ThemeToggle />
           </div>
           {androidApp ? (
             <div className="notice" style={{ maxWidth: 640 }}>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</div>
@@ -149,7 +146,7 @@ export default async function HomePage() {
             <h3>Costs stay connected to the job</h3>
             <p>Track vendor billing records, approved overages, tenant billbacks, supporting notes, and closeout history beside the work order.</p>
           </article>
-          <article className="featureCard">
+          <article className="featureCard featureCardWide">
             <span className="featureNumber">05</span>
             <h3>Private photo and document trail</h3>
             <p>Maintenance photos and supporting records stay attached to the request with role-based access for managers, tenants, and vendors.</p>
