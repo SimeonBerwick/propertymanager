@@ -125,7 +125,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.tenantStatusUpdatePending) {
-    return { ...base, id: `${request.id}:tenant-update`, href: `/requests/${request.id}#communication`, primaryLabel: 'Send tenant update', reason: 'The work status changed, but the renter has not been notified yet.', group: 'Tenant updates', priority: 'normal', actionType: 'send_tenant_update', score: SCORE.tenantUpdate }
+    return { ...base, id: `${request.id}:tenant-update`, href: `/requests/${request.id}?comment=tenant#communication`, primaryLabel: 'Send tenant update', reason: 'The work status changed, but the renter has not been notified yet.', group: 'Tenant updates', priority: 'normal', actionType: 'send_tenant_update', score: SCORE.tenantUpdate }
   }
 
   if ((request.vendorPayableBalanceCents ?? 0) > 0) {

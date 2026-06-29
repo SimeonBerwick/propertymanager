@@ -51,7 +51,7 @@ describe('next action engine', () => {
     expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z', claimedAt: '2026-06-19T12:00:00.000Z', tenantStatusUpdatePending: true })).toMatchObject({
       priority: 'normal',
       primaryLabel: 'Send tenant update',
-      href: '/requests/r1#communication',
+      href: '/requests/r1?comment=tenant#communication',
       actionType: 'send_tenant_update',
     })
   })
