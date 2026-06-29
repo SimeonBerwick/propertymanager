@@ -9,7 +9,7 @@ import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 
-type VendorDashboardFilter = 'open' | 'bids' | 'billing' | 'commercial'
+type VendorDashboardFilter = 'open' | 'recent' | 'bids' | 'billing' | 'commercial'
 
 function isActiveFilter(current: VendorDashboardFilter, target: VendorDashboardFilter) {
   return current === target
@@ -28,6 +28,7 @@ export default async function VendorDashboardPage({
     getSiblingVendorAccountCount(session),
   ])
   const filter = resolvedSearchParams?.filter === 'open'
+    || resolvedSearchParams?.filter === 'recent'
     || resolvedSearchParams?.filter === 'bids'
     || resolvedSearchParams?.filter === 'billing'
     || resolvedSearchParams?.filter === 'commercial'
@@ -45,6 +46,7 @@ export default async function VendorDashboardPage({
     }),
   }))
   const openRequests = requestViews.filter(({ request, viewState }) => viewState.isOpenWork && !['closed', 'declined', 'canceled', 'completed'].includes(request.status))
+  const recentRequests = requestViews.filter(({ request }) => ['closed', 'completed'].includes(request.status)).slice(0, 8)
   const pendingBids = requestViews.filter(({ viewState }) => viewState.isPendingBid)
   const awardedRequests = openRequests.filter(({ viewState }) => viewState.isAwardedToViewer)
   const scheduledVisits = openRequests.filter(({ request, viewState }) => viewState.canSeeSchedule && request.vendorScheduledStart)
@@ -59,8 +61,10 @@ export default async function VendorDashboardPage({
   const payableDocs = requests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
   const commercialCount = commercialItems.length
   const filteredRequests = filter === 'open'
-    ? openRequests
-    : filter === 'bids'
+    ? (openRequests.length ? openRequests : recentRequests)
+    : filter === 'recent'
+      ? recentRequests
+      : filter === 'bids'
       ? pendingBids
       : filter === 'billing'
         ? billingRequests.map((request) => ({
@@ -75,8 +79,10 @@ export default async function VendorDashboardPage({
           }))
         : []
   const sectionTitle = filter === 'open'
-    ? 'Open work'
-    : filter === 'bids'
+    ? (openRequests.length ? 'Open work' : 'Recent work')
+    : filter === 'recent'
+      ? 'Recent work'
+      : filter === 'bids'
       ? 'Pending bids'
       : filter === 'billing'
         ? 'Requests with payments'
@@ -130,6 +136,15 @@ export default async function VendorDashboardPage({
           <div className="kicker">Open work</div>
           <h2>{openRequests.length}</h2>
           <div className="muted">Requests still in motion</div>
+        </Link>
+        <Link
+          href={'/vendor?filter=recent' as Route}
+          className="card"
+          style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'recent') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'recent') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
+        >
+          <div className="kicker">Recent work</div>
+          <h2>{recentRequests.length}</h2>
+          <div className="muted">Completed requests you can still open</div>
         </Link>
         <Link
           href={'/vendor?filter=bids' as Route}
@@ -224,7 +239,9 @@ export default async function VendorDashboardPage({
               ? 'No pending bids right now.'
               : filter === 'billing'
                 ? 'No requests with visible payments right now.'
-                : 'No requests are assigned to this vendor account right now.'}
+                : filter === 'recent'
+                  ? 'No completed requests are visible yet.'
+                  : 'No requests are assigned to this vendor account right now.'}
           </div>
         )}
       </section>
