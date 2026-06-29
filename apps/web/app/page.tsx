@@ -146,7 +146,7 @@ export default async function HomePage() {
             <h3>Costs stay connected to the job</h3>
             <p>Track vendor billing records, approved overages, tenant billbacks, supporting notes, and closeout history beside the work order.</p>
           </article>
-          <article className="featureCard featureCardWide">
+          <article className="featureCard">
             <span className="featureNumber">05</span>
             <h3>Private photo and document trail</h3>
             <p>Maintenance photos and supporting records stay attached to the request with role-based access for managers, tenants, and vendors.</p>
@@ -155,6 +155,11 @@ export default async function HomePage() {
             <span className="featureNumber">06</span>
             <h3>CSV in and out for custom systems</h3>
             <p>Upload and download units, vendors, and tickets by CSV so your maintenance data can fit into your own reports, spreadsheets, or custom workflows.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">07</span>
+            <h3>Suggested next step on every request</h3>
+            <p>Each ticket shows the recommended next action first so managers know whether to assign, approve, update, bill, or close the work.</p>
           </article>
         </div>
         <p className="featureNote">Simeonware focuses on maintenance coordination first. Online payment processing is planned as a separate feature rather than part of the core maintenance workflow.</p>
@@ -172,20 +177,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="marketingSection">
-        <div className="trustPanel">
-          <div>
-            <div className="eyebrow">Designed for responsible operations</div>
-            <h2>Your maintenance records deserve more than a group chat.</h2>
-          </div>
-          <div className="trustGrid">
-            <div><strong>Role-based access</strong><span>Managers, tenants, and vendors see the workflows intended for them.</span></div>
-            <div><strong>Private media storage</strong><span>Maintenance photos use authenticated access controls.</span></div>
-            <div><strong>Operational history</strong><span>Keep comments, status changes, and decisions attached to each request.</span></div>
-            <div><strong>Clear data choices</strong><span>Published privacy, terms, support, and account-deletion processes.</span></div>
-          </div>
-        </div>
-      </section>
 
       <section className={`marketingSection webPricingSection ${androidApp ? 'serverHidden' : ''}`} id="pricing" data-web-pricing>
         <div className="sectionIntro">
