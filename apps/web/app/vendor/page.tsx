@@ -225,9 +225,9 @@ export default async function VendorDashboardPage({
                 ) : null}
               </div>
               <div style={{ textAlign: 'right' }}>
-                {viewState.isAwardedToViewer ? (
+                {viewState.isAwardedToViewer && !['completed', 'closed'].includes(request.status) ? (
                   <span className="badge done">Awarded to you</span>
-                ) : (
+                ) : ['completed', 'closed'].includes(request.status) ? null : (
                   <div className="muted">{viewState.tenderLabel}</div>
                 )}
               </div>
