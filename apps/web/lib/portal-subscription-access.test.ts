@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 
-const NOW_FUTURE = new Date('2026-07-01T00:00:00.000Z')
+const FUTURE_SUBSCRIPTION_END = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
 describe('evaluatePortalSubscriptionAccess', () => {
   test('allows portals for an active manager subscription', () => {
     const result = evaluatePortalSubscriptionAccess({
       subscriptionStatus: 'active',
       trialEndsAt: null,
-      subscriptionEndsAt: NOW_FUTURE,
+      subscriptionEndsAt: FUTURE_SUBSCRIPTION_END,
     })
 
     expect(result.allowed).toBe(true)
@@ -19,7 +19,7 @@ describe('evaluatePortalSubscriptionAccess', () => {
     const result = evaluatePortalSubscriptionAccess({
       subscriptionStatus: 'past_due',
       trialEndsAt: null,
-      subscriptionEndsAt: NOW_FUTURE,
+      subscriptionEndsAt: FUTURE_SUBSCRIPTION_END,
     })
 
     expect(result.allowed).toBe(false)
