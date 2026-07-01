@@ -4,9 +4,9 @@ import type { MaintenanceRequest } from '@/lib/types'
 
 const LABELS: Record<string, string> = {
   requested: 'Needs triage',
-  approved: 'Ready for vendor',
+  approved: 'Ready for vendor bids',
   declined: 'Declined',
-  vendor_selected: 'Vendor selected',
+  vendor_selected: 'Vendor chosen for work',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
   completed: 'Completed',
@@ -17,7 +17,7 @@ const LABELS: Record<string, string> = {
   'scheduled-today': 'Today',
   overdue: 'Overdue',
   'follow-up': 'Follow up',
-  review: 'Review',
+  review: 'Needs review',
 }
 
 export function RequestFlowBadge({ request }: { request: Pick<MaintenanceRequest, 'status' | 'reviewState' | 'vendorScheduledEnd' | 'vendorScheduledStart'> }) {

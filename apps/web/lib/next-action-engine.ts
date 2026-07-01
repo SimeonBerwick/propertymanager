@@ -84,7 +84,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.status === 'requested' && !request.claimedAt) {
-    return { ...base, id: `${request.id}:claim-new`, primaryLabel: 'Take ownership', reason: 'This new request is unclaimed.', group: 'New unclaimed requests', priority: request.urgency === 'high' ? 'high' : 'normal', actionType: 'claim_request', score: SCORE.newUnclaimed }
+    return { ...base, id: `${request.id}:claim-new`, primaryLabel: 'Start review', reason: 'This new request is ready for review.', group: 'New requests', priority: request.urgency === 'high' ? 'high' : 'normal', actionType: 'claim_request', score: SCORE.newUnclaimed }
   }
 
   if (request.status === 'requested') {
@@ -95,7 +95,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     if ((request.vendorPayableBalanceCents ?? 0) > 0) {
       return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Collect payment before closeout', reason: `Vendor payment is still open${request.vendorPayableTo ? ` for ${request.vendorPayableTo}` : ''}.`, group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
     }
-    return { ...base, id: `${request.id}:monitor`, primaryLabel: 'Review request history', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
+    return { ...base, id: `${request.id}:monitor`, primaryLabel: 'View details', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
   }
 
   if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {
@@ -103,7 +103,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendor bids', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
+    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
   if ((request.pendingBidCount ?? 0) > 0) {
@@ -111,7 +111,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if ((request.pendingVendorApprovalCount ?? 0) > 0) {
-    return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Review vendor costs', reason: `${request.pendingVendorApprovalCount} vendor cost submission${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closeout.`, group: 'Vendor costs', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
+    return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 
   if (isOverdue(request, now)) {
@@ -119,7 +119,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.reviewState === 'vendor_completed_pending_review') {
-    return { ...base, id: `${request.id}:vendor-update-review`, primaryLabel: 'Review vendor update', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
+    return { ...base, id: `${request.id}:vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }
 
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {
@@ -146,7 +146,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:close`, primaryLabel: 'Close request', reason: 'Work is complete and payments are settled.', group: 'Closeout', priority: 'normal', actionType: 'close_request', score: SCORE.closeoutReady }
   }
 
-  return { ...base, id: `${request.id}:monitor`, primaryLabel: 'Review request history', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
+  return { ...base, id: `${request.id}:monitor`, primaryLabel: 'View details', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
 }
 
 export function buildDashboardNextActions(requests: DashboardRequestRow[], now = new Date()) {

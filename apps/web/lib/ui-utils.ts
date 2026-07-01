@@ -78,11 +78,11 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
 export function reviewStateLabel(value?: ReviewStatus) {
   switch (value) {
     case 'vendor_completed_pending_review':
-      return 'Review completion'
+      return 'Review completed work'
     case 'needs_follow_up':
       return 'Needs follow-up'
     case 'vendor_update_pending_review':
-      return 'Vendor update needs review'
+      return 'Needs review'
     case 'reassignment_needed':
       return 'Vendor reassignment needed'
     case 'vendor_declined_reassignment_needed':
@@ -102,14 +102,14 @@ export function reviewStateLabel(value?: ReviewStatus) {
 export function formatClaimStatus(request: Pick<MaintenanceRequest, 'claimedAt' | 'firstReviewedAt' | 'claimedByUserId' | 'claimedByUserName'>) {
   if (request.claimedAt) {
     const owner = request.claimedByUserName ?? request.claimedByUserId ?? 'operator'
-    return `Claimed by ${owner} ${formatRelativeAge(request.claimedAt)}`
+    return `Review started by ${owner} ${formatRelativeAge(request.claimedAt)}`
   }
 
   if (request.firstReviewedAt) {
     return `First reviewed ${formatRelativeAge(request.firstReviewedAt)}`
   }
 
-  return 'Unclaimed'
+  return 'Not started'
 }
 
 export function isStaleClaim(request: Pick<MaintenanceRequest, 'claimedAt' | 'status' | 'reviewState'>) {

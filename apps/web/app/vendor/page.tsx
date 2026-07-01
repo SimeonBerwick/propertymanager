@@ -100,6 +100,7 @@ export default async function VendorDashboardPage({
           <PushNotificationControl />
           {siblingAccountCount > 1 ? <Link href={`/vendor/auth/accounts?identifier=${encodeURIComponent(session.email ?? session.phone ?? '')}` as Route} className="button">Switch account</Link> : null}
           <Link href={'/support' as Route} className="button">Support</Link>
+          <a className="button" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
           <form action={vendorSignoutAction}>
             <button type="submit" className="button">Sign out</button>
           </form>
@@ -236,7 +237,7 @@ export default async function VendorDashboardPage({
               </div>
               <div style={{ textAlign: 'right' }}>
                 {viewState.isAwardedToViewer && !['completed', 'closed'].includes(request.status) ? (
-                  <span className="badge done">Awarded to you</span>
+                  <span className="badge done">Vendor chosen for work</span>
                 ) : ['completed', 'closed'].includes(request.status) ? null : (
                   <div className="muted">{viewState.tenderLabel}</div>
                 )}
@@ -245,7 +246,7 @@ export default async function VendorDashboardPage({
           </Link>
         )) : (
           <div className="emptyState">
-            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No visible payments' : filter === 'recent' ? 'No completed work yet' : 'No active work assigned'}</strong>
+            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No visible payments' : filter === 'recent' ? 'No completed work yet' : 'No active work chosen'}</strong>
             <span>
               {filter === 'bids'
                 ? 'New bid invitations will appear here when a property manager asks for pricing.'

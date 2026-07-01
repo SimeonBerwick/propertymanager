@@ -30,8 +30,8 @@ describe('next action engine', () => {
     expect(getRequestNextAction(base)).toMatchObject({
       priority: 'normal',
       title: 'Kitchen sink',
-      reason: 'This new request is unclaimed.',
-      primaryLabel: 'Take ownership',
+      reason: 'This new request is ready for review.',
+      primaryLabel: 'Start review',
       href: '/requests/r1#actions',
       actionType: 'claim_request',
       requestId: 'r1',
@@ -68,7 +68,7 @@ describe('next action engine', () => {
   it('reviews vendor completion updates before closeout', () => {
     expect(getRequestNextAction({ ...base, status: 'in_progress' as const, reviewState: 'vendor_completed_pending_review' as const })).toMatchObject({
       priority: 'high',
-      primaryLabel: 'Review vendor update',
+      primaryLabel: 'Review completed work',
       actionType: 'review_vendor_update',
     })
   })
@@ -95,8 +95,8 @@ describe('next action engine', () => {
   it('reviews submitted vendor costs before closeout', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
       priority: 'high',
-      primaryLabel: 'Review vendor costs',
-      reason: '1 vendor cost submission needs approval before closeout.',
+      primaryLabel: 'Vendor costs to approve',
+      reason: '1 vendor cost needs approval before closing the request.',
       href: '/requests/r1#vendor-approvals',
       actionType: 'review_vendor_costs',
     })

@@ -52,6 +52,6 @@ describe('reviewStateLabel', () => {
   })
 
   test('uses plain closeout review wording', () => {
-    expect(reviewStateLabel('vendor_completed_pending_review')).toBe('Review completion')
+    expect(reviewStateLabel('vendor_completed_pending_review')).toBe('Review completed work')
   })
 })

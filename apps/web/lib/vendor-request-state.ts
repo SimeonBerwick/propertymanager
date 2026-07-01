@@ -131,11 +131,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: true,
       isOpenWork: true,
       isPendingBid: false,
-      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Awarded to you',
-      tenderLabel: 'Awarded to you',
+      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for work',
+      tenderLabel: 'Vendor chosen for work',
       heroNotice: {
-        title: 'You won this job',
-        detail: 'The property manager awarded this request to you.',
+        title: 'Vendor chosen for work',
+        detail: 'The property manager chose your company for this work.',
         tone: 'success',
       },
     }
@@ -149,11 +149,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: false,
       isOpenWork: true,
       isPendingBid: false,
-      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Directly assigned to you',
-      tenderLabel: 'Direct assignment',
+      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for work',
+      tenderLabel: 'Vendor chosen for work',
       heroNotice: {
-        title: 'Directly assigned to you',
-        detail: 'The property manager assigned this work directly to your company.',
+        title: 'Vendor chosen for work',
+        detail: 'The property manager chose your company for this work.',
         tone: 'info',
       },
     }
@@ -203,7 +203,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
     isOpenWork: true,
     isPendingBid: inviteStatus === 'invited',
     statusLabel: inviteStatus === 'invited' ? 'Invited to bid' : input.requestStatus.replaceAll('_', ' '),
-    tenderLabel: inviteStatus === 'invited' ? 'Invited to bid' : 'Direct assignment',
+    tenderLabel: inviteStatus === 'invited' ? 'Invited to bid' : 'Vendor chosen for work',
     heroNotice: inviteStatus === 'invited'
       ? {
           title: 'Invited to bid',

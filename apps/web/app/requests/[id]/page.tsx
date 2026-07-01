@@ -121,7 +121,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     : canChooseVendor
       ? 'Choose vendor path'
       : ['completed', 'closed'].includes(data.request.status)
-        ? 'Closeout actions'
+        ? 'Close request actions'
         : 'Request actions'
   const actionSectionSubtitle = hasSubmittedBid
     ? 'Review returned pricing and choose the vendor.'
@@ -170,8 +170,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         <div id="vendor-approvals">
         <SectionCard
           kicker="Approval needed"
-          title="Review vendor cost submissions"
-          subtitle="Approve submitted bids, overages, fees, or invoices before finishing payment and closeout."
+          title="Vendor costs to approve"
+          subtitle="Approve submitted bids, overages, fees, or invoices before finishing payment and closing the request."
         >
           <div className="stack" style={{ gap: 12 }}>
             {pendingVendorCommercialItems.map((item) => (
@@ -189,7 +189,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 <VendorCommercialApprovalForm
                   requestId={data.request.id}
                   itemId={item.id}
-                  label={item.itemType === 'bid' ? 'Approve bid' : 'Approve submission'}
+                  label={item.itemType === 'bid' ? 'Approve bid' : 'Approve cost'}
                 />
               </div>
             ))}
@@ -382,7 +382,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
 
           {resolvedVendorCommercialItems.length ? (
-          <SectionCard kicker="Invoices" title="Approved and declined vendor items" subtitle="Resolved bids, fees, extra costs, and invoice items sent from the vendor portal.">
+          <SectionCard kicker="Invoices" title="Resolved vendor costs" subtitle="Approved or declined bids, fees, extra costs, and invoices sent from the vendor portal.">
             {resolvedVendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>{item.title}</div>
