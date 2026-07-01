@@ -56,6 +56,15 @@ describe('next action engine', () => {
     })
   })
 
+  it('does not ask for ownership after a vendor appointment is scheduled', () => {
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z' })).toMatchObject({
+      priority: 'low',
+      primaryLabel: 'Wait for appointment',
+      reason: 'The vendor is scheduled. No manager action is needed right now.',
+      actionType: 'monitor_scheduled_work',
+    })
+  })
+
   it('reviews vendor completion updates before closeout', () => {
     expect(getRequestNextAction({ ...base, status: 'in_progress' as const, reviewState: 'vendor_completed_pending_review' as const })).toMatchObject({
       priority: 'high',
