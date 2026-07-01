@@ -24,6 +24,7 @@ export default async function TenantMobileLayout({ children }: { children: React
             <Link href={'/mobile' as Route} className="button">Dashboard</Link>
             <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
             <Link href={'/support' as Route} className="button">Support</Link>
+            <a className="button" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
             <form action={tenantMobileSignoutAction}>
               <button type="submit" className="button">Sign out</button>
             </form>

@@ -17,7 +17,7 @@ describe('request guidance', () => {
 
   it('guides a new unclaimed request into ownership', () => {
     const request = { ...base, status: 'requested' as const }
-    expect(getRecommendedAction(request).label).toBe('Take ownership')
+    expect(getRecommendedAction(request).label).toBe('Start review')
     expect(getWorkflowStep(request)).toBe(0)
   })
 
@@ -31,7 +31,7 @@ describe('request guidance', () => {
     const request = { ...base, status: 'closed' as const, reviewState: 'vendor_completed_pending_review' as const }
     expect(getWorkflowStep(request)).toBe(5)
     expect(getRecommendedAction(request)).toMatchObject({
-      label: 'Review request history',
+      label: 'View details',
       tone: 'clear',
     })
     expect(getAttentionScore(request)).toBe(0)
@@ -41,8 +41,8 @@ describe('request guidance', () => {
     const request = { ...base, status: 'completed' as const, pendingVendorApprovalCount: 2 }
 
     expect(getRecommendedAction(request)).toMatchObject({
-      label: 'Review vendor costs',
-      detail: '2 vendor cost submissions need approval before closeout.',
+      label: 'Vendor costs to approve',
+      detail: '2 vendor costs need approval before closing the request.',
       tone: 'review',
     })
     expect(getAttentionScore(request)).toBeGreaterThan(0)

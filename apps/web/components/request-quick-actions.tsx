@@ -21,7 +21,7 @@ function confirmQuickAction(event: React.MouseEvent<HTMLButtonElement>) {
   }
 
   if (action === 'release-claim') {
-    const confirmed = window.confirm('Release this queue claim and return the request to the unclaimed pool?')
+    const confirmed = window.confirm('Stop showing this request as being reviewed by you?')
     if (!confirmed) event.preventDefault()
   }
 }
@@ -37,7 +37,7 @@ export function RequestQuickActions({
 
   const actions = [
     request.status === 'requested'
-      ? { key: 'claim-for-review', label: 'Claim for review', tone: 'button primary', title: 'Claim this request as the next item being reviewed and notify the tenant that it is being looked at.' }
+      ? { key: 'claim-for-review', label: 'Start review', tone: 'button primary', title: 'Start reviewing this request and notify the tenant that it is being looked at.' }
       : null,
     ['approved', 'vendor_selected', 'reopened'].includes(request.status)
       ? { key: 'mark-scheduled', label: 'Mark scheduled', tone: 'button', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
@@ -46,16 +46,16 @@ export function RequestQuickActions({
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
       : null,
     request.reviewState && request.reviewState !== 'none'
-      ? { key: 'needs-follow-up', label: 'Needs follow-up', tone: 'button', title: 'Keep this request in the follow-up queue for operator action.' }
+      ? { key: 'needs-follow-up', label: 'Needs review', tone: 'button', title: 'Keep this request visible for manager review.' }
       : null,
     request.assignedVendorName
       ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and work status, then marks reassignment needed.' }
       : null,
     request.claimedAt && request.claimedByUserId && isStaleClaim(request)
-      ? { key: 'take-over-claim', label: 'Take over claim', tone: 'button', title: 'Reassign stale queue claim ownership to yourself and keep this request moving.' }
+      ? { key: 'take-over-claim', label: 'Continue review', tone: 'button', title: 'Move this stalled review to yourself and keep the request moving.' }
       : null,
     request.claimedAt && request.claimedByUserId
-      ? { key: 'release-claim', label: 'Release claim', tone: 'button', title: 'Clear queue claim ownership and return this request to the unclaimed pool.' }
+      ? { key: 'release-claim', label: 'Stop review', tone: 'button', title: 'Stop showing this request as being reviewed by you.' }
       : null,
   ].filter(Boolean) as { key: string; label: string; tone: string; title: string }[]
 

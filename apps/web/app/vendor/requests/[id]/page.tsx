@@ -51,8 +51,8 @@ export default async function VendorRequestDetailPage({
   const isPaidClosed = request.status === 'closed' && closeoutLanguage.isPaid
   const heroNotice = !isPaidClosed && awardedInvite && viewState.isAwardedToViewer
     ? {
-        title: 'You won this job',
-        detail: awardedInvite.bidAmountCents != null ? `Awarded on your bid for USD ${(awardedInvite.bidAmountCents / 100).toFixed(2)}.` : viewState.heroNotice?.detail ?? 'The property manager awarded this request to you.',
+        title: 'Vendor chosen for work',
+        detail: awardedInvite.bidAmountCents != null ? `Awarded on your bid for USD ${(awardedInvite.bidAmountCents / 100).toFixed(2)}.` : viewState.heroNotice?.detail ?? 'The property manager chose your company for this work.',
         tone: 'success' as const,
       }
     : viewState.heroNotice

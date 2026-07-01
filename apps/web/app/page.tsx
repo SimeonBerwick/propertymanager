@@ -109,7 +109,7 @@ export default async function HomePage() {
             <div className="productScreenshotFrame">
               <Image src="/product-screenshots/reporting.png" alt="Simeonware property maintenance performance reports" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
-            <figcaption><strong>Operational records</strong><span>Review request history, aging, costs, CSV exports, and closeout activity.</span></figcaption>
+            <figcaption><strong>Operational records</strong><span>View request details, aging, costs, CSV exports, and closeout activity.</span></figcaption>
           </figure>
         </div>
       </section>

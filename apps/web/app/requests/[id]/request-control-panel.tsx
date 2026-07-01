@@ -22,8 +22,8 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
 }
 
 function statusOptionLabel(status: RequestStatus) {
-  if (status === 'approved') return 'Ready for vendor'
-  if (status === 'vendor_selected') return 'Vendor selected'
+  if (status === 'approved') return 'Ready for vendor bids'
+  if (status === 'vendor_selected') return 'Vendor chosen for work'
   return deriveRequestCloseoutLanguage({ status }).managerLabel
 }
 

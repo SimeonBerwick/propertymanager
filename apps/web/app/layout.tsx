@@ -96,6 +96,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                       <Link href="/workflows">Rules</Link>
                       <Link href={'/account/settings' as Route}>Account settings</Link>
                       <Link href="/support">Support</Link>
+                      <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
                     </div>
                   </details>
                   <details className="navMenu">
@@ -122,6 +123,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/support">Support</Link>
+            <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
             <Link href="/account-deletion">Account deletion</Link>
           </footer>
           {session.isLoggedIn ? <ManagerMobileNav /> : null}
