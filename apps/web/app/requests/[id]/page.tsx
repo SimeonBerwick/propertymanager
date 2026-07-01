@@ -166,6 +166,17 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       <GuidedRequestWorkflow request={data.request} />
 
+      <div id="actions">
+      <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
+        <RequestControlPanel
+          request={data.request}
+          vendors={data.availableVendors}
+          tenders={data.tenders}
+        />
+      </SectionCard>
+      </div>
+
+
       {pendingVendorCommercialItems.length ? (
         <div id="vendor-approvals">
         <SectionCard
@@ -200,7 +211,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       <nav className="requestSectionNav" aria-label="Request sections">
         <a href="#summary">Summary</a>
-        <a href="#actions">Actions</a>
+        <a href="#actions">Next step</a>
         <a href="#timeline">Timeline</a>
         {pendingVendorCommercialItems.length ? <a href="#vendor-approvals">Approvals</a> : null}
         {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Invoices and payments</a> : null}
@@ -320,7 +331,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <div className="requestDetailGrid">
         <div className="stack">
           <div id="summary">
-          <SectionCard kicker="Summary" title="Request summary" subtitle="The essential context for this request.">
+          <SectionCard kicker="Summary" title="Request summary" subtitle="Who reported it, where it is, and the details needed to decide.">
             <div className="stack" style={{ gap: 14 }}>
               <div>
                 <strong>Description</strong>
@@ -342,7 +353,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
 
           <div id="communication">
-          <SectionCard kicker="Communication" title="Comments">
+          <SectionCard kicker="Messages" title="Tenant and internal notes">
             {data.comments.length ? data.comments.map((comment) => (
               <div key={comment.id} className="commentRow">
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
@@ -362,7 +373,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
 
           <div id="timeline">
-          <SectionCard kicker="Timeline" title="Vendor activity" subtitle="Field activity and progress so far.">
+          <SectionCard kicker="Timeline" title="Work history" subtitle="Vendor visits, status changes, and supporting records.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
               <div key={entry.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>
@@ -413,7 +424,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </div>
 
       <div className="grid cols-3 requestEvidenceGrid">
-        <SectionCard kicker="Photos" title="Issue intake photos">
+        <SectionCard kicker="Photos" title="Tenant photos">
           {issuePhotos.length ? (
             <div className="photo-grid">
               {issuePhotos.map((photo) => (
@@ -428,7 +439,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ) : <div className="muted">No issue intake photos uploaded.</div>}
         </SectionCard>
 
-        <SectionCard kicker="Vendor evidence" title="Field photos">
+        <SectionCard kicker="Photos" title="Vendor photos">
           {vendorPhotos.length ? (
             <div className="photo-grid">
               {vendorPhotos.map((photo) => (
@@ -447,7 +458,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       {hasVendorChosen || data.billingDocuments.length ? (
       <div id="billing">
-      <SectionCard kicker="Invoices and payments" title="Invoices and payments" subtitle="Create, send, and track request-related charges when money movement is needed.">
+      <SectionCard kicker="Invoices and payments" title="Payments and tenant charges" subtitle="Use this only after a vendor is chosen or a tenant charge needs to be recorded.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Tenant responsibility</div>

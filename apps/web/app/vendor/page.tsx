@@ -109,9 +109,9 @@ export default async function VendorDashboardPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Next actions</div>
-          <h2 style={{ margin: '4px 0' }}>What needs your attention today</h2>
-          <div className="muted">Pending bids, awarded work, scheduled visits, and work updates are shown first.</div>
+          <div className="kicker">Do next</div>
+          <h2 style={{ margin: '4px 0' }}>Work waiting on you</h2>
+          <div className="muted">Bid invites, chosen work, scheduled visits, and requested updates are shown first.</div>
         </div>
         {attentionItems.length ? attentionItems.map(({ request, viewState, attentionLabel }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
@@ -122,7 +122,7 @@ export default async function VendorDashboardPage({
                 <div className="muted">{request.property.name} - {request.unit.label} - {viewState.statusLabel}</div>
                 {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Visit {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
               </div>
-              <span className="button primary">Open</span>
+              <span className="button primary">View details</span>
             </div>
           </Link>
         )) : (
@@ -133,7 +133,7 @@ export default async function VendorDashboardPage({
         )}
       </section>
 
-      <section className="grid cols-4">
+      <section className="grid cols-4" aria-label="Vendor work summary">
         <Link
           href={'/vendor?filter=open' as Route}
           className="card"
@@ -175,22 +175,22 @@ export default async function VendorDashboardPage({
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'commercial') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'commercial') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">Submitted items</div>
+          <div className="kicker">Sent to manager</div>
           <h2>{commercialCount}</h2>
-          <div className="muted">Invoices sent to property manager</div>
+          <div className="muted">Bids, overages, and invoices</div>
         </Link>
       </section>
 
       <section className="card stack">
         <div>
-          <div className="kicker">{filter === 'commercial' ? 'Invoices' : 'Requests'}</div>
+          <div className="kicker">{filter === 'commercial' ? 'Sent items' : 'Work list'}</div>
           <h3 style={{ marginTop: 4 }}>{sectionTitle}</h3>
         </div>
         {awardedRequests.length ? (
           <div className="awardHero awardHero-success">
             <div className="kicker">Awarded work</div>
             <div className="signalTitle" style={{ fontSize: 22 }}>{awardedRequests.length} awarded request{awardedRequests.length === 1 ? '' : 's'} need attention</div>
-            <div>Open the awarded request and send the first vendor update fast.</div>
+            <div>Open the chosen request and send the next work update.</div>
           </div>
         ) : null}
         {filter === 'commercial' ? (
@@ -217,13 +217,13 @@ export default async function VendorDashboardPage({
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {request.property.name} - {request.unit.label} - {request.category} - {request.urgency} urgency - {viewState.statusLabel}
+                  {request.property.name} - {request.unit.label} - {viewState.statusLabel}
                 </div>
                 <div className="muted">
                   Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
                 </div>
                 <div className="muted">
-                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : 'No visit window confirmed for you'}
+                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
                 </div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>

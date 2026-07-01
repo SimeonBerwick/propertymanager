@@ -52,6 +52,7 @@ export default async function TenantMobileDashboardPage({
         <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
       </section>
 
+      {requests.length || openRequests.length ? (
       <section className="grid cols-2">
         <Link
           href={'/mobile?filter=open' as Route}
@@ -67,11 +68,12 @@ export default async function TenantMobileDashboardPage({
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'all') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'all') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">Request history</div>
+          <div className="kicker">Repair history</div>
           <h2>{requests.length}</h2>
-          <div className="muted">Review past and current requests</div>
+          <div className="muted">Past and current repairs</div>
         </Link>
       </section>
+      ) : null}
 
       {outstandingChargeCount ? (
         <Link href={'/mobile?filter=charges' as Route} className="notice tenantChargeNotice">
@@ -83,7 +85,7 @@ export default async function TenantMobileDashboardPage({
       <section className="card stack">
         <div className="row">
           <div>
-            <div className="kicker">Requests</div>
+            <div className="kicker">Repair status</div>
             <h3 style={{ marginTop: 4 }}>{sectionTitle}</h3>
           </div>
         </div>
@@ -106,7 +108,7 @@ export default async function TenantMobileDashboardPage({
                   </div>
                 ) : null}
               </div>
-              <div className="muted">Open details</div>
+              <span className="button compactToggle">View details</span>
             </div>
           </Link>
         )) : (
