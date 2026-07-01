@@ -68,7 +68,7 @@ describe('deriveVendorRequestViewState', () => {
 
     expect(result.canControlDispatch).toBe(false)
     expect(result.isOpenWork).toBe(false)
-    expect(result.statusLabel).toBe('Closed - unpaid')
-    expect(result.heroNotice?.detail).toMatch(/payment still needs attention/i)
+    expect(result.statusLabel).toBe('Closed - payment open')
+    expect(result.heroNotice?.detail).toMatch(/payment balance is still open/i)
   })
 })

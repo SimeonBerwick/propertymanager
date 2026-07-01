@@ -50,4 +50,8 @@ describe('reviewStateLabel', () => {
   test('describes vendor-declined reassignment clearly', () => {
     expect(reviewStateLabel('vendor_declined_reassignment_needed')).toBe('Vendor declined, reassign needed')
   })
+
+  test('uses plain closeout review wording', () => {
+    expect(reviewStateLabel('vendor_completed_pending_review')).toBe('Review completion')
+  })
 })

@@ -78,7 +78,7 @@ export function getRequestFlowState(request: Pick<MaintenanceRequest, 'status' |
 export function reviewStateLabel(value?: ReviewStatus) {
   switch (value) {
     case 'vendor_completed_pending_review':
-      return 'Completion needs review'
+      return 'Review completion'
     case 'needs_follow_up':
       return 'Needs follow-up'
     case 'vendor_update_pending_review':

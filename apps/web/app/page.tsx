@@ -14,11 +14,11 @@ export default async function HomePage() {
       <AndroidRuntimeMarker />
       <section className="marketingHero">
         <div className="marketingHeroCopy">
-          <div className="eyebrow">Maintenance coordination for property teams</div>
-          <h1>Property maintenance, without the endless follow-up.</h1>
+          <div className="eyebrow">Maintenance manager for working property teams</div>
+          <h1>Run maintenance without chasing every update.</h1>
           <p>
-            Give tenants a simple way to report issues, keep vendors moving, and see every request,
-            update, approval, and bill in one organized workspace.
+            Simeonware gives property managers one place to receive tenant requests, invite vendors, approve bids,
+            track photos and costs, and know the next step on every job.
           </p>
           <div className="heroActions">
             {androidApp ? (
@@ -32,8 +32,8 @@ export default async function HomePage() {
           ) : (
             <div className="trustLine">
               <span>No credit card required</span>
-              <span>Built for managers, tenants, and vendors</span>
-              <span>Cancel anytime</span>
+              <span>Tenant and vendor portals included</span>
+              <span>CSV import and export ready</span>
             </div>
           )}
         </div>
@@ -80,36 +80,36 @@ export default async function HomePage() {
       </section>
 
       <section className="proofStrip" aria-label="Product benefits">
-        <div><strong>One clear queue</strong><span>Know what needs action now</span></div>
-        <div><strong>Fewer status calls</strong><span>Keep everyone informed automatically</span></div>
-        <div><strong>Complete history</strong><span>Keep decisions and costs together</span></div>
-        <div><strong>Built-in reporting</strong><span>Spot trends across your portfolio</span></div>
+        <div><strong>Know the next step</strong><span>Each request surfaces the manager action to take now</span></div>
+        <div><strong>Bid without losing context</strong><span>Invite vendors, compare replies, and approve from the request</span></div>
+        <div><strong>Keep records together</strong><span>Photos, notes, approvals, costs, and closeout stay with the job</span></div>
+        <div><strong>Move data by CSV</strong><span>Import and export units, vendors, and tickets for your own systems</span></div>
       </section>
 
       <section className="marketingSection productScreenshots" aria-labelledby="real-product-heading">
         <div className="sectionIntro">
           <div className="eyebrow">The real product</div>
-          <h2 id="real-product-heading">See the workflow before you start.</h2>
-          <p>These are real Simeonware screens showing how requests move from intake through vendor coordination and reporting.</p>
+          <h2 id="real-product-heading">See the maintenance workflow before you start.</h2>
+          <p>These are real Simeonware screens showing tenant intake, manager decisions, vendor coordination, and reporting in the same product.</p>
         </div>
         <div className="productScreenshotGrid">
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
               <Image src="/product-screenshots/request-intake.png" alt="Simeonware tenant maintenance request intake form" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
-            <figcaption><strong>Request intake</strong><span>Tenants share the issue, details, and photos in one guided form.</span></figcaption>
+            <figcaption><strong>Request intake</strong><span>Tenants share the issue, access notes, and photos in one guided form.</span></figcaption>
           </figure>
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
               <Image src="/product-screenshots/vendor-coordination.png" alt="Simeonware request detail showing vendor coordination signals" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
-            <figcaption><strong>Vendor coordination</strong><span>Review vendor replies, scheduling, updates, and visible notes together.</span></figcaption>
+            <figcaption><strong>Vendor coordination</strong><span>Invite bids, approve the right vendor, and keep scheduling updates tied to the job.</span></figcaption>
           </figure>
           <figure className="productScreenshotCard">
             <div className="productScreenshotFrame">
               <Image src="/product-screenshots/reporting.png" alt="Simeonware property maintenance performance reports" width={1440} height={1000} loading="eager" sizes="(max-width: 980px) 100vw, 33vw" />
             </div>
-            <figcaption><strong>Reporting</strong><span>Track volume, response times, aging, and operational trends.</span></figcaption>
+            <figcaption><strong>Operational records</strong><span>Review request history, aging, costs, CSV exports, and closeout activity.</span></figcaption>
           </figure>
         </div>
       </section>
@@ -117,14 +117,14 @@ export default async function HomePage() {
       <section className="marketingSection" id="features">
         <div className="sectionIntro">
           <div className="eyebrow">All-in-one maintenance manager</div>
-          <h2>The maintenance workflow property managers actually need.</h2>
-          <p>Simeonware keeps tenant requests, vendor bids, approvals, photos, billing records, and CSV integration together without forcing you into a full rent-accounting suite.</p>
+          <h2>All-in-one maintenance management, not another rent ledger.</h2>
+          <p>Simeonware is built for the maintenance work property managers repeat every day: tenant intake, vendor bids, approvals, photos, billing records, closeout notes, and CSV movement for custom systems.</p>
         </div>
         <div className="featureGrid">
           <article className="featureCard featureCardLarge">
             <span className="featureNumber">01</span>
             <h3>One focused maintenance command center</h3>
-            <p>See urgent, overdue, unclaimed, scheduled, completion-review, and billing-follow-up work from one queue built around maintenance operations.</p>
+            <p>See urgent, overdue, scheduled, completion-review, and payment-open work from one queue built around maintenance operations.</p>
             <div className="miniQueue">
               <span>New requests <strong>5</strong></span>
               <span>Needs follow-up <strong>3</strong></span>
@@ -134,22 +134,22 @@ export default async function HomePage() {
           <article className="featureCard">
             <span className="featureNumber">02</span>
             <h3>Tenant, vendor, and manager portals</h3>
-            <p>Tenants report issues, vendors respond from their own view, and managers keep the full request history in one place.</p>
+            <p>Tenants report issues, vendors respond from their own view, and managers control what each side can see.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">03</span>
             <h3>Vendor bids and approvals</h3>
-            <p>Invite vendors to bid, review price and timing, approve the right option, and keep completion updates tied to the original request.</p>
+            <p>Invite vendors to bid, compare price and availability, approve the right option, and keep the decision with the request.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">04</span>
             <h3>Costs stay connected to the job</h3>
-            <p>Track vendor billing records, approved overages, tenant billbacks, supporting notes, and closeout history beside the work order.</p>
+            <p>Track vendor invoices, approved overages, tenant billbacks, supporting notes, and closeout history beside the work order.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">05</span>
-            <h3>Private photo and document trail</h3>
-            <p>Maintenance photos and supporting records stay attached to the request with role-based access for managers, tenants, and vendors.</p>
+            <h3>Private photo and note trail</h3>
+            <p>Maintenance photos, tenant-visible notes, and manager-only/vendor notes stay attached to the request with role-based access.</p>
           </article>
           <article className="featureCard">
             <span className="featureNumber">06</span>
@@ -162,18 +162,18 @@ export default async function HomePage() {
             <p>Each ticket shows the recommended next action first so managers know whether to assign, approve, update, bill, or close the work.</p>
           </article>
         </div>
-        <p className="featureNote">Simeonware focuses on maintenance coordination first. Online payment processing is planned as a separate feature rather than part of the core maintenance workflow.</p>
+        <p className="featureNote">Payments are intentionally separate from the core maintenance manager. Today, Simeonware tracks approvals, billbacks, vendor payment records, and closeout status; online payment processing is planned as a future add-on.</p>
       </section>
 
       <section className="marketingSection processSection" id="how-it-works">
         <div className="sectionIntro">
           <div className="eyebrow">A straightforward workflow</div>
-          <h2>From issue reported to work complete.</h2>
+          <h2>From tenant request to closed work order.</h2>
         </div>
         <div className="processGrid">
-          <article><span>1</span><h3>Capture</h3><p>Tenants submit the issue, details, and photos through a simple request form.</p></article>
-          <article><span>2</span><h3>Coordinate</h3><p>Your team reviews the request, assigns vendors, and keeps communication together.</p></article>
-          <article><span>3</span><h3>Resolve</h3><p>Track scheduling, completion, approvals, and billing through a clear audit trail.</p></article>
+          <article><span>1</span><h3>Capture</h3><p>Tenants submit the issue, access notes, and photos through a simple request form.</p></article>
+          <article><span>2</span><h3>Decide</h3><p>Your team sees the recommended next step: assign directly, invite bids, approve, update, bill, or close.</p></article>
+          <article><span>3</span><h3>Close</h3><p>Track scheduling, completion, approvals, costs, and closeout through a clear history.</p></article>
         </div>
       </section>
 
@@ -245,11 +245,11 @@ export default async function HomePage() {
       <section className="finalCta">
         <div>
           <div className="eyebrow">A clearer maintenance workflow starts here</div>
-          <h2>Spend less time chasing updates.</h2>
+          <h2>Start with the maintenance work that slows your team down.</h2>
           {androidApp ? (
             <p>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</p>
           ) : (
-            <p>Start your 30-day free trial and bring your maintenance operation into one organized workspace.</p>
+            <p>Start your 30-day free trial and see tenant requests, vendor bids, approvals, photos, costs, CSV exports, and closeout in one workspace.</p>
           )}
         </div>
         {androidApp ? (

@@ -16,11 +16,12 @@ describe('deriveRequestCloseoutLanguage', () => {
 
     expect(result.phase).toBe('completed')
     expect(result.paymentState).toBe('unpaid')
-    expect(result.managerLabel).toBe('Completed - unpaid')
-    expect(result.vendorLabel).toBe('Completed - unpaid')
+    expect(result.managerLabel).toBe('Payment open')
+    expect(result.vendorLabel).toBe('Completed - payment open')
+    expect(result.detail).toMatch(/payment balance is still open/i)
   })
 
-  test('labels closed paid work as paid and closed for manager and vendor', () => {
+  test('labels closed paid work clearly for manager and vendor', () => {
     const result = deriveRequestCloseoutLanguage({
       status: 'closed',
       billingDocuments: [{ status: 'paid', totalCents: 5000, paidCents: 5000 }],
@@ -28,7 +29,7 @@ describe('deriveRequestCloseoutLanguage', () => {
 
     expect(result.phase).toBe('closed')
     expect(result.paymentState).toBe('paid')
-    expect(result.managerLabel).toBe('Paid and closed')
+    expect(result.managerLabel).toBe('Closed - paid')
     expect(result.vendorLabel).toBe('Paid and closed')
   })
 
@@ -40,7 +41,8 @@ describe('deriveRequestCloseoutLanguage', () => {
 
     expect(result.phase).toBe('closed')
     expect(result.paymentState).toBe('unpaid')
-    expect(result.managerLabel).toBe('Closed - unpaid')
-    expect(result.vendorLabel).toBe('Closed - unpaid')
+    expect(result.managerLabel).toBe('Closed - payment open')
+    expect(result.vendorLabel).toBe('Closed - payment open')
+    expect(result.tenantLabel).toBe('Closed - balance due')
   })
 })

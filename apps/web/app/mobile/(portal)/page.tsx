@@ -110,12 +110,16 @@ export default async function TenantMobileDashboardPage({
             </div>
           </Link>
         )) : (
-          <div className="muted">
-            {filter === 'open'
-              ? 'No open requests right now.'
-              : filter === 'charges'
-                ? 'No requests with tenant charges right now.'
-                : 'No requests yet.'}
+          <div className="emptyState">
+            <strong>{filter === 'charges' ? 'No charges to review' : filter === 'open' ? 'No repairs in progress' : 'No requests yet'}</strong>
+            <span>
+              {filter === 'charges'
+                ? 'Tenant charges connected to maintenance requests will appear here.'
+                : filter === 'open'
+                  ? 'When a repair is active, you will see its next step and appointment details here.'
+                  : 'Report a problem when something needs attention in your unit.'}
+            </span>
+            {filter === 'charges' ? <Link href={'/mobile' as Route} className="button">Back to repairs</Link> : <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>}
           </div>
         )}
       </section>

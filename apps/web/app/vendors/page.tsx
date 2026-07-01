@@ -57,8 +57,8 @@ export default async function VendorsPage() {
         </div>
       ) : (
         <div className="card stack" style={{ maxWidth: 520 }}>
-          <h3 style={{ margin: 0 }}>No vendors yet</h3>
-          <p className="muted" style={{ margin: 0 }}>Add vendors to manage matching and assignment.</p>
+          <h3 style={{ margin: 0 }}>Add your first vendor</h3>
+          <p className="muted" style={{ margin: 0 }}>Save the companies you already use so requests can be assigned, bid out, and tracked from one place.</p>
           <Link href="/vendors/new" className="button primary" style={{ alignSelf: 'flex-start' }}>Add vendor</Link>
         </div>
       )}

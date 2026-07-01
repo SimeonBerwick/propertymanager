@@ -75,10 +75,10 @@ export function RequestQueueList({
     return (
       <>
         <div className="emptyState">
-          <strong>Your queue is clear</strong>
-          <span>No maintenance requests match this view. Clear filters or share the request form to get started.</span>
+          <strong>No requests in this view</strong>
+          <span>Try the open queue if you are looking for active work, or share the request form when you are ready for new tenant requests.</span>
           <div className="row" style={{ justifyContent: 'center' }}>
-            <Link href="/dashboard" className="button">Clear filters</Link>
+            <Link href="/dashboard?queue=open" className="button">Open queue</Link>
             <Link href="/submit" className="button primary">Share request form</Link>
           </div>
         </div>

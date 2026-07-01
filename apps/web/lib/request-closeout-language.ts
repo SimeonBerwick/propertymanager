@@ -87,19 +87,21 @@ export function deriveRequestCloseoutLanguage(input: RequestCloseoutLanguageInpu
   const isUnpaid = paymentState === 'unpaid'
 
   if (phase === 'closed') {
-    const primaryLabel = isPaid ? 'Paid and closed' : isUnpaid ? 'Closed - unpaid' : 'Closed'
+    const managerLabel = isPaid ? 'Closed - paid' : isUnpaid ? 'Closed - payment open' : 'Closed'
+    const vendorLabel = isPaid ? 'Paid and closed' : isUnpaid ? 'Closed - payment open' : 'Closed'
+    const tenantLabel = isPaid ? 'Closed - paid' : isUnpaid ? 'Closed - balance due' : 'Closed'
     return {
       phase,
       paymentState,
-      primaryLabel,
-      managerLabel: primaryLabel,
-      vendorLabel: primaryLabel,
-      tenantLabel: isPaid ? 'Closed - paid' : isUnpaid ? 'Closed - unpaid' : 'Closed',
+      primaryLabel: managerLabel,
+      managerLabel,
+      vendorLabel,
+      tenantLabel,
       detail: isPaid
-        ? 'The work is closed and payment is fully recorded.'
+        ? 'The request is closed and payment is recorded.'
         : isUnpaid
-          ? 'The work is closed, but payment still needs attention.'
-          : 'The work is closed and no further action is expected.',
+          ? 'The request is closed, but a payment balance is still open.'
+          : 'The request is closed and no further action is expected.',
       isOpen: false,
       isTerminal: true,
       isPaid,
@@ -108,19 +110,21 @@ export function deriveRequestCloseoutLanguage(input: RequestCloseoutLanguageInpu
   }
 
   if (phase === 'completed') {
-    const primaryLabel = isPaid ? 'Completed - paid' : isUnpaid ? 'Completed - unpaid' : 'Completed'
+    const managerLabel = isPaid ? 'Ready to close - paid' : isUnpaid ? 'Payment open' : 'Ready to close'
+    const vendorLabel = isPaid ? 'Completed - paid' : isUnpaid ? 'Completed - payment open' : 'Completed'
+    const tenantLabel = isPaid ? 'Work completed - paid' : isUnpaid ? 'Work completed - balance due' : 'Work completed'
     return {
       phase,
       paymentState,
-      primaryLabel,
-      managerLabel: primaryLabel,
-      vendorLabel: primaryLabel,
-      tenantLabel: isPaid ? 'Work completed - paid' : isUnpaid ? 'Work completed - unpaid' : 'Work completed',
+      primaryLabel: managerLabel,
+      managerLabel,
+      vendorLabel,
+      tenantLabel,
       detail: isPaid
-        ? 'The work is complete and payment is fully recorded.'
+        ? 'The work is complete, payment is recorded, and the request is ready to close.'
         : isUnpaid
-          ? 'The work is complete, but payment still needs attention.'
-          : 'The work is complete and waiting for final review.',
+          ? 'The work is complete, but a payment balance is still open.'
+          : 'The work is complete and ready for final review.',
       isOpen: false,
       isTerminal: false,
       isPaid,

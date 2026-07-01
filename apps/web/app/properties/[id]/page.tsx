@@ -79,7 +79,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <Link href={`/properties/${data.property.id}/units/new`} className="button">Add unit</Link>
           </div>
           {data.units.length === 0 && (
-            <div className="muted">No units yet.</div>
+            <div className="emptyState">
+              <strong>No units set up</strong>
+              <span>Add the first unit so tenant requests and access can be connected to this property.</span>
+              <Link href={`/properties/${data.property.id}/units/new`} className="button primary">Add unit</Link>
+            </div>
           )}
           {data.units.map((unit) => (
             <div key={unit.id} className="row" style={{ alignItems: 'flex-start' }}>
@@ -120,7 +124,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <StatusBadge status={request.status} />
             </Link>
           )) : (
-            <div className="muted">No requests for this property yet.</div>
+            <div className="emptyState">
+              <strong>No requests for this property</strong>
+              <span>Once tenants submit maintenance issues for this property, they will appear here.</span>
+              <Link href="/submit" className="button">Open request form</Link>
+            </div>
           )}
         </div>
       </section>
