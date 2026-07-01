@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Route } from 'next'
 import { redirect } from 'next/navigation'
 import { getReportData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
@@ -38,7 +39,7 @@ export default async function ReportsPage() {
         {propertiesWithOpenWork.length ? (
           <div className="grid cols-3">
             {propertiesWithOpenWork.map((property) => (
-              <Link href={'/properties/' + property.propertyId} key={property.propertyId} className="card" style={{ textDecoration: 'none' }}>
+              <Link href={('/properties/' + property.propertyId) as Route} key={property.propertyId} className="card" style={{ textDecoration: 'none' }}>
                 <div className="kicker">{property.openCount} open</div>
                 <h3 style={{ margin: '4px 0' }}>{property.propertyName}</h3>
                 <div className="muted">{property.propertyAddress}</div>
@@ -59,7 +60,7 @@ export default async function ReportsPage() {
         {agingRequests.length ? (
           <div className="todayCompactList">
             {agingRequests.map((request) => (
-              <Link href={'/requests/' + request.id} key={request.id} className="todayCompactRow">
+              <Link href={('/requests/' + request.id) as Route} key={request.id} className="todayCompactRow">
                 <div>
                   <strong>{request.title}</strong>
                   <div className="muted">{request.propertyName} / {request.unitLabel}</div>
@@ -82,7 +83,7 @@ export default async function ReportsPage() {
         {vendorScorecards.length ? (
           <div className="grid cols-3">
             {vendorScorecards.map((vendor) => (
-              <Link href={'/vendors/' + vendor.vendorId} key={vendor.vendorId} className="card" style={{ textDecoration: 'none' }}>
+              <Link href={('/vendors/' + vendor.vendorId) as Route} key={vendor.vendorId} className="card" style={{ textDecoration: 'none' }}>
                 <div className="kicker">{vendor.assignmentCount} assignment{vendor.assignmentCount === 1 ? '' : 's'}</div>
                 <h3 style={{ margin: '4px 0' }}>{vendor.vendorName}</h3>
                 <div className="muted">Avg response: {vendor.avgResponseHours != null ? vendor.avgResponseHours.toFixed(1) + 'h' : 'Not enough data'}</div>
@@ -110,7 +111,7 @@ export default async function ReportsPage() {
                   <div className="muted">{issue.propertyName} / {issue.category}</div>
                   <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                     {issue.requestIds.slice(0, 3).map((id, index) => (
-                      <Link key={id} href={'/requests/' + id} className="filterChip">
+                      <Link key={id} href={('/requests/' + id) as Route} className="filterChip">
                         {issue.requestTitles[index] ?? 'Request ' + (index + 1)}
                       </Link>
                     ))}
