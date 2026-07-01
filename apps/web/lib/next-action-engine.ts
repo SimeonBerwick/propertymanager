@@ -134,16 +134,16 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:tenant-update`, href: `/requests/${request.id}?comment=tenant#communication`, primaryLabel: 'Send tenant update', reason: 'The work status changed, but the renter has not been notified yet.', group: 'Tenant updates', priority: 'normal', actionType: 'send_tenant_update', score: SCORE.tenantUpdate }
   }
 
+  if (request.vendorScheduledStart && request.status === 'scheduled') {
+    return { ...base, id: `${request.id}:scheduled`, primaryLabel: 'Wait for appointment', reason: 'The vendor is scheduled. No manager action is needed right now.', group: 'Monitoring', priority: 'low', actionType: 'monitor_scheduled_work', score: SCORE.routine }
+  }
+
   if ((request.vendorPayableBalanceCents ?? 0) > 0) {
     return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Collect payment before closeout', reason: `Vendor payment is still open${request.vendorPayableTo ? ` for ${request.vendorPayableTo}` : ''}.`, group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
 
   if (request.status === 'completed') {
     return { ...base, id: `${request.id}:close`, primaryLabel: 'Close request', reason: 'Work is complete and payments are settled.', group: 'Closeout', priority: 'normal', actionType: 'close_request', score: SCORE.closeoutReady }
-  }
-
-  if (!request.claimedAt && isOpen(request)) {
-    return { ...base, id: `${request.id}:claim`, primaryLabel: 'Take ownership', reason: 'No one has claimed this open request.', group: 'Routine ownership', priority: 'low', actionType: 'claim_request', score: SCORE.routine }
   }
 
   return { ...base, id: `${request.id}:monitor`, primaryLabel: 'Review request history', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
