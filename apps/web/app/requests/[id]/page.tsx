@@ -130,6 +130,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       : ['completed', 'closed'].includes(data.request.status)
         ? 'Reopen only if more work is needed.'
         : 'Move this request forward when a manager decision is needed.'
+  const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
+  const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
 
   return (
     <div className="stack requestDetailPage">
@@ -137,6 +139,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         ...data.request,
         tenantAccessFailureCount: data.tenantAccessFailureCount,
         tenantStatusUpdatePending: data.tenantStatusUpdatePending,
+        pendingVendorApprovalCount: pendingVendorCommercialItems.length,
       }} />
 
       <section className="card requestHero">
@@ -163,10 +166,43 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       <GuidedRequestWorkflow request={data.request} />
 
+      {pendingVendorCommercialItems.length ? (
+        <div id="vendor-approvals">
+        <SectionCard
+          kicker="Approval needed"
+          title="Review vendor cost submissions"
+          subtitle="Approve submitted bids, overages, fees, or invoices before finishing payment and closeout."
+        >
+          <div className="stack" style={{ gap: 12 }}>
+            {pendingVendorCommercialItems.map((item) => (
+              <div key={item.id} className="timelineRow spotlightSuccess">
+                <div className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{item.title}</div>
+                    <div className="muted">
+                      {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
+                    </div>
+                    {item.description ? <div>{item.description}</div> : null}
+                  </div>
+                  <span className="badge billing-partial">Needs approval</span>
+                </div>
+                <VendorCommercialApprovalForm
+                  requestId={data.request.id}
+                  itemId={item.id}
+                  label={item.itemType === 'bid' ? 'Approve bid' : 'Approve submission'}
+                />
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+        </div>
+      ) : null}
+
       <nav className="requestSectionNav" aria-label="Request sections">
         <a href="#summary">Summary</a>
         <a href="#actions">Actions</a>
         <a href="#timeline">Timeline</a>
+        {pendingVendorCommercialItems.length ? <a href="#vendor-approvals">Approvals</a> : null}
         {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Invoices and payments</a> : null}
         {hasBidDetails ? <a href="#advanced">More details</a> : null}
       </nav>
@@ -345,9 +381,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </SectionCard>
           </div>
 
-          {data.vendorCommercialItems.length ? (
-          <SectionCard kicker="Invoices" title="Vendor bids, fees, and invoices" subtitle="Bids, fees, extra costs, and invoice items sent from the vendor portal.">
-            {data.vendorCommercialItems.map((item) => (
+          {resolvedVendorCommercialItems.length ? (
+          <SectionCard kicker="Invoices" title="Approved and declined vendor items" subtitle="Resolved bids, fees, extra costs, and invoice items sent from the vendor portal.">
+            {resolvedVendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>{item.title}</div>
                 <div className="muted">
@@ -355,13 +391,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 </div>
                 <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
                 {item.description ? <div>{item.description}</div> : null}
-                {item.status === 'submitted' ? (
-                  <VendorCommercialApprovalForm
-                    requestId={data.request.id}
-                    itemId={item.id}
-                    label={item.itemType === 'bid' ? 'Approve bid' : 'Approve submission'}
-                  />
-                ) : null}
               </div>
             ))}
           </SectionCard>
