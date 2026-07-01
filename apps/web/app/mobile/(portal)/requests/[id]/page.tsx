@@ -71,31 +71,28 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         </div>
         <div className="muted">{request.category}</div>
         <div>{request.description}</div>
+        {!request.assignedVendorName ? <div className="muted">A vendor has not been selected yet. Your property manager will update this request when scheduling is ready.</div> : null}
       </section>
 
-      <section className="card stack">
+      {request.assignedVendorName ? <section className="card stack">
         <div>
           <div className="kicker">Who is handling this?</div>
           <h3 style={{ marginTop: 4 }}>Vendor and appointment</h3>
         </div>
-        {request.assignedVendorName ? (
-          <div className="stack" style={{ gap: 6 }}>
-            <div><strong>{request.assignedVendorName}</strong></div>
-            {request.vendorScheduledStart ? (
-              <div className="muted">
-                Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
-                {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
-              </div>
-            ) : (
-              <div className="muted">No appointment window has been confirmed yet.</div>
-            )}
-            {request.assignedVendorEmail ? <div><a href={`mailto:${request.assignedVendorEmail}`}>{request.assignedVendorEmail}</a></div> : null}
-            {request.assignedVendorPhone ? <div><a href={`tel:${request.assignedVendorPhone}`}>{request.assignedVendorPhone}</a></div> : null}
-          </div>
-        ) : (
-          <div className="muted">No vendor has been assigned yet.</div>
-        )}
-      </section>
+        <div className="stack" style={{ gap: 6 }}>
+          <div><strong>{request.assignedVendorName}</strong></div>
+          {request.vendorScheduledStart ? (
+            <div className="muted">
+              Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
+              {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
+            </div>
+          ) : (
+            <div className="muted">No appointment window has been confirmed yet.</div>
+          )}
+          {request.assignedVendorEmail ? <div><a href={`mailto:${request.assignedVendorEmail}`}>{request.assignedVendorEmail}</a></div> : null}
+          {request.assignedVendorPhone ? <div><a href={`tel:${request.assignedVendorPhone}`}>{request.assignedVendorPhone}</a></div> : null}
+        </div>
+      </section> : null}
 
       {['requested', 'approved', 'reopened'].includes(request.status) ? (
         <section className="card stack">
@@ -111,7 +108,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Vendor updates</div>
-          <h3 style={{ marginTop: 4 }}>Vendor timeline</h3>
+          <h3 style={{ marginTop: 4 }}>Work updates</h3>
         </div>
         {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
           <div key={entry.id}>
@@ -147,7 +144,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       <section className="card stack">
         <div>
           <div className="kicker">Comments</div>
-          <h3 style={{ marginTop: 4 }}>Visible notes</h3>
+          <h3 style={{ marginTop: 4 }}>Messages about this request</h3>
         </div>
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id} className="timelineRow">
@@ -165,12 +162,12 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         )) : <div className="muted">No comments yet.</div>}
       </section>
 
-      <section className="card stack" id="charges">
+      {request.billingDocuments.length ? <section className="card stack" id="charges">
         <div>
           <div className="kicker">Billing</div>
           <h3 style={{ marginTop: 4 }}>Charges for this request</h3>
         </div>
-        {request.billingDocuments.length ? request.billingDocuments.map((document) => {
+        {request.billingDocuments.map((document) => {
           const balanceCents = document.totalCents - document.paidCents
 
           return (
@@ -190,8 +187,8 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               ) : null}
             </div>
           )
-        }) : <div className="muted">No renter charges posted yet.</div>}
-      </section>
+        })}
+      </section> : null}
 
       <section className="card stack">
         <div>

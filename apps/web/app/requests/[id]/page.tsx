@@ -40,6 +40,10 @@ function statusLabel(s: string) {
   return STATUS_LABELS[s] ?? s
 }
 
+function bidRoundTitle(title?: string) {
+  return title?.replace(/^Tender round/i, 'Bid round') ?? 'Bid round'
+}
+
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
   if (status === 'viewed') return 'Invite viewed'
@@ -108,6 +112,24 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     outstandingCents: ['completed', 'closed'].includes(data.request.status) ? vendorOutstandingCents : null,
   })
   const isCompleteButUnpaid = ['completed', 'closed'].includes(data.request.status) && closeoutLanguage.isUnpaid
+  const hasBidDetails = data.tenders.length > 0 || Boolean(latestTenderReply) || Boolean(latestCommercialReply)
+  const hasSubmittedBid = data.tenders.some((tender) => tender.invites.some((invite) => invite.status === 'bid_submitted'))
+    || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
+  const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
+  const actionSectionTitle = hasSubmittedBid
+    ? 'Approve vendor bid'
+    : canChooseVendor
+      ? 'Choose vendor path'
+      : ['completed', 'closed'].includes(data.request.status)
+        ? 'Closeout actions'
+        : 'Request actions'
+  const actionSectionSubtitle = hasSubmittedBid
+    ? 'Review returned pricing and choose the vendor.'
+    : canChooseVendor
+      ? 'Assign one vendor directly or ask multiple vendors for bids.'
+      : ['completed', 'closed'].includes(data.request.status)
+        ? 'Reopen only if more work is needed.'
+        : 'Move this request forward when a manager decision is needed.'
 
   return (
     <div className="stack requestDetailPage">
@@ -146,116 +168,118 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         <a href="#actions">Actions</a>
         <a href="#timeline">Timeline</a>
         {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Invoices and payments</a> : null}
-        <a href="#advanced">More details</a>
+        {hasBidDetails ? <a href="#advanced">More details</a> : null}
       </nav>
 
-      <details className="advancedDisclosure" id="advanced">
-        <summary>Vendor bids and replies</summary>
-        <SectionCard
-          kicker="Tender"
-          title="Bid and reply signal"
-          subtitle="Vendor decisions, bids, and incoming replies."
-        >
-        <div className="stack" style={{ gap: 16 }}>
-          <div className="grid cols-3">
-            <div className="signalSpotlightCard">
-              <div className="kicker">Latest tender reply</div>
-              {latestTenderReply ? (
-                <>
-                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestTenderReply.invite.vendorName}</div>
-                  <div className="signalAccent">{tenderInviteLabel(latestTenderReply.invite.status)}</div>
-                  <div className="muted">
-                    {latestTenderReply.invite.bidAmountCents != null
-                      ? `Bid USD ${(latestTenderReply.invite.bidAmountCents / 100).toFixed(2)}`
-                      : 'No bid amount yet'}
-                  </div>
-                  <div className="muted">{new Date(latestTenderReply.activityAt).toLocaleString()}</div>
-                </>
-              ) : (
-                <div className="muted">No tender reply yet.</div>
-              )}
+      {hasBidDetails ? (
+        <details className="advancedDisclosure" id="advanced">
+          <summary>Vendor bids and updates</summary>
+          <SectionCard
+            kicker="Bid request"
+            title="Bid and update signal"
+            subtitle="Vendor decisions, bids, and incoming replies."
+          >
+          <div className="stack" style={{ gap: 16 }}>
+            <div className="grid cols-3">
+              <div className="signalSpotlightCard">
+                <div className="kicker">Latest bid reply</div>
+                {latestTenderReply ? (
+                  <>
+                    <div className="signalTitle" style={{ fontSize: 18 }}>{latestTenderReply.invite.vendorName}</div>
+                    <div className="signalAccent">{tenderInviteLabel(latestTenderReply.invite.status)}</div>
+                    <div className="muted">
+                      {latestTenderReply.invite.bidAmountCents != null
+                        ? `Bid USD ${(latestTenderReply.invite.bidAmountCents / 100).toFixed(2)}`
+                        : 'No bid amount yet'}
+                    </div>
+                    <div className="muted">{new Date(latestTenderReply.activityAt).toLocaleString()}</div>
+                  </>
+                ) : (
+                  <div className="muted">No bid reply yet.</div>
+                )}
+              </div>
+
+              <div className="signalSpotlightCard">
+                <div className="kicker">Latest vendor update</div>
+                {latestVendorDispatch ? (
+                  <>
+                    <div className="signalTitle" style={{ fontSize: 18 }}>{latestVendorDispatch.vendorName ?? 'Vendor update'}</div>
+                    <div className="signalAccent">{statusLabel(latestVendorDispatch.status)}</div>
+                    <div className="muted">{latestVendorDispatch.note ?? 'No note attached.'}</div>
+                    <div className="muted">{new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
+                  </>
+                ) : (
+                  <div className="muted">No work update yet.</div>
+                )}
+              </div>
+
+              <div className="signalSpotlightCard">
+                <div className="kicker">Latest visible note</div>
+                {latestVisibleReply ? (
+                  <>
+                    <div className="signalTitle" style={{ fontSize: 18 }}>{latestVisibleReply.authorName}</div>
+                    <div className="muted">{latestVisibleReply.body}</div>
+                    <div className="muted">{new Date(latestVisibleReply.createdAt).toLocaleString()}</div>
+                  </>
+                ) : latestCommercialReply ? (
+                  <>
+                    <div className="signalTitle" style={{ fontSize: 18 }}>{latestCommercialReply.title}</div>
+                    <div className="signalAccent">{vendorCommercialTypeLabel(latestCommercialReply.itemType)}</div>
+                    <div className="muted">{new Date(latestCommercialReply.submittedAt).toLocaleString()}</div>
+                  </>
+                ) : (
+                  <div className="muted">No recent reply signal yet.</div>
+                )}
+              </div>
             </div>
 
-            <div className="signalSpotlightCard">
-              <div className="kicker">Latest vendor update</div>
-              {latestVendorDispatch ? (
-                <>
-                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestVendorDispatch.vendorName ?? 'Vendor update'}</div>
-                  <div className="signalAccent">{statusLabel(latestVendorDispatch.status)}</div>
-                  <div className="muted">{latestVendorDispatch.note ?? 'No note attached.'}</div>
-                  <div className="muted">{new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
-                </>
-              ) : (
-                <div className="muted">No work update yet.</div>
-              )}
-            </div>
-
-            <div className="signalSpotlightCard">
-              <div className="kicker">Latest visible note</div>
-              {latestVisibleReply ? (
-                <>
-                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestVisibleReply.authorName}</div>
-                  <div className="muted">{latestVisibleReply.body}</div>
-                  <div className="muted">{new Date(latestVisibleReply.createdAt).toLocaleString()}</div>
-                </>
-              ) : latestCommercialReply ? (
-                <>
-                  <div className="signalTitle" style={{ fontSize: 18 }}>{latestCommercialReply.title}</div>
-                  <div className="signalAccent">{vendorCommercialTypeLabel(latestCommercialReply.itemType)}</div>
-                  <div className="muted">{new Date(latestCommercialReply.submittedAt).toLocaleString()}</div>
-                </>
-              ) : (
-                <div className="muted">No recent reply signal yet.</div>
-              )}
-            </div>
-          </div>
-
-          {data.tenders.length ? data.tenders.map((tender) => (
-            <div key={tender.id} className="tenderFocusCard">
-              <div className="row" style={{ alignItems: 'flex-start' }}>
-                <div>
-                  <div className="kicker">Tender round</div>
-                  <h3 style={{ marginTop: 4 }}>{tender.title ?? 'Tender round'}</h3>
-                  <div className="muted">
-                    {tender.status.replaceAll('_', ' ')}
-                    {tender.sentAt ? ` - Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
-                    {tender.awardedAt ? ` - Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
+            {data.tenders.length ? data.tenders.map((tender) => (
+              <div key={tender.id} className="tenderFocusCard">
+                <div className="row" style={{ alignItems: 'flex-start' }}>
+                  <div>
+                    <div className="kicker">Bid round</div>
+                    <h3 style={{ marginTop: 4 }}>{bidRoundTitle(tender.title)}</h3>
+                    <div className="muted">
+                      {tender.status.replaceAll('_', ' ')}
+                      {tender.sentAt ? ` - Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
+                      {tender.awardedAt ? ` - Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
+                    </div>
                   </div>
                 </div>
-              </div>
-              {tender.note ? <div className="muted">{tender.note}</div> : null}
-              <div className="stack" style={{ gap: 10 }}>
-                {tender.invites.map((invite) => (
-                  <div key={invite.id} className={`timelineRow${invite.awardedAt ? ' spotlightSuccess' : ''}`}>
-                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
-                        <div className="signalAccent">{tenderInviteLabel(invite.status)}</div>
+                {tender.note ? <div className="muted">{tender.note}</div> : null}
+                <div className="stack" style={{ gap: 10 }}>
+                  {tender.invites.map((invite) => (
+                    <div key={invite.id} className={`timelineRow${invite.awardedAt ? ' spotlightSuccess' : ''}`}>
+                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
+                          <div className="signalAccent">{tenderInviteLabel(invite.status)}</div>
+                        </div>
+                        {invite.awardedAt ? <span className="badge done">Awarded</span> : null}
                       </div>
-                      {invite.awardedAt ? <span className="badge done">Awarded</span> : null}
-                    </div>
-                    <div className="muted">
-                      {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
-                      {invite.availabilityNote ? ` - ${invite.availabilityNote}` : ''}
-                    </div>
-                    {(invite.proposedStart || invite.proposedEnd) ? (
                       <div className="muted">
-                        {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '-'}
-                        {invite.proposedEnd ? ` to ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                        {invite.bidAmountCents != null ? `Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : 'No bid amount yet'}
+                        {invite.availabilityNote ? ` - ${invite.availabilityNote}` : ''}
                       </div>
-                    ) : null}
-                    <div className="muted">
-                      Invited {new Date(invite.invitedAt).toLocaleString()}
-                      {invite.respondedAt ? ` - Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
+                      {(invite.proposedStart || invite.proposedEnd) ? (
+                        <div className="muted">
+                          {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '-'}
+                          {invite.proposedEnd ? ` to ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                        </div>
+                      ) : null}
+                      <div className="muted">
+                        Invited {new Date(invite.invitedAt).toLocaleString()}
+                        {invite.respondedAt ? ` - Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )) : <div className="muted">No tenders yet.</div>}
-        </div>
-        </SectionCard>
-      </details>
+            )) : <div className="muted">No bid requests yet.</div>}
+          </div>
+          </SectionCard>
+        </details>
+      ) : null}
 
       <div className="requestDetailGrid">
         <div className="stack">
@@ -281,6 +305,26 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </SectionCard>
           </div>
 
+          <div id="communication">
+          <SectionCard kicker="Communication" title="Comments">
+            {data.comments.length ? data.comments.map((comment) => (
+              <div key={comment.id} className="commentRow">
+                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+                  <strong>{comment.authorName}</strong>
+                  <span className="badge" style={{ fontSize: 11, background: comment.visibility === 'internal' ? '#f0f4ff' : '#f0fff4', color: comment.visibility === 'internal' ? '#3b5bdb' : '#2b7a47' }}>
+                    {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
+                  </span>
+                </div>
+                <div>{comment.body}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
+              </div>
+            )) : <div className="muted">No messages yet.</div>}
+            <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
+              <AddCommentForm requestId={data.request.id} defaultVisibility={defaultCommentVisibility} />
+            </div>
+          </SectionCard>
+          </div>
+
           <div id="timeline">
           <SectionCard kicker="Timeline" title="Vendor activity" subtitle="Field activity and progress so far.">
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
@@ -301,8 +345,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </SectionCard>
           </div>
 
-          <SectionCard kicker="Invoices" title="Vendor invoices" subtitle="Bids, fees, extra costs, and manager-billed items sent from the vendor portal.">
-            {data.vendorCommercialItems.length ? data.vendorCommercialItems.map((item) => (
+          {data.vendorCommercialItems.length ? (
+          <SectionCard kicker="Invoices" title="Vendor bids, fees, and invoices" subtitle="Bids, fees, extra costs, and invoice items sent from the vendor portal.">
+            {data.vendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>{item.title}</div>
                 <div className="muted">
@@ -318,14 +363,15 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   />
                 ) : null}
               </div>
-            )) : <div className="muted">No vendor invoices submitted yet.</div>}
+            ))}
           </SectionCard>
+          ) : null}
 
         </div>
 
         <div className="stack">
           <div id="actions">
-          <SectionCard kicker="Actions" title="Approval and vendor bids" subtitle="Approve the request, invite bids, select a vendor, and close out the work here.">
+          <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
             <RequestControlPanel
               request={data.request}
               vendors={data.availableVendors}
@@ -368,25 +414,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ) : <div className="muted">No vendor photos yet.</div>}
         </SectionCard>
 
-        <div id="communication">
-        <SectionCard kicker="Communication" title="Comments">
-          {data.comments.length ? data.comments.map((comment) => (
-            <div key={comment.id} className="commentRow">
-              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-                <strong>{comment.authorName}</strong>
-                <span className="badge" style={{ fontSize: 11, background: comment.visibility === 'internal' ? '#f0f4ff' : '#f0fff4', color: comment.visibility === 'internal' ? '#3b5bdb' : '#2b7a47' }}>
-                  {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
-                </span>
-              </div>
-              <div>{comment.body}</div>
-              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
-            </div>
-          )) : <div className="muted">No comments.</div>}
-          <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
-            <AddCommentForm requestId={data.request.id} defaultVisibility={defaultCommentVisibility} />
-          </div>
-        </SectionCard>
-        </div>
       </div>
 
       {hasVendorChosen || data.billingDocuments.length ? (
@@ -414,15 +441,22 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Vendor amount owed</div>
             <div className="detailFactsGrid" style={{ marginTop: 10 }}>
-              <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Owed now</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Outstanding</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Payments posted</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Payment balance</strong><div className="muted">{formatMoney(postedVendorPaymentBalanceCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Remaining</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
             </div>
+            {(pendingVendorExtrasCents > 0 || approvedVendorExtrasCents > 0 || postedVendorPaymentBalanceCents > 0) ? (
+              <details className="advancedDisclosure" style={{ marginTop: 10 }}>
+                <summary>Show payment details</summary>
+                <div className="detailFactsGrid" style={{ marginTop: 10 }}>
+                  <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>Payment balance</strong><div className="muted">{formatMoney(postedVendorPaymentBalanceCents, data.request.preferredCurrency)}</div></div>
+                </div>
+              </details>
+            ) : null}
             {isCompleteButUnpaid ? (
               <div className="inlineNotice" style={{ marginTop: 10 }}>
                 {closeoutLanguage.detail}

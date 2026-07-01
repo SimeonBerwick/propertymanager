@@ -185,10 +185,10 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: false,
       isOpenWork: true,
       isPendingBid: true,
-      statusLabel: 'Tender opened',
-      tenderLabel: 'Invite viewed',
+      statusLabel: 'Bid invite opened',
+      tenderLabel: 'Bid invite viewed',
       heroNotice: {
-        title: 'Tender opened',
+        title: 'Bid invite opened',
         detail: 'You have seen the invite, but the property manager has not awarded it yet.',
         tone: 'info',
       },

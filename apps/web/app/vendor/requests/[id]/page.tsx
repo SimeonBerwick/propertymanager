@@ -48,14 +48,15 @@ export default async function VendorRequestDetailPage({
     status: request.status,
     billingDocuments: request.billingDocuments,
   })
-  const heroNotice = awardedInvite && viewState.isAwardedToViewer
+  const isPaidClosed = request.status === 'closed' && closeoutLanguage.isPaid
+  const heroNotice = !isPaidClosed && awardedInvite && viewState.isAwardedToViewer
     ? {
         title: 'You won this job',
         detail: awardedInvite.bidAmountCents != null ? `Awarded on your bid for USD ${(awardedInvite.bidAmountCents / 100).toFixed(2)}.` : viewState.heroNotice?.detail ?? 'The property manager awarded this request to you.',
         tone: 'success' as const,
       }
     : viewState.heroNotice
-  const canSendUpdate = viewState.canControlDispatch || viewState.isPendingBid
+  const canSendUpdate = !isPaidClosed && (viewState.canControlDispatch || viewState.isPendingBid)
 
   return (
     <div className="stack">
@@ -103,12 +104,12 @@ export default async function VendorRequestDetailPage({
         <VendorRequestResponseForm requestId={request.id} />
       </section> : null}
 
-      <section className="card stack">
+      {request.tenderInvites.length && !isPaidClosed ? <section className="card stack">
         <div>
-          <div className="kicker">Bid invitation</div>
+          <div className="kicker">Bid status</div>
           <h3 style={{ marginTop: 4 }}>Bid and approval status</h3>
         </div>
-        {request.tenderInvites.length ? request.tenderInvites.map((invite) => (
+        {request.tenderInvites.map((invite) => (
           <div key={invite.id} className={`timelineRow${invite.status === 'awarded' || invite.awardedAt ? ' spotlightSuccess' : ''}`}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -123,10 +124,10 @@ export default async function VendorRequestDetailPage({
             {invite.availabilityNote ? <div>{invite.availabilityNote}</div> : null}
             {invite.awardedAt ? <div className="signalAccent">Awarded {new Date(invite.awardedAt).toLocaleString()}</div> : null}
           </div>
-        )) : <div className="muted">This request is a direct assignment rather than a bid invitation.</div>}
-      </section>
+        ))}
+      </section> : null}
 
-      <details className="advancedDisclosure">
+      {!isPaidClosed ? <details className="advancedDisclosure">
         <summary>Submit a bid, fee, extra cost, or invoice</summary>
         <section className="card stack">
           <div>
@@ -135,7 +136,7 @@ export default async function VendorRequestDetailPage({
           </div>
           <VendorCommercialItemForm requestId={request.id} />
         </section>
-      </details>
+      </details> : null}
 
       <section className="card stack">
         <div>
@@ -143,7 +144,7 @@ export default async function VendorRequestDetailPage({
           <h3 style={{ marginTop: 4 }}>Appointment and assignment</h3>
         </div>
         <div className="muted">
-          Assigned vendor: {viewState.canControlDispatch ? (request.assignedVendorName ?? session.vendorName) : 'Another vendor or pending manager decision'}
+          Assigned vendor: {viewState.canControlDispatch ? (request.assignedVendorName ?? session.vendorName) : 'This work is not assigned to your vendor account yet.'}
         </div>
         <div className="muted">
           {viewState.canSeeSchedule && request.vendorScheduledStart
@@ -190,7 +191,7 @@ export default async function VendorRequestDetailPage({
       <section className="card stack">
         <div>
           <div className="kicker">Comments</div>
-          <h3 style={{ marginTop: 4 }}>Visible notes</h3>
+          <h3 style={{ marginTop: 4 }}>Messages about this request</h3>
         </div>
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id}>
