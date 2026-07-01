@@ -124,7 +124,12 @@ export default async function VendorDashboardPage({
               <span className="button primary">Open</span>
             </div>
           </Link>
-        )) : <div className="muted">Nothing needs action right now.</div>}
+        )) : (
+          <div className="emptyState">
+            <strong>No vendor action needed</strong>
+            <span>Bid invites, awarded work, scheduled visits, and update requests will appear here when the property manager needs something from you.</span>
+          </div>
+        )}
       </section>
 
       <section className="grid cols-4">
@@ -199,7 +204,12 @@ export default async function VendorDashboardPage({
               {item.description ? <div className="muted">{item.description}</div> : null}
               <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
             </Link>
-          )) : <div className="muted">No vendor invoices submitted yet.</div>
+          )) : (
+            <div className="emptyState">
+              <strong>No submitted items yet</strong>
+              <span>Submitted bids, extra costs, and invoices will appear here after you send them from a request.</span>
+            </div>
+          )
         ) : filteredRequests.length ? filteredRequests.map(({ request, viewState }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
@@ -234,14 +244,18 @@ export default async function VendorDashboardPage({
             </div>
           </Link>
         )) : (
-          <div className="muted">
-            {filter === 'bids'
-              ? 'No pending bids right now.'
-              : filter === 'billing'
-                ? 'No requests with visible payments right now.'
-                : filter === 'recent'
-                  ? 'No completed requests are visible yet.'
-                  : 'No requests are assigned to this vendor account right now.'}
+          <div className="emptyState">
+            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No visible payments' : filter === 'recent' ? 'No completed work yet' : 'No active work assigned'}</strong>
+            <span>
+              {filter === 'bids'
+                ? 'New bid invitations will appear here when a property manager asks for pricing.'
+                : filter === 'billing'
+                  ? 'Approved payments and remittance details will appear here when they are posted.'
+                  : filter === 'recent'
+                    ? 'Completed and closed requests will move here after work is finished.'
+                    : 'When work is assigned or awarded to this vendor account, it will appear here.'}
+            </span>
+            {filter === 'open' ? null : <Link href={'/vendor' as Route} className="button">Back to open work</Link>}
           </div>
         )}
       </section>

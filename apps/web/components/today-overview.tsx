@@ -17,7 +17,7 @@ function RequestIdentity({ request }: { request: DashboardRequestRow }) {
 }
 
 function CompactRequestList({ requests, empty }: { requests: DashboardRequestRow[], empty: string }) {
-  if (!requests.length) return <div className="emptyState"><strong>Nothing here</strong><span>{empty}</span></div>
+  if (!requests.length) return <div className="emptyState"><strong>All clear</strong><span>{empty}</span></div>
 
   return (
     <div className="todayCompactList">
@@ -61,10 +61,15 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
     ...masterQueueActions,
   ])
   const primaryAction = nextActions[0]
-  const secondaryActions = nextActions.slice(1, 4)
-  const actionGroups = groupDashboardNextActions(nextActions)
+  const remainingActions = primaryAction ? nextActions.slice(1) : nextActions
+  const secondaryActions = remainingActions.slice(0, 2)
+  const actionGroups = groupDashboardNextActions(remainingActions)
   const actionCount = nextActions.length
   const hasScheduledToday = overview.scheduledToday.length > 0
+  const hasOverdue = overview.overdue.length > 0
+  const hasWaiting = overview.waitingOnOthers.length > 0
+  const hasRecentlyCompleted = overview.recentlyCompleted.length > 0
+  const showMetricGrid = actionCount > 0 || hasScheduledToday || hasOverdue || hasWaiting
 
   return (
     <div className="stack todayOverview">
@@ -118,14 +123,13 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
           <div className="caughtUpPanel">
             {hasScheduledToday ? <Link href="/dashboard?queue=scheduled-today">Monitor today's appointments</Link> : null}
             <Link href="/dashboard?queue=open">Review open work</Link>
-            <Link href="/access">Check team access</Link>
           </div>
         </SectionCard>
       )}
 
-      <section className="todayMetricGrid" aria-label="Today summary">
+      {showMetricGrid ? <section className="todayMetricGrid" aria-label="Today summary">
         {actionCount ? (
-          <a href="#needs-your-action" className="card todayMetricCard todayMetricUrgent">
+          <a href={actionGroups.length ? '#needs-your-action' : (primaryAction?.href ?? '/dashboard')} className="card todayMetricCard todayMetricUrgent">
             <span className="kicker">Recommended actions</span>
             <strong>{actionCount}</strong>
             <span className="muted">Decisions and follow-ups</span>
@@ -138,24 +142,28 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
             <span className="muted">Vendor appointments</span>
           </Link>
         ) : null}
-        <Link href="/dashboard?queue=overdue-scheduled" className={`card todayMetricCard${overview.overdue.length ? ' todayMetricUrgent' : ''}`}>
-          <span className="kicker">Overdue</span>
-          <strong>{overview.overdue.length}</strong>
-          <span className="muted">Work that is past due</span>
-        </Link>
-        <a href="#waiting-on-others" className="card todayMetricCard">
-          <span className="kicker">Waiting on vendor or tenant</span>
-          <strong>{overview.waitingOnOthers.length}</strong>
-          <span className="muted">Work currently progressing</span>
-        </a>
-      </section>
+        {hasOverdue ? (
+          <Link href="/dashboard?queue=overdue-scheduled" className="card todayMetricCard todayMetricUrgent">
+            <span className="kicker">Overdue</span>
+            <strong>{overview.overdue.length}</strong>
+            <span className="muted">Work that is past due</span>
+          </Link>
+        ) : null}
+        {hasWaiting ? (
+          <a href="#waiting-on-others" className="card todayMetricCard">
+            <span className="kicker">Waiting on vendor or tenant</span>
+            <strong>{overview.waitingOnOthers.length}</strong>
+            <span className="muted">Work currently progressing</span>
+          </a>
+        ) : null}
+      </section> : null}
 
       {actionGroups.length ? (
         <div id="needs-your-action">
           <SectionCard
             kicker="Needs attention"
-            title="Needs attention"
-            subtitle="Requests that need a manager decision, follow-up, or review."
+            title={primaryAction ? 'More to review' : 'Needs attention'}
+            subtitle={primaryAction ? 'Lower priority items after the next recommended action.' : 'Requests that need a manager decision, follow-up, or review.'}
             action={<Link href="/exceptions" className="button">View all exceptions</Link>}
           >
             <div className="nextActionGroups">
@@ -199,16 +207,22 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
         </SectionCard>
       ) : null}
 
-      <div className="grid cols-2 todaySupportingGrid">
-        <div id="waiting-on-others">
-          <SectionCard kicker="Monitor" title="Waiting on vendor or tenant" subtitle="Work that is moving but does not need your decision right now.">
-            <CompactRequestList requests={overview.waitingOnOthers} empty="No open work is currently waiting on tenants or vendors." />
-          </SectionCard>
+      {hasWaiting || hasRecentlyCompleted ? (
+        <div className="grid cols-2 todaySupportingGrid">
+          {hasWaiting ? (
+            <div id="waiting-on-others">
+              <SectionCard kicker="Monitor" title="Waiting on vendor or tenant" subtitle="Work that is moving but does not need your decision right now.">
+                <CompactRequestList requests={overview.waitingOnOthers} empty="No open work is currently waiting on tenants or vendors." />
+              </SectionCard>
+            </div>
+          ) : null}
+          {hasRecentlyCompleted ? (
+            <SectionCard kicker="Progress" title="Recently completed" subtitle="The latest work moved to completion or closure.">
+              <CompactRequestList requests={overview.recentlyCompleted} empty="Finished work will appear here after requests are completed or closed." />
+            </SectionCard>
+          ) : null}
         </div>
-        <SectionCard kicker="Progress" title="Recently completed" subtitle="The latest work moved to completion or closure.">
-          <CompactRequestList requests={overview.recentlyCompleted} empty="No requests have been completed yet." />
-        </SectionCard>
-      </div>
+      ) : null}
     </div>
   )
 }

@@ -189,7 +189,11 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             </tbody>
           </table>
         ) : (
-          <div className="muted">No requests for this unit yet.</div>
+          <div className="emptyState">
+            <strong>No requests for this unit</strong>
+            <span>Maintenance requests submitted for this unit will appear here.</span>
+            <Link href="/submit" className="button">Open request form</Link>
+          </div>
         )}
       </section>
     </div>

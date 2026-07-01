@@ -29,7 +29,7 @@ describe('tenant request language', () => {
     expect(tenantRequestCloseoutLabel({
       status: 'closed',
       billingDocuments: [{ status: 'sent', totalCents: 12000, paidCents: 2000 }],
-    })).toBe('Closed - unpaid')
+    })).toBe('Closed - balance due')
   })
 
   test('does not show paid language when there are no tenant charges', () => {

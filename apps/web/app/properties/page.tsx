@@ -15,9 +15,9 @@ export default async function PropertiesPage() {
     return (
       <div className="card stack" style={{ maxWidth: 480, margin: '48px auto 0' }}>
         <div className="kicker">Properties</div>
-        <h2 style={{ margin: '4px 0 0' }}>No properties yet</h2>
+        <h2 style={{ margin: '4px 0 0' }}>Add your first property</h2>
         <p className="muted" style={{ margin: 0 }}>
-          Add your first property to start tracking work.
+          Start with the building or home. Units, tenant access, and maintenance requests attach to it.
         </p>
         <Link href="/properties/new" className="button primary" style={{ alignSelf: 'flex-start' }}>
           Add first property
@@ -75,7 +75,7 @@ export default async function PropertiesPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="muted" style={{ margin: '8px 0 0' }}>No units on record.</p>
+                      <p className="muted" style={{ margin: '8px 0 0' }}>Add units so tenant requests and access codes can be tied to the right space.</p>
                     )}
                   </div>
                 </section>
@@ -83,7 +83,11 @@ export default async function PropertiesPage() {
             })}
           </div>
         ) : (
-          <div className="card muted">No active properties.</div>
+          <div className="card stack" style={{ maxWidth: 520 }}>
+            <strong>No active properties</strong>
+            <span className="muted">Archived properties are kept below. Add a new property when you are ready to receive requests again.</span>
+            <Link href="/properties/new" className="button primary" style={{ alignSelf: 'flex-start' }}>Add property</Link>
+          </div>
         )}
       </section>
 
