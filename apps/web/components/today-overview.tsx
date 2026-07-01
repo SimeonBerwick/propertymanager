@@ -35,6 +35,10 @@ function actionSubtitle(action: RecommendedAction) {
   return [action.propertyName, action.unitLabel].filter(Boolean).join(' / ')
 }
 
+function visibleActionLimit(groupLabel: string) {
+  return groupLabel.startsWith('Access') ? 2 : 3
+}
+
 function ActionRow({ action, compact = false }: { action: RecommendedAction, compact?: boolean }) {
   const subtitle = actionSubtitle(action)
 
@@ -155,18 +159,21 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
             action={<Link href="/exceptions" className="button">View all exceptions</Link>}
           >
             <div className="nextActionGroups">
-              {actionGroups.slice(0, 5).map((group) => (
-                <section className="nextActionGroup" key={group.label}>
-                  <div>
-                    <div className="kicker">{group.items.length} action{group.items.length === 1 ? '' : 's'}</div>
-                    <h3>{group.label}</h3>
-                  </div>
-                  <div className="nextActionGroupRows">
-                    {group.items.slice(0, 3).map((action) => <ActionRow key={action.id} action={action} />)}
-                  </div>
-                  {group.items.length > 3 ? <div className="muted">{group.items.length - 3} more in this group.</div> : null}
-                </section>
-              ))}
+              {actionGroups.slice(0, 5).map((group) => {
+                const visibleLimit = visibleActionLimit(group.label)
+                return (
+                  <section className="nextActionGroup" key={group.label}>
+                    <div>
+                      <div className="kicker">{group.items.length} action{group.items.length === 1 ? '' : 's'}</div>
+                      <h3>{group.label}</h3>
+                    </div>
+                    <div className="nextActionGroupRows">
+                      {group.items.slice(0, visibleLimit).map((action) => <ActionRow key={action.id} action={action} />)}
+                    </div>
+                    {group.items.length > visibleLimit ? <div className="muted">{group.items.length - visibleLimit} more in this group.</div> : null}
+                  </section>
+                )
+              })}
             </div>
           </SectionCard>
         </div>
