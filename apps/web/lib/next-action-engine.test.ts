@@ -83,6 +83,16 @@ describe('next action engine', () => {
     })
   })
 
+  it('reviews submitted vendor costs before closeout', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Review vendor costs',
+      reason: '1 vendor cost submission needs approval before closeout.',
+      href: '/requests/r1#vendor-approvals',
+      actionType: 'review_vendor_costs',
+    })
+  })
+
   it('sorts dashboard actions by the priority ladder', () => {
     const actions = buildDashboardNextActions([
       { ...base, id: 'payment', status: 'completed' as const, vendorPayableBalanceCents: 50000 },

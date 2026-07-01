@@ -378,6 +378,27 @@ body { min-height: 100vh; }
 .badge.signalMedium { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.36); color: #92400e; }
 .badge.signalWarn { background: rgba(244, 114, 182, 0.18); border-color: rgba(244, 114, 182, 0.34); color: #be185d; }
 .badge.signalNeutral { background: rgba(148, 163, 184, 0.14); border-color: rgba(148, 163, 184, 0.3); color: #475569; }
+:root:not([data-theme='light']) .badge.new,
+:root:not([data-theme='light']) .badge.billing-sent,
+:root:not([data-theme='light']) .badge.flow-new { color: #bfdbfe; }
+:root:not([data-theme='light']) .badge.scheduled,
+:root:not([data-theme='light']) .badge.billing-partial,
+:root:not([data-theme='light']) .badge.flow-scheduled-today,
+:root:not([data-theme='light']) .badge.age-warn,
+:root:not([data-theme='light']) .badge.signalMedium { color: #fde68a; }
+:root:not([data-theme='light']) .badge.in_progress,
+:root:not([data-theme='light']) .badge.flow-follow-up { color: #ddd6fe; }
+:root:not([data-theme='light']) .badge.done,
+:root:not([data-theme='light']) .badge.billing-paid,
+:root:not([data-theme='light']) .badge.age-fresh { color: #bbf7d0; }
+:root:not([data-theme='light']) .badge.flow-overdue,
+:root:not([data-theme='light']) .badge.age-old,
+:root:not([data-theme='light']) .badge.signalUrgent { color: #fecaca; }
+:root:not([data-theme='light']) .badge.flow-review,
+:root:not([data-theme='light']) .badge.signalWarn { color: #fbcfe8; }
+:root:not([data-theme='light']) .badge.billing-draft,
+:root:not([data-theme='light']) .badge.signalNeutral { color: #cbd5e1; }
+:root:not([data-theme='light']) .badge.signalHigh { color: #fed7aa; }
 .requestDetailPage { gap: 18px; }
 .requestHero {
   display: grid;
@@ -550,6 +571,14 @@ body { min-height: 100vh; }
 .recommendedAction-urgent { border-color: var(--error-border); background: var(--error-bg); box-shadow: 0 18px 55px rgba(178, 28, 28, .16); }
 .recommendedAction-review { border-color: var(--warn); }
 .recommendedAction-clear { border-color: var(--success-border); background: var(--success-bg); }
+:root:not([data-theme='light']) .recommendedAction { color: var(--text); }
+:root:not([data-theme='light']) .recommendedAction .muted { color: #cbd5e1; }
+:root:not([data-theme='light']) .recommendedAction-urgent { color: #fee2e2; }
+:root:not([data-theme='light']) .recommendedAction-review { background: linear-gradient(135deg, var(--card) 0%, rgba(251, 191, 36, 0.18) 170%); color: #fef3c7; }
+:root:not([data-theme='light']) .recommendedAction-clear { color: #dcfce7; }
+:root:not([data-theme='light']) .nextActionPrimary-urgent,
+:root:not([data-theme='light']) .todayMetricUrgent { color: #fee2e2; }
+:root:not([data-theme='light']) .nextActionPrimary-high { background: rgba(251, 191, 36, 0.12); color: #fef3c7; }
 .guidedWorkflowCompact .recommendedAction { min-width: min(520px, 100%); padding: 12px; box-shadow: none; }
 .guidedWorkflowCompact .recommendedAction strong { font-size: 14px; }
 .attentionList { display: grid; gap: 10px; }

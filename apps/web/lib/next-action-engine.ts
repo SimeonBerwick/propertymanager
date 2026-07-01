@@ -28,6 +28,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   unitLabel?: string
   vendorPayableBalanceCents?: number
   vendorPayableTo?: string
+  pendingVendorApprovalCount?: number
   pendingBidCount?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
@@ -41,6 +42,7 @@ const SCORE = {
   newReview: 78,
   vendorAssignment: 70,
   bidDecision: 60,
+  vendorCostApproval: 58,
   overdueUpdate: 50,
   scheduleNeeded: 48,
   tenantUpdate: 40,
@@ -106,6 +108,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if ((request.pendingBidCount ?? 0) > 0) {
     return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
+  }
+
+  if ((request.pendingVendorApprovalCount ?? 0) > 0) {
+    return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Review vendor costs', reason: `${request.pendingVendorApprovalCount} vendor cost submission${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closeout.`, group: 'Vendor costs', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 
   if (isOverdue(request, now)) {
