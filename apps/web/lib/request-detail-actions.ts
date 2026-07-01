@@ -228,7 +228,7 @@ export async function updateVendorFormAction(
   const tenderVendorIds = Array.from(new Set([singleVendorId, ...selectedVendorIds].filter(Boolean)))
   const shouldTender = mode === 'tender'
 
-  if (shouldTender && tenderVendorIds.length === 0) return { error: 'Select at least one vendor to send for tender.' }
+  if (shouldTender && tenderVendorIds.length === 0) return { error: 'Select at least one vendor to ask for a bid.' }
 
   if (shouldTender) {
     try {
@@ -249,8 +249,8 @@ export async function updateVendorFormAction(
         data: {
           requestId,
           status: 'open',
-          title: `Tender round ${new Date().toLocaleDateString('en-US')}`,
-          note: 'Operator opened multi-vendor tender round.',
+          title: `Bid round ${new Date().toLocaleDateString('en-US')}`,
+          note: 'Manager opened a multi-vendor bid round.',
           sentAt: new Date(),
           invites: {
             create: vendors.map((vendor) => ({ requestId, vendorId: vendor.id, status: 'invited' })),
@@ -266,7 +266,7 @@ export async function updateVendorFormAction(
             vendorId: vendor.id,
             actorUserId: session.userId,
             status: 'assigned',
-            note: 'Vendor invited to tender this request.',
+            note: 'Vendor invited to bid on this request.',
           },
         })
 
@@ -311,17 +311,17 @@ export async function updateVendorFormAction(
         entityType: 'request',
         entityId: requestId,
         action: 'request.tenderSent',
-        summary: `Sent request to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'} for tender.`,
+        summary: `Sent request to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'} for bids.`,
         metadata: { vendorIds: vendors.map((vendor) => vendor.id), vendorNames: vendors.map((vendor) => vendor.name) },
       })
 
       await applyRequestAutomation(requestId)
       revalidatePath(`/requests/${requestId}`)
       revalidatePath('/dashboard')
-      return { error: null, success: true, message: `Tender sent to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'}.` }
+      return { error: null, success: true, message: `Bid request sent to ${vendors.length} vendor${vendors.length === 1 ? '' : 's'}.` }
     } catch (error) {
       await logServerActionError('request.tender.send', error, { requestId, vendorIds: tenderVendorIds })
-      return { error: 'Could not send tender invitations.' }
+      return { error: 'Could not send bid invitations.' }
     }
   }
 
@@ -508,7 +508,7 @@ export async function awardTenderInviteAction(
       },
       include: { vendor: true, request: { include: { property: true, unit: true } } },
     })
-    if (!invite) return { error: 'Tender invite not found.' }
+    if (!invite) return { error: 'Bid invite not found.' }
 
     await prisma.$transaction(async (tx) => {
       await tx.tenderInvite.updateMany({
@@ -564,7 +564,7 @@ export async function awardTenderInviteAction(
           vendorId: invite.vendorId,
           actorUserId: session.userId,
           status: 'accepted',
-          note: 'Vendor bid awarded from tender workflow.',
+          note: 'Vendor bid approved from bid request workflow.',
           scheduledStart: invite.proposedStart,
           scheduledEnd: invite.proposedEnd,
         },
@@ -577,7 +577,7 @@ export async function awardTenderInviteAction(
       entityType: 'request',
       entityId: requestId,
       action: 'request.tenderAwarded',
-      summary: `Awarded tender to vendor ${invite.vendor.name}.`,
+      summary: `Approved bid from vendor ${invite.vendor.name}.`,
       metadata: { tenderId, inviteId, vendorId: invite.vendorId },
     })
 
@@ -639,10 +639,10 @@ export async function awardTenderInviteAction(
       }
     }
 
-    return { error: null, success: true, message: 'Tender awarded.' }
+    return { error: null, success: true, message: 'Bid approved.' }
   } catch (error) {
     await logServerActionError('request.tender.award', error, { requestId, tenderId, inviteId })
-    return { error: 'Could not award tender invite.' }
+    return { error: 'Could not approve bid invite.' }
   }
 }
 

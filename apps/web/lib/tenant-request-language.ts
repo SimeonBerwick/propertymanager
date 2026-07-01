@@ -9,9 +9,11 @@ export function tenantRequestCloseoutLabel(request: {
   status: RequestStatus
   billingDocuments?: Array<{ status?: string | null, totalCents: number, paidCents: number }>
 }) {
+  const hasTenantCharges = Boolean(request.billingDocuments?.length)
+
   return deriveRequestCloseoutLanguage({
     status: request.status,
-    billingDocuments: request.billingDocuments,
+    billingDocuments: hasTenantCharges ? request.billingDocuments : undefined,
   }).tenantLabel
 }
 

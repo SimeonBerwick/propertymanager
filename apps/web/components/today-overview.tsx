@@ -144,7 +144,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
           <span className="muted">Work that is past due</span>
         </Link>
         <a href="#waiting-on-others" className="card todayMetricCard">
-          <span className="kicker">Waiting on others</span>
+          <span className="kicker">Waiting on vendor or tenant</span>
           <strong>{overview.waitingOnOthers.length}</strong>
           <span className="muted">Work currently progressing</span>
         </a>
@@ -201,7 +201,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
 
       <div className="grid cols-2 todaySupportingGrid">
         <div id="waiting-on-others">
-          <SectionCard kicker="Monitor" title="Waiting on others" subtitle="Assigned work that does not need your decision right now.">
+          <SectionCard kicker="Monitor" title="Waiting on vendor or tenant" subtitle="Work that is moving but does not need your decision right now.">
             <CompactRequestList requests={overview.waitingOnOthers} empty="No open work is currently waiting on tenants or vendors." />
           </SectionCard>
         </div>

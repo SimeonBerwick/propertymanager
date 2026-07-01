@@ -193,7 +193,7 @@ export function RequestControlPanel({
       {openTenderInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
           <div>
-            <div className="kicker">Bid invitations</div>
+            <div className="kicker">Bid status</div>
             <h3 style={{ marginTop: 4 }}>Waiting for vendor bids</h3>
           </div>
           {openTenderInvites.map(({ invite }) => (

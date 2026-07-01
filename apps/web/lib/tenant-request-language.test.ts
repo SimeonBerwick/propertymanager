@@ -31,4 +31,11 @@ describe('tenant request language', () => {
       billingDocuments: [{ status: 'sent', totalCents: 12000, paidCents: 2000 }],
     })).toBe('Closed - unpaid')
   })
+
+  test('does not show paid language when there are no tenant charges', () => {
+    expect(tenantRequestCloseoutLabel({
+      status: 'closed',
+      billingDocuments: [],
+    })).toBe('Closed')
+  })
 })

@@ -151,7 +151,7 @@ describe('submitVendorPortalResponse', () => {
         vendorId: awardedVendor.id,
         actorUserId: user.id,
         status: 'accepted',
-        note: 'Vendor bid awarded from tender workflow.',
+        note: 'Vendor bid approved from bid request workflow.',
       },
     })
 
