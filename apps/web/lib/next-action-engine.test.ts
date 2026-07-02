@@ -23,6 +23,7 @@ const base: DashboardRequestRow = {
   propertyName: 'Oak House',
   propertyAddress: '1 Main St',
   unitLabel: '2A',
+  billingOpenBalanceCents: 0,
 }
 
 describe('next action engine', () => {
@@ -82,11 +83,11 @@ describe('next action engine', () => {
     })
   })
 
-  it('keeps completed requests out of closeout when vendor payment is open', () => {
-    expect(getRequestNextAction({ ...base, status: 'completed' as const, vendorPayableBalanceCents: 50000, vendorPayableTo: 'ACME Plumbing' })).toMatchObject({
+  it('keeps completed requests out of closeout when billing has an open balance', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, billingOpenBalanceCents: 50000 })).toMatchObject({
       priority: 'normal',
-      primaryLabel: 'Collect payment before closeout',
-      reason: 'Vendor payment is still open for ACME Plumbing.',
+      primaryLabel: 'Settle billing before closeout',
+      reason: 'A billing document still has an open balance.',
       href: '/requests/r1#billing',
       actionType: 'collect_payment_before_closeout',
     })

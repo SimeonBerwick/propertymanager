@@ -143,6 +143,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         tenantAccessFailureCount: data.tenantAccessFailureCount,
         tenantStatusUpdatePending: data.tenantStatusUpdatePending,
         pendingVendorApprovalCount: pendingVendorCommercialItems.length,
+        pendingBidCount: data.request.pendingBidCount,
+        billingOpenBalanceCents,
       }} />
 
       <section className="card requestHero">
@@ -175,6 +177,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           request={data.request}
           vendors={data.availableVendors}
           tenders={data.tenders}
+          statusControlPriority={canChooseVendor || hasSubmittedBid ? 'secondary' : 'primary'}
         />
       </SectionCard>
       </div>

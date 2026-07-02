@@ -28,6 +28,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   vendorPayableTotalCents?: number
   vendorPayablePaidCents?: number
   vendorPayableBalanceCents?: number
+  billingOpenBalanceCents: number
   pendingBidCount?: number
 }
 
@@ -112,6 +113,11 @@ function mapUnit(u: any): Unit {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow {
+  const billingOpenBalanceCents = Array.isArray(r.billingDocuments)
+    ? r.billingDocuments
+        .filter((doc: any) => doc.status !== 'void')
+        .reduce((sum: number, doc: any) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
+    : 0
   const vendorPayable = Array.isArray(r.billingDocuments)
     ? r.billingDocuments
         .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void' && doc.totalCents > doc.paidCents)
@@ -169,6 +175,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayableTotalCents: vendorPayable?.totalCents,
     vendorPayablePaidCents: vendorPayable?.paidCents,
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
+    billingOpenBalanceCents,
     pendingBidCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : undefined,
   }
 }
@@ -485,7 +492,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           property: true,
           unit: true,
           billingDocuments: {
-            where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+            where: { status: { not: 'void' } },
             orderBy: { updatedAt: 'desc' },
           },
           tenderInvites: {
@@ -623,7 +630,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
             property: true,
             unit: true,
             billingDocuments: {
-              where: { recipientType: 'vendor', documentType: 'vendor_remittance', status: { not: 'void' } },
+              where: { status: { not: 'void' } },
               orderBy: { updatedAt: 'desc' },
             },
             tenderInvites: {
