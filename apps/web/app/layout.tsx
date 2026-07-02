@@ -91,7 +91,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   <details className="navMenu">
                     <summary>Operations</summary>
                     <div className="navMenuPanel">
-                      <Link href="/access">Team access</Link>
+                      <Link href="/access">Tenant and vendor access</Link>
                       <Link href="/ops">Data &amp; activity</Link>
                       <Link href="/workflows">Rules</Link>
                       <Link href={'/account/settings' as Route}>Account settings</Link>

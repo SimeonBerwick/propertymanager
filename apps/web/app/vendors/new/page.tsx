@@ -4,7 +4,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 
 export default async function NewVendorPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   return (
     <div className="card stack" style={{ maxWidth: 760 }}>

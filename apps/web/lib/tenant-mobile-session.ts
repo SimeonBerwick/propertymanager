@@ -202,7 +202,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
 export async function requireTenantMobileSession() {
   const session = await getTenantMobileSession()
   if (!session) {
-    redirect('/mobile/auth' as never)
+    redirect('/mobile/auth?reason=session-expired' as never)
   }
   return session
 }

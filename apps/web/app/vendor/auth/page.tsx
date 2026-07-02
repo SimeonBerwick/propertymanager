@@ -3,7 +3,12 @@ import type { Route } from 'next'
 import { redirect } from 'next/navigation'
 import { getVendorSession } from '@/lib/vendor-session'
 
-export default async function VendorAuthLandingPage() {
+export default async function VendorAuthLandingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ reason?: string }>
+}) {
+  const params = searchParams ? await searchParams : undefined
   const session = await getVendorSession()
   if (session) {
     redirect('/vendor' as never)
@@ -15,6 +20,7 @@ export default async function VendorAuthLandingPage() {
         <div className="kicker">Vendor access</div>
         <h2 style={{ marginTop: 4 }}>Vendor portal</h2>
       </div>
+      {params?.reason === 'session-expired' ? <div className="notice error">Your session expired or this link needs sign-in. Sign in again to continue.</div> : null}
       <p className="muted" style={{ margin: 0 }}>
         Use your access code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
       </p>

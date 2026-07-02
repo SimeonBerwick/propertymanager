@@ -56,12 +56,12 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
     <section className="card stack">
       <div>
         <div className="kicker">Mobile tenant access</div>
-        <h3 style={{ marginTop: 4 }}>Manage renter occupancy and portal access</h3>
+        <h3 style={{ marginTop: 4 }}>Manage tenant occupancy and portal access</h3>
       </div>
 
       {currentIdentity ? (
         <div className="stack" style={{ gap: 8 }}>
-          <div className="kicker">Current renter</div>
+          <div className="kicker">Current tenant</div>
           <div className="muted">Status: {currentIdentity.status}</div>
           <div className="muted">Tenant: {currentIdentity.tenantName}</div>
           <div className="muted">Lease: {getTenantLeaseLabel(currentIdentity)}</div>
@@ -73,13 +73,13 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
       ) : (
         <div className="notice" style={{ background: '#fff8e1', borderColor: '#fcd34d' }}>
           This unit is currently vacant.
-          {upcomingIdentity?.leaseStartDate ? ` Next renter starts ${formatDateOnly(upcomingIdentity.leaseStartDate)}.` : ''}
+          {upcomingIdentity?.leaseStartDate ? ` Next tenant starts ${formatDateOnly(upcomingIdentity.leaseStartDate)}.` : ''}
         </div>
       )}
 
       {upcomingIdentity ? (
         <div className="stack" style={{ gap: 8 }}>
-          <div className="kicker">Upcoming renter</div>
+          <div className="kicker">Upcoming tenant</div>
           <div className="muted">Tenant: {upcomingIdentity.tenantName}</div>
           <div className="muted">Lease: {getTenantLeaseLabel(upcomingIdentity)}</div>
           <div className="muted">Phone: {upcomingIdentity.phoneE164}</div>
@@ -111,7 +111,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         <input type="hidden" name="unitId" value={unitId} />
         {currentIdentity ? <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} /> : null}
         <label className="field">
-          <span className="field-label">Current renter name</span>
+          <span className="field-label">Current tenant name</span>
           <input className="input" type="text" name="tenantName" defaultValue={currentIdentity?.tenantName ?? tenantName ?? ''} required />
         </label>
         <label className="field">
@@ -165,7 +165,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           />
           <span>Month to month</span>
         </label>
-        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save current renter'}</button>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save current tenant'}</button>
       </form>
 
       <form action={setupAction} className="stack">
@@ -173,12 +173,12 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         <input type="hidden" name="createMode" value="future" />
         {upcomingIdentity ? <input type="hidden" name="tenantIdentityId" value={upcomingIdentity.id} /> : null}
         <div>
-          <div className="kicker">Next renter</div>
+          <div className="kicker">Next tenant</div>
           <h4 style={{ margin: '4px 0 0' }}>Stage upcoming occupancy</h4>
           <div className="muted">Optional. Leave this blank if the unit will be vacant after the current lease ends.</div>
         </div>
         <label className="field">
-          <span className="field-label">Next renter name</span>
+          <span className="field-label">Next tenant name</span>
           <input className="input" type="text" name="tenantName" defaultValue={upcomingIdentity?.tenantName ?? ''} />
         </label>
         <label className="field">
@@ -187,7 +187,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         </label>
         <label className="field">
           <span className="field-label">Email</span>
-          <input className="input" type="email" name="email" defaultValue={upcomingIdentity?.email ?? ''} placeholder="next-renter@example.com" />
+          <input className="input" type="email" name="email" defaultValue={upcomingIdentity?.email ?? ''} placeholder="next-tenant@example.com" />
         </label>
         <div className="grid cols-2">
           <label className="field">
@@ -215,7 +215,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           />
           <span>Month to month</span>
         </label>
-        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save next renter'}</button>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save next tenant'}</button>
       </form>
 
       {currentIdentity && (
@@ -223,7 +223,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           <div>
             <div className="kicker">Access recovery</div>
             <h4 style={{ margin: '4px 0 0' }}>Correct details and resend access</h4>
-            <div className="muted">If the renter changed their email or phone, update and save the current renter above, then send new access below.</div>
+            <div className="muted">If the tenant changed their email or phone, update and save the current tenant above, then send new access below.</div>
           </div>
           <ManagerAccessCodeForm
             role="tenant"

@@ -9,7 +9,7 @@ import { archivePropertyAction, deletePropertyAction, restorePropertyAction } fr
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const { id } = await params
   const data = await getPropertyDetailData(id, session.userId)

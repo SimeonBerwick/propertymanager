@@ -82,7 +82,7 @@ describe('startReturningLoginAction', () => {
     expect(session).not.toBeNull()
   })
 
-  test('activates a pending renter and signs them in with a manager access code', async () => {
+  test('activates a pending tenant and signs them in with a manager access code', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const identity = await createTenantIdentity(user.id, property.id, unit.id, {
       status: 'pending_invite',

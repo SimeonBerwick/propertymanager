@@ -35,7 +35,7 @@ export async function createVendorAction(
   formData: FormData,
 ): Promise<VendorActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const name = getString(formData, 'name')
   const email = getString(formData, 'email').toLowerCase()
@@ -84,7 +84,7 @@ export async function updateVendorAction(
   formData: FormData,
 ): Promise<VendorActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const vendorId = getString(formData, 'vendorId')
   const name = getString(formData, 'name')

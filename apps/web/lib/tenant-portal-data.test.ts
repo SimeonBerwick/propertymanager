@@ -275,7 +275,7 @@ describe('getTenantOwnedRequestById', () => {
     }
   }
 
-  test('includes only tenant-visible active billing documents for the renter portal', async () => {
+  test('includes only tenant-visible active billing documents for the tenant portal', async () => {
     const { user, property, unit, identity } = await scaffoldTenant({
       email: 'alice@example.com',
     })

@@ -14,7 +14,7 @@ export type OpsCsvState = { error: string | null; success?: string }
 
 export async function sendSystemEmailTestAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -48,7 +48,7 @@ export async function sendSystemEmailTestAction(_prev: OpsCsvState, _formData: F
 
 export async function sendDailyCsvExportNowAction(_prev: OpsCsvState, _formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const result = await sendDailyCsvExportToLandlord(session.userId, new Date(), { force: true })
   revalidatePath('/ops')
@@ -68,12 +68,12 @@ export async function resendTenantInviteFromOpsAction(_prev: OpsCsvState, formDa
 
   if (result.error) return { error: result.error }
   if (result.deliveryWarning) return { error: null, success: result.deliveryWarning }
-  return { error: null, success: result.inviteLink ? 'Renter invite sent.' : 'Renter invite created.' }
+  return { error: null, success: result.inviteLink ? 'Tenant invite sent.' : 'Tenant invite created.' }
 }
 
 export async function updateVendorEmailFromOpsAction(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const vendorId = String(formData.get('vendorId') ?? '')
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -186,7 +186,7 @@ async function findOrCreateProperty(ownerId: string, name: string, address: stri
 
 export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
   const parsed = await csvRows(formData)
   if (parsed.error) return { error: parsed.error }
 
@@ -257,7 +257,7 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
 
 export async function importVendorsCsv(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
   const parsed = await csvRows(formData)
   if (parsed.error) return { error: parsed.error }
 
@@ -325,7 +325,7 @@ function normalizedStatus(raw: string): RequestStatus {
 
 export async function importTicketsCsv(_prev: OpsCsvState, formData: FormData): Promise<OpsCsvState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
   const parsed = await csvRows(formData)
   if (parsed.error) return { error: parsed.error }
 

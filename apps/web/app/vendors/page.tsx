@@ -10,7 +10,7 @@ function csvToList(value: string | null | undefined) {
 
 export default async function VendorsPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const [vendors, reportData] = await Promise.all([
     prisma.vendor.findMany({

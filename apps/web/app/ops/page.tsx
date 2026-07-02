@@ -16,7 +16,7 @@ export default async function OpsPage({
   searchParams: Promise<{ entity?: string; action?: string; days?: string }>
 }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const { entity, action, days: rawDays } = await searchParams
   const parsedDays = Number(rawDays)
@@ -91,7 +91,7 @@ export default async function OpsPage({
         <a href="#ops-actions" className="card todayMetricCard">
           <span className="kicker">Access</span>
           <strong>{opsActions.filter((action) => action.group === 'Access help' || action.group === 'Access actions').length}</strong>
-          <span className="muted">Renter and vendor access</span>
+          <span className="muted">Tenant and vendor access</span>
         </a>
         <a href="#ops-actions" className="card todayMetricCard">
           <span className="kicker">Delivery</span>

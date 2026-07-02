@@ -156,11 +156,11 @@ export default async function VendorRequestDetailPage({
       {viewState.shouldShowOccupant && (request.submittedByName || request.submittedByEmail) ? (
         <section className="card stack">
           <div>
-            <div className="kicker">Renter</div>
+            <div className="kicker">Tenant</div>
             <h3 style={{ marginTop: 4 }}>Occupant contact</h3>
           </div>
           <div className="muted">
-            {request.submittedByName ?? 'Renter'}
+            {request.submittedByName ?? 'Tenant'}
             {request.submittedByEmail ? ` - ${request.submittedByEmail}` : ''}
           </div>
         </section>
@@ -203,8 +203,8 @@ export default async function VendorRequestDetailPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Payments</div>
-          <h3 style={{ marginTop: 4 }}>Payments</h3>
+          <div className="kicker">Payment records</div>
+          <h3 style={{ marginTop: 4 }}>Payment records</h3>
         </div>
         {request.status === 'closed' && closeoutLanguage.paymentState !== 'none' ? (
           <div className={`notice ${closeoutLanguage.isPaid ? 'success' : ''}`}><strong>{closeoutLanguage.vendorLabel}</strong><span>{closeoutLanguage.detail}</span></div>

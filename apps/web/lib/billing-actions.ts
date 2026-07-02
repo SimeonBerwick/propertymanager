@@ -143,7 +143,7 @@ export async function createBillingDocumentAction(
   formData: FormData,
 ): Promise<BillingActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const recipientType = String(formData.get('recipientType') ?? 'tenant')
@@ -272,7 +272,7 @@ export async function updateBillingDocumentAction(
   formData: FormData,
 ): Promise<BillingActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const billingDocumentId = String(formData.get('billingDocumentId') ?? '')
   const requestId = String(formData.get('requestId') ?? '')
@@ -350,7 +350,7 @@ export async function resendBillingDocumentAction(
   formData: FormData,
 ): Promise<BillingActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const billingDocumentId = String(formData.get('billingDocumentId') ?? '')
   const requestId = String(formData.get('requestId') ?? '')
@@ -434,7 +434,7 @@ export async function duplicateBillingDocumentAction(
   formData: FormData,
 ): Promise<BillingActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const billingDocumentId = String(formData.get('billingDocumentId') ?? '')
   const requestId = String(formData.get('requestId') ?? '')
@@ -508,7 +508,7 @@ export async function voidBillingDocumentAction(
   formData: FormData,
 ): Promise<BillingActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const billingDocumentId = String(formData.get('billingDocumentId') ?? '')
   const requestId = String(formData.get('requestId') ?? '')

@@ -81,7 +81,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if ((request.tenantAccessFailureCount ?? 0) >= 3) {
-    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help renter access portal', reason: `The renter has failed to access the portal ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_renter_access_portal', score: SCORE.accessBlocked }
+    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help tenant access portal', reason: `The tenant has failed to access the portal ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_renter_access_portal', score: SCORE.accessBlocked }
   }
 
   if (request.status === 'requested' && !request.claimedAt) {
@@ -132,7 +132,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.tenantStatusUpdatePending) {
-    return { ...base, id: `${request.id}:tenant-update`, href: `/requests/${request.id}?comment=tenant#communication`, primaryLabel: 'Send tenant update', reason: 'The work status changed, but the renter has not been notified yet.', group: 'Tenant updates', priority: 'normal', actionType: 'send_tenant_update', score: SCORE.tenantUpdate }
+    return { ...base, id: `${request.id}:tenant-update`, href: `/requests/${request.id}?comment=tenant#communication`, primaryLabel: 'Send tenant update', reason: 'The work status changed, but the tenant has not been notified yet.', group: 'Tenant updates', priority: 'normal', actionType: 'send_tenant_update', score: SCORE.tenantUpdate }
   }
 
   if (request.vendorScheduledStart && request.status === 'scheduled') {

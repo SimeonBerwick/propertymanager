@@ -8,7 +8,7 @@ import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-we
 
 export default async function BillingStatusPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
 
   const gate = evaluateSubscriptionGate({

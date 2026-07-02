@@ -77,8 +77,8 @@ export default async function TenantMobileDashboardPage({
 
       {outstandingChargeCount ? (
         <Link href={'/mobile?filter=charges' as Route} className="notice tenantChargeNotice">
-          <strong>{outstandingChargeCount} payment item{outstandingChargeCount === 1 ? '' : 's'} need review</strong>
-          <span>View charges connected to your maintenance requests.</span>
+          <strong>{outstandingChargeCount} charge record{outstandingChargeCount === 1 ? ' needs' : 's need'} review</strong>
+          <span>View maintenance charge records. Payments are handled outside the app.</span>
         </Link>
       ) : null}
 

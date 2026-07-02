@@ -39,10 +39,10 @@ describe('next action engine', () => {
     })
   })
 
-  it('helps renters who repeatedly fail portal access', () => {
+  it('helps tenants who repeatedly fail portal access', () => {
     expect(getRequestNextAction({ ...base, tenantAccessFailureCount: 3 })).toMatchObject({
       priority: 'urgent',
-      primaryLabel: 'Help renter access portal',
+      primaryLabel: 'Help tenant access portal',
       href: '/units/u1/edit',
       actionType: 'help_renter_access_portal',
     })

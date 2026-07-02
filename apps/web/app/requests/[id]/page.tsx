@@ -55,7 +55,7 @@ function tenderInviteLabel(status: string) {
 
 export default async function RequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ comment?: string }> }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const { id } = await params
   const query = searchParams ? await searchParams : {}
   const defaultCommentVisibility = query.comment === 'tenant' ? 'external' : 'internal'
@@ -220,7 +220,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         <a href="#actions">Next step</a>
         <a href="#timeline">Timeline</a>
         {pendingVendorCommercialItems.length ? <a href="#vendor-approvals">Approvals</a> : null}
-        {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Invoices and payments</a> : null}
+        {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Billing records</a> : null}
         {hasBidDetails ? <a href="#advanced">More details</a> : null}
       </nav>
 
@@ -464,7 +464,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       {hasVendorChosen || data.billingDocuments.length ? (
       <div id="billing">
-      <SectionCard kicker="Invoices and payments" title="Billing, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
+      <SectionCard kicker="Billing records" title="Billing records, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 1: Tenant chargeback decision</div>
@@ -509,7 +509,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               </div>
             ) : null}
             <div className="muted" style={{ marginTop: 10 }}>
-              Approved vendor bids and overages create the vendor amount owed. Do not close the request until vendor payment and any tenant chargeback are settled.
+              Approved vendor bids and overages create the vendor amount owed. Track payment records here, but handle money movement outside the app. Do not close the request until vendor payment and any tenant chargeback are settled.
             </div>
           </div>
           {billingOpenBalanceCents === 0 && data.billingDocuments.length ? (

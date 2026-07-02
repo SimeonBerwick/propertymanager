@@ -30,7 +30,7 @@ async function saveNativeToken(token: string) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ token, platform: 'android' }),
   })
-  if (!response.ok) throw new Error('Could not save native push token.')
+  if (!response.ok) throw new Error('Could not turn on Android notifications.')
 }
 
 function urlBase64ToUint8Array(value: string) {
@@ -143,12 +143,12 @@ export function PushNotificationControl() {
   }
 
   if (state === 'checking' || state === 'unsupported') return null
-  if (state === 'on') return <span className="muted" title="Push notifications are enabled">Notifications on</span>
-  if (state === 'blocked') return <span className="muted" title="Allow notifications in browser settings">Notifications blocked</span>
+  if (state === 'on') return <span className="muted" title="You will receive updates for maintenance work on this device">Notifications on</span>
+  if (state === 'blocked') return <span className="muted" title="Allow notifications in Android or browser settings">Notifications blocked in device settings</span>
 
   return (
     <button type="button" className="button" onClick={enable} disabled={state === 'working'}>
-      {state === 'working' ? 'Enabling...' : state === 'error' ? 'Retry notifications' : 'Enable notifications'}
+      {state === 'working' ? 'Turning on...' : state === 'error' ? 'Try notifications again' : 'Turn on notifications'}
     </button>
   )
 }

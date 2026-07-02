@@ -18,7 +18,7 @@ function recentFrictionKey(metadataJson: string | null) {
 
 export default async function AccessPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const [units, vendors, recentAccessEvents] = await Promise.all([
     prisma.unit.findMany({
@@ -76,7 +76,7 @@ export default async function AccessPage() {
     unit,
     occupancy: getUnitOccupancySnapshot(unit.tenantIdentities),
   }))
-  const renterAccessCount = occupancyRows.filter((row) => row.occupancy.current?.status === 'active').length
+  const tenantAccessCount = occupancyRows.filter((row) => row.occupancy.current?.status === 'active').length
   const pendingInviteCount = occupancyRows.filter((row) => row.occupancy.current?.status === 'pending_invite' || row.occupancy.upcoming?.status === 'pending_invite').length
   const activeVendorCount = vendors.filter((vendor) => vendor.isActive).length
   const tenantActions: RecommendedAction[] = occupancyRows.flatMap<RecommendedAction>(({ unit, occupancy }) => {
@@ -88,8 +88,8 @@ export default async function AccessPage() {
         id: `tenant-access:${identity.id}`,
         priority: 'urgent',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: `The renter has failed to access the portal ${frictionCount} times recently.`,
-        primaryLabel: 'Help renter access portal',
+        reason: `The tenant has failed to access the portal ${frictionCount} times recently.`,
+        primaryLabel: 'Help tenant access portal',
         href: `/units/${unit.id}/edit`,
         actionType: 'help_renter_access_portal',
         group: 'Access blocked',
@@ -101,8 +101,8 @@ export default async function AccessPage() {
         id: `tenant-invite:${identity.id}`,
         priority: 'normal',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: 'The renter invite is still pending.',
-        primaryLabel: 'Resend renter invite',
+        reason: 'The tenant invite is still pending.',
+        primaryLabel: 'Resend tenant invite',
         href: `/units/${unit.id}/edit`,
         actionType: 'resend_renter_invite',
         group: 'Pending invites',
@@ -114,8 +114,8 @@ export default async function AccessPage() {
         id: `tenant-never-login:${identity.id}`,
         priority: 'low',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: 'Renter access is active, but the renter has never logged in.',
-        primaryLabel: 'Confirm renter access',
+        reason: 'Tenant access is active, but the tenant has never logged in.',
+        primaryLabel: 'Confirm tenant access',
         href: `/units/${unit.id}/edit`,
         actionType: 'confirm_renter_access',
         group: 'Unused access',
@@ -177,7 +177,7 @@ export default async function AccessPage() {
           <div>
             <div className="kicker">Access</div>
             <h1 className="pageTitle">{primaryAction ? primaryAction.primaryLabel : 'People and portal access'}</h1>
-            <div className="muted">{primaryAction ? primaryAction.reason : 'Grant, resend, or remove renter and vendor access from one place.'}</div>
+            <div className="muted">{primaryAction ? primaryAction.reason : 'Grant, resend, or remove tenant and vendor access from one place.'}</div>
           </div>
           <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             {primaryAction ? <Link href={(primaryAction.href ?? '/access') as Route} className="button primary">Do this next</Link> : null}
@@ -196,12 +196,12 @@ export default async function AccessPage() {
         <div className="card">
           <div className="kicker">Pending invites</div>
           <h2>{pendingInviteCount}</h2>
-          <div className="muted">Renter identities waiting on invite completion</div>
+          <div className="muted">Tenant identities waiting on invite completion</div>
         </div>
         <div className="card">
           <div className="kicker">Active access</div>
-          <h2>{renterAccessCount + activeVendorCount}</h2>
-          <div className="muted">Renters and vendors with active portal access</div>
+          <h2>{tenantAccessCount + activeVendorCount}</h2>
+          <div className="muted">Tenants and vendors with active portal access</div>
         </div>
       </section>
 
@@ -230,7 +230,7 @@ export default async function AccessPage() {
       <section className="card stack">
         <div className="row">
           <div>
-            <div className="kicker">Renters</div>
+            <div className="kicker">Tenants</div>
             <h3 style={{ marginTop: 4 }}>Unit access</h3>
           </div>
           <div className="muted">{units.length} units</div>
@@ -240,7 +240,7 @@ export default async function AccessPage() {
             <thead>
               <tr>
                 <th>Unit</th>
-                <th>Renter</th>
+                <th>Tenant</th>
                 <th>Access state</th>
                 <th>Last activity</th>
                 <th>Action</th>
@@ -272,7 +272,7 @@ export default async function AccessPage() {
                       <div className="muted">{unit.property.name}</div>
                     </td>
                     <td>
-                      <div>{identity?.tenantName ?? 'No renter on file'}</div>
+                      <div>{identity?.tenantName ?? 'No tenant on file'}</div>
                       <div className="muted">{identity?.email ?? 'No email on file'}</div>
                     </td>
                     <td className="muted">
@@ -283,7 +283,7 @@ export default async function AccessPage() {
                     <td className="muted">{lastActivity}</td>
                     <td>
                       <Link href={`/units/${unit.id}`} className="button">
-                        Manage renter access
+                        Manage tenant access
                       </Link>
                     </td>
                   </tr>

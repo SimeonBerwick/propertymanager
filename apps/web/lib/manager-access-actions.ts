@@ -37,7 +37,7 @@ export async function createTenantAccessCodeAction(
   formData: FormData,
 ): Promise<ManagerAccessCodeState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   try {
     const { validFrom, expiresAt } = parseWindow(formData)
@@ -73,7 +73,7 @@ export async function createVendorAccessCodeAction(
   formData: FormData,
 ): Promise<ManagerAccessCodeState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   try {
     const { validFrom, expiresAt } = parseWindow(formData)

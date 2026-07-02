@@ -10,7 +10,7 @@ export async function runAutomationNow(
   _formData: FormData,
 ): Promise<ExceptionActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   await runAutomationSweep()
   return { error: null, success: true }
@@ -21,7 +21,7 @@ export async function sendExceptionSummaryNow(
   _formData: FormData,
 ): Promise<ExceptionActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const result = await sendDailyExceptionSummaryToLandlord(session.userId)
   if (!result.ok) return { error: 'Could not send exception summary.' }

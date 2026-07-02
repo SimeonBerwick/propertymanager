@@ -32,8 +32,8 @@ export async function startReturningLoginAction(
     } catch (error) {
       return {
         error: error instanceof Error && /not active/i.test(error.message)
-          ? 'This renter access code is no longer active. Ask your property manager for a new code.'
-          : 'Could not finish renter sign-in. Try again or ask your property manager for a new code.',
+          ? 'This tenant access code is no longer active. Ask your property manager for a new code.'
+          : 'Could not finish tenant sign-in. Try again or ask your property manager for a new code.',
       }
     }
     redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
@@ -44,7 +44,7 @@ export async function startReturningLoginAction(
     return {
       error: match.code === 'ambiguous'
         ? 'More than one active tenant identity matches this login.'
-        : 'We could not find an active renter account with that email or phone number.',
+        : 'We could not find an active tenant account with that email or phone number.',
     }
   }
 
@@ -53,8 +53,8 @@ export async function startReturningLoginAction(
   } catch (error) {
     return {
       error: error instanceof Error && /not active/i.test(error.message)
-        ? 'This renter account is no longer active.'
-        : 'Could not finish renter sign-in.',
+        ? 'This tenant account is no longer active.'
+        : 'Could not finish tenant sign-in.',
     }
   }
 
