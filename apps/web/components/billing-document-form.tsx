@@ -9,23 +9,23 @@ const INITIAL_STATE: BillingActionState = { error: null }
 const PRESETS = {
   tenant_damage: {
     recipientType: 'tenant',
-    title: 'Tenant damage chargeback invoice',
-    description: 'Chargeback for maintenance work caused by tenant-responsible damage or misuse.',
+    title: 'Tenant chargeback invoice',
+    description: 'Charge the tenant for the approved tenant-responsible amount on this request.',
   },
   tenant_reimbursement: {
     recipientType: 'tenant',
-    title: 'Tenant reimbursement invoice',
-    description: 'Invoice for tenant-responsible maintenance reimbursement.',
+    title: 'Record tenant reimbursement invoice',
+    description: 'Bill the tenant for an agreed maintenance reimbursement.',
   },
   vendor_partial: {
     recipientType: 'vendor',
-    title: 'Vendor partial payment',
-    description: 'Partial payment statement for completed maintenance work.',
+    title: 'Record partial vendor payment',
+    description: 'Record a partial payment made to the vendor for this request.',
   },
   vendor_paid: {
     recipientType: 'vendor',
-    title: 'Vendor paid-in-full payment',
-    description: 'Paid-in-full statement for completed maintenance work.',
+    title: 'Record vendor paid in full',
+    description: 'Record that the approved vendor amount has been paid in full.',
   },
 } as const
 
@@ -36,14 +36,14 @@ export function BillingDocumentForm({
   tenantEmail,
   vendorEmail,
   tenantBillbackDecision,
-  tenantBillbackAmountCents,
+  tenantBillbackTotal amountCents,
   tenantBillbackReason,
 }: {
   requestId: string
   tenantEmail?: string
   vendorEmail?: string
   tenantBillbackDecision?: 'none' | 'bill_tenant' | 'waived'
-  tenantBillbackAmountCents?: number
+  tenantBillbackTotal amountCents?: number
   tenantBillbackReason?: string
 }) {
   const [state, action, pending] = useActionState(createBillingDocumentAction, INITIAL_STATE)
@@ -58,55 +58,55 @@ export function BillingDocumentForm({
     <form action={action} className="stack billingForm" style={{ gap: 10 }}>
       <input type="hidden" name="requestId" value={requestId} />
       <label className="field">
-        <span className="field-label">Scenario preset</span>
+        <span className="field-label">What are you recording?</span>
         <select className="input" name="preset" value={presetKey} onChange={(event) => setPresetKey(event.target.value as BillingPresetKey)}>
-          <option value="tenant_damage">Tenant damage chargeback</option>
-          <option value="tenant_reimbursement">Tenant reimbursement</option>
-          <option value="vendor_partial">Vendor partial payment</option>
-          <option value="vendor_paid">Vendor paid in full</option>
+          <option value="tenant_damage">Charge tenant for this work</option>
+          <option value="tenant_reimbursement">Record tenant reimbursement</option>
+          <option value="vendor_partial">Record partial vendor payment</option>
+          <option value="vendor_paid">Record vendor payment in full</option>
         </select>
       </label>
       <div className="grid cols-2">
         <label className="field">
-          <span className="field-label">Recipient type</span>
+          <span className="field-label">Who receives this document?</span>
           <select className="input" name="recipientType" value={preset.recipientType} onChange={() => undefined}>
-            <option value="tenant">Tenant invoice</option>
-            <option value="vendor">Vendor payment</option>
+            <option value="tenant">Tenant charge</option>
+            <option value="vendor">Vendor payment record</option>
           </select>
         </label>
         <label className="field">
-          <span className="field-label">Send to</span>
+          <span className="field-label">Recipient email</span>
           <input key={`sentTo-${presetKey}`} className="input" name="sentTo" placeholder={defaultSentTo || 'email@example.com'} defaultValue={defaultSentTo} />
         </label>
       </div>
       <label className="field">
-        <span className="field-label">Document title</span>
+        <span className="field-label">Document name</span>
         <input key={`title-${presetKey}`} className="input" name="title" defaultValue={preset.title} required />
       </label>
       <div className="grid cols-3">
         <label className="field">
-          <span className="field-label">Amount</span>
-          <input className="input" name="amount" placeholder="250.00" defaultValue={tenantBillbackDecision === 'bill_tenant' && typeof tenantBillbackAmountCents === 'number' ? (tenantBillbackAmountCents / 100).toFixed(2) : ''} required />
+          <span className="field-label">Total amount</span>
+          <input className="input" name="amount" placeholder="250.00" defaultValue={tenantBillbackDecision === 'bill_tenant' && typeof tenantBillbackTotal amountCents === 'number' ? (tenantBillbackTotal amountCents / 100).toFixed(2) : ''} required />
         </label>
         <label className="field">
-          <span className="field-label">Already paid</span>
-          <input className="input" name="paidAmount" placeholder="0.00" />
+          <span className="field-label">Amount already paid</span>
+          <input className="input" name="paidTotal amount" placeholder="0.00" />
         </label>
         <label className="field">
-          <span className="field-label">Mode</span>
-          <select className="input" name="sendMode" defaultValue="send">
-            <option value="send">Create and send</option>
-            <option value="draft">Create draft only</option>
+          <span className="field-label">Send now?</span>
+          <select className="input" name="sendSend now?" defaultValue="send">
+            <option value="send">Create and email now</option>
+            <option value="draft">Save draft only</option>
           </select>
         </label>
       </div>
       <label className="field">
-        <span className="field-label">Description</span>
-        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="What this invoice or payment covers" rows={4} />
+        <span className="field-label">What is this charge or payment for?</span>
+        <textarea key={`description-${presetKey}`} className="input textarea" name="description" defaultValue={tenantBillbackDecision === 'bill_tenant' && tenantBillbackReason ? tenantBillbackReason : preset.description} placeholder="Plain-English explanation for the tenant, vendor, or your records" rows={4} />
       </label>
-      <ActionFeedback error={state.error} success={state.success && 'Invoice or payment created.'} />
+      <ActionFeedback error={state.error} success={state.success && 'Billing document created.'} />
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Saving...' : 'Create invoice or payment'}
+        {pending ? 'Saving...' : 'Create billing document'}
       </button>
     </form>
   )
