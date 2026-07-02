@@ -37,7 +37,7 @@ describe('setupMobileIdentityAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await setupMobileIdentityAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error when required fields are missing', async () => {
@@ -188,7 +188,7 @@ describe('sendMobileInviteAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await sendMobileInviteAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error when tenantIdentityId is missing', async () => {
@@ -284,7 +284,7 @@ describe('deactivateMobileIdentityAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await deactivateMobileIdentityAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error when tenantIdentityId is missing', async () => {

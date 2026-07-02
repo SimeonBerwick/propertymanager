@@ -49,7 +49,7 @@ describe('updateStatusFormAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await updateStatusFormAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error for invalid toStatus', async () => {
@@ -149,7 +149,7 @@ describe('updateVendorFormAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await updateVendorFormAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error when vendor name exceeds 120 characters', async () => {
@@ -220,7 +220,7 @@ describe('addCommentFormAction', () => {
 
   test('returns error when not authenticated', async () => {
     const result = await addCommentFormAction(PREV, formData({}))
-    expect(result.error).toMatch(/not authenticated/i)
+    expect(result.error).toMatch(/sign in again/i)
   })
 
   test('returns error when body is empty', async () => {
