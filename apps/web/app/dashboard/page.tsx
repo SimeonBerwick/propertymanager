@@ -14,6 +14,7 @@ import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAct
 import { getOnboardingChecklist } from '@/lib/onboarding'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { TodayOverview } from '@/components/today-overview'
+import { subscriptionCountdownNotice } from '@/lib/subscription-gate'
 
 export default async function DashboardPage({
   searchParams,
@@ -64,9 +65,27 @@ export default async function DashboardPage({
   })
 
   const focusNow = sortedRequests.slice(0, 12)
+  const subscriptionNotice = subscriptionCountdownNotice({
+    subscriptionStatus: session.subscriptionStatus,
+    trialEndsAt: session.trialEndsAt,
+    subscriptionEndsAt: session.subscriptionEndsAt,
+  }, now)
 
   return (
     <div className="stack">
+      {subscriptionNotice ? (
+        <section className="notice stack" style={{ gap: 10 }}>
+          <div>
+            <strong>{subscriptionNotice.title}</strong>
+            <div className="muted">{subscriptionNotice.message}</div>
+            <div className="muted">Access end date: {subscriptionNotice.expiresAt.toLocaleDateString()}</div>
+          </div>
+          <div className="row" style={{ gap: 8 }}>
+            <Link href="/account/subscription" className="button primary">Manage subscription</Link>
+            <Link href="/account/settings/deletion" className="button">Request account deletion</Link>
+          </div>
+        </section>
+      ) : null}
       <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} />
 
       <details className="advancedDisclosure dashboardWorkspaceDisclosure" open={selectedQueue !== 'all'}>

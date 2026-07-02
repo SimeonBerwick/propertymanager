@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { evaluateSubscriptionGate, subscriptionGateMessage } from '@/lib/subscription-gate'
+import { evaluateSubscriptionGate, subscriptionCountdownNotice, subscriptionGateMessage } from '@/lib/subscription-gate'
 
 const NOW = new Date('2026-06-01T14:35:00.000Z')
 
@@ -41,5 +41,31 @@ describe('evaluateSubscriptionGate', () => {
     const result = evaluateSubscriptionGate({ subscriptionStatus: 'canceled', subscriptionEndsAt: '2026-06-30T00:00:00.000Z' }, NOW)
     expect(result.allowed).toBe(true)
     expect(result.reason).toBe('active_subscription')
+  })
+})
+
+describe('subscriptionCountdownNotice', () => {
+  test('shows a final-week trial countdown', () => {
+    const notice = subscriptionCountdownNotice({ subscriptionStatus: 'trialing', trialEndsAt: '2026-06-08T00:00:00.000Z' }, NOW)
+
+    expect(notice).toMatchObject({
+      daysRemaining: 7,
+      kind: 'trial',
+      title: '7 days left on your free trial',
+    })
+  })
+
+  test('does not show a countdown before the final week', () => {
+    expect(subscriptionCountdownNotice({ subscriptionStatus: 'trialing', trialEndsAt: '2026-06-09T14:35:01.000Z' }, NOW)).toBeNull()
+  })
+
+  test('shows one day left with singular wording', () => {
+    const notice = subscriptionCountdownNotice({ subscriptionStatus: 'active', subscriptionEndsAt: '2026-06-02T14:35:00.000Z' }, NOW)
+
+    expect(notice).toMatchObject({
+      daysRemaining: 1,
+      kind: 'subscription',
+      title: '1 day left on your subscription',
+    })
   })
 })
