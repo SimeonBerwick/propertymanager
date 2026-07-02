@@ -24,6 +24,10 @@ function visibleActionLimit(groupLabel: string) {
   return groupLabel.startsWith('Access') ? 2 : 3
 }
 
+function isAccessAction(action: RecommendedAction) {
+  return action.group === 'Access help' || action.group === 'Access actions' || action.group === 'Unused access'
+}
+
 function ActionRow({ action, compact = false }: { action: RecommendedAction, compact?: boolean }) {
   const subtitle = actionSubtitle(action)
 
@@ -41,10 +45,13 @@ function ActionRow({ action, compact = false }: { action: RecommendedAction, com
 
 export function TodayOverview({ requests, masterQueueActions = [], now = new Date() }: { requests: DashboardRequestRow[], masterQueueActions?: RecommendedAction[], now?: Date }) {
   const overview = buildTodayOverview(requests, now)
-  const nextActions = sortRecommendedActions([
+  const allActions = sortRecommendedActions([
     ...buildDashboardNextActions(requests, now),
     ...masterQueueActions,
   ])
+  const requestActions = allActions.filter((action) => !isAccessAction(action))
+  const accessActions = allActions.filter(isAccessAction)
+  const nextActions = requestActions.length ? requestActions : accessActions
   const primaryAction = nextActions[0]
   const remainingActions = primaryAction ? nextActions.slice(1) : nextActions
   const secondaryActions = remainingActions.slice(0, 2)
