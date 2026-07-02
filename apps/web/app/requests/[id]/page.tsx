@@ -58,12 +58,12 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   if (!session) redirect('/login?error=session-expired')
   const { id } = await params
   const query = searchParams ? await searchParams : {}
-  const defaultCommentVisibility = query.comment === 'tenant' ? 'external' : 'internal'
   const data = await getRequestDetailData(id, session.userId)
 
   if (!data) {
     notFound()
   }
+  const defaultCommentVisibility = query.comment === 'tenant' || data.tenantStatusUpdatePending ? 'external' : 'internal'
 
   const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
   const vendorPhotos = data.photos.filter((photo) => photo.source === 'vendor')
@@ -119,20 +119,25 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const hasSubmittedBid = data.tenders.some((tender) => tender.invites.some((invite) => invite.status === 'bid_submitted'))
     || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
-  const actionSectionTitle = hasSubmittedBid
-    ? 'Approve vendor bid'
-    : canChooseVendor
-      ? 'Choose vendor path'
-      : ['completed', 'closed'].includes(data.request.status)
-        ? 'Close request actions'
-        : 'Request actions'
-  const actionSectionSubtitle = hasSubmittedBid
-    ? 'Review returned pricing and choose the vendor.'
-    : canChooseVendor
-      ? 'Assign one vendor directly or ask multiple vendors for bids.'
-      : ['completed', 'closed'].includes(data.request.status)
-        ? 'Reopen only if more work is needed.'
-        : 'Move this request forward when a manager decision is needed.'
+  const needsAppointmentTime = hasVendorChosen && !data.request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const actionSectionTitle = needsAppointmentTime
+    ? 'Add appointment time'
+    : hasSubmittedBid
+      ? 'Approve vendor bid'
+      : canChooseVendor
+        ? 'Choose vendor path'
+        : ['completed', 'closed'].includes(data.request.status)
+          ? 'Close request actions'
+          : 'Request actions'
+  const actionSectionSubtitle = needsAppointmentTime
+    ? 'Enter the confirmed vendor visit time here.'
+    : hasSubmittedBid
+      ? 'Review returned pricing and choose the vendor.'
+      : canChooseVendor
+        ? 'Assign one vendor directly or ask multiple vendors for bids.'
+        : ['completed', 'closed'].includes(data.request.status)
+          ? 'Reopen only if more work is needed.'
+          : 'Move this request forward when a manager decision is needed.'
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
 
@@ -412,19 +417,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             ))}
           </SectionCard>
           ) : null}
-
-        </div>
-
-        <div className="stack">
-          <div id="actions">
-          <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
-            <RequestControlPanel
-              request={data.request}
-              vendors={data.availableVendors}
-              tenders={data.tenders}
-            />
-          </SectionCard>
-          </div>
 
         </div>
       </div>

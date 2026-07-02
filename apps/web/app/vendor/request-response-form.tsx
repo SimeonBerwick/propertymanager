@@ -40,20 +40,23 @@ export function VendorRequestResponseForm({ requestId }: { requestId: string }) 
         </label>
       </div> : null}
 
-      {showSchedule ? <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">Scheduled start</span>
-          <input className="input" type="datetime-local" name="scheduledStart" />
-        </label>
-        <label className="field">
-          <span className="field-label">Scheduled end</span>
-          <input className="input" type="datetime-local" name="scheduledEnd" />
-        </label>
+      {showSchedule ? <div className="stack" style={{ gap: 8 }}>
+        <div className="notice">This appointment time will be sent to the tenant.</div>
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Appointment start</span>
+            <input className="input" type="datetime-local" name="scheduledStart" required />
+          </label>
+          <label className="field">
+            <span className="field-label">Appointment end, optional</span>
+            <input className="input" type="datetime-local" name="scheduledEnd" />
+          </label>
+        </div>
       </div> : null}
 
       <label className="field">
         <span className="field-label">Note</span>
-        <textarea className="input" name="note" rows={4} placeholder={response === 'declined' ? 'Tell the manager why you cannot take this work' : response === 'completed' ? 'Summarize the completed work' : 'Optional details for the property manager'} />
+        <textarea className="input" name="note" rows={4} placeholder={response === 'declined' ? 'Tell the manager why you cannot take this work' : response === 'scheduled' ? 'Optional tenant-visible scheduling note' : response === 'completed' ? 'Summarize the completed work' : 'Optional details for the property manager'} />
       </label>
 
       {showPhotos ? <label className="field">

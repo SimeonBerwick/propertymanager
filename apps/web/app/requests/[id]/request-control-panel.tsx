@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { awardTenderInviteAction, type RequestActionState, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
+import { awardTenderInviteAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -11,15 +11,15 @@ const INITIAL_STATE: RequestActionState = { error: null }
 
 const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   requested: ['approved', 'declined', 'canceled'],
-  approved: ['vendor_selected', 'declined', 'canceled', 'scheduled'],
+  approved: ['vendor_selected', 'declined', 'canceled'],
   declined: ['reopened'],
-  vendor_selected: ['approved', 'scheduled', 'canceled'],
+  vendor_selected: ['approved', 'canceled'],
   scheduled: ['vendor_selected', 'in_progress', 'canceled'],
   in_progress: ['completed', 'vendor_selected'],
   completed: ['closed', 'reopened'],
   closed: ['reopened'],
   canceled: ['reopened'],
-  reopened: ['approved', 'vendor_selected', 'scheduled'],
+  reopened: ['approved', 'vendor_selected'],
 }
 
 function statusOptionLabel(status: RequestStatus) {
@@ -55,7 +55,7 @@ export function RequestControlPanel({
   tenders,
   statusControlPriority = 'primary',
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'assignedVendorName' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
@@ -64,12 +64,13 @@ export function RequestControlPanel({
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [awardState, awardAction, awardPending] = useActionState(awardTenderInviteAction, INITIAL_STATE)
+  const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
 
   useEffect(() => {
-    if (statusState.success || vendorState.success || awardState.success) {
+    if (statusState.success || vendorState.success || awardState.success || dispatchState.success) {
       router.refresh()
     }
-  }, [awardState.success, router, statusState.success, vendorState.success])
+  }, [awardState.success, dispatchState.success, router, statusState.success, vendorState.success])
   const nextStatuses = STATUS_TRANSITIONS[request.status] ?? []
   const recommended = vendors.slice(0, 8)
   const bidDecisionInvites = tenders.flatMap((tender) => (
@@ -83,9 +84,36 @@ export function RequestControlPanel({
       .map((invite) => ({ tender, invite }))
   ))
 
-  const hasAssignedVendor = Boolean(request.assignedVendorName) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
+  const hasAssignedVendor = Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
+  const canSetAppointment = hasAssignedVendor && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const appointmentForm = canSetAppointment ? (
+    <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
+      <div>
+        <div className="kicker">Appointment</div>
+        <h3 style={{ marginTop: 4 }}>Add the appointment time</h3>
+      </div>
+      <input type="hidden" name="requestId" value={request.id} />
+      <input type="hidden" name="dispatchStatus" value="scheduled" />
+      <label className="field">
+        <span className="field-label">Start time</span>
+        <input className="input" type="datetime-local" name="scheduledStart" required />
+      </label>
+      <label className="field">
+        <span className="field-label">End time, optional</span>
+        <input className="input" type="datetime-local" name="scheduledEnd" />
+      </label>
+      <label className="field">
+        <span className="field-label">Note, optional</span>
+        <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />
+      </label>
+      <ActionFeedback error={dispatchState.error} success={dispatchState.success ? 'Appointment saved.' : null} detail="After saving, send the tenant update from the next step at the top of this page." />
+      <button type="submit" className="button primary" disabled={dispatchPending}>
+        {dispatchPending ? 'Saving...' : 'Save appointment'}
+      </button>
+    </form>
+  ) : null
   const statusForm = (
     <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
       <div>
@@ -121,6 +149,7 @@ export function RequestControlPanel({
           <strong>Choose one vendor path.</strong> Use direct assignment when you already know who should do the work. Use bid invitations when you want vendors to send pricing or availability first. You do not need to do both.
         </div>
       ) : null}
+      {appointmentForm}
       {bidDecisionInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
           <div>
@@ -152,7 +181,7 @@ export function RequestControlPanel({
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
         </div>
       ) : null}
-      {statusControlPriority === 'primary' ? statusForm : (
+      {statusControlPriority === 'primary' && !canSetAppointment ? statusForm : (
         <details className="advancedDisclosure">
           <summary>Other request decisions</summary>
           {statusForm}

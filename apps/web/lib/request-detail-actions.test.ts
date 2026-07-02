@@ -111,6 +111,22 @@ describe('updateStatusFormAction', () => {
     expect(events[0].toStatus).toBe('approved')
   })
 
+  test('keeps status-only scheduled changes internal', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, { status: 'vendor_selected' })
+
+    const result = await updateStatusFormAction(
+      PREV,
+      formData({ requestId: request.id, fromStatus: 'vendor_selected', toStatus: 'scheduled' }),
+    )
+
+    expect(result.error).toBeNull()
+    const event = await prisma.statusEvent.findFirst({ where: { requestId: request.id }, orderBy: { createdAt: 'desc' } })
+    expect(event?.toStatus).toBe('scheduled')
+    expect(event?.visibility).toBe('internal')
+  })
+
   test('sets closedAt when transitioning to closed', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))

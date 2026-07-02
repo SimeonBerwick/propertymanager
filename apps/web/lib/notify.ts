@@ -567,14 +567,21 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
   const scheduleLine = p.scheduledStart
     ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` to ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
     : ''
+  const isScheduled = p.dispatchStatus === 'scheduled' && Boolean(scheduleLine)
+  const headline = isScheduled
+    ? 'Your maintenance work has been scheduled.'
+    : 'Your maintenance request has a vendor update.'
+  const subject = isScheduled
+    ? `Maintenance work scheduled - ${p.title}`
+    : `Vendor update for your maintenance request - ${p.title}`
 
   return {
     to: p.tenantEmail,
-    subject: `Vendor update for your maintenance request - ${p.title}`,
+    subject,
     text: [
       `Hi ${p.tenantName},`,
       ``,
-      `Your maintenance request has a vendor update.`,
+      headline,
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
@@ -588,7 +595,7 @@ export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): Not
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.tenantName)},</p>
-      <p style="margin:0 0 14px 0">Your maintenance request has a vendor update.</p>
+      <p style="margin:0 0 14px 0">${esc(headline)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}

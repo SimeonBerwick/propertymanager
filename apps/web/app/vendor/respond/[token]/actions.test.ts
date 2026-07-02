@@ -68,6 +68,42 @@ describe('submitVendorResponse', () => {
     applyRequestAutomationMock.mockClear()
   })
 
+  test('requires an appointment start before marking work scheduled from a vendor link', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Scheduled Vendor', email: 'scheduled@example.com' },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+    })
+
+    validateVendorDispatchTokenMock.mockResolvedValue({
+      ok: true,
+      linkId: 'dispatch-link-scheduled',
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      vendorEmail: vendor.email,
+      requestId: request.id,
+      requestTitle: request.title,
+      propertyName: property.name,
+      unitLabel: unit.label,
+    })
+
+    const result = await submitVendorResponse(
+      { error: null },
+      formData({ token: 'token-1', dispatchStatus: 'scheduled' }),
+    )
+
+    expect(result.error).toMatch(/appointment start time/i)
+    expect(markVendorDispatchLinkUsedMock).not.toHaveBeenCalled()
+    const updatedRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(updatedRequest?.status).toBe('vendor_selected')
+    expect(updatedRequest?.vendorScheduledStart).toBeNull()
+  })
+
   test('creates a status event when a vendor accepts and moves the request into vendor_selected', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({

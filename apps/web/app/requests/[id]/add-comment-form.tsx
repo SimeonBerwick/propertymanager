@@ -20,7 +20,7 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
   }, [router, state.success])
 
   return (
-    <form ref={formRef} action={formAction} className="stack" style={{ gap: 8 }}>
+    <form key={defaultVisibility} ref={formRef} action={formAction} className="stack" style={{ gap: 8 }}>
       <input type="hidden" name="requestId" value={requestId} />
       <label className="field">
         <span className="field-label">Add comment</span>

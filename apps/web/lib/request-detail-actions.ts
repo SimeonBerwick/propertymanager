@@ -158,7 +158,7 @@ export async function updateStatusFormAction(
         include: { property: true, unit: true },
       })
       await tx.statusEvent.create({
-        data: { requestId, fromStatus, toStatus, actorUserId: session.userId },
+        data: { requestId, fromStatus, toStatus, actorUserId: session.userId, visibility: toStatus === 'scheduled' ? 'internal' : undefined },
       })
 
       tenantEmail = updated.submittedByEmail ?? undefined
@@ -185,7 +185,7 @@ export async function updateStatusFormAction(
   revalidatePath(`/requests/${requestId}`)
   revalidatePath('/dashboard')
 
-  if (tenantEmail && tenantName && title && propertyName && unitLabel && await areEmailNotificationsEnabled(session.userId)) {
+  if (toStatus !== 'scheduled' && tenantEmail && tenantName && title && propertyName && unitLabel && await areEmailNotificationsEnabled(session.userId)) {
     await sendNotification(
       buildStatusChangedMessage({
         requestId,
@@ -1113,7 +1113,7 @@ export async function quickRequestAction(
         data: { status: 'scheduled' },
       })
       await prisma.statusEvent.create({
-        data: { requestId, fromStatus: request.status, toStatus: 'scheduled', actorUserId: session.userId },
+        data: { requestId, fromStatus: request.status, toStatus: 'scheduled', actorUserId: session.userId, visibility: 'internal' },
       })
       message = 'Request marked scheduled.'
     }

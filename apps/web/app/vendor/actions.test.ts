@@ -200,6 +200,40 @@ describe('submitVendorPortalResponse', () => {
     expect(dispatchEvents[0]?.status).toBe('accepted')
   })
 
+  test('requires an appointment start before an assigned vendor marks work scheduled', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Southwest Plumbing', email: 'southwest@example.com' },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'accepted',
+    })
+
+    vi.mocked(requireVendorSession).mockResolvedValue({
+      sessionId: 'vendor-session',
+      vendorId: vendor.id,
+      orgId: user.id,
+      vendorName: vendor.name,
+      email: vendor.email,
+      phone: null,
+    })
+
+    const result = await submitVendorPortalResponse(
+      { error: null },
+      formData({ requestId: request.id, dispatchStatus: 'scheduled' }),
+    )
+
+    expect(result.error).toMatch(/appointment start time/i)
+    const refreshedRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(refreshedRequest?.status).toBe('vendor_selected')
+    expect(refreshedRequest?.vendorScheduledStart).toBeNull()
+  })
+
   test('declining an assigned work order clears vendor assignment so it no longer appears as assigned work', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({
