@@ -180,9 +180,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       {pendingVendorCommercialItems.length ? (
         <div id="vendor-approvals">
         <SectionCard
-          kicker="Approval needed"
-          title="Vendor costs to approve"
-          subtitle="Approve submitted bids, overages, fees, or invoices before finishing payment and closing the request."
+          kicker="Money decision needed"
+          title="Approve vendor cost before billing"
+          subtitle="This must be approved before vendor payment, tenant chargeback, or closeout."
         >
           <div className="stack" style={{ gap: 12 }}>
             {pendingVendorCommercialItems.map((item) => (
@@ -195,7 +195,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     </div>
                     {item.description ? <div>{item.description}</div> : null}
                   </div>
-                  <span className="badge billing-partial">Needs approval</span>
+                  <span className="badge billing-partial">Approve before billing</span>
                 </div>
                 <VendorCommercialApprovalForm
                   requestId={data.request.id}
@@ -458,10 +458,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       {hasVendorChosen || data.billingDocuments.length ? (
       <div id="billing">
-      <SectionCard kicker="Invoices and payments" title="Payments and tenant charges" subtitle="Use this only after a vendor is chosen or a tenant charge needs to be recorded.">
+      <SectionCard kicker="Invoices and payments" title="Billing, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
-            <div className="kicker">Tenant responsibility</div>
+            <div className="kicker">Step 1: Tenant chargeback decision</div>
             <div className="muted" style={{ marginTop: 6 }}>
               Current: {data.request.tenantBillbackDecision ?? 'none'}
               {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
@@ -479,15 +479,15 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           </div>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
-            <div className="kicker">Vendor amount owed</div>
+            <div className="kicker">Step 2: Vendor payment amount</div>
             <div className="detailFactsGrid" style={{ marginTop: 10 }}>
               <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
               <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Remaining</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
+              <div><strong>Still owed</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
             </div>
             {(pendingVendorExtrasCents > 0 || approvedVendorExtrasCents > 0 || postedVendorPaymentBalanceCents > 0) ? (
               <details className="advancedDisclosure" style={{ marginTop: 10 }}>
-                <summary>Show payment details</summary>
+                <summary>Show the math</summary>
                 <div className="detailFactsGrid" style={{ marginTop: 10 }}>
                   <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
                   <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
@@ -503,8 +503,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               </div>
             ) : null}
             <div className="muted" style={{ marginTop: 10 }}>
-              Approving a vendor bid, fee, or extra cost posts or updates a draft vendor payment. Use the invoice and payment actions below to open, send, or mark payment.
+              Approved vendor bids and overages create the vendor amount owed. Do not close the request until vendor payment and any tenant chargeback are settled.
             </div>
+          </div>
+          <div className="notice">
+            <strong>Closeout checklist:</strong> approve vendor costs, decide whether the tenant is charged, create/send the tenant charge or vendor payment record, mark every open balance paid, then close the request.
           </div>
           <BillingSummaryCards documents={data.billingDocuments} />
           {hasVendorChosen ? (

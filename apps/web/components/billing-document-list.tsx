@@ -6,7 +6,7 @@ import { BillingDocumentActions } from '@/components/billing-document-actions'
 
 export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
-    return <div className="muted">No invoices or payments yet.</div>
+    return <div className="muted">No tenant charges or vendor payment records have been created yet.</div>
   }
 
   return (
@@ -25,13 +25,13 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 700 }}>{formatMoney(doc.totalCents, doc.currency)}</div>
-                <div className="muted">Paid: {formatMoney(doc.paidCents, doc.currency)}</div>
-                <div className="muted">Balance: {formatMoney(balance, doc.currency)}</div>
+                <div className="muted">Paid so far: {formatMoney(doc.paidCents, doc.currency)}</div>
+                <div className="muted">Still owed: {formatMoney(balance, doc.currency)}</div>
                 <div className={`badge billing-${doc.status}`} style={{ marginTop: 8 }}>{billingStatusLabel(doc.status)}</div>
               </div>
             </div>
             <div className="billingActionsRow">
-              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open invoice/payment</Link>
+              <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open document</Link>
               <BillingStatusForm document={doc} />
               <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} status={doc.status} />
             </div>
