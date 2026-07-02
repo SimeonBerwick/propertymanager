@@ -37,11 +37,11 @@ export function RequestBillbackForm({
       </label>
       <label className="field">
         <span className="field-label">Reason shown in the record</span>
-        <textarea className="input" rows={3} name="tenantBillbackReason shown in the record" defaultValue={reason ?? ''} placeholder="Explain why the tenant is being charged, or why the charge was waived" />
+        <textarea className="input" rows={3} name="tenantBillbackReason" defaultValue={reason ?? ''} placeholder="Explain why the tenant is being charged, or why the charge was waived" />
       </label>
       <ActionFeedback error={state.error} success={state.success && 'Tenant charge decision saved.'} />
       <button type="submit" className="button" disabled={pending}>
-        {pending ? 'Saving…' : 'Save tenant charge decision'}
+        {pending ? 'Saving...' : 'Save tenant charge decision'}
       </button>
     </form>
   )

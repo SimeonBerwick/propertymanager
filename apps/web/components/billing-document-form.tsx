@@ -36,14 +36,14 @@ export function BillingDocumentForm({
   tenantEmail,
   vendorEmail,
   tenantBillbackDecision,
-  tenantBillbackTotal amountCents,
+  tenantBillbackAmountCents,
   tenantBillbackReason,
 }: {
   requestId: string
   tenantEmail?: string
   vendorEmail?: string
   tenantBillbackDecision?: 'none' | 'bill_tenant' | 'waived'
-  tenantBillbackTotal amountCents?: number
+  tenantBillbackAmountCents?: number
   tenantBillbackReason?: string
 }) {
   const [state, action, pending] = useActionState(createBillingDocumentAction, INITIAL_STATE)
@@ -86,15 +86,15 @@ export function BillingDocumentForm({
       <div className="grid cols-3">
         <label className="field">
           <span className="field-label">Total amount</span>
-          <input className="input" name="amount" placeholder="250.00" defaultValue={tenantBillbackDecision === 'bill_tenant' && typeof tenantBillbackTotal amountCents === 'number' ? (tenantBillbackTotal amountCents / 100).toFixed(2) : ''} required />
+          <input className="input" name="amount" placeholder="250.00" defaultValue={tenantBillbackDecision === 'bill_tenant' && typeof tenantBillbackAmountCents === 'number' ? (tenantBillbackAmountCents / 100).toFixed(2) : ''} required />
         </label>
         <label className="field">
           <span className="field-label">Amount already paid</span>
-          <input className="input" name="paidTotal amount" placeholder="0.00" />
+          <input className="input" name="paidAmount" placeholder="0.00" />
         </label>
         <label className="field">
           <span className="field-label">Send now?</span>
-          <select className="input" name="sendSend now?" defaultValue="send">
+          <select className="input" name="sendMode" defaultValue="send">
             <option value="send">Create and email now</option>
             <option value="draft">Save draft only</option>
           </select>
