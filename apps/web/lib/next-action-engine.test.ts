@@ -57,6 +57,23 @@ describe('next action engine', () => {
     })
   })
 
+  it('asks for an appointment time when a vendor id is assigned without a visit time', () => {
+    expect(getRequestNextAction({ ...base, status: 'approved' as const, assignedVendorId: 'v1' })).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Add appointment time',
+      actionType: 'schedule_work',
+    })
+  })
+
+  it('asks for an appointment time when the request is scheduled without one', () => {
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing' })).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Add appointment time',
+      reason: 'A vendor has been selected, but no appointment time is on the request yet.',
+      actionType: 'schedule_work',
+    })
+  })
+
   it('does not ask for ownership after a vendor appointment is scheduled', () => {
     expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z' })).toMatchObject({
       priority: 'low',

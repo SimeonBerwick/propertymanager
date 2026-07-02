@@ -20,7 +20,7 @@ export type RequestNextAction = NextAction & {
 }
 
 type NextActionRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   unitId?: string
   title?: string
@@ -54,6 +54,11 @@ const SCORE = {
 
 function isOpen(request: NextActionRequest) {
   return !CLOSED_STATUSES.includes(request.status as typeof CLOSED_STATUSES[number])
+}
+
+function hasVendorChosen(request: NextActionRequest) {
+  return Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail)
+    || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
 }
 
 function isOverdue(request: NextActionRequest, now: Date) {
@@ -107,7 +112,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
   }
 
-  if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
+  if (!hasVendorChosen(request) && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
     return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
@@ -127,8 +132,8 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:follow-up`, primaryLabel: 'Review update', reason: 'The latest update needs a manager decision.', group: 'Vendor updates', priority: 'high', actionType: 'review_update', score: SCORE.overdueUpdate }
   }
 
-  if (!request.vendorScheduledStart && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:schedule`, primaryLabel: 'Set appointment', reason: 'A vendor has been selected; confirm the work schedule.', group: 'Scheduling', priority: 'normal', actionType: 'schedule_work', score: SCORE.scheduleNeeded }
+  if (hasVendorChosen(request) && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)) {
+    return { ...base, id: `${request.id}:schedule`, primaryLabel: 'Add appointment time', reason: 'A vendor has been selected, but no appointment time is on the request yet.', group: 'Scheduling', priority: 'normal', actionType: 'schedule_work', score: SCORE.scheduleNeeded }
   }
 
   if (request.tenantStatusUpdatePending) {

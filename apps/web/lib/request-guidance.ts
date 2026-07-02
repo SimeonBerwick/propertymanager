@@ -3,13 +3,15 @@ import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
 import { getRequestNextAction } from '@/lib/recommended-actions'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents?: number
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
+  tenantAccessFailureCount?: number
+  tenantStatusUpdatePending?: boolean
 }
 
 export const WORKFLOW_STEPS = ['Review', 'Assign vendor', 'Schedule', 'Complete work', 'Close'] as const

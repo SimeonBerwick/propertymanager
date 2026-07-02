@@ -1,12 +1,16 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { submitVendorResponse, type VendorResponseState } from './actions'
 
 const INITIAL_STATE: VendorResponseState = { error: null }
 
 export function VendorResponseForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState(submitVendorResponse, INITIAL_STATE)
+  const [response, setResponse] = useState('contacted')
+  const showBid = response === 'contacted' || response === 'accepted'
+  const showSchedule = response === 'scheduled'
+  const showPhotos = response === 'completed'
 
   return (
     <form action={action} className="stack">
@@ -15,7 +19,7 @@ export function VendorResponseForm({ token }: { token: string }) {
 
       <label className="field">
         <span className="field-label">Response</span>
-        <select className="input" name="dispatchStatus" defaultValue="contacted">
+        <select className="input" name="dispatchStatus" value={response} onChange={(event) => setResponse(event.target.value)}>
           <option value="contacted">Contacted</option>
           <option value="accepted">Accepted</option>
           <option value="declined">Declined</option>
@@ -24,8 +28,7 @@ export function VendorResponseForm({ token }: { token: string }) {
           <option value="completed">Completed</option>
         </select>
       </label>
-
-      <div className="grid cols-2">
+      {showBid ? <div className="grid cols-2">
         <label className="field">
           <span className="field-label">Bid amount (USD)</span>
           <input className="input" type="number" step="0.01" min="0" name="bidAmount" placeholder="250.00" />
@@ -34,29 +37,30 @@ export function VendorResponseForm({ token }: { token: string }) {
           <span className="field-label">Availability note</span>
           <input className="input" type="text" name="availabilityNote" placeholder="Can attend Thursday morning" />
         </label>
-      </div>
-
-      <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">Scheduled start</span>
-          <input className="input" type="datetime-local" name="scheduledStart" />
-        </label>
-        <label className="field">
-          <span className="field-label">Scheduled end</span>
-          <input className="input" type="datetime-local" name="scheduledEnd" />
-        </label>
-      </div>
+      </div> : null}
+      {showSchedule ? <div className="stack" style={{ gap: 8 }}>
+        <div className="notice">This appointment time will be sent to the tenant.</div>
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Appointment start</span>
+            <input className="input" type="datetime-local" name="scheduledStart" required />
+          </label>
+          <label className="field">
+            <span className="field-label">Appointment end, optional</span>
+            <input className="input" type="datetime-local" name="scheduledEnd" />
+          </label>
+        </div>
+      </div> : null}
 
       <label className="field">
         <span className="field-label">Note</span>
-        <textarea className="input" name="note" rows={4} placeholder="Optional note for scope, scheduling, or completion details" />
+        <textarea className="input" name="note" rows={4} placeholder={response === 'scheduled' ? 'Optional tenant-visible scheduling note' : 'Optional note for scope or completion details'} />
       </label>
-
-      <label className="field">
+      {showPhotos ? <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
         <span className="muted">Up to 3 photos total per work order, 5 MB each.</span>
-      </label>
+      </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
         {pending ? 'Submitting…' : 'Send response'}
