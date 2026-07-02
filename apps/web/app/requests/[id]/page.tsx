@@ -107,6 +107,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const postedVendorPaymentBalanceCents = postedVendorPayments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorPaymentCents, 0)
   const vendorOutstandingCents = postedVendorPaymentBalanceCents + unpostedVendorOwedCents
+  const billingOpenBalanceCents = data.billingDocuments
+    .filter((doc) => doc.status !== 'void')
+    .reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   const closeoutLanguage = deriveRequestCloseoutLanguage({
     status: data.request.status,
     outstandingCents: ['completed', 'closed'].includes(data.request.status) ? vendorOutstandingCents : null,
@@ -506,9 +509,15 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               Approved vendor bids and overages create the vendor amount owed. Do not close the request until vendor payment and any tenant chargeback are settled.
             </div>
           </div>
-          <div className="notice">
-            <strong>Closeout checklist:</strong> approve vendor costs, decide whether the tenant is charged, create/send the tenant charge or vendor payment record, mark every open balance paid, then close the request.
-          </div>
+          {billingOpenBalanceCents === 0 && data.billingDocuments.length ? (
+            <div className="notice success">
+              <strong>Billing settled.</strong> No open tenant charges or vendor balances remain.
+            </div>
+          ) : (
+            <div className="notice">
+              <strong>Closeout checklist:</strong> approve vendor costs, decide whether the tenant is charged, create/send the tenant charge or vendor payment record, mark every open balance paid, then close the request.
+            </div>
+          )}
           <BillingSummaryCards documents={data.billingDocuments} />
           {hasVendorChosen ? (
             <BillingDocumentForm
