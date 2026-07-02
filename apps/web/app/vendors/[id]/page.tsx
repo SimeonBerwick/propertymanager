@@ -17,7 +17,7 @@ export default async function VendorDetailPage({
   searchParams?: Promise<{ sessions?: string }>
 }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const { id } = await params
   const query = searchParams ? await searchParams : undefined
 

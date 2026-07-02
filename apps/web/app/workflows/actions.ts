@@ -16,7 +16,7 @@ function text(formData: FormData, key: string) {
 
 export async function createAutomationRuleAction(_prev: WorkflowActionState, formData: FormData): Promise<WorkflowActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
   const name = text(formData, 'name')
   const conditionField = text(formData, 'conditionField')
   const conditionValue = text(formData, 'conditionValue')

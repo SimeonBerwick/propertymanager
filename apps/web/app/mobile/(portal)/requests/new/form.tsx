@@ -32,7 +32,7 @@ export function TenantNewRequestForm() {
       <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
-        <span className="muted">Up to 3 images, 5 MB each.</span>
+        <span className="muted">Up to 3 images, 5 MB each. If upload fails, remove large photos and try again.</span>
       </label>
       <div className="notice" style={{ background: '#f5fff7', borderColor: '#b7ebc6' }}>
         <strong>Suggested routing: {category}</strong>

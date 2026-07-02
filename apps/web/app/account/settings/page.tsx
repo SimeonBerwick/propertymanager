@@ -6,7 +6,7 @@ import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-we
 
 export default async function AccountSettingsPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
 
   return (

@@ -166,9 +166,9 @@ export default async function VendorDashboardPage({
           className="card"
           style={{ textDecoration: 'none', borderColor: isActiveFilter(filter, 'billing') ? 'var(--ink)' : undefined, boxShadow: isActiveFilter(filter, 'billing') ? 'inset 0 0 0 1px var(--ink)' : undefined }}
         >
-          <div className="kicker">Payments</div>
+          <div className="kicker">Payment records</div>
           <h2>{payableDocs}</h2>
-          <div className="muted">Visible payments</div>
+          <div className="muted">Payment records posted by the property manager</div>
         </Link>
         <Link
           href={'/vendor?filter=commercial' as Route}
@@ -246,12 +246,12 @@ export default async function VendorDashboardPage({
           </Link>
         )) : (
           <div className="emptyState">
-            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No visible payments' : filter === 'recent' ? 'No completed work yet' : 'No active work chosen'}</strong>
+            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No payment records yet' : filter === 'recent' ? 'No completed work yet' : 'No active work chosen'}</strong>
             <span>
               {filter === 'bids'
                 ? 'New bid invitations will appear here when a property manager asks for pricing.'
                 : filter === 'billing'
-                  ? 'Approved payments and remittance details will appear here when they are posted.'
+                  ? 'Payment records and remittance details will appear here after the property manager posts them. Payments are handled outside the app.'
                   : filter === 'recent'
                     ? 'Completed and closed requests will move here after work is finished.'
                     : 'When work is assigned or awarded to this vendor account, it will appear here.'}

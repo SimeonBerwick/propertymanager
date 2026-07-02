@@ -6,7 +6,9 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string }>
 }) {
   const params = searchParams ? await searchParams : undefined
-  const error = params?.error
+  const error = params?.error === 'session-expired'
+    ? 'Your session expired. Sign in again to continue.'
+    : params?.error
   return (
     <div className="authEntryLayout">
       <div className="card stack">

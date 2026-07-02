@@ -91,11 +91,11 @@ function InlineActionControl({ action, vendorRequests }: { action: RecommendedAc
     return <EmailTestForm />
   }
 
-  if (action.actionType === 'resend_renter_invite') {
+  if (action.actionType === 'resend_tenant_invite') {
     return <TenantInviteForm tenantIdentityId={subjectId} />
   }
 
-  if (action.actionType === 'help_renter_access_portal' || action.actionType === 'confirm_renter_access') {
+  if (action.actionType === 'help_tenant_access_portal' || action.actionType === 'confirm_tenant_access') {
     return (
       <details className="advancedDisclosure">
         <summary>{action.primaryLabel}</summary>

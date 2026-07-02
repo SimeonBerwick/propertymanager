@@ -59,7 +59,7 @@ export function VendorRequestResponseForm({ requestId }: { requestId: string }) 
       {showPhotos ? <label className="field">
         <span className="field-label">Photos</span>
         <input className="input" type="file" name="photos" accept="image/*" multiple />
-        <span className="muted">Up to 3 photos total per work order, 5 MB each.</span>
+        <span className="muted">Up to 3 photos total per work order, 5 MB each. If upload fails, remove large photos and try again.</span>
       </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>

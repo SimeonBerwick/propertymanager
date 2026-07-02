@@ -193,7 +193,7 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
 export async function requireVendorSession() {
   const session = await getVendorSession()
   if (!session) {
-    redirect('/vendor/auth' as never)
+    redirect('/vendor/auth?reason=session-expired' as never)
   }
   return session
 }

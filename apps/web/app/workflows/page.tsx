@@ -6,7 +6,7 @@ import { deleteWorkflowItemAction, toggleAutomationRuleAction } from './actions'
 
 export default async function WorkflowsPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const [rules, eventCounts] = await Promise.all([
     prisma.automationRule.findMany({ where: { orgId: session.userId }, orderBy: { createdAt: 'desc' } }),
     prisma.productEvent.groupBy({ by: ['eventName'], where: { orgId: session.userId }, _count: { eventName: true } }),

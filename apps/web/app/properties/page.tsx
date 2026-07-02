@@ -5,7 +5,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 
 export default async function PropertiesPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const [properties, allUnits] = await Promise.all([
     getProperties(session.userId, undefined, true),
     getAllUnits(session.userId, undefined, true),

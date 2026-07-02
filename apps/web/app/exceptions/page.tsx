@@ -12,7 +12,7 @@ import { buildDashboardNextActions } from '@/lib/recommended-actions'
 
 export default async function ExceptionsPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const data = await getDashboardData(session.userId)
 
   const exceptionRequests = data.requestRows

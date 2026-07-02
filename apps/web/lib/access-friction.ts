@@ -106,7 +106,7 @@ async function maybeAlertManager(input: {
 
   await sendNotification({
     to: context.ownerEmail,
-    subject: input.role === 'tenant' ? 'Renter is having trouble accessing the portal' : 'Vendor is having trouble accessing the portal',
+    subject: input.role === 'tenant' ? 'Tenant is having trouble accessing the portal' : 'Vendor is having trouble accessing the portal',
     text: [
       `${context.label} has had ${recentFrictionCount} access problems in the last ${ALERT_WINDOW_MINUTES} minutes.`,
       '',

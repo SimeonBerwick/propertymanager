@@ -16,7 +16,7 @@ function percent(value: number | null) {
 
 export default async function ReportsPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const data = await getReportData(session.userId)
   const propertiesWithOpenWork = data.propertyStats.filter((property) => property.openCount > 0)
   const agingRequests = data.agingRequests.slice(0, 8)

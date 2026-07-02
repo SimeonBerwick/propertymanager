@@ -22,7 +22,7 @@ export default async function DashboardPage({
   searchParams?: Promise<{ city?: string; language?: string; queue?: string; sort?: string; claimedBy?: string }>
 }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const [data, onboardingItems] = await Promise.all([getDashboardData(session.userId), getOnboardingChecklist(session.userId)])
   const params = searchParams ? await searchParams : undefined
   const selectedCity = params?.city ?? 'all'
@@ -130,7 +130,7 @@ export default async function DashboardPage({
               <summary>Queue tools</summary>
               <div className="actionMenuPanel">
                 <Link href="/exceptions">Review exceptions</Link>
-                <Link href="/access">Manage team access</Link>
+                <Link href="/access">Manage tenant and vendor access</Link>
                 <Link href="/reports">View reports</Link>
               </div>
             </details>

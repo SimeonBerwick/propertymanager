@@ -63,7 +63,7 @@ export async function setupMobileIdentityAction(
   formData: FormData,
 ): Promise<MobileIdentityState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')
@@ -85,7 +85,7 @@ export async function setupMobileIdentityAction(
     }
 
     if (!tenantName || !phone || !leaseStartDate) {
-      return { error: 'Next renter setup is optional. If you add one, name, phone, and lease start date are required.' }
+      return { error: 'Next tenant setup is optional. If you add one, name, phone, and lease start date are required.' }
     }
   }
 
@@ -144,7 +144,7 @@ export async function setupMobileIdentityAction(
       })
 
     if (overlaps) {
-      throw new Error('Lease dates overlap an existing renter window on this unit. Adjust the dates or update the existing renter instead.')
+      throw new Error('Lease dates overlap an existing tenant window on this unit. Adjust the dates or update the existing tenant instead.')
     }
 
     if (tenantIdentityId && !targetIdentity) {
@@ -216,7 +216,7 @@ export async function setupMobileIdentityAction(
     revalidatePath('/access')
     return { error: null, success: true }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Could not save renter occupancy.' }
+    return { error: error instanceof Error ? error.message : 'Could not save tenant occupancy.' }
   }
 }
 
@@ -225,7 +225,7 @@ export async function sendMobileInviteAction(
   formData: FormData,
 ): Promise<MobileIdentityState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const tenantIdentityId = getString(formData, 'tenantIdentityId')
   if (!tenantIdentityId) {
@@ -240,7 +240,7 @@ export async function sendMobileInviteAction(
     }
 
     if (!isTenantIdentityActiveOn(tenantIdentity)) {
-      return { error: 'This renter is outside the active lease window. Invite them on the lease start date or update the lease dates first.' }
+      return { error: 'This tenant is outside the active lease window. Invite them on the lease start date or update the lease dates first.' }
     }
 
     const unit = await prisma.unit.findFirst({
@@ -296,7 +296,7 @@ export async function deactivateMobileIdentityAction(
   formData: FormData,
 ): Promise<MobileIdentityState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const tenantIdentityId = getString(formData, 'tenantIdentityId')
   if (!tenantIdentityId) {

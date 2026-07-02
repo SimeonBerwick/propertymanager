@@ -5,7 +5,7 @@ import { DeletionRequestForm } from './deletion-request-form'
 
 export default async function AccountSettingsDeletionPage() {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   return (
     <main className="stack" style={{ maxWidth: 760 }}>

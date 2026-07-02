@@ -29,7 +29,7 @@ export async function updateRequestDetailsAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
   const requestId = String(formData.get('requestId') ?? '')
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
@@ -117,7 +117,7 @@ export async function updateStatusFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const fromStatus = formData.get('fromStatus') as RequestStatus
@@ -210,7 +210,7 @@ export async function updateVendorFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = formData.get('requestId') as string
   const selectedVendorIds = parseVendorIds(formData)
@@ -438,7 +438,7 @@ export async function updatePreferencesFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = formData.get('requestId') as string
   const preferredCurrency = ((formData.get('preferredCurrency') as string) ?? '').trim() as CurrencyOption
@@ -492,7 +492,7 @@ export async function awardTenderInviteAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const tenderId = String(formData.get('tenderId') ?? '')
@@ -651,7 +651,7 @@ export async function approveVendorCommercialItemAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const itemId = String(formData.get('itemId') ?? '')
@@ -769,7 +769,7 @@ export async function updateDispatchFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = formData.get('requestId') as string
   const dispatchStatus = ((formData.get('dispatchStatus') as string) ?? '').trim() as DispatchStatus
@@ -794,8 +794,8 @@ export async function updateDispatchFormAction(
   const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
   const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
 
-  if (scheduledStart && Number.isNaN(scheduledStart.getTime())) return { error: 'Invalid scheduled start.' }
-  if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Invalid scheduled end.' }
+  if (scheduledStart && Number.isNaN(scheduledStart.getTime())) return { error: 'Enter a valid scheduled start time.' }
+  if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Enter a valid scheduled end time.' }
   if (scheduledStart && scheduledEnd && scheduledEnd < scheduledStart) return { error: 'Scheduled end must be after start.' }
 
   try {
@@ -928,7 +928,7 @@ export async function reviewVendorUpdateFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const action = String(formData.get('reviewAction') ?? '').trim()
@@ -1034,7 +1034,7 @@ export async function quickRequestAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const quickAction = String(formData.get('quickAction') ?? '').trim() as (typeof VALID_QUICK_ACTIONS)[number]
@@ -1244,7 +1244,7 @@ export async function addCommentFormAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = formData.get('requestId') as string
   const body = ((formData.get('body') as string) ?? '').trim()
@@ -1443,7 +1443,7 @@ export async function updateTenantBillbackAction(
   formData: FormData,
 ): Promise<RequestActionState> {
   const session = await getLandlordSession()
-  if (!session) return { error: 'Not authenticated.' }
+  if (!session) return { error: 'Sign in again to continue.' }
 
   const requestId = String(formData.get('requestId') ?? '')
   const decision = String(formData.get('tenantBillbackDecision') ?? 'none').trim() as 'none' | 'bill_tenant' | 'waived'

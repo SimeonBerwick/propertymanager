@@ -66,7 +66,7 @@ export async function startCheckoutAction(formData: FormData) {
   }
 
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
@@ -79,7 +79,7 @@ export async function startCheckoutAction(formData: FormData) {
     where: { id: session.userId },
     select: { id: true, email: true, displayName: true, stripeCustomerId: true },
   })
-  if (!user) redirect('/login')
+  if (!user) redirect('/login?error=session-expired')
 
   let stripeCustomerId = user.stripeCustomerId
   if (!stripeCustomerId) {
@@ -150,7 +150,7 @@ export async function openBillingPortalAction() {
   }
 
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const stripe = getStripeClient()
   if (!stripe) redirect(billingUrl('Stripe is not configured yet. Set STRIPE_SECRET_KEY to enable the billing portal.') as Route)

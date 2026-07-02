@@ -24,7 +24,7 @@ function ageDays(createdAt: string) {
 
 export default async function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
   const { id } = await params
   const data = await getUnitDetailData(id, session.userId)
 
@@ -86,7 +86,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             )}
             {occupancy.upcoming ? (
               <div className="muted" style={{ marginTop: 4 }}>
-                Next renter: {occupancy.upcoming.tenantName} · Lease {getTenantLeaseLabel(occupancy.upcoming)}
+                Next tenant: {occupancy.upcoming.tenantName} · Lease {getTenantLeaseLabel(occupancy.upcoming)}
               </div>
             ) : null}
           </div>

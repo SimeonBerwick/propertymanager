@@ -16,7 +16,7 @@ export default async function SubscriptionPage({
   searchParams?: Promise<{ error?: string; checkout?: string }>
 }) {
   const session = await getLandlordSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/login?error=session-expired')
 
   const params = searchParams ? await searchParams : undefined
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
@@ -36,7 +36,7 @@ export default async function SubscriptionPage({
     getActiveUnitCount(session.userId),
   ])
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/login?error=session-expired')
 
   const gate = evaluateSubscriptionGate(user)
   const plan = user.subscriptionPlan
