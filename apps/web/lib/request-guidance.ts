@@ -6,8 +6,10 @@ type GuidanceRequest = Pick<MaintenanceRequest,
   'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   vendorPayableBalanceCents?: number
+  billingOpenBalanceCents?: number
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
+  pendingBidCount?: number
 }
 
 export const WORKFLOW_STEPS = ['Review', 'Assign vendor', 'Schedule', 'Complete work', 'Close'] as const
@@ -66,7 +68,8 @@ export function getRecommendedAction(request: GuidanceRequest) {
 
 export function getAttentionScore(request: GuidanceRequest) {
   if ((request.pendingVendorApprovalCount ?? 0) > 0) return 7
-  if ((request.vendorPayableBalanceCents ?? 0) > 0) return request.status === 'closed' ? 7 : 6
+  if ((request.pendingBidCount ?? 0) > 0) return 6
+  if ((request.billingOpenBalanceCents ?? request.vendorPayableBalanceCents ?? 0) > 0) return request.status === 'closed' ? 7 : 6
   if (['closed', 'declined', 'canceled'].includes(request.status)) return 0
   let score = request.urgency === 'urgent' ? 8 : request.urgency === 'high' ? 5 : 0
   const recommendation = getRecommendedAction(request)

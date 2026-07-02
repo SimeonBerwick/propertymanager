@@ -27,6 +27,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   propertyName?: string
   unitLabel?: string
   vendorPayableBalanceCents?: number
+  billingOpenBalanceCents?: number
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
@@ -102,12 +103,12 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:reassign`, primaryLabel: 'Assign replacement', reason: 'The current vendor cannot complete the work.', group: 'Vendor assignment', priority: 'high', actionType: 'assign_replacement_vendor', score: SCORE.vendorAssignment }
   }
 
-  if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
-  }
-
   if ((request.pendingBidCount ?? 0) > 0) {
     return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
+  }
+
+  if (!request.assignedVendorName && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
+    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
   if ((request.pendingVendorApprovalCount ?? 0) > 0) {
@@ -138,8 +139,8 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:scheduled`, primaryLabel: 'Wait for appointment', reason: 'The vendor is scheduled. No manager action is needed right now.', group: 'Monitoring', priority: 'low', actionType: 'monitor_scheduled_work', score: SCORE.routine }
   }
 
-  if ((request.vendorPayableBalanceCents ?? 0) > 0) {
-    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Collect payment before closeout', reason: `Vendor payment is still open${request.vendorPayableTo ? ` for ${request.vendorPayableTo}` : ''}.`, group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
+  if ((request.billingOpenBalanceCents ?? request.vendorPayableBalanceCents ?? 0) > 0) {
+    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'A billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
 
   if (request.status === 'completed') {

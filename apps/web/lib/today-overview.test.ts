@@ -21,6 +21,7 @@ function request(overrides: Partial<DashboardRequestRow>): DashboardRequestRow {
     status: 'approved',
     triageTags: [],
     createdAt: '2026-06-14T12:00:00.000Z',
+    billingOpenBalanceCents: 0,
     ...overrides,
   }
 }
