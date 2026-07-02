@@ -52,10 +52,12 @@ export function RequestControlPanel({
   request,
   vendors,
   tenders,
+  statusControlPriority = 'primary',
 }: {
   request: Pick<MaintenanceRequest, 'id' | 'status' | 'assignedVendorName' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
+  statusControlPriority?: 'primary' | 'secondary'
 }) {
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
@@ -76,6 +78,33 @@ export function RequestControlPanel({
   const hasAssignedVendor = Boolean(request.assignedVendorName) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
+  const statusForm = (
+    <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
+      <div>
+        <div className="kicker">Request decision</div>
+        <h3 style={{ marginTop: 4 }}>Approve, decline, or close the request</h3>
+      </div>
+      <input type="hidden" name="requestId" value={request.id} />
+      <input type="hidden" name="fromStatus" value={request.status} />
+      <label className="field">
+        <span className="field-label">Decision</span>
+        <select className="input" name="toStatus" defaultValue={nextStatuses[0] ?? request.status} disabled={!nextStatuses.length}>
+          {nextStatuses.map((status) => (
+            <option key={status} value={status}>{statusOptionLabel(status)}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span className="field-label">Reason if needed</span>
+        <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
+      </label>
+      <div className="muted">This changes the request itself. It does not assign a vendor or send bid invitations.</div>
+      <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
+      <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
+        {statusPending ? 'Saving...' : 'Save request decision'}
+      </button>
+    </form>
+  )
 
   return (
     <div className="stack" style={{ gap: 16 }}>
@@ -115,31 +144,12 @@ export function RequestControlPanel({
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
         </div>
       ) : null}
-      <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
-        <div>
-          <div className="kicker">Approval</div>
-          <h3 style={{ marginTop: 4 }}>Approve, decline, or close the request</h3>
-        </div>
-        <input type="hidden" name="requestId" value={request.id} />
-        <input type="hidden" name="fromStatus" value={request.status} />
-        <label className="field">
-          <span className="field-label">Request decision</span>
-          <select className="input" name="toStatus" defaultValue={nextStatuses[0] ?? request.status} disabled={!nextStatuses.length}>
-            {nextStatuses.map((status) => (
-              <option key={status} value={status}>{statusOptionLabel(status)}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field-label">Reason if needed</span>
-          <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
-        </label>
-        <div className="muted">This changes the request itself. It does not assign a vendor or send bid invitations.</div>
-        <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
-        <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
-          {statusPending ? 'Saving...' : 'Save request decision'}
-        </button>
-      </form>
+      {statusControlPriority === 'primary' ? statusForm : (
+        <details className="advancedDisclosure">
+          <summary>Other request decisions</summary>
+          {statusForm}
+        </details>
+      )}
 
       {canChooseVendorPath ? (
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
