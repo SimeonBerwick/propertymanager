@@ -7,8 +7,10 @@ type RecommendedStepRequest = Pick<MaintenanceRequest,
   'id' | 'unitId' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   vendorPayableBalanceCents?: number
+  billingOpenBalanceCents?: number
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
+  pendingBidCount?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
 }
