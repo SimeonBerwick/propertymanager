@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { awardTenderInviteAction, type RequestActionState, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
@@ -59,9 +60,16 @@ export function RequestControlPanel({
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
 }) {
+  const router = useRouter()
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [awardState, awardAction, awardPending] = useActionState(awardTenderInviteAction, INITIAL_STATE)
+
+  useEffect(() => {
+    if (statusState.success || vendorState.success || awardState.success) {
+      router.refresh()
+    }
+  }, [awardState.success, router, statusState.success, vendorState.success])
   const nextStatuses = STATUS_TRANSITIONS[request.status] ?? []
   const recommended = vendors.slice(0, 8)
   const bidDecisionInvites = tenders.flatMap((tender) => (
