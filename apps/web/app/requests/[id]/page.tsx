@@ -92,7 +92,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     ))
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
   const payableVendorId = awardedTenderBid?.vendorId ?? acceptedVendorBid?.vendorId ?? data.request.assignedVendorId
-  const hasVendorChosen = Boolean(payableVendorId || data.request.assignedVendorName || data.request.assignedVendorEmail)
+  const hasActiveBidInvitations = (data.request.activeTenderInviteCount ?? 0) > 0
+  const hasVendorChosen = !hasActiveBidInvitations && Boolean(payableVendorId || data.request.assignedVendorName || data.request.assignedVendorEmail)
   const approvedBidCents = awardedTenderBid?.bidAmountCents ?? acceptedVendorBid?.amountCents ?? 0
   const approvedVendorExtrasCents = data.vendorCommercialItems
     .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
@@ -119,7 +120,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const hasSubmittedBid = data.tenders.some((tender) => tender.invites.some((invite) => invite.status === 'bid_submitted'))
     || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
-  const needsAppointmentTime = hasVendorChosen && !data.request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !data.request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
   const actionSectionTitle = needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -149,6 +150,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         tenantStatusUpdatePending: data.tenantStatusUpdatePending,
         pendingVendorApprovalCount: pendingVendorCommercialItems.length,
         pendingBidCount: data.request.pendingBidCount,
+        activeTenderInviteCount: data.request.activeTenderInviteCount,
         billingOpenBalanceCents,
       }} />
 

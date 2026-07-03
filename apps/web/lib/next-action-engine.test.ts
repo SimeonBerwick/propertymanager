@@ -57,6 +57,19 @@ describe('next action engine', () => {
     })
   })
 
+  it('waits for bids after invitations go out instead of asking for an appointment', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'approved' as const,
+      assignedVendorName: 'ACME Plumbing, Desert Air',
+      activeTenderInviteCount: 2,
+    })).toMatchObject({
+      priority: 'low',
+      primaryLabel: 'Wait for bids',
+      actionType: 'monitor_vendor_bids',
+    })
+  })
+
   it('asks for an appointment time when a vendor id is assigned without a visit time', () => {
     expect(getRequestNextAction({ ...base, status: 'approved' as const, assignedVendorId: 'v1' })).toMatchObject({
       priority: 'normal',

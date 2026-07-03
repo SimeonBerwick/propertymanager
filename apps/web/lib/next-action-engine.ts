@@ -31,6 +31,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
+  activeTenderInviteCount?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
 }
@@ -44,6 +45,7 @@ const SCORE = {
   vendorAssignment: 70,
   bidDecision: 60,
   vendorCostApproval: 58,
+  bidWaiting: 0,
   overdueUpdate: 50,
   scheduleNeeded: 48,
   tenantUpdate: 40,
@@ -110,6 +112,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if ((request.pendingBidCount ?? 0) > 0) {
     return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
+  }
+
+  if ((request.activeTenderInviteCount ?? 0) > 0) {
+    return { ...base, id: `${request.id}:wait-for-bids`, primaryLabel: 'Wait for bids', reason: `${request.activeTenderInviteCount} bid invitation${request.activeTenderInviteCount === 1 ? ' is' : 's are'} still out with vendors.`, group: 'Vendor bids', priority: 'low', actionType: 'monitor_vendor_bids', score: SCORE.bidWaiting }
   }
 
   if (!hasVendorChosen(request) && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
