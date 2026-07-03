@@ -14,6 +14,7 @@ export function AccessTypeSelector({ error }: { error?: string }) {
 
   return (
     <div className="stack" style={{ gap: 14 }}>
+      <div className="muted">Choose who is signing in first.</div>
       <div className="authRoleTabs" role="tablist" aria-label="Access type">
         <button type="button" className={tabClass('manager')} onClick={() => setSelectedRole('manager')}>
           Property manager

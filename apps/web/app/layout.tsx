@@ -14,6 +14,7 @@ import { MenuBehavior } from '@/components/menu-behavior'
 import { CommandPalette } from '@/components/command-palette'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { ManagerMobileNav } from '@/components/manager-mobile-nav'
+import { AndroidRuntimeMarker } from './android-runtime-marker'
 import { PublicMarketingNav } from '@/components/public-marketing-nav'
 import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getVendorSession } from '@/lib/vendor-session'
@@ -55,6 +56,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <MenuBehavior />
         <AnalyticsTracker />
+        <AndroidRuntimeMarker />
         <div className="page">
           {!dbAvailable && (
             <div

@@ -54,7 +54,6 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
   const nextActions = requestActions.length ? requestActions : accessActions
   const primaryAction = nextActions[0]
   const remainingActions = primaryAction ? nextActions.slice(1) : nextActions
-  const secondaryActions = remainingActions.slice(0, 2)
   const actionGroups = groupDashboardNextActions(remainingActions)
   const hasScheduledToday = overview.scheduledToday.length > 0
 
@@ -93,11 +92,6 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
               <div className="kicker">{primaryAction.group}</div>
               <strong>{primaryAction.reason}</strong>
             </div>
-            {secondaryActions.length ? (
-              <div className="nextActionSecondary">
-                {secondaryActions.map((action) => <ActionRow key={action.id} action={action} compact />)}
-              </div>
-            ) : null}
           </div>
         </SectionCard>
       ) : (

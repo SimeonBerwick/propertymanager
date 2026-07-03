@@ -23,7 +23,7 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
 }
 
 function statusOptionLabel(status: RequestStatus) {
-  if (status === 'approved') return 'Ready for vendor bids'
+  if (status === 'approved') return 'Approve for vendor selection'
   if (status === 'vendor_selected') return 'Vendor chosen for work'
   return deriveRequestCloseoutLanguage({ status }).managerLabel
 }
@@ -108,7 +108,8 @@ export function RequestControlPanel({
         <span className="field-label">Note, optional</span>
         <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />
       </label>
-      <ActionFeedback error={dispatchState.error} success={dispatchState.success ? 'Appointment saved.' : null} detail="After saving, send the tenant update from the next step at the top of this page." />
+      <ActionFeedback error={dispatchState.error} success={dispatchState.success ? 'Appointment saved. Next: send the tenant update so they know the confirmed appointment time.' : null} />
+      {dispatchState.success ? <a href="#communication" className="button primary" style={{ alignSelf: 'flex-start' }}>Next: send tenant update</a> : null}
       <button type="submit" className="button primary" disabled={dispatchPending}>
         {dispatchPending ? 'Saving...' : 'Save appointment'}
       </button>
@@ -118,7 +119,7 @@ export function RequestControlPanel({
     <form action={statusAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
       <div>
         <div className="kicker">Request decision</div>
-        <h3 style={{ marginTop: 4 }}>Approve, decline, or close the request</h3>
+        <h3 style={{ marginTop: 4 }}>{request.status === 'requested' ? 'Review this request' : request.status === 'completed' ? 'Close or reopen this request' : 'Change request status'}</h3>
       </div>
       <input type="hidden" name="requestId" value={request.id} />
       <input type="hidden" name="fromStatus" value={request.status} />
@@ -134,10 +135,10 @@ export function RequestControlPanel({
         <span className="field-label">Reason if needed</span>
         <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
       </label>
-      <div className="muted">This changes the request itself. It does not assign a vendor or send bid invitations.</div>
+      <div className="muted">Choose the request status first. Vendor selection and bid invitations are handled in the next step.</div>
       <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
       <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
-        {statusPending ? 'Saving...' : 'Save request decision'}
+        {statusPending ? 'Saving...' : 'Save decision'}
       </button>
     </form>
   )

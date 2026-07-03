@@ -973,3 +973,15 @@ body { min-height: 100vh; }
   }
   .popularLabel { font-size: 12px; }
 }
+
+.simeonware-android-app .header { margin-top: 8px; }
+.simeonware-android-app .brandLogo { width: 190px; }
+@media (max-width: 640px) {
+  .simeonware-android-app .page { padding-top: 18px; }
+  .simeonware-android-app .header { gap: 10px; margin-bottom: 16px; }
+  .simeonware-android-app .brandLogo { width: 176px; }
+  .simeonware-android-app .nav { gap: 8px; }
+  .simeonware-android-app .authEntryLayout { margin-top: 10px; }
+  .simeonware-android-app .authRoleTabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .simeonware-android-app .authRoleTab { min-height: 48px; padding: 10px 6px; font-size: 13px; }
+}
