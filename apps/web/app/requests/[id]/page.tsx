@@ -131,14 +131,14 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ? 'Close request actions'
           : 'Request actions'
   const actionSectionSubtitle = needsAppointmentTime
-    ? 'Enter the confirmed appointment time here.'
+    ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
       ? 'Review returned pricing and choose the vendor.'
       : canChooseVendor
         ? 'Assign one vendor directly or ask multiple vendors for bids.'
         : ['completed', 'closed'].includes(data.request.status)
           ? 'Reopen only if more work is needed.'
-          : 'Move this request forward when a manager decision is needed.'
+          : 'Choose the next clear step for this request.'
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
 

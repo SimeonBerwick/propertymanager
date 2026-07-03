@@ -14,21 +14,25 @@ export default async function HomePage() {
       <AndroidRuntimeMarker />
       <section className="marketingHero">
         <div className="marketingHeroCopy">
-          <div className="eyebrow">Maintenance manager for working property teams</div>
-          <h1>Run maintenance without chasing every update.</h1>
+          <div className="eyebrow">{androidApp ? 'Simeonware Android app' : 'Maintenance manager for working property teams'}</div>
+          <h1>{androidApp ? 'Open your maintenance dashboard.' : 'Run maintenance without chasing every update.'}</h1>
           <p>
-            Simeonware gives property managers one place to receive tenant requests, invite vendors, approve bids,
-            track photos and costs, and know the next step on every job.
+            {androidApp
+              ? 'Sign in as a property manager, tenant, or vendor. New property managers can start a free month in the app.'
+              : 'Simeonware gives property managers one place to receive tenant requests, invite vendors, approve bids, track photos and costs, and know the next step on every job.'}
           </p>
           <div className="heroActions">
             {androidApp ? (
-              <Link href="/signup" className="button primary buttonLarge">Start free month</Link>
+              <>
+                <Link href="/login" className="button primary buttonLarge">Sign in</Link>
+                <Link href="/signup" className="button buttonLarge">Start free month</Link>
+              </>
             ) : (
               <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
             )}
           </div>
           {androidApp ? (
-            <div className="notice" style={{ maxWidth: 640 }}>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</div>
+            <div className="notice" style={{ maxWidth: 640 }}>Subscription details and plan information are available at simeonware.com in a web browser. Maintenance work happens here in the app.</div>
           ) : (
             <div className="trustLine">
               <span>No credit card required</span>

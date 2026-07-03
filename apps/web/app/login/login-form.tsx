@@ -8,7 +8,7 @@ function SubmitButton() {
 
   return (
     <button type="submit" className="button primary" aria-disabled={pending}>
-      {pending ? 'Signing in…' : 'Sign in'}
+      {pending ? 'Signing in...' : 'Sign in'}
     </button>
   )
 }
@@ -25,7 +25,6 @@ export function LoginForm({ error }: { error?: string }) {
           type="email"
           name="email"
           required
-          autoFocus
           autoComplete="email"
           placeholder="manager@example.com"
         />

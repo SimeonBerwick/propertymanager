@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.simeonberwick.propertymanager",
+      "sha256_cert_fingerprints": [
+        "38:57:F3:C1:39:5C:C7:51:AD:DB:8D:DD:C5:8E:F9:FA:49:9E:B5:69:55:CD:D7:C4:F7:29:70:DD:C6:9A:24:2E"
+      ]
+    }
+  }
+]
