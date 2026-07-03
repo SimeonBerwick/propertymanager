@@ -614,6 +614,8 @@ body { min-height: 100vh; }
 .todaySupportingGrid > div, .todaySupportingGrid > section { min-width: 0; }
 .dashboardWorkspace { padding: 18px; border-top: 1px solid var(--border); }
 .dashboardWorkspaceDisclosure > summary { color: var(--accent); }
+.requestQueueDisclosure > summary { display: none; }
+.requestQueueDisclosure .dashboardWorkspace { border-top: 0; padding-top: 0; }
 .tenantChargeNotice { display: flex; justify-content: space-between; gap: 14px; align-items: center; text-decoration: none; }
 .tenantStatusSummary { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--accent); border-radius: 14px; background: var(--accent-soft); }
 .tenantStatusSummary strong { font-size: 20px; }

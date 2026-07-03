@@ -80,21 +80,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
         )}
       </section>
 
-      {primaryAction ? (
-        <SectionCard
-          kicker="Do next"
-          title={primaryAction.title}
-          subtitle={actionSubtitle(primaryAction) || primaryAction.group}
-          action={<Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>}
-        >
-          <div className={`nextActionPrimary nextActionPrimary-${primaryAction.priority}`}>
-            <div>
-              <div className="kicker">{primaryAction.group}</div>
-              <strong>{primaryAction.reason}</strong>
-            </div>
-          </div>
-        </SectionCard>
-      ) : (
+      {!primaryAction ? (
         <SectionCard
           kicker="All caught up"
           title="No immediate decisions"
@@ -106,7 +92,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
             <Link href="/dashboard?queue=open">Review open work</Link>
           </div>
         </SectionCard>
-      )}
+      ) : null}
 
 
       {actionGroups.length ? (

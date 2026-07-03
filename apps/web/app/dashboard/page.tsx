@@ -16,6 +16,20 @@ import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { TodayOverview } from '@/components/today-overview'
 import { subscriptionCountdownNotice } from '@/lib/subscription-gate'
 
+const QUEUE_TITLES: Record<string, string> = {
+  all: 'Maintenance queue',
+  open: 'Open requests',
+  declined: 'Declined requests',
+  canceled: 'Canceled requests',
+  'reassignment-needed': 'Reassignment needed',
+  'completion-review': 'Completion review',
+  'follow-up': 'Needs follow-up',
+  'scheduled-today': "Today's appointments",
+  'overdue-scheduled': 'Overdue appointments',
+  unclaimed: 'Not started',
+  completed: 'Completed requests',
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -29,6 +43,8 @@ export default async function DashboardPage({
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
+  const isQueueView = selectedQueue !== 'all'
+  const queueTitle = QUEUE_TITLES[selectedQueue] ?? 'Requests'
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -86,17 +102,17 @@ export default async function DashboardPage({
           </div>
         </section>
       ) : null}
-      <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} />
+      {!isQueueView ? <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} /> : null}
 
-      <details className="advancedDisclosure dashboardWorkspaceDisclosure" open={selectedQueue !== 'all'}>
-        <summary>Open full maintenance queue and workspace tools</summary>
+      <details className={`advancedDisclosure dashboardWorkspaceDisclosure ${isQueueView ? 'requestQueueDisclosure' : ''}`} open={isQueueView}>
+        <summary>{isQueueView ? 'Requests' : 'Open full maintenance queue and workspace tools'}</summary>
         <div className="stack dashboardWorkspace">
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
-            <div className="kicker">Dashboard</div>
-            <h1 className="pageTitle">Maintenance queue</h1>
-            <div className="muted">See what needs action now and clear it fast.</div>
+            <div className="kicker">{isQueueView ? 'Requests' : 'Dashboard'}</div>
+            <h1 className="pageTitle">{queueTitle}</h1>
+            <div className="muted">{isQueueView ? 'Scan active work orders and open the one that needs attention.' : 'See what needs action now and clear it fast.'}</div>
           </div>
           <div className="requestHeroMeta">
             <div className="mailboxMini">
