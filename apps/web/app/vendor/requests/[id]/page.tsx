@@ -56,13 +56,16 @@ export default async function VendorRequestDetailPage({
         tone: 'success' as const,
       }
     : viewState.heroNotice
+  const needsAppointmentTime = !isPaidClosed
+    && viewState.canControlDispatch
+    && !request.vendorScheduledStart
+    && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
   const canSendUpdate = !isPaidClosed && (viewState.canControlDispatch || viewState.isPendingBid)
 
   return (
     <div className="stack">
       <section className="row" style={{ justifyContent: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
         <Link href={'/vendor' as Route} className="button">Back to Maintenance Ops</Link>
-        <Link href={'/vendor/summary' as Route} className="button">Vendor summary</Link>
         <form action={vendorSignoutAction}>
           <button type="submit" className="button">Sign out</button>
         </form>
@@ -88,20 +91,22 @@ export default async function VendorRequestDetailPage({
           Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
         </div>
         <div>{request.description}</div>
-        {canSendUpdate ? <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : 'Send the next update'}</a> : null}
+        {canSendUpdate ? <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : 'Send the next update'}</a> : null}
       </section>
 
       {canSendUpdate ? <section className="card stack" id="vendor-next-action">
         <div>
           <div className="kicker">Next action</div>
-          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : 'Send work update'}</h3>
+          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : needsAppointmentTime ? 'Add appointment time' : 'Send work update'}</h3>
         </div>
         <div className="muted">
           {viewState.isPendingBid
             ? 'Send your bid amount, timing, and availability for manager approval.'
-            : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
+            : needsAppointmentTime
+              ? 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.'
+              : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
         </div>
-        <VendorRequestResponseForm requestId={request.id} />
+        <VendorRequestResponseForm requestId={request.id} initialResponse={needsAppointmentTime ? 'scheduled' : 'contacted'} />
       </section> : null}
 
       {request.tenderInvites.length && !isPaidClosed ? <section className="card stack">
@@ -148,7 +153,7 @@ export default async function VendorRequestDetailPage({
         </div>
         <div className="muted">
           {viewState.canSeeSchedule && request.vendorScheduledStart
-            ? `Visit window: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
+            ? `Appointment: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
             : 'No appointment window confirmed for your vendor account.'}
         </div>
       </section>

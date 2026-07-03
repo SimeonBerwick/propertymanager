@@ -39,10 +39,10 @@ export function tenantRequestNextStep(request: {
         : 'Your property manager is choosing a vendor for the work.'
     case 'vendor_selected':
       return request.vendorScheduledStart
-        ? 'A visit has been arranged. Check the appointment details below.'
+        ? 'An appointment has been arranged. Check the appointment details at the top of this page.'
         : 'The vendor is arranging an appointment time.'
     case 'scheduled':
-      return 'The vendor is expected to attend during the confirmed appointment window.'
+      return 'The vendor is expected during the confirmed appointment window.'
     case 'in_progress':
       return 'The vendor is working on the issue. You will see an update when the work is complete.'
     case 'completed':

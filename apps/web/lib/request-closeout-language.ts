@@ -48,7 +48,7 @@ const TENANT_BASE_LABELS: Record<string, string> = {
   approved: 'Approved and being arranged',
   declined: 'Not approved',
   vendor_selected: 'Vendor being scheduled',
-  scheduled: 'Visit scheduled',
+  scheduled: 'Appointment scheduled',
   in_progress: 'Work in progress',
   completed: 'Work completed',
   closed: 'Closed',

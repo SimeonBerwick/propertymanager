@@ -4,6 +4,7 @@ import { getTenantOwnedRequestById } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
+import { TenantWorkOrderMessageForm } from './message-form'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 
 function classifyCommentSource(
@@ -57,8 +58,21 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
     notFound()
   }
 
+  const appointmentLabel = request.vendorScheduledStart
+    ? `${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
+    : null
+
   return (
     <div className="stack">
+      {appointmentLabel ? (
+        <section className="card stack tenantStatusSummary">
+          <div className="kicker">Appointment</div>
+          <strong>{appointmentLabel}</strong>
+          <div>{request.assignedVendorName ? `${request.assignedVendorName} is scheduled for this repair.` : 'The repair appointment is scheduled.'}</div>
+          <a href="#message-manager-vendor" className="button primary" style={{ alignSelf: 'flex-start' }}>Request a different time</a>
+        </section>
+      ) : null}
+
       <section className="card stack">
         <div>
           <div className="kicker">Request detail</div>
@@ -83,7 +97,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div><strong>{request.assignedVendorName}</strong></div>
           {request.vendorScheduledStart ? (
             <div className="muted">
-              Visit window: {new Date(request.vendorScheduledStart).toLocaleString()}
+              Appointment: {new Date(request.vendorScheduledStart).toLocaleString()}
               {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
             </div>
           ) : (
@@ -93,6 +107,15 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           {request.assignedVendorPhone ? <div><a href={`tel:${request.assignedVendorPhone}`}>{request.assignedVendorPhone}</a></div> : null}
         </div>
       </section> : null}
+
+      <section className="card stack" id="message-manager-vendor">
+        <div>
+          <div className="kicker">Message</div>
+          <h3 style={{ marginTop: 4 }}>Message property manager and vendor</h3>
+        </div>
+        <div className="muted">Use this to ask for a different appointment time or report an issue with this repair.</div>
+        <TenantWorkOrderMessageForm requestId={request.id} />
+      </section>
 
       {['requested', 'approved', 'reopened'].includes(request.status) ? (
         <section className="card stack">

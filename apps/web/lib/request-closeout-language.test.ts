@@ -8,7 +8,7 @@ describe('deriveRequestCloseoutLanguage', () => {
     expect(result.phase).toBe('open')
     expect(result.paymentState).toBe('none')
     expect(result.managerLabel).toBe('Scheduled')
-    expect(result.tenantLabel).toBe('Visit scheduled')
+    expect(result.tenantLabel).toBe('Appointment scheduled')
   })
 
   test('labels completed unpaid work consistently', () => {

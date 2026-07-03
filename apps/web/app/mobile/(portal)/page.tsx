@@ -30,6 +30,10 @@ export default async function TenantMobileDashboardPage({
     (sum, request) => sum + request.billingDocuments.filter((document) => Math.max(0, document.totalCents - document.paidCents) > 0).length,
     0,
   )
+  const nextAppointment = openRequests
+    .filter((request) => request.vendorScheduledStart)
+    .sort((a, b) => new Date(a.vendorScheduledStart!).getTime() - new Date(b.vendorScheduledStart!).getTime())[0]
+
   const filteredRequests = filter === 'open'
     ? openRequests
     : filter === 'charges'
@@ -43,13 +47,24 @@ export default async function TenantMobileDashboardPage({
 
   return (
     <div className="stack">
+      {nextAppointment ? (
+        <section className="card row tenantStatusSummary" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+          <div>
+            <div className="kicker">Next appointment</div>
+            <h2 style={{ margin: '4px 0' }}>{nextAppointment.title}</h2>
+            <div>{new Date(nextAppointment.vendorScheduledStart!).toLocaleString()}{nextAppointment.vendorScheduledEnd ? ` to ${new Date(nextAppointment.vendorScheduledEnd).toLocaleString()}` : ''}</div>
+          </div>
+          <Link href={`/mobile/requests/${nextAppointment.id}#message-manager-vendor` as Route} className="button primary">Message about this appointment</Link>
+        </section>
+      ) : null}
+
       <section className="card row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
         <div>
-          <div className="kicker">Need help?</div>
+          <div className="kicker">Need a new repair?</div>
           <h2 style={{ margin: '4px 0' }}>Report a problem</h2>
           <div className="muted">Tell your property manager what happened and add photos in a few steps.</div>
         </div>
-        <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
+        <Link href={'/mobile/requests/new' as Route} className="button">Report a problem</Link>
       </section>
 
       {requests.length || openRequests.length ? (
@@ -96,7 +111,7 @@ export default async function TenantMobileDashboardPage({
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
                   {tenantRequestCloseoutLabel(request)}
-                  {request.vendorScheduledStart ? ` · Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
+                  {request.vendorScheduledStart ? ` · Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
                 </div>
                 <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
                 {request.billingDocuments.length ? (
