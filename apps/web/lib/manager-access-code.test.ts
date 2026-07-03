@@ -12,7 +12,7 @@ function future(minutes: number) {
   return new Date(Date.now() + minutes * 60 * 1000)
 }
 
-describe('manager-issued access codes', () => {
+describe('manager-issued sign-in codes', () => {
   test('stores tenant codes hashed and allows exactly one redemption', async () => {
     const { user, identity } = await scaffoldTenant({ email: 'tenant-code@example.com' })
     const issued = await createTenantManagerAccessCode({

@@ -27,7 +27,7 @@ export default async function NewUnitPage({ params }: { params: Promise<{ id: st
 
       <section className="card stack">
         <div>
-          <div className="kicker">Property · {data.property.name}</div>
+          <div className="kicker">Property - {data.property.name}</div>
           <h2 style={{ margin: '4px 0 0' }}>Add a unit</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>

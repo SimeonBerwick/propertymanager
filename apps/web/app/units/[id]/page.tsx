@@ -62,7 +62,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             </div>
             <div className="muted">
               <Link href={`/properties/${property.id}`}>{property.name}</Link>
-              {' · '}{property.address}
+              {' - '}{property.address}
             </div>
             {unitInfoChips(unit).length ? (
               <div className="muted" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6, fontSize: 12 }}>
@@ -74,8 +74,8 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             {occupancy.current && (
               <div className="muted" style={{ marginTop: 4 }}>
                 Tenant: {occupancy.current.tenantName}
-                {occupancy.current.email ? ` · ${occupancy.current.email}` : ''}
-                {' · '}Lease {getTenantLeaseLabel(occupancy.current)}
+                {occupancy.current.email ? ` - ${occupancy.current.email}` : ''}
+                {' - '}Lease {getTenantLeaseLabel(occupancy.current)}
               </div>
             )}
             {!occupancy.current && (
@@ -86,7 +86,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             )}
             {occupancy.upcoming ? (
               <div className="muted" style={{ marginTop: 4 }}>
-                Next tenant: {occupancy.upcoming.tenantName} · Lease {getTenantLeaseLabel(occupancy.upcoming)}
+                Next tenant: {occupancy.upcoming.tenantName} - Lease {getTenantLeaseLabel(occupancy.upcoming)}
               </div>
             ) : null}
           </div>

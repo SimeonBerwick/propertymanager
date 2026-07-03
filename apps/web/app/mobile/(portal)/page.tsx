@@ -111,7 +111,7 @@ export default async function TenantMobileDashboardPage({
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
                   {tenantRequestCloseoutLabel(request)}
-                  {request.vendorScheduledStart ? ` · Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
+                  {request.vendorScheduledStart ? ` - Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
                 </div>
                 <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
                 {request.billingDocuments.length ? (
@@ -119,7 +119,7 @@ export default async function TenantMobileDashboardPage({
                     {request.billingDocuments.map((document) => {
                       const balanceCents = Math.max(0, document.totalCents - document.paidCents)
                       return `${billingStatusLabel(document.status)} charge: ${formatMoney(balanceCents, document.currency)} due`
-                    }).join(' · ')}
+                    }).join(' - ')}
                   </div>
                 ) : null}
               </div>

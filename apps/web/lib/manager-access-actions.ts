@@ -52,7 +52,7 @@ export async function createTenantAccessCodeAction(
       code: result.code,
       tenantName: result.name,
       expiresAt: result.expiresAt,
-      accessLink: `${getAppBaseUrl('tenant manager access codes')}/mobile/auth/login`,
+      accessLink: `${getAppBaseUrl('tenant manager sign-in codes')}/mobile/auth/login`,
       ownerUserId: session.userId,
     })
     revalidatePath('/access')
@@ -61,10 +61,10 @@ export async function createTenantAccessCodeAction(
       code: result.code,
       expiresAt: result.expiresAt.toISOString(),
       scope: 'Tenant portal for this unit',
-      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
+      deliveryWarning: delivery.delivered ? undefined : `Sign-in code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
     }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Could not create tenant access code.' }
+    return { error: error instanceof Error ? error.message : 'Could not create tenant sign-in code.' }
   }
 }
 
@@ -92,7 +92,7 @@ export async function createVendorAccessCodeAction(
       vendorName: result.name,
       requestTitle: request?.title ?? 'assigned work order',
       expiresAt: result.expiresAt,
-      accessLink: `${getAppBaseUrl('vendor manager access codes')}/vendor/auth/login`,
+      accessLink: `${getAppBaseUrl('vendor manager sign-in codes')}/vendor/auth/login`,
       ownerUserId: session.userId,
     })
     revalidatePath('/access')
@@ -101,9 +101,9 @@ export async function createVendorAccessCodeAction(
       code: result.code,
       expiresAt: result.expiresAt.toISOString(),
       scope: request?.title ?? 'Selected work order',
-      deliveryWarning: delivery.delivered ? undefined : `Access code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
+      deliveryWarning: delivery.delivered ? undefined : `Sign-in code created but could not be emailed to ${result.email}. Copy the code above and send it manually, or connect/reconnect Outlook.`,
     }
   } catch (error) {
-    return { error: error instanceof Error ? error.message : 'Could not create vendor access code.' }
+    return { error: error instanceof Error ? error.message : 'Could not create vendor sign-in code.' }
   }
 }

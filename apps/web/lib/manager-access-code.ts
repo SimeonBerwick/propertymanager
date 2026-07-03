@@ -53,7 +53,7 @@ async function createUniqueCode(role: ManagerAccessCodeRole) {
     })
     if (!existing) return { code, codeLookup }
   }
-  throw new Error('Could not generate a unique access code. Try again.')
+  throw new Error('Could not generate a unique sign-in code. Try again.')
 }
 
 export async function createTenantManagerAccessCode(input: {
@@ -73,7 +73,7 @@ export async function createTenantManagerAccessCode(input: {
     throw new Error('Tenant access is not active for this unit.')
   }
   if (!tenantIdentity.email) {
-    throw new Error('Add a tenant email before creating an access code.')
+    throw new Error('Add a tenant email before creating an sign-in code.')
   }
 
   const { code, codeLookup } = await createUniqueCode('tenant')
@@ -107,7 +107,7 @@ export async function createTenantManagerAccessCode(input: {
     entityType: 'tenantIdentity',
     entityId: tenantIdentity.id,
     action: 'tenantIdentity.managerAccessCodeCreated',
-    summary: `Created a one-time access code for ${tenantIdentity.tenantName}.`,
+    summary: `Created a one-time sign-in code for ${tenantIdentity.tenantName}.`,
     metadata: { accessCodeId: accessCode.id, unitId: tenantIdentity.unitId, validFrom: input.validFrom, expiresAt: input.expiresAt },
   })
 
@@ -134,7 +134,7 @@ export async function createVendorManagerAccessCode(input: {
   })
   const vendor = await prisma.vendor.findFirst({ where: { id: input.vendorId, orgId: input.actorUserId, isActive: true } })
   if (!vendor || !request) throw new Error('Vendor or assigned request not found.')
-  if (!vendor.email) throw new Error('Add a vendor email before creating an access code.')
+  if (!vendor.email) throw new Error('Add a vendor email before creating an sign-in code.')
 
   const { code, codeLookup } = await createUniqueCode('vendor')
   const salt = randomBytes(12).toString('hex')
@@ -168,7 +168,7 @@ export async function createVendorManagerAccessCode(input: {
     entityType: 'vendor',
     entityId: vendor.id,
     action: 'vendor.managerAccessCodeCreated',
-    summary: `Created a one-time access code for ${vendor.name}, limited to ${request.title}.`,
+    summary: `Created a one-time sign-in code for ${vendor.name}, limited to ${request.title}.`,
     metadata: { accessCodeId: accessCode.id, requestId: request.id, validFrom: input.validFrom, expiresAt: input.expiresAt },
   })
 
@@ -220,7 +220,7 @@ export async function verifyManagerAccessCode(role: ManagerAccessCodeRole, submi
     entityType: role === 'tenant' ? 'tenantIdentity' : 'vendor',
     entityId: role === 'tenant' ? accessCode.tenantIdentityId! : accessCode.vendorId!,
     action: `${role}.managerAccessCodeRedeemed`,
-    summary: `Redeemed a manager-issued ${role} access code.`,
+    summary: `Redeemed a manager-issued ${role} sign-in code.`,
     metadata: { accessCodeId: accessCode.id, requestId: accessCode.requestId, unitId: accessCode.unitId },
   })
 

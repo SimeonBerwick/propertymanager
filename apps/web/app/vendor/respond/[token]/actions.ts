@@ -206,7 +206,7 @@ export async function submitVendorResponse(
               requestId: validation.requestId,
               vendorId: validation.vendorId,
               status: dispatchStatus,
-              note: [note, availabilityNote, bidAmountCents != null ? `Bid: USD ${(bidAmountCents / 100).toFixed(2)}` : null].filter(Boolean).join(' · ') || null,
+              note: [note, availabilityNote, bidAmountCents != null ? `Bid: USD ${(bidAmountCents / 100).toFixed(2)}` : null].filter(Boolean).join(' - ') || null,
               scheduledStart,
               scheduledEnd,
             },

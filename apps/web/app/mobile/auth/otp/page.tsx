@@ -37,7 +37,7 @@ export default async function MobileOtpPage({
             textAlign: 'center',
           }}
         >
-          Access code: <strong>{devCode}</strong>
+          Sign-in code: <strong>{devCode}</strong>
         </div>
       )}
       <TenantOtpForm challengeId={challengeId} inviteId={inviteId} />

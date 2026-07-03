@@ -15,7 +15,7 @@ export default async function TenantMobileLayout({ children }: { children: React
         <div className="row" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div className="kicker">Tenant portal</div>
-            <h2 style={{ margin: '4px 0' }}>{session.propertyName} · {session.unitLabel}</h2>
+            <h2 style={{ margin: '4px 0' }}>{session.propertyName} - {session.unitLabel}</h2>
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
           <div className="row" style={{ gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>

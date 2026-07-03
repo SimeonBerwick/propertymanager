@@ -95,7 +95,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 <div className="muted">{unit.tenantName ?? 'Vacant'}</div>
                 {unitInfoChips(unit).length ? (
                   <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>
-                    {unitInfoChips(unit).join(' · ')}
+                    {unitInfoChips(unit).join(' - ')}
                   </div>
                 ) : null}
               </div>
@@ -118,7 +118,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {request.unitLabel} · {request.category} · {languageLabel(request.preferredLanguage)}
+                  {request.unitLabel} - {request.category} - {languageLabel(request.preferredLanguage)}
                 </div>
               </div>
               <StatusBadge status={request.status} />

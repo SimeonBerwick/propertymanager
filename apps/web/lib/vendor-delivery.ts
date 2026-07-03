@@ -23,11 +23,11 @@ class DefaultVendorDeliveryAdapter implements VendorDeliveryAdapter {
   async sendManagerAccessCode(input: { to: string; code: string; vendorName: string; requestTitle: string; expiresAt: Date; accessLink: string; ownerUserId?: string }) {
     const result = await sendNotification({
       to: input.to,
-      subject: 'Your work-order access code',
+      subject: 'Your work-order sign-in code',
       text: [
         `Hi ${input.vendorName},`,
         '',
-        `Your property manager created this one-time access code for "${input.requestTitle}": ${input.code}`,
+        `Your property manager created this one-time sign-in code for "${input.requestTitle}": ${input.code}`,
         `Enter it here: ${input.accessLink}`,
         `It expires ${input.expiresAt.toLocaleString()}.`,
         '',

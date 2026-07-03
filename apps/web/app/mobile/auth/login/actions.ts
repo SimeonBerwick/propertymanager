@@ -16,13 +16,13 @@ export async function startReturningLoginAction(
   const next = String(formData.get('next') ?? '').trim()
 
   if (!identifier) {
-    return { error: 'Email, phone number, or access code is required.' }
+    return { error: 'Email, phone number, or sign-in code is required.' }
   }
 
   if (/^\d{6}$/.test(identifier)) {
     const result = await verifyManagerAccessCode('tenant', identifier)
     if (!result.ok) return { error: accessCodeMessage(result.code) }
-    if (result.role !== 'tenant') return { error: 'This access code is not valid for tenant access.' }
+    if (result.role !== 'tenant') return { error: 'This sign-in code is not valid for tenant access.' }
     try {
       await prisma.tenantIdentity.updateMany({
         where: { id: result.tenantIdentityId, status: 'pending_invite' },
@@ -32,7 +32,7 @@ export async function startReturningLoginAction(
     } catch (error) {
       return {
         error: error instanceof Error && /not active/i.test(error.message)
-          ? 'This tenant access code is no longer active. Ask your property manager for a new code.'
+          ? 'This tenant sign-in code is no longer active. Ask your property manager for a new code.'
           : 'Could not finish tenant sign-in. Try again or ask your property manager for a new code.',
       }
     }
@@ -62,8 +62,8 @@ export async function startReturningLoginAction(
 }
 
 function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {
-  if (code === 'not_started') return 'This access code is not active yet.'
-  if (code === 'expired') return 'This access code has expired.'
+  if (code === 'not_started') return 'This sign-in code is not active yet.'
+  if (code === 'expired') return 'This sign-in code has expired.'
   if (code === 'locked') return 'Too many attempts. Try again later or ask your property manager for a new code.'
-  return 'This access code is invalid or has already been used.'
+  return 'This sign-in code is invalid or has already been used.'
 }

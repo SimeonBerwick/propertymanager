@@ -154,7 +154,7 @@ export default async function VendorRequestDetailPage({
         <div className="muted">
           {viewState.canSeeSchedule && request.vendorScheduledStart
             ? `Appointment: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
-            : 'No appointment window confirmed for your vendor account.'}
+            : 'No appointment time confirmed for your vendor account.'}
         </div>
       </section>
 
