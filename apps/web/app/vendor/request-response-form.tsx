@@ -5,9 +5,9 @@ import { submitVendorPortalResponse, type VendorPortalResponseState } from './ac
 
 const INITIAL_STATE: VendorPortalResponseState = { error: null }
 
-export function VendorRequestResponseForm({ requestId }: { requestId: string }) {
+export function VendorRequestResponseForm({ requestId, initialResponse = 'contacted' }: { requestId: string; initialResponse?: string }) {
   const [state, action, pending] = useActionState(submitVendorPortalResponse, INITIAL_STATE)
-  const [response, setResponse] = useState('contacted')
+  const [response, setResponse] = useState(initialResponse)
   const showBid = response === 'contacted' || response === 'accepted'
   const showSchedule = response === 'scheduled'
   const showPhotos = response === 'completed'
@@ -66,7 +66,7 @@ export function VendorRequestResponseForm({ requestId }: { requestId: string }) 
       </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting…' : 'Send update'}
+        {pending ? 'Submitting...' : response === 'scheduled' ? 'Save appointment' : 'Send update'}
       </button>
     </form>
   )

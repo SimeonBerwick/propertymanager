@@ -54,7 +54,7 @@ export default async function VendorDashboardPage({
   const attentionItems = [
     ...pendingBids.map((item) => ({ ...item, attentionLabel: 'Respond to bid invite' })),
     ...awardedRequests.map((item) => ({ ...item, attentionLabel: 'Send an update on awarded work' })),
-    ...scheduledVisits.map((item) => ({ ...item, attentionLabel: 'Prepare for scheduled visit' })),
+    ...scheduledVisits.map((item) => ({ ...item, attentionLabel: 'Prepare for scheduled appointment' })),
     ...requiredUpdates.map((item) => ({ ...item, attentionLabel: 'Update work status' })),
   ].filter((item, index, items) => items.findIndex((candidate) => candidate.request.id === item.request.id) === index).slice(0, 5)
   const billingRequests = requests.filter((request) => request.billingDocuments.length > 0)
@@ -111,7 +111,7 @@ export default async function VendorDashboardPage({
         <div>
           <div className="kicker">Do next</div>
           <h2 style={{ margin: '4px 0' }}>Work waiting on you</h2>
-          <div className="muted">Bid invites, chosen work, scheduled visits, and requested updates are shown first.</div>
+          <div className="muted">Bid invites, chosen work, scheduled appointments, and requested updates are shown first.</div>
         </div>
         {attentionItems.length ? attentionItems.map(({ request, viewState, attentionLabel }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
@@ -120,7 +120,7 @@ export default async function VendorDashboardPage({
                 <div className="kicker">{attentionLabel}</div>
                 <div style={{ fontWeight: 700, marginTop: 4 }}>{request.title}</div>
                 <div className="muted">{request.property.name} - {request.unit.label} - {viewState.statusLabel}</div>
-                {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Visit {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
+                {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Appointment {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
               </div>
               <span className="button primary">View details</span>
             </div>
@@ -128,7 +128,7 @@ export default async function VendorDashboardPage({
         )) : (
           <div className="emptyState">
             <strong>No vendor action needed</strong>
-            <span>Bid invites, awarded work, scheduled visits, and update requests will appear here when the property manager needs something from you.</span>
+            <span>Bid invites, awarded work, scheduled appointments, and update requests will appear here when the property manager needs something from you.</span>
           </div>
         )}
       </section>
@@ -223,7 +223,7 @@ export default async function VendorDashboardPage({
                   Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
                 </div>
                 <div className="muted">
-                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Visit ${new Date(request.vendorScheduledStart).toLocaleString()}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
+                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
                 </div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>
