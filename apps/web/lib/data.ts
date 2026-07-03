@@ -30,6 +30,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents: number
   pendingBidCount?: number
+  activeTenderInviteCount?: number
 }
 
 export interface DashboardData {
@@ -177,6 +178,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
     billingOpenBalanceCents,
     pendingBidCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : undefined,
+    activeTenderInviteCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => ['invited', 'viewed'].includes(invite.status)).length : undefined,
   }
 }
 
@@ -496,7 +498,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
             orderBy: { updatedAt: 'desc' },
           },
           tenderInvites: {
-            where: { status: 'bid_submitted' },
+            where: { status: { in: ['bid_submitted', 'invited', 'viewed'] } },
             select: { id: true, status: true },
           },
         },

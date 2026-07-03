@@ -10,6 +10,7 @@ type GuidanceRequest = Pick<MaintenanceRequest,
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
+  activeTenderInviteCount?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
 }
