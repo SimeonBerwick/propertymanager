@@ -41,11 +41,11 @@ export function OpsActivityFeed({ items }: { items: OpsActivityItem[] }) {
             </div>
             <div className="muted">
               {ENTITY_LABELS[item.entityType] ?? item.entityType}
-              {' · '}
+              {' - '}
               {item.actorName ?? 'System'}
-              {' · '}
+              {' - '}
               {new Date(item.createdAt).toLocaleString()}
-              {href ? <><span>{' · '}</span><Link href={href}>Open</Link></> : null}
+              {href ? <><span>{' - '}</span><Link href={href}>Open</Link></> : null}
             </div>
           </div>
         )

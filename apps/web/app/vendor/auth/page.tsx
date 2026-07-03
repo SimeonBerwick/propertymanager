@@ -22,7 +22,7 @@ export default async function VendorAuthLandingPage({
       </div>
       {params?.reason === 'session-expired' ? <div className="notice error">Your session expired or this link needs sign-in. Sign in again to continue.</div> : null}
       <p className="muted" style={{ margin: 0 }}>
-        Use your access code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
+        Use your sign-in code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/vendor/auth/login' as Route} className="button primary">Vendor sign in</Link>

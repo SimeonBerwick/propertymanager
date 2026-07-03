@@ -99,11 +99,11 @@ export function RequestQueueList({
           <div className="stack requestQueueMain">
             <div>
               <div className="requestQueueTitle">{request.title}</div>
-              <div className="muted requestQueueLocation">{request.propertyName} · {request.unitLabel}</div>
+              <div className="muted requestQueueLocation">{request.propertyName} - {request.unitLabel}</div>
               <div className="requestMetaLine">
                 <RequestFlowBadge request={request} />
                 <span className="muted">{request.category}</span>
-                <span className="muted">{getCityFromAddress(request.propertyAddress)} · {languageLabel(request.preferredLanguage)}</span>
+                <span className="muted">{getCityFromAddress(request.propertyAddress)} - {languageLabel(request.preferredLanguage)}</span>
                 {request.claimedByUserName ? <span className="badge" style={{ background: '#f0f4ff', color: '#3b5bdb' }}>Owner: {request.claimedByUserName}</span> : null}
               </div>
             </div>

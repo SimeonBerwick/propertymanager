@@ -48,7 +48,7 @@ export async function sendPortalAuthChallenge(input: {
   const text = [
     `Hi ${input.recipientName},`,
     '',
-    `Use this login link to open the ${portalLabel}:`,
+    `Use this sign-in link to open the ${portalLabel}:`,
     input.magicLink,
     '',
     `Or enter this code: ${input.code}`,
@@ -64,7 +64,7 @@ export async function sendPortalAuthChallenge(input: {
 
   const result = await sendNotification({
     to: input.to,
-    subject: `Your ${portalLabel} login link`,
+    subject: `Your ${portalLabel} sign-in link`,
     text,
   })
   if (!result.ok) throw new Error('Email delivery failed. Try again.')

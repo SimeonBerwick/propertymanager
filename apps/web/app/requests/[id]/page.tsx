@@ -131,7 +131,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ? 'Close request actions'
           : 'Request actions'
   const actionSectionSubtitle = needsAppointmentTime
-    ? 'Enter the confirmed vendor visit time here.'
+    ? 'Enter the confirmed appointment time here.'
     : hasSubmittedBid
       ? 'Review returned pricing and choose the vendor.'
       : canChooseVendor

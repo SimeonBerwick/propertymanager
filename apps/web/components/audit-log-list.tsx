@@ -16,7 +16,7 @@ export function AuditLogList({ title, items }: { title: string; items: AuditLogI
       {items.length ? items.map((item) => (
         <div key={item.id} className="timelineRow">
           <div style={{ fontWeight: 600 }}>{item.summary}</div>
-          <div className="muted">{item.actorName ?? 'System'} · {new Date(item.createdAt).toLocaleString()}</div>
+          <div className="muted">{item.actorName ?? 'System'} - {new Date(item.createdAt).toLocaleString()}</div>
         </div>
       )) : <div className="muted">No activity yet.</div>}
     </section>

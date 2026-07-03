@@ -101,7 +101,7 @@ export default async function AccessPage() {
         id: `tenant-invite:${identity.id}`,
         priority: 'normal',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: 'The tenant invite is still pending.',
+        reason: 'The tenant has not used their sign-in code yet.',
         primaryLabel: 'Resend tenant invite',
         href: `/units/${unit.id}/edit`,
         actionType: 'resend_renter_invite',
@@ -144,7 +144,7 @@ export default async function AccessPage() {
         id: `vendor-email:${vendor.id}`,
         priority: 'normal',
         title: vendor.name,
-        reason: 'This vendor cannot receive login codes until an email is added.',
+        reason: 'This vendor cannot receive sign-in codes until an email is added.',
         primaryLabel: 'Add vendor email',
         href: `/vendors/${vendor.id}`,
         actionType: 'add_vendor_email',
@@ -158,7 +158,7 @@ export default async function AccessPage() {
         priority: 'low',
         title: vendor.name,
         reason: 'Vendor access is active, but the vendor has never logged in.',
-        primaryLabel: 'Send vendor access code',
+        primaryLabel: 'Send vendor sign-in code',
         href: `/vendors/${vendor.id}`,
         actionType: 'send_vendor_access_code',
         group: 'Unused access',
@@ -196,7 +196,7 @@ export default async function AccessPage() {
         <div className="card">
           <div className="kicker">Pending invites</div>
           <h2>{pendingInviteCount}</h2>
-          <div className="muted">Tenant identities waiting on invite completion</div>
+          <div className="muted">Tenants waiting to use their sign-in code</div>
         </div>
         <div className="card">
           <div className="kicker">Active access</div>
@@ -277,8 +277,8 @@ export default async function AccessPage() {
                     </td>
                     <td className="muted">
                       {stateLabel}
-                      {identity?.phoneE164 ? ` · ${identity.phoneE164}` : ''}
-                      {identity ? ` · ${getTenantLeaseLabel(identity)}` : ''}
+                      {identity?.phoneE164 ? ` - ${identity.phoneE164}` : ''}
+                      {identity ? ` - ${getTenantLeaseLabel(identity)}` : ''}
                     </td>
                     <td className="muted">{lastActivity}</td>
                     <td>
@@ -319,7 +319,7 @@ export default async function AccessPage() {
               {vendors.map((vendor) => (
                 <tr key={vendor.id}>
                   <td style={{ fontWeight: 600 }}>{vendor.name}</td>
-                  <td className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` · ${vendor.phone}` : ''}</td>
+                  <td className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` - ${vendor.phone}` : ''}</td>
                   <td className="muted">{vendor.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="muted">{vendor.lastLoginAt ? new Date(vendor.lastLoginAt).toLocaleString() : 'Never'}</td>
                   <td>

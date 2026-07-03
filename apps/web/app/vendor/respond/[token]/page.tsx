@@ -27,7 +27,7 @@ export default async function VendorRespondPage({
       <div>
         <div className="kicker">Secure work-order link</div>
         <h2 style={{ marginTop: 4 }}>{result.requestTitle}</h2>
-        <div className="muted">{result.propertyName} · {result.unitLabel}</div>
+        <div className="muted">{result.propertyName} - {result.unitLabel}</div>
       </div>
       <div className="notice success">This link gives access only to this work order. No sign-in is required.</div>
       <VendorResponseForm token={token} />

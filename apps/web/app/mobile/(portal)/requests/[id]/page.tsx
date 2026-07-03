@@ -101,7 +101,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
             </div>
           ) : (
-            <div className="muted">No appointment window has been confirmed yet.</div>
+            <div className="muted">No appointment time has been confirmed yet.</div>
           )}
           {request.assignedVendorEmail ? <div><a href={`mailto:${request.assignedVendorEmail}`}>{request.assignedVendorEmail}</a></div> : null}
           {request.assignedVendorPhone ? <div><a href={`tel:${request.assignedVendorPhone}`}>{request.assignedVendorPhone}</a></div> : null}

@@ -40,7 +40,7 @@ export function renderBillingPdfHtml(input: BillingPdfInput) {
         <tr><td style="padding: 8px 0; color: #6b7280;">Document type</td><td style="padding: 8px 0;">${input.documentType}</td></tr>
         <tr><td style="padding: 8px 0; color: #6b7280;">Status</td><td style="padding: 8px 0;">${input.status}</td></tr>
         <tr><td style="padding: 8px 0; color: #6b7280;">Request</td><td style="padding: 8px 0;">${input.requestTitle}</td></tr>
-        <tr><td style="padding: 8px 0; color: #6b7280;">Property</td><td style="padding: 8px 0;">${input.propertyName} · ${input.unitLabel}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Property</td><td style="padding: 8px 0;">${input.propertyName} - ${input.unitLabel}</td></tr>
       </table>
 
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">

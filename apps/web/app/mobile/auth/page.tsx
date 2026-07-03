@@ -15,7 +15,7 @@ export default async function MobileAuthLandingPage({
       </div>
       {params?.reason === 'session-expired' ? <div className="notice error">Your session expired or this link needs sign-in. Sign in again to continue.</div> : null}
       <p className="muted" style={{ margin: 0 }}>
-        Use your invite or access code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
+        Use your invite or sign-in code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/mobile/auth/login' as Route} className="button primary">Tenant sign in</Link>

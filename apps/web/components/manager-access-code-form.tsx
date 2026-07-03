@@ -31,7 +31,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       </div>
       {role === 'vendor' && requests.length === 0 ? (
         <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
-          Assign this vendor to a request first. Vendor access codes must be scoped to one work order.
+          Assign this vendor to a request first. Vendor sign-in codes must be scoped to one work order.
         </div>
       ) : null}
       {role === 'vendor' ? (
@@ -70,7 +70,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       {state.error ? <div className="notice error">{state.error}</div> : null}
       {state.code ? (
         <div className="notice success">
-          Access code: <strong style={{ letterSpacing: 3 }}>{state.code}</strong>
+          Sign-in code: <strong style={{ letterSpacing: 3 }}>{state.code}</strong>
           <div className="muted">Scope: {state.scope}. Expires {new Date(state.expiresAt!).toLocaleString()}.</div>
         </div>
       ) : null}
@@ -80,7 +80,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
         </div>
       ) : null}
       <button className="button primary" type="submit" disabled={pending || disabled || (role === 'vendor' && requests.length === 0)}>
-        {pending ? 'Sending new code...' : 'Send new access code'}
+        {pending ? 'Sending new code...' : 'Send new sign-in code'}
       </button>
     </form>
   )

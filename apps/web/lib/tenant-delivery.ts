@@ -40,11 +40,11 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
   async sendManagerAccessCode(input: { to: string; code: string; tenantName: string; expiresAt: Date; accessLink: string; ownerUserId?: string }) {
     const result = await sendNotification({
       to: input.to,
-      subject: 'Your tenant portal access code',
+      subject: 'Your tenant portal sign-in code',
       text: [
         `Hi ${input.tenantName},`,
         '',
-        `Your property manager created this one-time tenant portal access code: ${input.code}`,
+        `Your property manager created this one-time tenant portal sign-in code: ${input.code}`,
         `Enter it here: ${input.accessLink}`,
         `It expires ${input.expiresAt.toLocaleString()}.`,
         '',

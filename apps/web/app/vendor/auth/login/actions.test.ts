@@ -40,7 +40,7 @@ describe('startVendorLoginAction', () => {
     vi.mocked(headers).mockResolvedValue({ get: () => 'test-agent/1.0' } as unknown as Awaited<ReturnType<typeof headers>>)
   })
 
-  test('signs in with a manager access code and creates a one-year vendor session', async () => {
+  test('signs in with a manager sign-in code and creates a one-year vendor session', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({
       data: { orgId: user.id, name: 'Long Vendor', email: 'long-vendor@example.com' },

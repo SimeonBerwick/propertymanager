@@ -27,8 +27,8 @@ export default async function ReturningLoginVerifyPage({
         <div className="kicker">Tenant portal</div>
         <h2 style={{ marginTop: 4 }}>Enter code</h2>
       </div>
-      <div className="muted">We sent a login link and one-time code to {masked ?? 'your contact method'}. They expire after 10 minutes.</div>
-      {resent === '1' ? <div className="notice success">A new login link and code were sent.</div> : null}
+      <div className="muted">We sent a sign-in link and one-time code to {masked ?? 'your contact method'}. They expire after 10 minutes.</div>
+      {resent === '1' ? <div className="notice success">A new sign-in link and code were sent.</div> : null}
       {devCode && process.env.NODE_ENV !== 'production' && (
         <div
           className="notice"
@@ -43,7 +43,7 @@ export default async function ReturningLoginVerifyPage({
             textAlign: 'center',
           }}
         >
-          Access code: <strong>{devCode}</strong>
+          Sign-in code: <strong>{devCode}</strong>
         </div>
       )}
       <ReturningLoginVerifyForm challengeId={challengeId} next={next} />

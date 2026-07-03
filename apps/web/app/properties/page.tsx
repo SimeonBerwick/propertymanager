@@ -69,13 +69,13 @@ export default async function PropertiesPage() {
                             <Link href={`/units/${unit.id}`}>{unit.label}</Link>
                             {!unit.isActive ? ' (archived)' : ''}
                             {unit.tenantName ? ` — ${unit.tenantName}` : ' — Vacant'}
-                            {' · '}
+                            {' - '}
                             <Link href={`/units/${unit.id}`}>Access</Link>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="muted" style={{ margin: '8px 0 0' }}>Add units so tenant requests and access codes can be tied to the right space.</p>
+                      <p className="muted" style={{ margin: '8px 0 0' }}>Add units so tenant requests and sign-in codes can be tied to the right space.</p>
                     )}
                   </div>
                 </section>
@@ -121,7 +121,7 @@ export default async function PropertiesPage() {
                             <Link href={`/units/${unit.id}`}>{unit.label}</Link>
                             {!unit.isActive ? ' (archived)' : ''}
                             {unit.tenantName ? ` — ${unit.tenantName}` : ' — Vacant'}
-                            {' · '}
+                            {' - '}
                             <Link href={`/units/${unit.id}`}>Access</Link>
                           </li>
                         ))}

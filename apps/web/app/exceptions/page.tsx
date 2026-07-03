@@ -59,7 +59,7 @@ export default async function ExceptionsPage() {
                         </Link>
                         <div className="muted" style={{ marginTop: 4 }}>
                           <Link href={`/properties/${request.propertyId}`} className="muted">{request.propertyName}</Link>
-                          {' · '}
+                          {' - '}
                           {request.unitLabel}
                         </div>
                       </div>

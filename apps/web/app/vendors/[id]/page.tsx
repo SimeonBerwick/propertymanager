@@ -75,7 +75,7 @@ export default async function VendorDetailPage({
           <div>
             <div className="kicker">Access recovery</div>
             <h3 style={{ margin: '4px 0 0' }}>Correct details and resend access</h3>
-            <p className="muted" style={{ marginBottom: 0 }}>If the vendor changed their email or phone, update and save the vendor above, then send a new scoped access code.</p>
+            <p className="muted" style={{ marginBottom: 0 }}>If the vendor changed their email or phone, update and save the vendor above, then send a new scoped sign-in code.</p>
           </div>
           <ManagerAccessCodeForm
             role="vendor"
@@ -121,7 +121,7 @@ export default async function VendorDetailPage({
                     <Link href={`/requests/${request.id}`} style={{ fontWeight: 600 }}>
                       {request.title}
                     </Link>
-                    <div className="muted">{request.unitLabel} · {request.category}</div>
+                    <div className="muted">{request.unitLabel} - {request.category}</div>
                   </td>
                   <td>
                     <Link href={`/properties/${request.propertyId}`} className="muted">

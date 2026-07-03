@@ -16,7 +16,7 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         <input type="hidden" name="next" value={next ?? ''} />
         {state.error && <div className="notice error">{state.error}</div>}
         <label className="field">
-          <span className="field-label">Email, phone, or access code</span>
+          <span className="field-label">Email, phone, or sign-in code</span>
           <input
             className="input"
             type="text"
@@ -30,7 +30,7 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
         </label>
         <div className="stack" style={{ gap: 8 }}>
           <button type="submit" className="button primary" aria-disabled={isPending}>
-            {isPending ? 'Signing in...' : isAccessCode ? 'Use access code' : 'Sign in'}
+            {isPending ? 'Signing in...' : isAccessCode ? 'Use sign-in code' : 'Sign in'}
           </button>
           <div className="muted">Use the one-time code from the property manager the first time. After that, your email or phone number signs you in on this device.</div>
         </div>
