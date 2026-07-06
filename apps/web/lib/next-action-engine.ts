@@ -63,6 +63,12 @@ function hasVendorChosen(request: NextActionRequest) {
     || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
 }
 
+function canReviewVendorCosts(request: NextActionRequest) {
+  return hasVendorChosen(request)
+    || ['scheduled', 'in_progress', 'completed'].includes(request.status)
+    || request.reviewState === 'vendor_completed_pending_review'
+}
+
 function isOverdue(request: NextActionRequest, now: Date) {
   return Boolean(request.vendorScheduledEnd)
     && new Date(request.vendorScheduledEnd!).getTime() < now.getTime()
@@ -122,7 +128,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
-  if ((request.pendingVendorApprovalCount ?? 0) > 0) {
+  if ((request.pendingVendorApprovalCount ?? 0) > 0 && canReviewVendorCosts(request)) {
     return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 

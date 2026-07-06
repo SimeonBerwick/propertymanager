@@ -28,13 +28,25 @@ function mapVendorCommercialItem(item: any): VendorCommercialItemView {
     amountCents: item.amountCents,
     title: item.title,
     description: item.description ?? undefined,
-    attachmentUrl: item.attachmentUrl ?? undefined,
-    attachmentName: item.attachmentName ?? undefined,
-    attachmentContentType: item.attachmentContentType ?? undefined,
     submittedAt: item.submittedAt.toISOString(),
     createdAt: item.createdAt.toISOString(),
   }
 }
+
+const VENDOR_COMMERCIAL_ITEM_SELECT = {
+  id: true,
+  requestId: true,
+  vendorId: true,
+  itemType: true,
+  status: true,
+  currency: true,
+  amountCents: true,
+  title: true,
+  description: true,
+  submittedAt: true,
+  createdAt: true,
+  vendor: { select: { name: true } },
+} as const
 
 export function buildVendorRequestVisibilityWhere(session: VendorPortalScope) {
   return {
@@ -204,7 +216,7 @@ export async function getVendorRequestById(requestId: string, session: VendorPor
       },
       vendorCommercialItems: {
         where: { vendorId: session.vendorId },
-        include: { vendor: true },
+        select: VENDOR_COMMERCIAL_ITEM_SELECT,
         orderBy: { submittedAt: 'desc' },
       },
     },
@@ -235,14 +247,14 @@ export async function getVendorCommercialSummary(session: VendorPortalScope) {
       ...(session.requestId ? { requestId: session.requestId } : {}),
       status: { in: ['submitted', 'approved'] },
     },
-    include: {
+    select: {
+      ...VENDOR_COMMERCIAL_ITEM_SELECT,
       request: {
         include: {
           property: PROPERTY_WITH_MANAGER,
           unit: true,
         },
       },
-      vendor: true,
     },
     orderBy: [{ submittedAt: 'desc' }],
   })
