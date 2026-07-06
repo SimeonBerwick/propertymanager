@@ -42,6 +42,11 @@ export function VendorCommercialItemForm({
         <span className="field-label">Description</span>
         <textarea className="input" name="description" rows={3} placeholder="Optional scope, reason, or invoice note" />
       </label>
+      <label className="field">
+        <span className="field-label">Attach bill PDF or photo</span>
+        <input className="input" type="file" name="attachment" accept="application/pdf,image/*,.pdf" />
+        <span className="muted">Optional. Add the invoice PDF or a photo of the bill for the property manager. Max 10 MB.</span>
+      </label>
       <button type="submit" className="button primary" disabled={pending}>
         {pending ? 'Submitting...' : 'Submit to property manager'}
       </button>

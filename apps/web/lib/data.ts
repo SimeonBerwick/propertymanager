@@ -854,6 +854,9 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       amountCents: item.amountCents,
       title: item.title,
       description: item.description ?? undefined,
+      attachmentUrl: item.attachmentUrl ?? undefined,
+      attachmentName: item.attachmentName ?? undefined,
+      attachmentContentType: item.attachmentContentType ?? undefined,
       submittedAt: item.submittedAt.toISOString(),
       createdAt: item.createdAt.toISOString(),
     }))
