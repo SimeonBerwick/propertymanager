@@ -1456,17 +1456,17 @@ export async function updateTenantBillbackAction(
   if (amountCents == null) return { error: 'Invalid tenant bill-back amount.' }
   if (amountCents < 0) return { error: 'Bill-back amount cannot be negative.' }
   if (decision === 'bill_tenant' && amountCents <= 0) return { error: 'Bill tenant requires an amount greater than zero.' }
-  if (decision !== 'none' && !reason) return { error: 'A reason is required for bill-back decisions.' }
+  if (decision === 'bill_tenant' && !reason) return { error: 'Add a plain-English reason before charging the tenant.' }
 
   try {
     await prisma.maintenanceRequest.update({
       where: { id: requestId, property: { ownerId: session.userId } },
       data: {
         tenantBillbackDecision: decision,
-        tenantBillbackAmountCents: decision === 'none' ? 0 : amountCents,
-        tenantBillbackReason: decision === 'none' ? null : reason,
-        tenantBillbackDecidedAt: decision === 'none' ? null : new Date(),
-        tenantBillbackDecidedByUserId: decision === 'none' ? null : session.userId,
+        tenantBillbackAmountCents: decision === 'bill_tenant' ? amountCents : 0,
+        tenantBillbackReason: reason || null,
+        tenantBillbackDecidedAt: new Date(),
+        tenantBillbackDecidedByUserId: session.userId,
       },
     })
 
@@ -1477,7 +1477,7 @@ export async function updateTenantBillbackAction(
       entityId: requestId,
       action: 'request.billbackUpdated',
       summary: `Updated tenant bill-back decision to ${decision}.`,
-      metadata: { decision, amountCents: decision === 'none' ? 0 : amountCents, reason: reason || null },
+      metadata: { decision, amountCents: decision === 'bill_tenant' ? amountCents : 0, reason: reason || null },
     })
 
     await applyRequestAutomation(requestId)

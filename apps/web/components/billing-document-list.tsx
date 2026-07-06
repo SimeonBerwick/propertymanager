@@ -12,7 +12,8 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
   return (
     <div className="stack" style={{ gap: 12 }}>
       {documents.map((doc) => {
-        const balance = doc.totalCents - doc.paidCents
+        const balance = Math.max(doc.totalCents - doc.paidCents, 0)
+        const isSettled = balance === 0 || doc.status === 'paid' || doc.status === 'void'
         return (
           <div key={doc.id} className="billingRowCard">
             <div className="billingRow">
@@ -26,13 +27,13 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 700 }}>{formatMoney(doc.totalCents, doc.currency)}</div>
                 <div className="muted">Paid so far: {formatMoney(doc.paidCents, doc.currency)}</div>
-                <div className="muted">Still owed: {formatMoney(balance, doc.currency)}</div>
+                <div className="muted">{balance > 0 ? `Still owed: ${formatMoney(balance, doc.currency)}` : 'No balance due'}</div>
                 <div className={`badge billing-${doc.status}`} style={{ marginTop: 8 }}>{billingStatusLabel(doc.status)}</div>
               </div>
             </div>
             <div className="billingActionsRow">
               <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open document</Link>
-              <BillingStatusForm document={doc} />
+              {!isSettled ? <BillingStatusForm document={doc} /> : null}
               <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} status={doc.status} />
             </div>
           </div>
