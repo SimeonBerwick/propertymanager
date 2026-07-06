@@ -7,7 +7,13 @@ import { evaluateSubscriptionGate } from '@/lib/subscription-gate'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  const response = NextResponse.next()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
   const session = await getIronSession<SessionData>(request, response, getSessionOptions())
 
   if (pathname === '/') {
