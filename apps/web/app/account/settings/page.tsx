@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
+import { logout } from '@/lib/auth-actions'
 
 export default async function AccountSettingsPage() {
   const session = await getLandlordSession()
@@ -17,6 +18,9 @@ export default async function AccountSettingsPage() {
           <h2 className="sectionTitle">Settings and support</h2>
           <div className="muted">Signed in as {session.email ?? 'property manager'}</div>
         </div>
+        <form action={logout}>
+          <button type="submit" className="button primary" style={{ alignSelf: 'flex-start' }}>Sign out</button>
+        </form>
       </section>
 
       <section className="grid cols-2">
