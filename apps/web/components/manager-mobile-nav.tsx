@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import type { Route } from 'next'
+import { logout } from '@/lib/auth-actions'
 
 const ITEMS: Array<{ href: Route, label: string, icon: string }> = [
   { href: '/dashboard', label: 'Home', icon: '⌂' },
@@ -25,6 +26,9 @@ export function ManagerMobileNav() {
             : pathname.startsWith(item.href.split('?')[0])
         return <Link href={item.href} className={active ? 'isActive' : ''} key={`${item.href}-${item.label}`}><span>{item.icon}</span><strong>{item.label}</strong></Link>
       })}
+      <form action={logout}>
+        <button type="submit"><span>Exit</span><strong>Sign out</strong></button>
+      </form>
     </nav>
   )
 }

@@ -941,11 +941,11 @@ body { min-height: 100vh; }
   .requestSectionNav { position: static; }
   .automationSentence { align-items: stretch; flex-direction: column; }
   .automationSentence .input { width: 100%; }
-  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; width: auto; max-width: calc(100vw - 16px); bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); }
-  .managerMobileNav a { display: grid; gap: 2px; justify-items: center; padding: 7px 2px; border-radius: 12px; color: var(--muted); font-size: 10px; }
-  .managerMobileNav a span { font-size: 17px; line-height: 1; }
+  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; width: auto; max-width: calc(100vw - 16px); bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); }
+  .managerMobileNav a, .managerMobileNav button { display: grid; gap: 2px; justify-items: center; width: 100%; padding: 7px 2px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font: inherit; font-size: 10px; }
+  .managerMobileNav a span, .managerMobileNav button span { font-size: 17px; line-height: 1; }
   .managerMobileNav a.isActive { color: var(--accent); background: var(--accent-soft); }
-  .managerMobileNav a strong { font-size: 10px; }
+  .managerMobileNav a strong, .managerMobileNav button strong { font-size: 10px; }
   .filterChip { min-height: 40px; display: inline-flex; align-items: center; font-size: 13px; }
   .productScreenshotFrame { aspect-ratio: 1.2 / 1; }
   .productScreenshotCard figcaption { padding: 18px; }
