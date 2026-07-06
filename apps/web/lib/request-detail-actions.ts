@@ -104,6 +104,29 @@ function toClosedTerminal(status: RequestStatus) {
   return ['closed', 'declined', 'canceled'].includes(status)
 }
 
+async function getCloseoutBlocker(requestId: string, userId: string) {
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: userId } },
+    select: {
+      id: true,
+      vendorCommercialItems: {
+        where: { status: 'submitted' },
+        select: { id: true },
+      },
+      billingDocuments: {
+        where: { status: { not: 'void' } },
+        select: { totalCents: true, paidCents: true },
+      },
+    },
+  })
+
+  if (!request) return 'Request not found.'
+  if (request.vendorCommercialItems.length > 0) return 'Approve or decline vendor costs before closing this request.'
+  const openBalanceCents = request.billingDocuments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
+  if (openBalanceCents > 0) return 'Mark open billing records paid before closing this request.'
+  return null
+}
+
 function tenantRequestActionUrl(requestId: string, section?: string) {
   return `${getAppBaseUrl('tenant notification links')}/mobile/requests/${requestId}${section ? `#${section}` : ''}`
 }
@@ -128,6 +151,10 @@ export async function updateStatusFormAction(
   if (toStatus === fromStatus) return { error: 'Request is already in that status.' }
   if (!ALLOWED_STATUS_TRANSITIONS[fromStatus]?.includes(toStatus)) return { error: `Cannot move request from ${fromStatus} to ${toStatus}.` }
   if (['declined', 'canceled', 'reopened'].includes(toStatus) && !reason) return { error: 'A reason is required for this status change.' }
+  if (toStatus === 'closed') {
+    const closeoutBlocker = await getCloseoutBlocker(requestId, session.userId)
+    if (closeoutBlocker) return { error: closeoutBlocker }
+  }
 
   let tenantEmail: string | undefined
   let tenantName: string | undefined
@@ -721,15 +748,24 @@ export async function approveVendorCommercialItemAction(
         })
       }
 
-      await upsertVendorRemittanceDraft(tx, {
-        requestId,
-        vendorId: item.vendorId,
-        vendorName: item.vendor.name,
-        vendorEmail: item.vendor.email,
-        userId: session.userId,
-        approvedItemId: item.id,
-      })
     })
+
+    let draftPosted = true
+    try {
+      await prisma.$transaction(async (tx) => {
+        await upsertVendorRemittanceDraft(tx, {
+          requestId,
+          vendorId: item.vendorId,
+          vendorName: item.vendor.name,
+          vendorEmail: item.vendor.email,
+          userId: session.userId,
+          approvedItemId: item.id,
+        })
+      })
+    } catch (error) {
+      draftPosted = false
+      await logServerActionError('vendorCommercialItem.approve.remittanceDraft', error, { requestId, itemId })
+    }
 
     await writeAuditLog({
       orgId: session.userId,
@@ -762,6 +798,9 @@ export async function approveVendorCommercialItemAction(
         bidAmountLabel: `USD ${(item.amountCents / 100).toFixed(2)}`,
         responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
       }), { ownerUserId: session.userId, requestId })
+    }
+    if (!draftPosted) {
+      return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved. Create or update the vendor payment record before closeout.' : 'Vendor cost approved. Create or update the vendor payment record before closeout.' }
     }
     return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
   } catch (error) {

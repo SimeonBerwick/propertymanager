@@ -18,17 +18,20 @@ export default async function TenantMobileLayout({ children }: { children: React
             <h2 style={{ margin: '4px 0' }}>{session.propertyName} - {session.unitLabel}</h2>
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
-          <div className="row" style={{ gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
-            <ThemeToggle />
-            <PushNotificationControl />
-            <Link href={'/mobile' as Route} className="button">Dashboard</Link>
-            <Link href={'/mobile/requests/new' as Route} className="button primary">Report a problem</Link>
-            <Link href={'/support' as Route} className="button">Support</Link>
-            <a className="button" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
-            <form action={tenantMobileSignoutAction}>
-              <button type="submit" className="button">Sign out</button>
-            </form>
-          </div>
+          <details className="actionMenu" style={{ marginLeft: 'auto' }}>
+            <summary>Portal menu</summary>
+            <div className="actionMenuPanel">
+              <Link href={'/mobile' as Route}>Dashboard</Link>
+              <Link href={'/mobile/requests/new' as Route}>Report a problem</Link>
+              <Link href={'/support' as Route}>Support</Link>
+              <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
+              <div className="actionMenuControl"><ThemeToggle /></div>
+              <div className="actionMenuControl"><PushNotificationControl /></div>
+              <form action={tenantMobileSignoutAction}>
+                <button type="submit">Sign out</button>
+              </form>
+            </div>
+          </details>
         </div>
       </section>
       {children}
