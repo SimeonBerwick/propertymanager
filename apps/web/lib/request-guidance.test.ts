@@ -48,6 +48,15 @@ describe('request guidance', () => {
     expect(getAttentionScore(request)).toBeGreaterThan(0)
   })
 
+  it('does not rank fresh requests as vendor cost approvals from stale counts', () => {
+    const request = { ...base, status: 'requested' as const, pendingVendorApprovalCount: 2 }
+
+    expect(getRecommendedAction(request)).toMatchObject({
+      label: 'Start review',
+    })
+    expect(getAttentionScore(request)).toBeLessThan(7)
+  })
+
   it('keeps closed requests actionable when a vendor balance is still owed', () => {
     const request = { ...base, status: 'closed' as const, vendorPayableBalanceCents: 50000, vendorPayableTo: 'ACME Plumbing' }
 

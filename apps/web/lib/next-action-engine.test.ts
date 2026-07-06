@@ -143,6 +143,22 @@ describe('next action engine', () => {
     })
   })
 
+  it('does not show vendor cost approval for a new intake request even if stale counts exist', () => {
+    expect(getRequestNextAction({ ...base, status: 'requested' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
+      primaryLabel: 'Start review',
+      href: '/requests/r1#actions',
+      actionType: 'claim_request',
+    })
+  })
+
+  it('asks for vendor assignment before vendor cost approval when no vendor has been chosen', () => {
+    expect(getRequestNextAction({ ...base, status: 'approved' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
+      primaryLabel: 'Invite vendors to bid',
+      href: '/requests/r1#actions',
+      actionType: 'assign_vendor',
+    })
+  })
+
   it('sorts dashboard actions by the priority ladder', () => {
     const actions = buildDashboardNextActions([
       { ...base, id: 'payment', status: 'completed' as const, vendorPayableBalanceCents: 50000 },

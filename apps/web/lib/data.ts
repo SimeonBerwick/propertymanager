@@ -178,8 +178,9 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayablePaidCents: vendorPayable?.paidCents,
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
     billingOpenBalanceCents,
-    pendingVendorApprovalCount: Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted').length : undefined,
-    pendingBidCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : undefined,
+    pendingVendorApprovalCount: Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted' && item.itemType !== 'bid').length : undefined,
+    pendingBidCount: (Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : 0)
+      + (Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted' && item.itemType === 'bid').length : 0),
     activeTenderInviteCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => ['invited', 'viewed'].includes(invite.status)).length : undefined,
   }
 }
@@ -505,7 +506,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           },
           vendorCommercialItems: {
             where: { status: 'submitted' },
-            select: { id: true, status: true },
+            select: { id: true, status: true, itemType: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -647,7 +648,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
             },
             vendorCommercialItems: {
               where: { status: 'submitted' },
-              select: { id: true, status: true },
+              select: { id: true, status: true, itemType: true },
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -705,7 +706,20 @@ export async function getRequestDetailData(requestId: string, userId: string): P
           },
         },
         vendorCommercialItems: {
-          include: { vendor: true },
+          select: {
+            id: true,
+            requestId: true,
+            vendorId: true,
+            itemType: true,
+            status: true,
+            currency: true,
+            amountCents: true,
+            title: true,
+            description: true,
+            submittedAt: true,
+            createdAt: true,
+            vendor: { select: { name: true } },
+          },
           orderBy: { submittedAt: 'desc' },
         },
       },
@@ -854,9 +868,6 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       amountCents: item.amountCents,
       title: item.title,
       description: item.description ?? undefined,
-      attachmentUrl: item.attachmentUrl ?? undefined,
-      attachmentName: item.attachmentName ?? undefined,
-      attachmentContentType: item.attachmentContentType ?? undefined,
       submittedAt: item.submittedAt.toISOString(),
       createdAt: item.createdAt.toISOString(),
     }))
