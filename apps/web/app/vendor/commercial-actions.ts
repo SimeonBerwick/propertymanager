@@ -7,6 +7,7 @@ import { centsFromDollars } from '@/lib/billing-utils'
 import { writeAuditLog } from '@/lib/audit-log'
 import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 import { logServerActionError } from '@/lib/observability'
+import { cleanupVendorAttachment, saveVendorAttachment, validateVendorAttachment } from '@/lib/vendor-commercial-attachment-upload'
 
 export type VendorCommercialActionState = { error: string | null; success?: boolean }
 
@@ -20,6 +21,8 @@ export async function createVendorCommercialItemAction(
   const amount = String(formData.get('amount') ?? '')
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
+  const attachmentFile = formData.get('attachment')
+  const attachment = attachmentFile instanceof File && attachmentFile.size > 0 ? attachmentFile : null
 
   if (!requestId) return { error: 'Request is required.' }
   if (!['bid', 'service_fee', 'overcost', 'bill_to_property_manager'].includes(itemType)) return { error: 'Invalid submission type.' }
@@ -27,6 +30,8 @@ export async function createVendorCommercialItemAction(
 
   const amountCents = centsFromDollars(amount)
   if (amountCents == null || amountCents <= 0) return { error: 'Valid USD amount is required.' }
+  const attachmentError = await validateVendorAttachment(attachment)
+  if (attachmentError) return { error: attachmentError }
 
   const request = await prisma.maintenanceRequest.findFirst({
     where: {
@@ -37,6 +42,8 @@ export async function createVendorCommercialItemAction(
   })
 
   if (!request) return { error: 'This request is not available for your vendor account.' }
+
+  const savedAttachment = await saveVendorAttachment(attachment)
 
   try {
     const item = await prisma.vendorCommercialItem.create({
@@ -49,6 +56,9 @@ export async function createVendorCommercialItemAction(
         amountCents,
         title,
         description: description || null,
+        attachmentUrl: savedAttachment?.url ?? null,
+        attachmentName: savedAttachment?.name ?? null,
+        attachmentContentType: savedAttachment?.contentType ?? null,
       },
     })
 
@@ -59,7 +69,7 @@ export async function createVendorCommercialItemAction(
       entityId: item.id,
       action: 'vendorCommercialItem.created',
       summary: `Vendor submitted ${itemType} for request ${request.id}.`,
-      metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title },
+      metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title, hasAttachment: Boolean(savedAttachment) },
     })
 
     revalidatePath('/vendor')
@@ -68,6 +78,7 @@ export async function createVendorCommercialItemAction(
     revalidatePath(`/requests/${request.id}`)
     return { error: null, success: true }
   } catch (error) {
+    await cleanupVendorAttachment(savedAttachment)
     await logServerActionError('vendorCommercialItem.create', error, {
       requestId: request.id,
       vendorId: session.vendorId,

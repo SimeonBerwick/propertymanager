@@ -12,6 +12,9 @@ export interface VendorCommercialItemView {
   amountCents: number
   title: string
   description?: string
+  attachmentUrl?: string
+  attachmentName?: string
+  attachmentContentType?: string
   submittedAt: string
   createdAt: string
 }
@@ -23,9 +26,9 @@ export function vendorCommercialTypeLabel(value: VendorCommercialType) {
     case 'service_fee':
       return 'Service fee'
     case 'overcost':
-      return 'Overcost'
+      return 'Extra cost'
     case 'bill_to_property_manager':
-      return 'Bill to property manager'
+      return 'Invoice property manager'
     default:
       return value
   }

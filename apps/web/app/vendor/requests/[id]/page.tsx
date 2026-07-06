@@ -268,6 +268,7 @@ export default async function VendorRequestDetailPage({
               {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
             </div>
             {item.description ? <div>{item.description}</div> : null}
+            {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer">Open bill attachment</a> : null}
           </div>
         )) : <div className="muted">No invoice items submitted yet.</div>}
       </section>

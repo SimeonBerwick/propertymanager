@@ -10,6 +10,7 @@ const CONTENT_TYPES: Record<string, string> = {
   png: 'image/png',
   gif: 'image/gif',
   webp: 'image/webp',
+  pdf: 'application/pdf',
 }
 
 const PRIMARY_PREFIX = 'uploads/requests/'
