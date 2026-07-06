@@ -2,7 +2,7 @@ import './globals.css'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Route } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { logout } from '@/lib/auth-actions'
@@ -36,6 +36,7 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
+  const pathname = (await headers()).get('x-pathname') ?? ''
   const dbAvailable = await isDatabaseAvailable()
   const [tenantPortalSession, vendorPortalSession] = dbAvailable && !session.isLoggedIn
     ? await Promise.all([
@@ -49,7 +50,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       ? '/mobile'
       : vendorPortalSession
         ? '/vendor'
-        : '/'
+        : pathname.startsWith('/mobile')
+          ? '/mobile/auth'
+          : pathname.startsWith('/vendor')
+            ? '/vendor/auth'
+            : '/'
 
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
