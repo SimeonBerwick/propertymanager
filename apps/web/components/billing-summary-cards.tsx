@@ -5,7 +5,7 @@ export function BillingSummaryCards({ documents }: { documents: BillingDocumentV
   const activeDocuments = documents.filter((doc) => doc.status !== 'void')
   const total = activeDocuments.reduce((sum, doc) => sum + doc.totalCents, 0)
   const paid = activeDocuments.reduce((sum, doc) => sum + doc.paidCents, 0)
-  const balance = total - paid
+  const balance = Math.max(total - paid, 0)
   const currency = activeDocuments[0]?.currency ?? documents[0]?.currency ?? 'usd'
 
   return (
@@ -22,8 +22,8 @@ export function BillingSummaryCards({ documents }: { documents: BillingDocumentV
       </div>
       <div className="card metricCard metricWarn">
         <div className="kicker">Still owed</div>
-        <div className="metricValue">{formatMoney(balance, currency)}</div>
-        <div className="muted">Amount that must be settled before closeout.</div>
+        <div className="metricValue">{balance > 0 ? formatMoney(balance, currency) : 'None'}</div>
+        <div className="muted">{balance > 0 ? 'Amount that must be settled before closeout.' : 'No open balance remains.'}</div>
       </div>
     </div>
   )

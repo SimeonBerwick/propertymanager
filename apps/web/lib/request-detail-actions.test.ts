@@ -14,6 +14,7 @@ import {
   approveVendorCommercialItemAction,
   awardTenderInviteAction,
   updateDispatchFormAction,
+  updateTenantBillbackAction,
 } from '@/lib/request-detail-actions'
 import { scaffoldLandlord, createMaintenanceRequest } from '@/test/helpers'
 
@@ -319,6 +320,67 @@ describe('addCommentFormAction', () => {
 
     const comments = await prisma.requestComment.findMany({ where: { requestId: request.id } })
     expect(comments[0].visibility).toBe('external')
+  })
+})
+
+describe('updateTenantBillbackAction', () => {
+  beforeEach(() => {
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('saves no tenant chargeback without requiring a reason', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      tenantBillbackDecision: 'bill_tenant',
+      tenantBillbackAmountCents: 15000,
+      tenantBillbackReason: 'Tenant damage',
+    })
+
+    const result = await updateTenantBillbackAction(
+      PREV,
+      formData({ requestId: request.id, tenantBillbackDecision: 'none' }),
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+
+    const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(updated?.tenantBillbackDecision).toBe('none')
+    expect(updated?.tenantBillbackAmountCents).toBe(0)
+    expect(updated?.tenantBillbackReason).toBeNull()
+    expect(updated?.tenantBillbackDecidedAt).not.toBeNull()
+  })
+
+  test('saves waived tenant charge without requiring a reason', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, { orgId: user.id })
+
+    const result = await updateTenantBillbackAction(
+      PREV,
+      formData({ requestId: request.id, tenantBillbackDecision: 'waived' }),
+    )
+
+    expect(result.error).toBeNull()
+
+    const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(updated?.tenantBillbackDecision).toBe('waived')
+    expect(updated?.tenantBillbackAmountCents).toBe(0)
+  })
+
+  test('requires an amount and reason before charging the tenant', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, { orgId: user.id })
+
+    const result = await updateTenantBillbackAction(
+      PREV,
+      formData({ requestId: request.id, tenantBillbackDecision: 'bill_tenant', tenantBillbackAmount: '125.00' }),
+    )
+
+    expect(result.error).toMatch(/reason/i)
   })
 })
 

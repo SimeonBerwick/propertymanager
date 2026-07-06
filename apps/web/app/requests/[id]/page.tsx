@@ -53,6 +53,13 @@ function tenderInviteLabel(status: string) {
   return status.replaceAll('_', ' ')
 }
 
+function tenantBillbackLabel(decision?: string) {
+  if (decision === 'bill_tenant') return 'Charge tenant'
+  if (decision === 'waived') return 'Waived'
+  if (decision === 'none') return 'No tenant chargeback'
+  return 'Not decided'
+}
+
 export default async function RequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ comment?: string }> }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -141,6 +148,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           : 'Choose the next clear step for this request.'
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
+  const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
+  const needsTenantChargeDocument = tenantChargebackCents > 0
+  const needsVendorPaymentDocument = vendorOutstandingCents > 0
+  const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
+  const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument
 
   return (
     <div className="stack requestDetailPage">
@@ -463,7 +475,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 1: Tenant chargeback decision</div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Current: {data.request.tenantBillbackDecision ?? 'none'}
+              Current: {tenantBillbackLabel(data.request.tenantBillbackDecision)}
               {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
                 ? ` - $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
                 : ''}
@@ -480,11 +492,17 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 2: Vendor payment amount</div>
-            <div className="detailFactsGrid" style={{ marginTop: 10 }}>
-              <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
-              <div><strong>Still owed</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
-            </div>
+            {vendorOutstandingCents > 0 ? (
+              <div className="detailFactsGrid" style={{ marginTop: 10 }}>
+                <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
+                <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
+                <div><strong>Still owed</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
+              </div>
+            ) : (
+              <div className="notice success" style={{ marginTop: 10 }}>
+                <strong>No vendor payment due.</strong> There is no open vendor balance on this request.
+              </div>
+            )}
             {(pendingVendorExtrasCents > 0 || approvedVendorExtrasCents > 0 || postedVendorPaymentBalanceCents > 0) ? (
               <details className="advancedDisclosure" style={{ marginTop: 10 }}>
                 <summary>Show the math</summary>
@@ -502,21 +520,23 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 {closeoutLanguage.detail}
               </div>
             ) : null}
-            <div className="muted" style={{ marginTop: 10 }}>
-              Approved vendor bids and overages create the vendor amount owed. Track payment records here, but handle money movement outside the app. Do not close the request until vendor payment and any tenant chargeback are settled.
-            </div>
+            {vendorOutstandingCents > 0 ? (
+              <div className="muted" style={{ marginTop: 10 }}>
+                Approved vendor bids and overages create the vendor amount owed. Track payment records here, but handle money movement outside the app. Do not close the request until vendor payment and any tenant chargeback are settled.
+              </div>
+            ) : null}
           </div>
-          {billingOpenBalanceCents === 0 && data.billingDocuments.length ? (
+          {billingIsSettled ? (
             <div className="notice success">
               <strong>Billing settled.</strong> No open tenant charges or vendor balances remain.
             </div>
           ) : (
             <div className="notice">
-              <strong>Closeout checklist:</strong> approve vendor costs, decide whether the tenant is charged, create/send the tenant charge or vendor payment record, mark every open balance paid, then close the request.
+              <strong>Closeout checklist:</strong> {needsTenantChargeDocument ? 'create/send the tenant charge, ' : ''}{needsVendorPaymentDocument ? 'record the vendor payment, ' : ''}mark every open balance paid, then close the request.
             </div>
           )}
-          <BillingSummaryCards documents={data.billingDocuments} />
-          {hasVendorChosen ? (
+          {data.billingDocuments.length ? <BillingSummaryCards documents={data.billingDocuments} /> : null}
+          {hasVendorChosen && needsBillingDocument ? (
             <BillingDocumentForm
               requestId={data.request.id}
               tenantEmail={data.request.submittedByEmail}
@@ -525,10 +545,14 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
               tenantBillbackReason={data.request.tenantBillbackReason}
             />
-          ) : (
+          ) : billingIsSettled ? (
+            <div className="muted">No billing document is needed for this request right now.</div>
+          ) : !hasVendorChosen ? (
             <div className="notice">Choose a vendor before creating invoices or payments for this request.</div>
+          ) : (
+            <div className="notice">No billing document can be created until there is a tenant charge or vendor balance.</div>
           )}
-          <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
+          {data.billingDocuments.length ? <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} /> : null}
           <BillingEventList documents={data.billingDocuments} />
         </div>
       </SectionCard>
