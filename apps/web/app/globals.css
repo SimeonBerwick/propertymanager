@@ -921,7 +921,6 @@ body { min-height: 100vh; }
   .managerHeader .brandLogo { width: 190px; }
   .managerHeader .nav { display: none; }
   .demoModeNotice { padding: 9px 11px; font-size: 13px; line-height: 1.4; }
-  .dashboardWorkspaceDisclosure:not([open]) { display: none; }
   .card { padding: 16px; border-radius: 16px; }
   .card:has(.table) { min-width: 0; overflow-x: auto; }
   .pageTitle { font-size: 34px; }

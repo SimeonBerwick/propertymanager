@@ -72,7 +72,7 @@ export function getRecommendedAction(request: GuidanceRequest) {
 export function getAttentionScore(request: GuidanceRequest) {
   if ((request.pendingVendorApprovalCount ?? 0) > 0) return 7
   if ((request.pendingBidCount ?? 0) > 0) return 6
-  if ((request.billingOpenBalanceCents ?? request.vendorPayableBalanceCents ?? 0) > 0) return request.status === 'closed' ? 7 : 6
+  if ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0) return request.status === 'closed' ? 7 : 6
   if (['closed', 'declined', 'canceled'].includes(request.status)) return 0
   let score = request.urgency === 'urgent' ? 8 : request.urgency === 'high' ? 5 : 0
   const recommendation = getRecommendedAction(request)

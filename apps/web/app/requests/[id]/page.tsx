@@ -60,6 +60,15 @@ function tenantBillbackLabel(decision?: string) {
   return 'Not decided'
 }
 
+function WorkOrderContext({ request }: { request: { title: string; propertyName: string; unitLabel: string } }) {
+  return (
+    <div className="inlineNotice">
+      <strong>{request.title}</strong>
+      <span>{request.propertyName} - {request.unitLabel}</span>
+    </div>
+  )
+}
+
 export default async function RequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ comment?: string }> }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -164,6 +173,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         pendingBidCount: data.request.pendingBidCount,
         activeTenderInviteCount: data.request.activeTenderInviteCount,
         billingOpenBalanceCents,
+        vendorPayableBalanceCents: vendorOutstandingCents,
       }} />
 
       <section className="card requestHero">
@@ -192,6 +202,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
+        <WorkOrderContext request={data.request} />
         <RequestControlPanel
           request={data.request}
           vendors={data.availableVendors}
@@ -209,6 +220,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           title="Approve vendor cost before billing"
           subtitle="This must be approved before vendor payment, tenant chargeback, or closeout."
         >
+          <WorkOrderContext request={data.request} />
           <div className="stack" style={{ gap: 12 }}>
             {pendingVendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow spotlightSuccess">
@@ -472,6 +484,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <div id="billing">
       <SectionCard kicker="Billing records" title="Billing records, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
+          <WorkOrderContext request={data.request} />
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 1: Tenant chargeback decision</div>
             <div className="muted" style={{ marginTop: 6 }}>

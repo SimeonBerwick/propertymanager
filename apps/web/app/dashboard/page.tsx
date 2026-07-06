@@ -104,8 +104,8 @@ export default async function DashboardPage({
       ) : null}
       {!isQueueView ? <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} /> : null}
 
-      <details className={`advancedDisclosure dashboardWorkspaceDisclosure ${isQueueView ? 'requestQueueDisclosure' : ''}`} open={isQueueView}>
-        <summary>{isQueueView ? 'Requests' : 'Open full maintenance queue and workspace tools'}</summary>
+      <details className={`advancedDisclosure dashboardWorkspaceDisclosure ${isQueueView ? 'requestQueueDisclosure' : ''}`} open>
+        <summary>{isQueueView ? 'Requests' : 'Hide full maintenance queue and workspace tools'}</summary>
         <div className="stack dashboardWorkspace">
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
