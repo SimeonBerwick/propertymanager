@@ -62,7 +62,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!session.isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const url = new URL('/login', request.url)
+    url.searchParams.set('error', 'session-expired')
+    return NextResponse.redirect(url)
   }
 
   if (pathname.startsWith('/account/settings/deletion')) {
