@@ -29,6 +29,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   vendorPayablePaidCents?: number
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents: number
+  pendingVendorApprovalCount?: number
   pendingBidCount?: number
   activeTenderInviteCount?: number
 }
@@ -177,6 +178,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayablePaidCents: vendorPayable?.paidCents,
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
     billingOpenBalanceCents,
+    pendingVendorApprovalCount: Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted').length : undefined,
     pendingBidCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : undefined,
     activeTenderInviteCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => ['invited', 'viewed'].includes(invite.status)).length : undefined,
   }
@@ -501,6 +503,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
             where: { status: { in: ['bid_submitted', 'invited', 'viewed'] } },
             select: { id: true, status: true },
           },
+          vendorCommercialItems: {
+            where: { status: 'submitted' },
+            select: { id: true, status: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -637,6 +643,10 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
             },
             tenderInvites: {
               where: { status: 'bid_submitted' },
+              select: { id: true, status: true },
+            },
+            vendorCommercialItems: {
+              where: { status: 'submitted' },
               select: { id: true, status: true },
             },
           },

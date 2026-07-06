@@ -117,7 +117,17 @@ describe('next action engine', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, billingOpenBalanceCents: 50000 })).toMatchObject({
       priority: 'normal',
       primaryLabel: 'Settle billing before closeout',
-      reason: 'A billing document still has an open balance.',
+      reason: 'Vendor payment or a billing document still has an open balance.',
+      href: '/requests/r1#billing',
+      actionType: 'collect_payment_before_closeout',
+    })
+  })
+
+  it('keeps completed requests out of closeout when vendor payment is owed before a document exists', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, billingOpenBalanceCents: 0, vendorPayableBalanceCents: 50000 })).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Settle billing before closeout',
+      reason: 'Vendor payment or a billing document still has an open balance.',
       href: '/requests/r1#billing',
       actionType: 'collect_payment_before_closeout',
     })

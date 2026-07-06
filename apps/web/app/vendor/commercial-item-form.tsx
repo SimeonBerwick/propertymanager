@@ -5,7 +5,13 @@ import { createVendorCommercialItemAction, type VendorCommercialActionState } fr
 
 const INITIAL_STATE: VendorCommercialActionState = { error: null }
 
-export function VendorCommercialItemForm({ requestId }: { requestId: string }) {
+export function VendorCommercialItemForm({
+  requestId,
+  defaultItemType = 'bid',
+}: {
+  requestId: string
+  defaultItemType?: 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+}) {
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
 
   return (
@@ -15,11 +21,11 @@ export function VendorCommercialItemForm({ requestId }: { requestId: string }) {
       {state.success ? <div className="notice success">Invoice item submitted to the property manager.</div> : null}
       <label className="field">
         <span className="field-label">Submission type</span>
-        <select className="input" name="itemType" defaultValue="bid">
+        <select className="input" name="itemType" defaultValue={defaultItemType}>
           <option value="bid">Bid</option>
           <option value="service_fee">Service fee</option>
-          <option value="overcost">Overcost</option>
-          <option value="bill_to_property_manager">Bill to property manager</option>
+          <option value="overcost">Extra cost</option>
+          <option value="bill_to_property_manager">Invoice property manager</option>
         </select>
       </label>
       <div className="grid cols-2">

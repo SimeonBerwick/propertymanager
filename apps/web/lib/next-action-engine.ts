@@ -150,8 +150,8 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:scheduled`, primaryLabel: 'Wait for appointment', reason: 'The vendor is scheduled. No manager action is needed right now.', group: 'Monitoring', priority: 'low', actionType: 'monitor_scheduled_work', score: SCORE.routine }
   }
 
-  if ((request.billingOpenBalanceCents ?? request.vendorPayableBalanceCents ?? 0) > 0) {
-    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'A billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
+  if ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0) {
+    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'Vendor payment or a billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
 
   if (request.status === 'completed') {
