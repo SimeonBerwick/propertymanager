@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <div className="page">
           {!dbAvailable && (
             <div
-              className="notice"
+              className="notice demoModeNotice"
               style={{
                 marginBottom: 16,
                 background: '#fff8e1',
@@ -69,12 +69,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 fontWeight: 500,
               }}
             >
-              <strong>Demo Mode — Seed Data — Read-Only</strong>
+              <strong>Demo Mode - Seed Data - Read-Only</strong>
               {': '}
               No database is connected. All data shown is sample data. Writes (submitting requests, status updates, comments, creating properties) are disabled.
             </div>
           )}
-          <header className="header">
+          <header className={`header ${session.isLoggedIn ? 'managerHeader' : ''}`}>
             <BrandLogo href={logoHref} />
             <div className="nav">
               {session.isLoggedIn && (

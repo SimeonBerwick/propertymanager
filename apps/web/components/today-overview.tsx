@@ -80,21 +80,6 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
         )}
       </section>
 
-      {!primaryAction ? (
-        <SectionCard
-          kicker="All caught up"
-          title="No immediate decisions"
-          subtitle="Nothing needs a manager decision right now."
-          action={<Link href="/submit" className="button">Share request form</Link>}
-        >
-          <div className="caughtUpPanel">
-            {hasScheduledToday ? <Link href="/dashboard?queue=scheduled-today">Monitor today's appointments</Link> : null}
-            <Link href="/dashboard?queue=open">Review open work</Link>
-          </div>
-        </SectionCard>
-      ) : null}
-
-
       {actionGroups.length ? (
         <div id="needs-your-action">
           <SectionCard
