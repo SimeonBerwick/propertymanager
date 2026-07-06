@@ -18,6 +18,7 @@ import { AndroidRuntimeMarker } from './android-runtime-marker'
 import { PublicMarketingNav } from '@/components/public-marketing-nav'
 import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getVendorSession } from '@/lib/vendor-session'
+import { RouteScrollManager } from '@/components/route-scroll-manager'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -60,6 +61,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <body>
         <MenuBehavior />
+        <RouteScrollManager />
         <AnalyticsTracker />
         <AndroidRuntimeMarker />
         <div className="page">

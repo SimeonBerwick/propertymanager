@@ -663,7 +663,13 @@ export async function approveVendorCommercialItemAction(
         requestId,
         request: { property: { ownerId: session.userId } },
       },
-      include: {
+      select: {
+        id: true,
+        requestId: true,
+        vendorId: true,
+        itemType: true,
+        status: true,
+        amountCents: true,
         vendor: true,
         request: { include: { property: true, unit: true } },
       },
@@ -1334,6 +1340,13 @@ async function upsertVendorRemittanceDraft(
     }),
     tx.vendorCommercialItem.findMany({
       where: { requestId: input.requestId, vendorId: input.vendorId, status: { in: ['approved', 'submitted'] } },
+      select: {
+        id: true,
+        itemType: true,
+        status: true,
+        amountCents: true,
+        title: true,
+      },
       orderBy: { submittedAt: 'asc' },
     }),
   ])
