@@ -12,9 +12,10 @@ interface SubmitRequestFormProps {
   properties: Property[]
   units: Unit[]
   orgSlug?: string
+  managerMode?: boolean
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -26,7 +27,7 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
   const [urgency, setUrgency] = useState('medium')
   const [hydrated, setHydrated] = useState(false)
   const draftEventSent = useRef(false)
-  const draftKey = `pm-intake-draft:${orgSlug ?? 'default'}`
+  const draftKey = `pm-intake-draft:${orgSlug ?? 'default'}:${managerMode ? 'manager' : 'tenant'}`
 
   const filteredUnits = useMemo(
     () => units.filter((unit) => unit.propertyId === selectedPropertyId),
@@ -89,8 +90,13 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
   return (
     <form action={formAction} className="stack">
       {orgSlug && <input type="hidden" name="orgSlug" value={orgSlug} />}
+      {managerMode && <input type="hidden" name="managerMode" value="true" />}
       {state.error && <div className="notice error">{state.error}</div>}
-      <div className="notice">Drafts save automatically on this device. You can close this page and continue later.</div>
+      <div className="notice">
+        {managerMode
+          ? 'Drafts save automatically on this device while you create the work order.'
+          : 'Drafts save automatically on this device. You can close this page and continue later.'}
+      </div>
 
       <div className="grid cols-2">
         <label className="field">
@@ -133,13 +139,13 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
 
       <div className="grid cols-2">
         <label className="field">
-          <span className="field-label">Your name</span>
-          <input className="input" type="text" name="tenantName" placeholder="Taylor Reed" value={tenantName} onChange={(event) => setTenantName(event.target.value)} required />
+          <span className="field-label">{managerMode ? 'Resident name' : 'Your name'}</span>
+          <input className="input" type="text" name="tenantName" placeholder={managerMode ? 'Resident or caller name' : 'Taylor Reed'} value={tenantName} onChange={(event) => setTenantName(event.target.value)} required />
         </label>
 
         <label className="field">
-          <span className="field-label">Your email</span>
-          <input className="input" type="email" name="tenantEmail" placeholder="taylor@example.com" value={tenantEmail} onChange={(event) => setTenantEmail(event.target.value)} required />
+          <span className="field-label">{managerMode ? 'Resident email' : 'Your email'}</span>
+          <input className="input" type="email" name="tenantEmail" placeholder={managerMode ? 'resident@example.com' : 'taylor@example.com'} value={tenantEmail} onChange={(event) => setTenantEmail(event.target.value)} required />
         </label>
       </div>
 
@@ -202,7 +208,7 @@ export function SubmitRequestForm({ properties, units, orgSlug }: SubmitRequestF
       </label>
 
       <button type="submit" className="button primary" disabled={isPending || !selectedUnitId}>
-        {isPending ? 'Submitting…' : 'Submit maintenance request'}
+        {isPending ? 'Submitting...' : managerMode ? 'Create work order' : 'Submit maintenance request'}
       </button>
     </form>
   )

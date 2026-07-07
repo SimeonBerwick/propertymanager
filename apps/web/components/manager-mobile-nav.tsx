@@ -8,7 +8,7 @@ import { logout } from '@/lib/auth-actions'
 const ITEMS: Array<{ href: Route, label: string, icon: string }> = [
   { href: '/dashboard', label: 'Home', icon: '⌂' },
   { href: '/dashboard?queue=open', label: 'Requests', icon: '☷' },
-  { href: '/submit', label: 'Add', icon: '+' },
+  { href: '/submit?mode=manager', label: 'Add', icon: '+' },
   { href: '/ops', label: 'Activity', icon: '↻' },
   { href: '/account/settings', label: 'More', icon: '•••' },
 ]

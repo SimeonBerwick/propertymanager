@@ -68,7 +68,7 @@ export default async function OpsPage({
           </div>
           <div className="requestHeroMeta">
             {primaryAction ? (
-              <Link href={(primaryAction.href ?? '/ops') as Route} className="button primary">Do this next</Link>
+              <Link href={(primaryAction.href ?? '/ops') as Route} className="button primary">Next step</Link>
             ) : null}
             <Link href="/dashboard" className="button">Dashboard</Link>
             <details className="actionMenu">
@@ -107,7 +107,7 @@ export default async function OpsPage({
 
       <section id="ops-actions" className="card stack">
         <div>
-          <div className="kicker">Do next</div>
+          <div className="kicker">Next step</div>
           <h3 style={{ marginTop: 4 }}>Operational action queue</h3>
         </div>
         {opsActions.length ? (

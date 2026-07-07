@@ -180,7 +180,7 @@ export default async function AccessPage() {
             <div className="muted">{primaryAction ? primaryAction.reason : 'Grant, resend, or remove tenant and vendor access from one place.'}</div>
           </div>
           <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            {primaryAction ? <Link href={(primaryAction.href ?? '/access') as Route} className="button primary">Do this next</Link> : null}
+            {primaryAction ? <Link href={(primaryAction.href ?? '/access') as Route} className="button primary">Next step</Link> : null}
             <Link href="/properties" className="button">Properties</Link>
             <Link href="/vendors" className="button">Vendors</Link>
           </div>
@@ -207,7 +207,7 @@ export default async function AccessPage() {
 
       <section className="card stack">
         <div>
-          <div className="kicker">Do next</div>
+          <div className="kicker">Next step</div>
           <h3 style={{ marginTop: 4 }}>Access action queue</h3>
         </div>
         {accessActions.length ? (
