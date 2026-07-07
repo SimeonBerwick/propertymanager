@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Route } from 'next'
+import { PortalMainAppLink } from '@/components/portal-main-app-link'
 
 export default async function MobileAuthLandingPage({
   searchParams,
@@ -19,7 +20,7 @@ export default async function MobileAuthLandingPage({
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/mobile/auth/login' as Route} className="button primary">Tenant sign in</Link>
-        <Link href={'/' as Route} className="button">Back to main app</Link>
+        <PortalMainAppLink />
       </div>
     </div>
   )
