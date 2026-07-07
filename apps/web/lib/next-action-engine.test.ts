@@ -115,6 +115,23 @@ describe('next action engine', () => {
     })
   })
 
+  it('surfaces tenant appointment messages as the next manager review', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'scheduled' as const,
+      assignedVendorName: 'ACME Plumbing',
+      vendorScheduledStart: '2026-06-20T12:00:00.000Z',
+      reviewState: 'needs_follow_up' as const,
+      reviewNote: 'Tenant requested help with the appointment or repair.',
+    })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Review tenant appointment request',
+      reason: 'The tenant asked for help with the appointment or repair.',
+      href: '/requests/r1?comment=tenant#tenant-message-review',
+      actionType: 'review_tenant_message',
+    })
+  })
+
   it('closes completed requests when payment is settled', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, claimedAt: '2026-06-19T12:00:00.000Z' })).toMatchObject({
       priority: 'normal',

@@ -121,16 +121,27 @@ export async function sendTenantWorkOrderMessageAction(
 
   if (!request) return { error: 'Request not found.' }
 
-  await prisma.requestComment.create({
-    data: {
-      requestId,
-      body: `Tenant message: ${body}`,
-      visibility: 'external',
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.requestComment.create({
+      data: {
+        requestId,
+        body: `Tenant message: ${body}`,
+        visibility: 'external',
+      },
+    })
+
+    await tx.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        reviewState: 'needs_follow_up',
+        reviewNote: 'Tenant requested help with the appointment or repair.',
+      },
+    })
+
   })
 
   const appUrl = getAppBaseUrl('tenant work order messages')
-  const managerActionUrl = `${appUrl}/requests/${requestId}?comment=tenant#communication`
+  const managerActionUrl = `${appUrl}/requests/${requestId}?comment=tenant#tenant-message-review`
   const tenantName = request.submittedByName ?? session.tenantName
   const tenantEmail = request.submittedByEmail ?? session.email
   const text = tenantMessageText({
@@ -165,5 +176,7 @@ export async function sendTenantWorkOrderMessageAction(
 
   revalidatePath(`/mobile/requests/${requestId}`)
   revalidatePath('/mobile')
+  revalidatePath(`/requests/${requestId}`)
+  revalidatePath('/dashboard')
   return { error: null, success: true }
 }

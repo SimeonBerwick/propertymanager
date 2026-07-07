@@ -17,7 +17,7 @@ const LABELS: Record<string, string> = {
   'scheduled-today': 'Today',
   overdue: 'Overdue',
   'follow-up': 'Follow up',
-  review: 'Needs review',
+  review: 'Review work',
 }
 
 export function RequestFlowBadge({ request }: { request: Pick<MaintenanceRequest, 'status' | 'reviewState' | 'vendorScheduledEnd' | 'vendorScheduledStart'> }) {
