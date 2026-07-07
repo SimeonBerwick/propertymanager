@@ -3,10 +3,11 @@ import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
 import { getRequestNextAction } from '@/lib/recommended-actions'
 
 type GuidanceRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents?: number
+  vendorBillPending?: boolean
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number

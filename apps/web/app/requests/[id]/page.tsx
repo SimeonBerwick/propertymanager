@@ -126,6 +126,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const approvedVendorExtrasCents = data.vendorCommercialItems
     .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
+  const vendorCommercialChargeRecords = data.vendorCommercialItems
+    .filter((item) => ['approved', 'submitted'].includes(item.status) && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
   const pendingVendorExtrasCents = data.vendorCommercialItems
     .filter((item) => item.status === 'submitted' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
@@ -136,6 +138,12 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const postedVendorPaymentBalanceCents = postedVendorPayments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorPaymentCents, 0)
   const vendorOutstandingCents = postedVendorPaymentBalanceCents + unpostedVendorOwedCents
+  const hasVendorBillOrChargeOnRecord = Boolean(acceptedVendorBid || awardedTenderBid)
+    || vendorCommercialChargeRecords.length > 0
+    || postedVendorPayments.length > 0
+  const vendorBillPending = data.request.status === 'completed'
+    && hasVendorChosen
+    && !hasVendorBillOrChargeOnRecord
   const billingOpenBalanceCents = data.billingDocuments
     .filter((doc) => doc.status !== 'void')
     .reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
@@ -196,7 +204,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const needsTenantChargeDocument = tenantChargebackCents > 0
   const needsVendorPaymentDocument = vendorOutstandingCents > 0
   const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
-  const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument
+  const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
 
   return (
     <div className="stack requestDetailPage">
@@ -209,6 +217,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         activeTenderInviteCount: data.request.activeTenderInviteCount,
         billingOpenBalanceCents,
         vendorPayableBalanceCents: vendorOutstandingCents,
+        vendorBillPending,
       }} />
 
       <section className="card requestHero">
@@ -610,7 +619,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 2: Vendor payment amount</div>
-            {vendorOutstandingCents > 0 ? (
+            {vendorBillPending ? (
+              <div className="notice" style={{ marginTop: 10 }}>
+                <strong>Awaiting vendor bill.</strong> Work is marked complete, but no vendor service charge, invoice, or payment amount is recorded yet. Do not close this request until the vendor bill is submitted or entered.
+              </div>
+            ) : vendorOutstandingCents > 0 ? (
               <div className="detailFactsGrid" style={{ marginTop: 10 }}>
                 <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
                 <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
@@ -638,7 +651,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 {closeoutLanguage.detail}
               </div>
             ) : null}
-            {vendorOutstandingCents > 0 ? (
+            {vendorBillPending ? (
+              <div className="muted" style={{ marginTop: 10 }}>
+                The vendor still needs to submit the service charge or final invoice. If the vendor cannot submit it through the portal, enter the vendor payment amount after receiving it outside the app.
+              </div>
+            ) : vendorOutstandingCents > 0 ? (
               <div className="muted" style={{ marginTop: 10 }}>
                 Approved vendor bids and overages create the vendor amount owed. Track payment records here, but handle money movement outside the app. Do not close the request until vendor payment and any tenant chargeback are settled.
               </div>
@@ -650,7 +667,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           ) : (
             <div className="notice">
-              <strong>Closeout checklist:</strong> {needsTenantChargeDocument ? 'create/send the tenant charge, ' : ''}{needsVendorPaymentDocument ? 'record the vendor payment, ' : ''}mark every open balance paid, then close the request.
+              <strong>Closeout checklist:</strong> {vendorBillPending ? 'get the vendor bill, ' : ''}{needsTenantChargeDocument ? 'create/send the tenant charge, ' : ''}{needsVendorPaymentDocument ? 'record the vendor payment, ' : ''}mark every open balance paid, then close the request.
             </div>
           )}
           {data.billingDocuments.length ? <BillingSummaryCards documents={data.billingDocuments} /> : null}

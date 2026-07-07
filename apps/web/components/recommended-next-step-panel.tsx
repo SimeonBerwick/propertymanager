@@ -4,10 +4,11 @@ import type { MaintenanceRequest } from '@/lib/types'
 import { getRecommendedAction } from '@/lib/request-guidance'
 
 type RecommendedStepRequest = Pick<MaintenanceRequest,
-  'id' | 'unitId' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'unitId' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorName' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents?: number
+  vendorBillPending?: boolean
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number

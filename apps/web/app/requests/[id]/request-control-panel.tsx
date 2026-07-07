@@ -93,6 +93,7 @@ export function RequestControlPanel({
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const canSetAppointment = hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const isCloseoutStage = request.status === 'completed' || request.status === 'closed'
   const appointmentForm = canSetAppointment ? (
     <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }} onSubmit={(event) => blurActiveField(event.currentTarget)}>
       <div>
@@ -142,7 +143,7 @@ export function RequestControlPanel({
       </label>
       <div className="muted">Choose the request status first. Vendor selection and bid invitations are handled in the next step.</div>
       <ActionFeedback error={statusState.error} success={statusState.success ? 'Request status updated.' : null} detail="The tenant and queue now reflect the new status." />
-      <button type="submit" className="button" disabled={statusPending || !nextStatuses.length}>
+      <button type="submit" className={request.status === 'completed' ? 'button primary' : 'button'} disabled={statusPending || !nextStatuses.length}>
         {statusPending ? 'Saving...' : 'Save decision'}
       </button>
     </form>
@@ -187,7 +188,7 @@ export function RequestControlPanel({
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
         </div>
       ) : null}
-      {statusControlPriority === 'primary' && !canSetAppointment ? statusForm : (
+      {(isCloseoutStage || (statusControlPriority === 'primary' && !canSetAppointment)) ? statusForm : (
         <details className="advancedDisclosure">
           <summary>Other request decisions</summary>
           {statusForm}

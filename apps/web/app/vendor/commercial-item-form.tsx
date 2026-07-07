@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { createVendorCommercialItemAction, type VendorCommercialActionState } from './commercial-actions'
 
 const INITIAL_STATE: VendorCommercialActionState = { error: null }
@@ -15,6 +15,7 @@ export function VendorCommercialItemForm({
   context?: 'general' | 'service_call'
 }) {
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
+  const [noCharge, setNoCharge] = useState(false)
   const typeOptions = context === 'service_call'
     ? [
         { value: 'service_fee', label: 'Service charge' },
@@ -32,24 +33,36 @@ export function VendorCommercialItemForm({
   return (
     <form action={action} className="stack">
       <input type="hidden" name="requestId" value={requestId} />
+      <input type="hidden" name="noCharge" value={noCharge ? 'true' : 'false'} />
       {state.error ? <div className="notice error">{state.error}</div> : null}
       {state.success ? <div className="notice success">{state.message ?? 'Invoice item submitted to the property manager.'}</div> : null}
+      {context === 'service_call' ? (
+        <label className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <input
+            type="checkbox"
+            checked={noCharge}
+            onChange={(event) => setNoCharge(event.target.checked)}
+          />
+          <span>No charge for this service call</span>
+        </label>
+      ) : null}
       <label className="field">
         <span className="field-label">Submission type</span>
-        <select className="input" name="itemType" defaultValue={defaultItemType}>
+        <select className="input" name="itemType" defaultValue={defaultItemType} disabled={noCharge}>
           {typeOptions.map((option) => (
             <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>
           ))}
         </select>
+        {noCharge ? <input type="hidden" name="itemType" value="service_fee" /> : null}
       </label>
       <div className="grid cols-2">
         <label className="field">
           <span className="field-label">Title</span>
-          <input className="input" type="text" name="title" placeholder="Replacement parts and labor" required />
+          <input className="input" type="text" name="title" placeholder={noCharge ? 'No charge' : 'Replacement parts and labor'} required={!noCharge} />
         </label>
         <label className="field">
           <span className="field-label">Amount (USD)</span>
-          <input className="input" type="number" name="amount" step="0.01" min="0.01" placeholder="250.00" required />
+          <input className="input" type="number" name="amount" step="0.01" min={noCharge ? '0' : '0.01'} placeholder={noCharge ? '0.00' : '250.00'} required={!noCharge} disabled={noCharge} />
         </label>
       </div>
       <label className="field">
