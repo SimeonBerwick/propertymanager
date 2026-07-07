@@ -117,13 +117,13 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         <TenantWorkOrderMessageForm requestId={request.id} />
       </section>
 
-      {['requested', 'approved', 'reopened'].includes(request.status) ? (
+      {['requested', 'approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status) ? (
         <section className="card stack">
           <div>
             <div className="kicker">Need to stop this request?</div>
             <h3 style={{ marginTop: 4 }}>Cancel</h3>
           </div>
-          <div className="muted">You can cancel before work is underway.</div>
+          <div className="muted">You can cancel before work is underway. If the vendor has already started, send a message instead.</div>
           <TenantRequestCancelForm requestId={request.id} />
         </section>
       ) : null}
