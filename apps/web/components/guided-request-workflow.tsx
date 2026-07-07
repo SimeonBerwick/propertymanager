@@ -8,6 +8,11 @@ type GuidedRequest = Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'rev
   vendorPayableTo?: string
 }
 
+function contextualHref(href: string, requestId: string) {
+  const target = href || `/requests/${requestId}`
+  return target.startsWith('/requests/') ? target.split('#')[0] : target
+}
+
 export function GuidedRequestWorkflow({ request, compact = false }: { request: GuidedRequest, compact?: boolean }) {
   const currentStep = getWorkflowStep(request)
   const recommendation = getRecommendedAction(request)
@@ -31,7 +36,7 @@ export function GuidedRequestWorkflow({ request, compact = false }: { request: G
             <strong>{recommendation.label}</strong>
             <div className="muted">{recommendation.detail}</div>
           </div>
-          <Link href={recommendation.href as Route} className="button primary">Open</Link>
+          <Link href={contextualHref(recommendation.href, request.id) as Route} className="button primary">Open</Link>
         </div>
       ) : null}
     </div>

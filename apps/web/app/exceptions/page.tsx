@@ -10,6 +10,11 @@ import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { SendSummaryForm } from './send-summary-form'
 import { buildDashboardNextActions } from '@/lib/recommended-actions'
 
+function contextualHref(href: string | undefined, requestId?: string) {
+  const target = href ?? (requestId ? `/requests/${requestId}` : '/dashboard')
+  return target.startsWith('/requests/') ? target.split('#')[0] : target
+}
+
 export default async function ExceptionsPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -36,7 +41,7 @@ export default async function ExceptionsPage() {
         <p className="muted" style={{ margin: 0 }}>
           {primaryAction ? primaryAction.reason : 'Auto-flagged and review-blocked work will appear here when it needs a decision.'}
         </p>
-        {primaryAction ? <Link href={(primaryAction.href ?? `/requests/${primaryAction.requestId}`) as Route} className="button primary">Do this next</Link> : null}
+        {primaryAction ? <Link href={contextualHref(primaryAction.href, primaryAction.requestId) as Route} className="button primary">Next step</Link> : null}
         <SendSummaryForm />
       </section>
 
@@ -78,7 +83,7 @@ export default async function ExceptionsPage() {
                       <RequestQuickActions request={request} compact />
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <Link href={(action?.href ?? `/requests/${request.id}`) as Route} className="button primary">{action?.primaryLabel ?? 'Open request'}</Link>
+                      <Link href={contextualHref(action?.href, request.id) as Route} className="button primary">{action?.primaryLabel ?? 'Open request'}</Link>
                     </div>
                   </div>
                 </div>

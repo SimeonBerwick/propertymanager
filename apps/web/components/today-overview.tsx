@@ -28,6 +28,11 @@ function isAccessAction(action: RecommendedAction) {
   return action.group === 'Access help' || action.group === 'Access actions' || action.group === 'Unused access'
 }
 
+function contextualHref(action: RecommendedAction, fallback = '/dashboard') {
+  const href = action.href ?? (action.requestId ? `/requests/${action.requestId}` : fallback)
+  return href.startsWith('/requests/') ? href.split('#')[0] : href
+}
+
 function OverviewMetric({ label, value, href }: { label: string; value: number; href: Route }) {
   return (
     <Link href={href} className="overviewMetric">
@@ -41,7 +46,7 @@ function ActionRow({ action, compact = false }: { action: RecommendedAction, com
   const subtitle = actionSubtitle(action)
 
   return (
-    <Link href={(action.href ?? '/dashboard') as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
+    <Link href={contextualHref(action) as Route} className={`nextActionRow nextActionRow-${action.priority}`}>
       <div>
         <strong>{action.title}</strong>
         {subtitle ? <div className="muted">{subtitle}</div> : null}
@@ -92,7 +97,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
         </div>
         <div className="nextStepActions">
           {primaryAction ? (
-            <Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>
+            <Link href={contextualHref(primaryAction) as Route} className="button primary">{primaryAction.primaryLabel}</Link>
           ) : hasScheduledToday ? (
             <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
           ) : (

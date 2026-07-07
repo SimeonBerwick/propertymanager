@@ -19,6 +19,10 @@ function idSuffix(action: RecommendedAction) {
   return action.id.slice(action.id.indexOf(':') + 1)
 }
 
+function contextualHref(href: string) {
+  return href.startsWith('/requests/') ? href.split('#')[0] : href
+}
+
 function InlineState({ state }: { state: OpsCsvState }) {
   if (state.error) return <div className="notice error">{state.error}</div>
   if (state.success) return <div className="notice success">{state.success}</div>
@@ -127,7 +131,7 @@ function InlineActionControl({ action, vendorRequests }: { action: RecommendedAc
   }
 
   if (action.href && action.href !== '/ops') {
-    return <a className="button compactToggle" href={action.href}>{action.primaryLabel}</a>
+    return <a className="button compactToggle" href={contextualHref(action.href)}>{action.primaryLabel}</a>
   }
 
   return <span className="badge">{action.primaryLabel}</span>
