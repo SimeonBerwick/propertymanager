@@ -16,6 +16,7 @@ import { prisma } from '@/lib/prisma'
 import { sendPushNotification } from '@/lib/push'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
+import { formatAppointmentDateTime, formatAppointmentWindow } from '@/lib/appointment-time'
 
 export interface NotificationMessage {
   to: string
@@ -481,7 +482,7 @@ export interface VendorOverdueUpdateParams {
 }
 
 export function buildVendorOverdueUpdateMessage(p: VendorOverdueUpdateParams): NotificationMessage {
-  const dueLine = p.scheduledEnd ? new Date(p.scheduledEnd).toLocaleString() : 'the scheduled completion time'
+  const dueLine = p.scheduledEnd ? formatAppointmentDateTime(p.scheduledEnd) : 'the scheduled completion time'
   return {
     to: p.vendorEmail,
     subject: `Update overdue - ${p.title}`,
@@ -564,9 +565,7 @@ export interface BillingDocumentNotificationParams {
 }
 
 export function buildTenantVendorUpdateMessage(p: TenantVendorUpdateParams): NotificationMessage {
-  const scheduleLine = p.scheduledStart
-    ? `${new Date(p.scheduledStart).toLocaleString()}${p.scheduledEnd ? ` to ${new Date(p.scheduledEnd).toLocaleString()}` : ''}`
-    : ''
+  const scheduleLine = p.scheduledStart ? formatAppointmentWindow(p.scheduledStart, p.scheduledEnd) : ''
   const isScheduled = p.dispatchStatus === 'scheduled' && Boolean(scheduleLine)
   const headline = isScheduled
     ? 'Your maintenance work has been scheduled.'

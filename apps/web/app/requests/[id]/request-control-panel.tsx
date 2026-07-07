@@ -6,6 +6,7 @@ import { awardTenderInviteAction, type RequestActionState, updateDispatchFormAct
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -43,10 +44,7 @@ function formatBidAmount(cents?: number) {
 
 function formatProposedWindow(invite: RequestTenderView['invites'][number]) {
   if (!invite.proposedStart && !invite.proposedEnd) return null
-  return [
-    invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : null,
-    invite.proposedEnd ? `to ${new Date(invite.proposedEnd).toLocaleString()}` : null,
-  ].filter(Boolean).join(' ')
+  return formatAppointmentWindow(invite.proposedStart, invite.proposedEnd)
 }
 
 function blurActiveField(form: HTMLFormElement) {

@@ -9,6 +9,7 @@ import { applyRequestAutomation } from '@/lib/automation'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import type { DispatchStatus, RequestStatus } from '@/lib/types'
 import { logServerActionError } from '@/lib/observability'
+import { parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
 
 export type VendorResponseState = { error: string | null }
 
@@ -46,8 +47,8 @@ export async function submitVendorResponse(
   const photoError = await validatePhotoFiles(photoFiles, existingPhotoCount)
   if (photoError) return { error: photoError }
 
-  const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
-  const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
+  const scheduledStart = scheduledStartRaw ? parseDateTimeLocalInDisplayTimeZone(scheduledStartRaw) : null
+  const scheduledEnd = scheduledEndRaw ? parseDateTimeLocalInDisplayTimeZone(scheduledEndRaw) : null
   const bidAmountCents = bidAmountRaw ? Math.round(Number(bidAmountRaw) * 100) : null
 
   if (dispatchStatus === 'scheduled' && !scheduledStartRaw) return { error: 'Enter the appointment start time before marking work scheduled.' }
