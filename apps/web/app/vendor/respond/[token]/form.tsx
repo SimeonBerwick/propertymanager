@@ -5,6 +5,11 @@ import { submitVendorResponse, type VendorResponseState } from './actions'
 
 const INITIAL_STATE: VendorResponseState = { error: null }
 
+function blurActiveField(form: HTMLFormElement) {
+  const active = form.ownerDocument.activeElement
+  if (active instanceof HTMLElement) active.blur()
+}
+
 export function VendorResponseForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState(submitVendorResponse, INITIAL_STATE)
   const [response, setResponse] = useState('contacted')
@@ -13,7 +18,7 @@ export function VendorResponseForm({ token }: { token: string }) {
   const showPhotos = response === 'completed'
 
   return (
-    <form action={action} className="stack">
+    <form action={action} className="stack" onSubmit={(event) => blurActiveField(event.currentTarget)}>
       <input type="hidden" name="token" value={token} />
       {state.error ? <div className="notice error">{state.error}</div> : null}
 

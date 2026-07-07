@@ -60,11 +60,13 @@ export default async function VendorRequestDetailPage({
     && viewState.canControlDispatch
     && !request.vendorScheduledStart
     && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
+  const hasAppointmentTime = Boolean(request.vendorScheduledStart)
   const workMarkedComplete = request.status === 'completed'
     || request.dispatchStatus === 'completed'
     || request.reviewState === 'vendor_completed_pending_review'
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
   const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && (viewState.canControlDispatch || viewState.isPendingBid)
+  const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime
 
   return (
     <div className="stack">
@@ -112,9 +114,16 @@ export default async function VendorRequestDetailPage({
             ? 'Send your bid amount, timing, and availability for manager approval.'
             : needsAppointmentTime
               ? 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.'
-              : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
+              : hasAppointmentTime
+                ? 'Update work progress only. Use the cost form below for service charges, parts, estimates, or invoices.'
+                : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
         </div>
-        <VendorRequestResponseForm requestId={request.id} initialResponse={needsAppointmentTime ? 'scheduled' : 'contacted'} />
+        <VendorRequestResponseForm
+          requestId={request.id}
+          initialResponse={needsAppointmentTime ? 'scheduled' : hasAppointmentTime && !viewState.isPendingBid ? 'in_progress' : 'contacted'}
+          hasAppointment={hasAppointmentTime}
+          pendingBid={viewState.isPendingBid}
+        />
       </section> : null}
 
       {request.tenderInvites.length && !isPaidClosed ? <section className="card stack">
@@ -149,7 +158,18 @@ export default async function VendorRequestDetailPage({
           <div className="muted">
             Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.
           </div>
-          <VendorCommercialItemForm requestId={request.id} defaultItemType="overcost" />
+          <VendorCommercialItemForm requestId={request.id} defaultItemType="overcost" context="service_call" />
+        </section>
+      ) : shouldShowServiceCostForm ? (
+        <section className="card stack" id="vendor-invoice-item">
+          <div>
+            <div className="kicker">Cost or invoice</div>
+            <h3 style={{ marginTop: 4 }}>Send service charge, parts, estimate, or invoice</h3>
+          </div>
+          <div className="muted">
+            Use this for the service call charge, parts only, an estimated repair cost, or a final invoice. The property manager must approve it before it becomes payable.
+          </div>
+          <VendorCommercialItemForm requestId={request.id} defaultItemType="service_fee" context="service_call" />
         </section>
       ) : !isPaidClosed ? <details className="advancedDisclosure">
         <summary>Submit a bid, fee, extra cost, or invoice</summary>
