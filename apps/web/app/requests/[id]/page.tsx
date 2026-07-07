@@ -527,7 +527,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
 
           <div id="timeline">
-          <SectionCard kicker="Timeline" title="Work history" subtitle="Vendor visits, status changes, and supporting records.">
+          <SectionCard kicker="Timeline" title="Work history" subtitle="Appointments, status changes, and supporting records.">
             {tenantTimelineMessages.length ? tenantTimelineMessages.map((comment) => (
               <div key={comment.id} className="timelineRow spotlightSuccess">
                 <div style={{ fontWeight: 600 }}>Tenant question</div>

@@ -47,7 +47,7 @@ export default async function VendorDashboardPage({
     }),
   }))
   const openRequests = requestViews.filter(({ request, viewState }) => viewState.isOpenWork && !['closed', 'declined', 'canceled', 'completed'].includes(request.status))
-  const recentRequests = requestViews.filter(({ request }) => ['closed', 'completed'].includes(request.status)).slice(0, 8)
+  const recentRequests = requestViews.filter(({ request }) => ['closed', 'completed', 'canceled'].includes(request.status)).slice(0, 8)
   const pendingBids = requestViews.filter(({ viewState }) => viewState.isPendingBid)
   const awardedRequests = openRequests.filter(({ viewState }) => viewState.isAwardedToViewer)
   const scheduledVisits = openRequests.filter(({ request, viewState }) => viewState.canSeeSchedule && request.vendorScheduledStart)
@@ -151,7 +151,7 @@ export default async function VendorDashboardPage({
         >
           <div className="kicker">Recent work</div>
           <h2>{recentRequests.length}</h2>
-          <div className="muted">Completed requests you can still open</div>
+          <div className="muted">Completed or canceled requests you can still open</div>
         </Link>
         <Link
           href={'/vendor?filter=bids' as Route}
@@ -237,9 +237,9 @@ export default async function VendorDashboardPage({
                 ) : null}
               </div>
               <div style={{ textAlign: 'right' }}>
-                {viewState.isAwardedToViewer && !['completed', 'closed'].includes(request.status) ? (
+                {viewState.isAwardedToViewer && !['completed', 'closed', 'canceled'].includes(request.status) ? (
                   <span className="badge done">Vendor chosen for work</span>
-                ) : ['completed', 'closed'].includes(request.status) ? null : (
+                ) : ['completed', 'closed', 'canceled'].includes(request.status) ? null : (
                   <div className="muted">{viewState.tenderLabel}</div>
                 )}
               </div>
@@ -247,14 +247,14 @@ export default async function VendorDashboardPage({
           </Link>
         )) : (
           <div className="emptyState">
-            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No payment records yet' : filter === 'recent' ? 'No completed work yet' : 'No active work chosen'}</strong>
+            <strong>{filter === 'bids' ? 'No bid invites waiting' : filter === 'billing' ? 'No payment records yet' : filter === 'recent' ? 'No recent work yet' : 'No active work chosen'}</strong>
             <span>
               {filter === 'bids'
                 ? 'New bid invitations will appear here when a property manager asks for pricing.'
                 : filter === 'billing'
                   ? 'Payment records and remittance details will appear here after the property manager posts them. Payments are handled outside the app.'
                   : filter === 'recent'
-                    ? 'Completed and closed requests will move here after work is finished.'
+                    ? 'Completed, closed, and canceled requests will move here after work is finished.'
                     : 'When work is assigned or awarded to this vendor account, it will appear here.'}
             </span>
             {filter === 'open' ? null : <Link href={'/vendor' as Route} className="button">Back to open work</Link>}
