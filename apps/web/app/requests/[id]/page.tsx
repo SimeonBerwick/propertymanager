@@ -69,6 +69,10 @@ function WorkOrderContext({ request }: { request: { title: string; propertyName:
   )
 }
 
+function displayDispatchStatus(status: string) {
+  return status.replaceAll('_', ' ')
+}
+
 export default async function RequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<{ comment?: string }> }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -141,6 +145,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
+  const hasVendorUpdateReview = data.request.reviewState === 'needs_follow_up'
+    || data.request.reviewState === 'vendor_update_pending_review'
+    || data.request.reviewState === 'vendor_completed_pending_review'
   const effectiveVendorScheduledStart = data.request.vendorScheduledStart ?? latestScheduledDispatch?.scheduledStart
   const effectiveVendorScheduledEnd = data.request.vendorScheduledEnd ?? latestScheduledDispatch?.scheduledEnd
   const requestWithEffectiveAppointment = {
@@ -151,6 +158,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
+    : hasVendorUpdateReview
+      ? 'Review vendor update'
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -162,6 +171,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           : 'Request actions'
   const actionSectionSubtitle = pendingVendorCommercialItems.length
     ? 'Review the vendor charge before billing, payment, or closeout.'
+    : hasVendorUpdateReview
+      ? 'The latest vendor update is shown here so you can decide what to do next.'
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
@@ -217,11 +228,47 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
         <WorkOrderContext request={data.request} />
+        {hasVendorUpdateReview ? (
+          <div id="vendor-update-review" className="timelineRow spotlightSuccess">
+            <div className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+              <div className="stack" style={{ gap: 8 }}>
+                <div>
+                  <div className="kicker">Vendor update to review</div>
+                  <h3 style={{ margin: '4px 0 0' }}>{latestVendorDispatch?.vendorName ?? data.request.assignedVendorName ?? 'Vendor update'}</h3>
+                </div>
+                {latestVendorDispatch ? (
+                  <>
+                    <div><strong>Status:</strong> {displayDispatchStatus(latestVendorDispatch.status)}</div>
+                    {latestVendorDispatch.note ? <div>{latestVendorDispatch.note}</div> : <div className="muted">No note attached.</div>}
+                    {(latestVendorDispatch.scheduledStart || latestVendorDispatch.scheduledEnd) ? (
+                      <div className="muted">
+                        Appointment: {latestVendorDispatch.scheduledStart ? new Date(latestVendorDispatch.scheduledStart).toLocaleString() : '-'}
+                        {latestVendorDispatch.scheduledEnd ? ` to ${new Date(latestVendorDispatch.scheduledEnd).toLocaleString()}` : ''}
+                      </div>
+                    ) : null}
+                    <div className="muted">Sent {new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
+                  </>
+                ) : (
+                  <div className="muted">No vendor work update was found in the timeline.</div>
+                )}
+                {latestCommercialReply ? (
+                  <div className="inlineNotice">
+                    <strong>Latest vendor charge</strong>
+                    <span>
+                      {latestCommercialReply.title} - {vendorCommercialTypeLabel(latestCommercialReply.itemType)} - {formatMoney(latestCommercialReply.amountCents, latestCommercialReply.currency)} - {vendorCommercialStatusLabel(latestCommercialReply.status)}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              {pendingVendorCommercialItems.length ? <a href="#vendor-approvals" className="button primary">Review vendor charge</a> : <a href="#timeline" className="button">View timeline</a>}
+            </div>
+          </div>
+        ) : null}
         <RequestControlPanel
           request={requestWithEffectiveAppointment}
           vendors={data.availableVendors}
           tenders={data.tenders}
-          statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 ? 'secondary' : 'primary'}
+          statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasVendorUpdateReview ? 'secondary' : 'primary'}
         />
       </SectionCard>
       </div>

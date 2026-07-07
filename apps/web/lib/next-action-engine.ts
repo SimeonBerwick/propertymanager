@@ -137,11 +137,11 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.reviewState === 'vendor_completed_pending_review') {
-    return { ...base, id: `${request.id}:vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
+    return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }
 
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {
-    return { ...base, id: `${request.id}:follow-up`, primaryLabel: 'Review update', reason: 'The latest update needs a manager decision.', group: 'Vendor updates', priority: 'high', actionType: 'review_update', score: SCORE.overdueUpdate }
+    return { ...base, id: `${request.id}:follow-up`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review update', reason: 'The latest vendor update needs a manager decision.', group: 'Vendor updates', priority: 'high', actionType: 'review_update', score: SCORE.overdueUpdate }
   }
 
   if (hasVendorChosen(request) && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)) {
