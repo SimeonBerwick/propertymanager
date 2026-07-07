@@ -593,7 +593,19 @@ body { min-height: 100vh; }
 .attentionRow { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(320px, 1.3fr); gap: 16px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--table-row); }
 .attentionTitle { font-weight: 800; }
 .todayOverview { gap: 14px; }
-.todayOverviewHero { display: flex; justify-content: space-between; gap: 20px; align-items: center; border-color: var(--border-strong); background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 180%); }
+.todayOverviewHero { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 420px); gap: 20px; align-items: center; border-color: var(--border-strong); background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 180%); }
+.nextStepCopy { min-width: 0; }
+.nextStepSummary { display: grid; gap: 6px; margin-top: 8px; }
+.nextStepSummary strong { font-size: 20px; line-height: 1.25; }
+.nextStepSummary span { color: var(--muted); font-weight: 700; }
+.nextStepSummary p { max-width: 680px; margin: 0; color: var(--muted); line-height: 1.5; }
+.nextStepActions { display: grid; gap: 12px; justify-items: stretch; }
+.nextStepActions > .button { justify-content: center; }
+.overviewMetricGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.overviewMetric { display: grid; gap: 4px; min-height: 72px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: inherit; text-decoration: none; }
+.overviewMetric:hover { border-color: var(--accent); }
+.overviewMetric span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.overviewMetric strong { font-size: 24px; line-height: 1; }
 .nextActionPrimary { display: grid; grid-template-columns: minmax(220px, .9fr) minmax(280px, 1.1fr); gap: 16px; align-items: start; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--table-row); }
 .nextActionPrimary strong { display: block; font-size: 18px; line-height: 1.35; }
 .nextActionPrimary-urgent { border-color: var(--error-border); background: var(--error-bg); }
@@ -885,7 +897,7 @@ body { min-height: 100vh; }
   .grid.cols-4, .grid.cols-3, .grid.cols-2, .photo-grid, .queueGrid, .opsCsvGrid, .detailFactsGrid, .requestHero, .requestDetailGrid, .inboxRow, .billingLayout {
     grid-template-columns: 1fr;
   }
-  .todayOverviewHero { align-items: flex-start; flex-direction: column; }
+  .todayOverviewHero { grid-template-columns: 1fr; align-items: flex-start; }
   .todayMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .todayScheduleRow { grid-template-columns: 1fr; }
   .nextActionPrimary, .nextActionGroup, .caughtUpPanel { grid-template-columns: 1fr; }
@@ -928,6 +940,8 @@ body { min-height: 100vh; }
   .managerHeader { justify-content: center; margin-bottom: 14px; }
   .managerHeader .brandLogo { width: 190px; }
   .managerHeader .nav { display: none; }
+  .overviewMetricGrid { grid-template-columns: 1fr; }
+  .overviewMetric { min-height: 58px; }
   .demoModeNotice { padding: 9px 11px; font-size: 13px; line-height: 1.4; }
   .card { padding: 16px; border-radius: 16px; }
   .card:has(.table) { min-width: 0; overflow-x: auto; }

@@ -17,8 +17,8 @@ import { TodayOverview } from '@/components/today-overview'
 import { subscriptionCountdownNotice } from '@/lib/subscription-gate'
 
 const QUEUE_TITLES: Record<string, string> = {
-  all: 'Maintenance queue',
-  open: 'Open requests',
+  all: 'Open work orders',
+  open: 'Open work orders',
   declined: 'Declined requests',
   canceled: 'Canceled requests',
   'reassignment-needed': 'Reassignment needed',
@@ -105,54 +105,57 @@ export default async function DashboardPage({
       {!isQueueView ? <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} /> : null}
 
       <details className={`advancedDisclosure dashboardWorkspaceDisclosure ${isQueueView ? 'requestQueueDisclosure' : ''}`} open>
-        <summary>{isQueueView ? 'Requests' : 'Hide full maintenance queue and workspace tools'}</summary>
+        <summary>{isQueueView ? 'Requests' : 'Open work orders'}</summary>
         <div className="stack dashboardWorkspace">
-      <section className="card requestHero">
+      {isQueueView ? <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
           <div>
             <div className="kicker">{isQueueView ? 'Requests' : 'Dashboard'}</div>
             <h1 className="pageTitle">{queueTitle}</h1>
             <div className="muted">{isQueueView ? 'Scan active work orders and open the one that needs attention.' : 'See what needs action now and clear it fast.'}</div>
           </div>
-          <div className="requestHeroMeta">
-            <div className="mailboxMini">
-              <span className="mailboxMiniLabel">Request email</span>
-              {data.mailboxConnections.find((connection) => connection.status === 'connected') ? (
-                data.mailboxConnections.filter((connection) => connection.status === 'connected').slice(0, 1).map((connection) => (
-                  <span key={connection.id} className="mailboxMiniAddress">{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'}: {connection.email}</span>
-                ))
-              ) : (
-                <span className="mailboxMiniAddress">Secure email delivery active</span>
-              )}
-              <details className="actionMenu">
-                <summary>Connect Outlook</summary>
-                <div className="actionMenuPanel">
-                  <a href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
-                </div>
-              </details>
-            </div>
-            <form action={toggleEmailNotificationsAction}>
-              <input type="hidden" name="enabled" value={data.emailNotificationsEnabled ? 'false' : 'true'} />
-              <button
-                type="submit"
-                className={`button compactToggle ${data.emailNotificationsEnabled ? 'is-on' : 'is-off'}`}
-                title="Toggle request and message email notifications"
-              >
-                Email alerts {data.emailNotificationsEnabled ? 'enabled' : 'paused'}
-              </button>
-            </form>
-            <Link href="/submit" className="button primary">Share request form</Link>
-            <details className="actionMenu">
-              <summary>Queue tools</summary>
-              <div className="actionMenuPanel">
-                <Link href="/exceptions">Review exceptions</Link>
-                <Link href="/access">Manage tenant and vendor access</Link>
-                <Link href="/reports">View reports</Link>
-              </div>
-            </details>
-          </div>
         </div>
-      </section>
+      </section> : null}
+
+      {!isQueueView ? (
+        <details className="advancedDisclosure dashboardToolsDisclosure">
+          <summary>Tools and settings</summary>
+          <section className="card stack">
+            <div className="requestHeroMeta">
+              <div className="mailboxMini">
+                <span className="mailboxMiniLabel">Request email</span>
+                {data.mailboxConnections.find((connection) => connection.status === 'connected') ? (
+                  data.mailboxConnections.filter((connection) => connection.status === 'connected').slice(0, 1).map((connection) => (
+                    <span key={connection.id} className="mailboxMiniAddress">{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'}: {connection.email}</span>
+                  ))
+                ) : (
+                  <span className="mailboxMiniAddress">Secure email delivery active</span>
+                )}
+                <details className="actionMenu">
+                  <summary>Connect Outlook</summary>
+                  <div className="actionMenuPanel">
+                    <a href="/api/mailbox/oauth/outlook/start">Connect Outlook</a>
+                  </div>
+                </details>
+              </div>
+              <form action={toggleEmailNotificationsAction}>
+                <input type="hidden" name="enabled" value={data.emailNotificationsEnabled ? 'false' : 'true'} />
+                <button
+                  type="submit"
+                  className={`button compactToggle ${data.emailNotificationsEnabled ? 'is-on' : 'is-off'}`}
+                  title="Toggle request and message email notifications"
+                >
+                  Email alerts {data.emailNotificationsEnabled ? 'enabled' : 'paused'}
+                </button>
+              </form>
+              <Link href="/submit" className="button primary">Share request form</Link>
+              <Link href="/exceptions" className="button">Review exceptions</Link>
+              <Link href="/access" className="button">Tenant and vendor access</Link>
+              <Link href="/reports" className="button">Reports</Link>
+            </div>
+          </section>
+        </details>
+      ) : null}
 
       <OnboardingChecklist items={onboardingItems} />
 
@@ -188,7 +191,7 @@ export default async function DashboardPage({
 
       <SectionCard
         kicker="Inbox"
-        title="Request queue"
+        title="Open work orders"
         subtitle="Scan fast and move the right request forward."
         action={<Link href="/dashboard" className="button">Clear filters</Link>}
       >
