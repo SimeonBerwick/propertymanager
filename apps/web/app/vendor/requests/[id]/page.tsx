@@ -56,14 +56,20 @@ export default async function VendorRequestDetailPage({
         tone: 'success' as const,
       }
     : viewState.heroNotice
-  const needsAppointmentTime = !isPaidClosed
-    && viewState.canControlDispatch
-    && !request.vendorScheduledStart
-    && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
-  const hasAppointmentTime = Boolean(request.vendorScheduledStart)
   const workMarkedComplete = request.status === 'completed'
     || request.dispatchStatus === 'completed'
     || request.reviewState === 'vendor_completed_pending_review'
+  const latestScheduledEvent = [...request.dispatchHistory]
+    .reverse()
+    .find((entry) => entry.scheduledStart)
+  const effectiveScheduledStart = request.vendorScheduledStart ?? latestScheduledEvent?.scheduledStart ?? null
+  const effectiveScheduledEnd = request.vendorScheduledEnd ?? latestScheduledEvent?.scheduledEnd ?? null
+  const needsAppointmentTime = !isPaidClosed
+    && !workMarkedComplete
+    && viewState.canControlDispatch
+    && !effectiveScheduledStart
+    && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
+  const hasAppointmentTime = Boolean(effectiveScheduledStart)
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
   const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && (viewState.canControlDispatch || viewState.isPendingBid)
   const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime
@@ -191,8 +197,8 @@ export default async function VendorRequestDetailPage({
           Assigned vendor: {viewState.canControlDispatch ? (request.assignedVendorName ?? session.vendorName) : 'This work is not assigned to your vendor account yet.'}
         </div>
         <div className="muted">
-          {viewState.canSeeSchedule && request.vendorScheduledStart
-            ? `Appointment: ${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
+          {viewState.canSeeSchedule && effectiveScheduledStart
+            ? `Appointment: ${new Date(effectiveScheduledStart).toLocaleString()}${effectiveScheduledEnd ? ` to ${new Date(effectiveScheduledEnd).toLocaleString()}` : ''}`
             : 'No appointment time confirmed for your vendor account.'}
         </div>
       </section>

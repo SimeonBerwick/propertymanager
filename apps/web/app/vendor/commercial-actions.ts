@@ -46,6 +46,14 @@ export async function createVendorCommercialItemAction(
   const savedAttachment = await saveVendorAttachment(attachment)
 
   try {
+    const attachmentData = savedAttachment
+      ? {
+          attachmentUrl: savedAttachment.url,
+          attachmentName: savedAttachment.name,
+          attachmentContentType: savedAttachment.contentType,
+        }
+      : {}
+
     const item = await prisma.vendorCommercialItem.create({
       data: {
         requestId: request.id,
@@ -56,9 +64,7 @@ export async function createVendorCommercialItemAction(
         amountCents,
         title,
         description: description || null,
-        attachmentUrl: savedAttachment?.url ?? null,
-        attachmentName: savedAttachment?.name ?? null,
-        attachmentContentType: savedAttachment?.contentType ?? null,
+        ...attachmentData,
       },
     })
 
