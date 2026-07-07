@@ -18,20 +18,25 @@ export default async function TenantMobileLayout({ children }: { children: React
             <h2 style={{ margin: '4px 0' }}>{session.propertyName} - {session.unitLabel}</h2>
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
-          <details className="actionMenu portalActionMenu" style={{ marginLeft: 'auto' }}>
-            <summary>Portal menu</summary>
-            <div className="actionMenuPanel">
-              <Link href={'/mobile' as Route}>Dashboard</Link>
-              <Link href={'/mobile/requests/new' as Route}>Report a problem</Link>
-              <Link href={'/support' as Route}>Support</Link>
-              <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
-              <div className="actionMenuControl"><ThemeToggle /></div>
-              <div className="actionMenuControl"><PushNotificationControl /></div>
-              <form action={tenantMobileSignoutAction}>
-                <button type="submit">Sign out</button>
-              </form>
-            </div>
-          </details>
+          <div className="row portalHeaderActions" style={{ marginLeft: 'auto', gap: 8, justifyContent: 'flex-end' }}>
+            <form action={tenantMobileSignoutAction}>
+              <button type="submit" className="button">Sign out</button>
+            </form>
+            <details className="actionMenu portalActionMenu">
+              <summary>Portal menu</summary>
+              <div className="actionMenuPanel">
+                <Link href={'/mobile' as Route}>Dashboard</Link>
+                <Link href={'/mobile/requests/new' as Route}>Report a problem</Link>
+                <Link href={'/support' as Route}>Support</Link>
+                <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
+                <div className="actionMenuControl"><ThemeToggle /></div>
+                <div className="actionMenuControl"><PushNotificationControl /></div>
+                <form action={tenantMobileSignoutAction}>
+                  <button type="submit">Sign out</button>
+                </form>
+              </div>
+            </details>
+          </div>
         </div>
       </section>
       {children}
