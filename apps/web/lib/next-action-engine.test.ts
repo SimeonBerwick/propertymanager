@@ -100,7 +100,18 @@ describe('next action engine', () => {
     expect(getRequestNextAction({ ...base, status: 'in_progress' as const, reviewState: 'vendor_completed_pending_review' as const })).toMatchObject({
       priority: 'high',
       primaryLabel: 'Review completed work',
+      href: '/requests/r1#vendor-update-review',
       actionType: 'review_vendor_update',
+    })
+  })
+
+  it('links vendor update reviews to the visible update context', () => {
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', vendorScheduledStart: '2026-06-20T12:00:00.000Z', reviewState: 'vendor_update_pending_review' as const })).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Review update',
+      reason: 'The latest vendor update needs a manager decision.',
+      href: '/requests/r1#vendor-update-review',
+      actionType: 'review_update',
     })
   })
 
