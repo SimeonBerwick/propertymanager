@@ -9,6 +9,8 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 
 export type TenantRequestActionState = { error: string | null; success?: boolean }
 
+const TENANT_CANCELABLE_STATUSES = ['requested', 'approved', 'vendor_selected', 'scheduled', 'reopened'] as const
+
 export async function cancelTenantMobileRequestAction(
   _prev: TenantRequestActionState,
   formData: FormData,
@@ -24,12 +26,16 @@ export async function cancelTenantMobileRequestAction(
       id: requestId,
       ...buildTenantRequestOwnershipWhere(session),
     },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      assignedVendorId: true,
+    },
   })
 
   if (!request) return { error: 'Request not found.' }
-  if (!['requested', 'approved', 'reopened'].includes(request.status)) {
-    return { error: 'This request can no longer be canceled from the tenant portal.' }
+  if (!TENANT_CANCELABLE_STATUSES.includes(request.status as typeof TENANT_CANCELABLE_STATUSES[number])) {
+    return { error: 'This request can no longer be canceled here because work is already underway or finished. Send a message instead.' }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -41,6 +47,9 @@ export async function cancelTenantMobileRequestAction(
         canceledByType: 'tenant',
         canceledByUserId: null,
         closedAt: new Date(),
+        dispatchStatus: request.assignedVendorId ? 'canceled' : undefined,
+        reviewState: 'none',
+        reviewNote: null,
       },
     })
 
@@ -60,10 +69,23 @@ export async function cancelTenantMobileRequestAction(
         visibility: 'external',
       },
     })
+
+    if (request.assignedVendorId) {
+      await tx.vendorDispatchEvent.create({
+        data: {
+          requestId,
+          vendorId: request.assignedVendorId,
+          status: 'canceled',
+          note: `Tenant canceled request: ${reason}`,
+        },
+      })
+    }
   })
 
   revalidatePath(`/mobile/requests/${requestId}`)
   revalidatePath('/mobile')
+  revalidatePath(`/requests/${requestId}`)
+  revalidatePath('/dashboard')
   return { error: null, success: true }
 }
 

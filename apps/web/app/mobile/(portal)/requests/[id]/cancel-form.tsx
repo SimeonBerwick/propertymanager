@@ -18,7 +18,7 @@ export function TenantRequestCancelForm({ requestId }: { requestId: string }) {
       </label>
       <ActionFeedback error={state.error} success={state.success && 'Request canceled.'} />
       <button type="submit" className="button" disabled={pending}>
-        {pending ? 'Canceling…' : 'Cancel request'}
+        {pending ? 'Canceling...' : 'Cancel request'}
       </button>
     </form>
   )
