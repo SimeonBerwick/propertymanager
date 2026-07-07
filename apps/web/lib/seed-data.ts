@@ -157,7 +157,7 @@ export const requestComments: RequestComment[] = [
     id: 'comment-2',
     requestId: 'req-1001',
     authorName: 'Elon PM Ops',
-    body: 'Reaching out to plumber. Will confirm appointment window by end of day.',
+    body: 'Reaching out to plumber. Will confirm appointment time by end of day.',
     visibility: 'internal',
     createdAt: '2026-03-12T09:15:00Z',
   },

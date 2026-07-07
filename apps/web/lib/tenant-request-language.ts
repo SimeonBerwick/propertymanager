@@ -42,7 +42,7 @@ export function tenantRequestNextStep(request: {
         ? 'An appointment has been arranged. Check the appointment details at the top of this page.'
         : 'The vendor is arranging an appointment time.'
     case 'scheduled':
-      return 'The vendor is expected during the confirmed appointment window.'
+      return 'The vendor is expected at the confirmed appointment time.'
     case 'in_progress':
       return 'The vendor is working on the issue. You will see an update when the work is complete.'
     case 'completed':

@@ -115,7 +115,7 @@ export async function getVendorAccountOptions(vendorIds: string[]): Promise<Vend
         },
       },
       commercialItems: {
-        where: { status: { in: ['submitted', 'approved'] } },
+        where: { status: 'submitted' },
         select: { id: true },
       },
     },

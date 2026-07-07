@@ -489,7 +489,7 @@ export function buildVendorOverdueUpdateMessage(p: VendorOverdueUpdateParams): N
     text: [
       `Hi ${p.vendorName},`,
       ``,
-      `This work order needs an update. The scheduled window ended at ${dueLine}.`,
+      `This work order needs an update. The scheduled appointment time passed at ${dueLine}.`,
       ``,
       `  Reference ID : ${p.requestId}`,
       `  Issue        : ${p.title}`,
@@ -500,7 +500,7 @@ export function buildVendorOverdueUpdateMessage(p: VendorOverdueUpdateParams): N
     ].filter(Boolean).join('\n'),
     html: htmlEmail(`
       <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
-      <p style="margin:0 0 14px 0">This work order needs an update. The scheduled window ended at ${esc(dueLine)}.</p>
+      <p style="margin:0 0 14px 0">This work order needs an update. The scheduled appointment time passed at ${esc(dueLine)}.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
         ${dtRow('Reference ID', p.requestId)}
         ${dtRow('Issue', p.title)}

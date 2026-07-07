@@ -1159,15 +1159,7 @@ export async function quickRequestAction(
     }
 
     if (quickAction === 'mark-scheduled') {
-      if (!['approved', 'vendor_selected', 'reopened'].includes(request.status)) return { error: 'Only approved, selected, or reopened requests can be marked scheduled from the queue.' }
-      await prisma.maintenanceRequest.update({
-        where: { id: requestId },
-        data: { status: 'scheduled' },
-      })
-      await prisma.statusEvent.create({
-        data: { requestId, fromStatus: request.status, toStatus: 'scheduled', actorUserId: session.userId, visibility: 'internal' },
-      })
-      message = 'Request marked scheduled.'
+      return { error: 'Add the appointment time from the request detail page instead.' }
     }
 
     if (quickAction === 'start-work') {
