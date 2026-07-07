@@ -27,7 +27,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       <input type="hidden" name={role === 'tenant' ? 'tenantIdentityId' : 'vendorId'} value={recipientId} />
       <input type="hidden" name="validFrom" value={validFromLocal ? new Date(validFromLocal).toISOString() : ''} />
       <div className="muted">
-        Generate a one-time code for {recipientName}. The code is emailed automatically and can be used once.
+        Send a one-time sign-in code for {recipientName}. It opens the {role === 'tenant' ? 'tenant role' : 'vendor role'} for this person and can be used once.
       </div>
       {role === 'vendor' && requests.length === 0 ? (
         <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
@@ -36,7 +36,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       ) : null}
       {role === 'vendor' ? (
         <label className="field">
-          <span className="field-label">Work-order access scope</span>
+          <span className="field-label">Vendor view scope</span>
           <select className="input" name="requestId" required defaultValue="">
             <option value="" disabled>Select an assigned request</option>
             {requests.map((request) => (

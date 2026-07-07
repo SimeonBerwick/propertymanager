@@ -13,6 +13,14 @@ import { formatDateOnly } from '@/lib/ui-utils'
 
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
+function tenantSignInStatus(status: string) {
+  if (status === 'pending_invite') return 'Sign-in code sent'
+  if (status === 'active') return 'Signed in'
+  if (status === 'inactive') return 'Inactive'
+  if (status === 'moved_out') return 'Moved out'
+  return status.replaceAll('_', ' ')
+}
+
 interface MobileIdentityPanelProps {
   unitId: string
   unitIsActive?: boolean
@@ -55,14 +63,15 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
   return (
     <section className="card stack">
       <div>
-        <div className="kicker">Mobile tenant access</div>
-        <h3 style={{ marginTop: 4 }}>Manage tenant occupancy and portal access</h3>
+        <div className="kicker">Tenant sign-in</div>
+        <h3 style={{ marginTop: 4 }}>Tenant details and sign-in code</h3>
+        <div className="muted">A sign-in code lets the tenant open their tenant view. It does not approve work, pricing, or billing.</div>
       </div>
 
       {currentIdentity ? (
         <div className="stack" style={{ gap: 8 }}>
           <div className="kicker">Current tenant</div>
-          <div className="muted">Status: {currentIdentity.status}</div>
+          <div className="muted">Sign-in status: {tenantSignInStatus(currentIdentity.status)}</div>
           <div className="muted">Tenant: {currentIdentity.tenantName}</div>
           <div className="muted">Lease: {getTenantLeaseLabel(currentIdentity)}</div>
           <div className="muted">Phone: {currentIdentity.phoneE164}</div>
@@ -89,7 +98,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
 
       {isArchived && (
         <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
-          This unit is archived. Mobile identity setup and invite delivery are disabled until the property and unit are restored.
+          This unit is archived. Tenant sign-in setup and code delivery are disabled until the property and unit are restored.
         </div>
       )}
 
@@ -98,7 +107,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
       {deactivateState.error && <div className="notice error">{deactivateState.error}</div>}
       {inviteState.inviteLink && (
         <div className="notice" style={{ background: '#f5fff7', borderColor: '#b7ebc6' }}>
-          Invite link: <a href={inviteState.inviteLink}>{inviteState.inviteLink}</a>
+          Sign-in link: <a href={inviteState.inviteLink}>{inviteState.inviteLink}</a>
         </div>
       )}
       {inviteState.deliveryWarning && (
@@ -222,8 +231,8 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
         <section className="card stack">
           <div>
             <div className="kicker">Access recovery</div>
-            <h4 style={{ margin: '4px 0 0' }}>Correct details and resend access</h4>
-            <div className="muted">If the tenant changed their email or phone, update and save the current tenant above, then send new access below.</div>
+            <h4 style={{ margin: '4px 0 0' }}>Correct details and send sign-in code</h4>
+            <div className="muted">If the tenant changed their email or phone, update and save the current tenant above, then send a new sign-in code below.</div>
           </div>
           <ManagerAccessCodeForm
             role="tenant"
@@ -239,13 +248,13 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           <form action={inviteAction}>
             <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button primary" disabled={invitePending || isArchived}>
-              {invitePending ? 'Sending access...' : 'Resend portal access'}
+              {invitePending ? 'Sending code...' : 'Send tenant sign-in code'}
             </button>
           </form>
           <form action={deactivateAction}>
             <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button" disabled={deactivatePending}>
-              {deactivatePending ? 'Deactivating…' : 'Deactivate mobile access'}
+              {deactivatePending ? 'Deactivating...' : 'Deactivate tenant sign-in'}
             </button>
           </form>
         </div>

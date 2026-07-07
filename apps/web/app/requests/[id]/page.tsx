@@ -158,10 +158,19 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
-  const hasTenantMessageReview = data.request.reviewState === 'needs_follow_up' && Boolean(latestTenantMessage)
-  const hasVendorUpdateReview = data.request.reviewState === 'needs_follow_up'
-    || data.request.reviewState === 'vendor_update_pending_review'
-    || data.request.reviewState === 'vendor_completed_pending_review'
+  const reviewNoteLower = (data.request.reviewNote ?? '').toLowerCase()
+  const hasTenantQuestionReviewNote = reviewNoteLower.includes('tenant asked') || reviewNoteLower.includes('tenant requested')
+  const hasTenantMessageReview = data.request.reviewState === 'needs_follow_up'
+    && data.request.status !== 'requested'
+    && hasTenantQuestionReviewNote
+    && Boolean(latestTenantMessage)
+  const hasVendorUpdateReview = data.request.status !== 'requested'
+    && !hasTenantQuestionReviewNote
+    && (
+      data.request.reviewState === 'needs_follow_up'
+      || data.request.reviewState === 'vendor_update_pending_review'
+      || data.request.reviewState === 'vendor_completed_pending_review'
+    )
   const effectiveVendorScheduledStart = data.request.vendorScheduledStart ?? latestScheduledDispatch?.scheduledStart
   const effectiveVendorScheduledEnd = data.request.vendorScheduledEnd ?? latestScheduledDispatch?.scheduledEnd
   const requestWithEffectiveAppointment = {
@@ -172,8 +181,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
+    : data.request.status === 'requested'
+      ? 'Review request'
     : hasTenantMessageReview
-      ? 'Review tenant appointment request'
+      ? 'Review tenant question'
     : hasVendorUpdateReview
       ? 'Review vendor update'
     : needsAppointmentTime
@@ -187,8 +198,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           : 'Request actions'
   const actionSectionSubtitle = pendingVendorCommercialItems.length
     ? 'Review the vendor charge before billing, payment, or closeout.'
+    : data.request.status === 'requested'
+      ? 'Decide whether this work order should move forward before vendor scheduling or costs.'
     : hasTenantMessageReview
-      ? 'The tenant has asked for help with the appointment or repair. Decide whether to update the vendor, reschedule, or reply to the tenant.'
+      ? 'The tenant sent a question on this work order. Reply or decide whether the request needs a status change.'
     : hasVendorUpdateReview
       ? 'The latest vendor update is shown here so you can decide what to do next.'
     : needsAppointmentTime
@@ -253,7 +266,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <div className="stack" style={{ gap: 8 }}>
                 <div>
                   <div className="kicker">Tenant message to review</div>
-                  <h3 style={{ margin: '4px 0 0' }}>Appointment or repair concern</h3>
+                  <h3 style={{ margin: '4px 0 0' }}>Tenant question</h3>
                 </div>
                 <div>{latestTenantMessage?.body.replace(/^Tenant message:\s*/i, '')}</div>
                 <div className="muted">
@@ -519,7 +532,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           <SectionCard kicker="Timeline" title="Work history" subtitle="Vendor visits, status changes, and supporting records.">
             {tenantTimelineMessages.length ? tenantTimelineMessages.map((comment) => (
               <div key={comment.id} className="timelineRow spotlightSuccess">
-                <div style={{ fontWeight: 600 }}>Tenant appointment request</div>
+                <div style={{ fontWeight: 600 }}>Tenant question</div>
                 <div>{comment.body.replace(/^Tenant message:\s*/i, '')}</div>
                 <div className="muted">{comment.authorName} - {new Date(comment.createdAt).toLocaleString()}</div>
               </div>

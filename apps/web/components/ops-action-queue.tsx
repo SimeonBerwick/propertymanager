@@ -59,7 +59,7 @@ function TenantInviteForm({ tenantIdentityId }: { tenantIdentityId: string }) {
     <form action={formAction} className="stack" style={{ gap: 8 }}>
       <input type="hidden" name="tenantIdentityId" value={tenantIdentityId} />
       <button className="button primary compactToggle" type="submit" disabled={pending}>
-        {pending ? 'Sending invite...' : 'Resend invite'}
+        {pending ? 'Sending code...' : 'Send sign-in code'}
       </button>
       <InlineState state={state} />
     </form>

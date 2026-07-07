@@ -20,6 +20,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!media) {
     return new NextResponse('File not found', { status: 404 })
   }
+  if (!media.contentType.toLowerCase().startsWith('image/')) {
+    return new NextResponse('File is not an image', { status: 415 })
+  }
 
   return new NextResponse(new Uint8Array(media.bytes), {
     headers: {
