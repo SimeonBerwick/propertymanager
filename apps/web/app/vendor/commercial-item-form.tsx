@@ -33,7 +33,7 @@ export function VendorCommercialItemForm({
     <form action={action} className="stack">
       <input type="hidden" name="requestId" value={requestId} />
       {state.error ? <div className="notice error">{state.error}</div> : null}
-      {state.success ? <div className="notice success">Invoice item submitted to the property manager.</div> : null}
+      {state.success ? <div className="notice success">{state.message ?? 'Invoice item submitted to the property manager.'}</div> : null}
       <label className="field">
         <span className="field-label">Submission type</span>
         <select className="input" name="itemType" defaultValue={defaultItemType}>

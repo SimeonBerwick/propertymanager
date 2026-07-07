@@ -80,9 +80,9 @@ export function reviewStateLabel(value?: ReviewStatus) {
     case 'vendor_completed_pending_review':
       return 'Review completed work'
     case 'needs_follow_up':
-      return 'Needs follow-up'
+      return 'Follow up needed'
     case 'vendor_update_pending_review':
-      return 'Needs review'
+      return 'Review vendor update'
     case 'reassignment_needed':
       return 'Vendor reassignment needed'
     case 'vendor_declined_reassignment_needed':

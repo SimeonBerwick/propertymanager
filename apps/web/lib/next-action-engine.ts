@@ -20,7 +20,7 @@ export type RequestNextAction = NextAction & {
 }
 
 type NextActionRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   unitId?: string
   title?: string
@@ -86,6 +86,11 @@ function actionBase(request: NextActionRequest) {
   }
 }
 
+function isTenantAppointmentFollowUp(request: NextActionRequest) {
+  return request.reviewState === 'needs_follow_up'
+    && (request.reviewNote ?? '').toLowerCase().includes('tenant requested')
+}
+
 export function getRequestNextAction(request: NextActionRequest, now = new Date()): RequestNextAction {
   const base = actionBase(request)
 
@@ -138,6 +143,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if (request.reviewState === 'vendor_completed_pending_review') {
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
+  }
+
+  if (isTenantAppointmentFollowUp(request)) {
+    return { ...base, id: `${request.id}:tenant-message-review`, href: `/requests/${request.id}?comment=tenant#tenant-message-review`, primaryLabel: 'Review tenant appointment request', reason: 'The tenant asked for help with the appointment or repair.', group: 'Tenant messages', priority: 'high', actionType: 'review_tenant_message', score: SCORE.overdueUpdate }
   }
 
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {

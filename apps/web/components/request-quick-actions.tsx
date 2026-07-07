@@ -46,7 +46,7 @@ export function RequestQuickActions({
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
       : null,
     request.reviewState && request.reviewState !== 'none'
-      ? { key: 'needs-follow-up', label: 'Needs review', tone: 'button', title: 'Keep this request visible for manager review.' }
+      ? { key: 'needs-follow-up', label: 'Flag follow-up', tone: 'button', title: 'Keep this request visible for manager follow-up.' }
       : null,
     request.assignedVendorName
       ? { key: 'mark-reassignment-needed', label: 'Clear vendor, reassign', tone: 'button', title: 'Clears vendor assignment, contact details, and work status, then marks reassignment needed.' }

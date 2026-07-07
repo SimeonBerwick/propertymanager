@@ -9,7 +9,17 @@ import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 import { logServerActionError } from '@/lib/observability'
 import { cleanupVendorAttachment, saveVendorAttachment, validateVendorAttachment } from '@/lib/vendor-commercial-attachment-upload'
 
-export type VendorCommercialActionState = { error: string | null; success?: boolean }
+export type VendorCommercialActionState = { error: string | null; success?: boolean; message?: string }
+
+type VendorCommercialItemType = 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+
+function isAttachmentColumnError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('attachmentUrl')
+    || message.includes('attachmentName')
+    || message.includes('attachmentContentType')
+    || message.includes('P2022')
+}
 
 export async function createVendorCommercialItemAction(
   _prev: VendorCommercialActionState,
@@ -43,7 +53,7 @@ export async function createVendorCommercialItemAction(
 
   if (!request) return { error: 'This request is not available for your vendor account.' }
 
-  const savedAttachment = await saveVendorAttachment(attachment)
+  let savedAttachment = await saveVendorAttachment(attachment)
 
   try {
     const attachmentData = savedAttachment
@@ -59,13 +69,14 @@ export async function createVendorCommercialItemAction(
         requestId: request.id,
         vendorId: session.vendorId,
         orgId: session.orgId ?? null,
-        itemType: itemType as 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager',
+        itemType: itemType as VendorCommercialItemType,
         currency: 'usd',
         amountCents,
         title,
         description: description || null,
         ...attachmentData,
       },
+      select: { id: true },
     })
 
     await writeAuditLog({
@@ -84,6 +95,63 @@ export async function createVendorCommercialItemAction(
     revalidatePath(`/requests/${request.id}`)
     return { error: null, success: true }
   } catch (error) {
+    if (savedAttachment && isAttachmentColumnError(error)) {
+      const droppedAttachment = savedAttachment
+      savedAttachment = null
+      await cleanupVendorAttachment(droppedAttachment)
+
+      try {
+        const item = await prisma.vendorCommercialItem.create({
+          data: {
+            requestId: request.id,
+            vendorId: session.vendorId,
+            orgId: session.orgId ?? null,
+            itemType: itemType as VendorCommercialItemType,
+            currency: 'usd',
+            amountCents,
+            title,
+            description: [
+              description || null,
+              `Bill attachment could not be linked by the app. Vendor tried to attach: ${droppedAttachment.name}.`,
+            ].filter(Boolean).join('\n\n'),
+          },
+          select: { id: true },
+        })
+
+        await writeAuditLog({
+          orgId: session.orgId ?? null,
+          actorUserId: null,
+          entityType: 'vendorCommercialItem',
+          entityId: item.id,
+          action: 'vendorCommercialItem.created',
+          summary: `Vendor submitted ${itemType} for request ${request.id}; attachment link was skipped.`,
+          metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title, attachmentSkipped: true },
+        })
+
+        await logServerActionError('vendorCommercialItem.create.attachmentColumnsMissing', error, {
+          requestId: request.id,
+          vendorId: session.vendorId,
+          itemType,
+        })
+
+        revalidatePath('/vendor')
+        revalidatePath('/vendor/summary')
+        revalidatePath(`/vendor/requests/${request.id}`)
+        revalidatePath(`/requests/${request.id}`)
+        return {
+          error: null,
+          success: true,
+          message: 'Charge submitted. The bill photo could not be attached, so the property manager may ask for the photo again.',
+        }
+      } catch (retryError) {
+        await logServerActionError('vendorCommercialItem.create.retryWithoutAttachment', retryError, {
+          requestId: request.id,
+          vendorId: session.vendorId,
+          itemType,
+        })
+      }
+    }
+
     await cleanupVendorAttachment(savedAttachment)
     await logServerActionError('vendorCommercialItem.create', error, {
       requestId: request.id,
