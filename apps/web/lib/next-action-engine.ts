@@ -87,9 +87,10 @@ function actionBase(request: NextActionRequest) {
   }
 }
 
-function isTenantAppointmentFollowUp(request: NextActionRequest) {
+function isTenantQuestionFollowUp(request: NextActionRequest) {
+  const reviewNote = (request.reviewNote ?? '').toLowerCase()
   return request.reviewState === 'needs_follow_up'
-    && (request.reviewNote ?? '').toLowerCase().includes('tenant requested')
+    && (reviewNote.includes('tenant asked') || reviewNote.includes('tenant requested'))
 }
 
 export function getRequestNextAction(request: NextActionRequest, now = new Date()): RequestNextAction {
@@ -100,7 +101,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if ((request.tenantAccessFailureCount ?? 0) >= 3) {
-    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help tenant access portal', reason: `The tenant has failed to access the portal ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_renter_access_portal', score: SCORE.accessBlocked }
+    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help tenant sign in', reason: `The tenant has failed to open their tenant view ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_renter_access_portal', score: SCORE.accessBlocked }
   }
 
   if (request.status === 'requested' && !request.claimedAt) {
@@ -146,8 +147,8 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }
 
-  if (isTenantAppointmentFollowUp(request)) {
-    return { ...base, id: `${request.id}:tenant-message-review`, href: `/requests/${request.id}?comment=tenant#tenant-message-review`, primaryLabel: 'Review tenant appointment request', reason: 'The tenant asked for help with the appointment or repair.', group: 'Tenant messages', priority: 'high', actionType: 'review_tenant_message', score: SCORE.overdueUpdate }
+  if (isTenantQuestionFollowUp(request)) {
+    return { ...base, id: `${request.id}:tenant-message-review`, href: `/requests/${request.id}?comment=tenant#tenant-message-review`, primaryLabel: 'Review tenant question', reason: 'The tenant asked a question about this work order.', group: 'Tenant messages', priority: 'high', actionType: 'review_tenant_message', score: SCORE.overdueUpdate }
   }
 
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {

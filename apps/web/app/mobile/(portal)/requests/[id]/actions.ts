@@ -110,6 +110,7 @@ export async function sendTenantWorkOrderMessageAction(
     },
     select: {
       id: true,
+      status: true,
       title: true,
       submittedByEmail: true,
       submittedByName: true,
@@ -130,18 +131,22 @@ export async function sendTenantWorkOrderMessageAction(
       },
     })
 
-    await tx.maintenanceRequest.update({
-      where: { id: requestId },
-      data: {
-        reviewState: 'needs_follow_up',
-        reviewNote: 'Tenant requested help with the appointment or repair.',
-      },
-    })
+    if (request.status !== 'requested') {
+      await tx.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          reviewState: 'needs_follow_up',
+          reviewNote: 'Tenant asked a question about this work order.',
+        },
+      })
+    }
 
   })
 
   const appUrl = getAppBaseUrl('tenant work order messages')
-  const managerActionUrl = `${appUrl}/requests/${requestId}?comment=tenant#tenant-message-review`
+  const managerActionUrl = request.status === 'requested'
+    ? `${appUrl}/requests/${requestId}?comment=tenant#communication`
+    : `${appUrl}/requests/${requestId}?comment=tenant#tenant-message-review`
   const tenantName = request.submittedByName ?? session.tenantName
   const tenantEmail = request.submittedByEmail ?? session.email
   const text = tenantMessageText({

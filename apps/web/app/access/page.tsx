@@ -16,6 +16,14 @@ function recentFrictionKey(metadataJson: string | null) {
   }
 }
 
+function tenantAccessStateLabel(status?: string | null) {
+  if (status === 'pending_invite') return 'Sign-in code sent'
+  if (status === 'active') return 'Signed in'
+  if (status === 'inactive') return 'Inactive'
+  if (status === 'moved_out') return 'Moved out'
+  return status?.replaceAll('_', ' ') ?? 'No tenant'
+}
+
 export default async function AccessPage() {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -88,8 +96,8 @@ export default async function AccessPage() {
         id: `tenant-access:${identity.id}`,
         priority: 'urgent',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: `The tenant has failed to access the portal ${frictionCount} times recently.`,
-        primaryLabel: 'Help tenant access portal',
+        reason: `The tenant has failed to open their tenant view ${frictionCount} times recently.`,
+        primaryLabel: 'Help tenant sign in',
         href: `/units/${unit.id}/edit`,
         actionType: 'help_renter_access_portal',
         group: 'Access blocked',
@@ -102,10 +110,10 @@ export default async function AccessPage() {
         priority: 'normal',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
         reason: 'The tenant has not used their sign-in code yet.',
-        primaryLabel: 'Resend tenant invite',
+        primaryLabel: 'Send tenant sign-in code',
         href: `/units/${unit.id}/edit`,
         actionType: 'resend_renter_invite',
-        group: 'Pending invites',
+        group: 'Codes waiting',
         score: 35,
       }]
     }
@@ -114,8 +122,8 @@ export default async function AccessPage() {
         id: `tenant-never-login:${identity.id}`,
         priority: 'low',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: 'Tenant access is active, but the tenant has never logged in.',
-        primaryLabel: 'Confirm tenant access',
+        reason: 'The tenant has access, but has not opened their tenant view yet.',
+        primaryLabel: 'Check tenant sign-in',
         href: `/units/${unit.id}/edit`,
         actionType: 'confirm_renter_access',
         group: 'Unused access',
@@ -131,8 +139,8 @@ export default async function AccessPage() {
         id: `vendor-access:${vendor.id}`,
         priority: 'urgent',
         title: vendor.name,
-        reason: `The vendor has failed to access the portal ${frictionCount} times recently.`,
-        primaryLabel: 'Help vendor access portal',
+        reason: `The vendor has failed to open their vendor view ${frictionCount} times recently.`,
+        primaryLabel: 'Help vendor sign in',
         href: `/vendors/${vendor.id}`,
         actionType: 'help_vendor_access_portal',
         group: 'Access blocked',
@@ -157,7 +165,7 @@ export default async function AccessPage() {
         id: `vendor-never-login:${vendor.id}`,
         priority: 'low',
         title: vendor.name,
-        reason: 'Vendor access is active, but the vendor has never logged in.',
+        reason: 'The vendor has access, but has not opened their vendor view yet.',
         primaryLabel: 'Send vendor sign-in code',
         href: `/vendors/${vendor.id}`,
         actionType: 'send_vendor_access_code',
@@ -176,8 +184,8 @@ export default async function AccessPage() {
         <div className="row">
           <div>
             <div className="kicker">Access</div>
-            <h1 className="pageTitle">{primaryAction ? primaryAction.primaryLabel : 'People and portal access'}</h1>
-            <div className="muted">{primaryAction ? primaryAction.reason : 'Grant, resend, or remove tenant and vendor access from one place.'}</div>
+            <h1 className="pageTitle">{primaryAction ? primaryAction.primaryLabel : 'Tenant or vendor sign-in'}</h1>
+            <div className="muted">{primaryAction ? primaryAction.reason : 'Send sign-in codes and check whether each person can open the tenant or vendor role they need.'}</div>
           </div>
           <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             {primaryAction ? <Link href={(primaryAction.href ?? '/access') as Route} className="button primary">Next step</Link> : null}
@@ -194,21 +202,21 @@ export default async function AccessPage() {
           <div className="muted">Access tasks that need a manager decision</div>
         </div>
         <div className="card">
-          <div className="kicker">Pending invites</div>
+          <div className="kicker">Codes sent</div>
           <h2>{pendingInviteCount}</h2>
           <div className="muted">Tenants waiting to use their sign-in code</div>
         </div>
         <div className="card">
-          <div className="kicker">Active access</div>
+          <div className="kicker">Active views</div>
           <h2>{tenantAccessCount + activeVendorCount}</h2>
-          <div className="muted">Tenants and vendors with active portal access</div>
+          <div className="muted">People who can open a tenant or vendor role</div>
         </div>
       </section>
 
       <section className="card stack">
         <div>
           <div className="kicker">Next step</div>
-          <h3 style={{ marginTop: 4 }}>Access action queue</h3>
+          <h3 style={{ marginTop: 4 }}>Sign-in action queue</h3>
         </div>
         {accessActions.length ? (
           <div className="stack" style={{ gap: 10 }}>
@@ -241,7 +249,7 @@ export default async function AccessPage() {
               <tr>
                 <th>Unit</th>
                 <th>Tenant</th>
-                <th>Access state</th>
+                <th>Sign-in status</th>
                 <th>Last activity</th>
                 <th>Action</th>
               </tr>
@@ -253,7 +261,7 @@ export default async function AccessPage() {
                 const stateLabel = archived
                   ? 'Archived'
                   : occupancy.current
-                    ? identity?.status.replaceAll('_', ' ')
+                    ? tenantAccessStateLabel(identity?.status)
                     : occupancy.upcoming
                       ? `Vacant until ${occupancy.vacantUntil?.toLocaleDateString()}`
                       : 'Vacant'
@@ -283,7 +291,7 @@ export default async function AccessPage() {
                     <td className="muted">{lastActivity}</td>
                     <td>
                       <Link href={`/units/${unit.id}`} className="button">
-                        Manage tenant access
+                        Manage tenant sign-in
                       </Link>
                     </td>
                   </tr>
@@ -300,7 +308,7 @@ export default async function AccessPage() {
         <div className="row">
           <div>
             <div className="kicker">Vendors</div>
-            <h3 style={{ marginTop: 4 }}>Vendor login access</h3>
+            <h3 style={{ marginTop: 4 }}>Vendor sign-in</h3>
           </div>
           <Link href="/vendors/new" className="button primary">Add vendor</Link>
         </div>
@@ -310,7 +318,7 @@ export default async function AccessPage() {
               <tr>
                 <th>Vendor</th>
                 <th>Contact</th>
-                <th>Access state</th>
+                <th>Sign-in status</th>
                 <th>Last login</th>
                 <th>Action</th>
               </tr>
@@ -320,11 +328,11 @@ export default async function AccessPage() {
                 <tr key={vendor.id}>
                   <td style={{ fontWeight: 600 }}>{vendor.name}</td>
                   <td className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` - ${vendor.phone}` : ''}</td>
-                  <td className="muted">{vendor.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="muted">{vendor.isActive ? (vendor.lastLoginAt ? 'Signed in' : 'No code used yet') : 'Inactive'}</td>
                   <td className="muted">{vendor.lastLoginAt ? new Date(vendor.lastLoginAt).toLocaleString() : 'Never'}</td>
                   <td>
-                    <Link href={`/vendors/${vendor.id}`} className="button">
-                      Manage vendor access
+                      <Link href={`/vendors/${vendor.id}`} className="button">
+                      Manage vendor sign-in
                     </Link>
                   </td>
                 </tr>

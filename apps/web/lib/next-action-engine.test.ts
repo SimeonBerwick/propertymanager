@@ -39,10 +39,10 @@ describe('next action engine', () => {
     })
   })
 
-  it('helps tenants who repeatedly fail portal access', () => {
+  it('helps tenants who repeatedly fail sign-in', () => {
     expect(getRequestNextAction({ ...base, tenantAccessFailureCount: 3 })).toMatchObject({
       priority: 'urgent',
-      primaryLabel: 'Help tenant access portal',
+      primaryLabel: 'Help tenant sign in',
       href: '/units/u1/edit',
       actionType: 'help_renter_access_portal',
     })
@@ -115,20 +115,34 @@ describe('next action engine', () => {
     })
   })
 
-  it('surfaces tenant appointment messages as the next manager review', () => {
+  it('surfaces tenant questions as the next manager review after work has started', () => {
     expect(getRequestNextAction({
       ...base,
       status: 'scheduled' as const,
       assignedVendorName: 'ACME Plumbing',
       vendorScheduledStart: '2026-06-20T12:00:00.000Z',
       reviewState: 'needs_follow_up' as const,
-      reviewNote: 'Tenant requested help with the appointment or repair.',
+      reviewNote: 'Tenant asked a question about this work order.',
     })).toMatchObject({
       priority: 'high',
-      primaryLabel: 'Review tenant appointment request',
-      reason: 'The tenant asked for help with the appointment or repair.',
+      primaryLabel: 'Review tenant question',
+      reason: 'The tenant asked a question about this work order.',
       href: '/requests/r1?comment=tenant#tenant-message-review',
       actionType: 'review_tenant_message',
+    })
+  })
+
+  it('keeps new tenant messages from replacing first request review', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'requested' as const,
+      reviewState: 'needs_follow_up' as const,
+      reviewNote: 'Tenant asked a question about this work order.',
+    })).toMatchObject({
+      primaryLabel: 'Start review',
+      reason: 'This new request is ready for review.',
+      href: '/requests/r1#actions',
+      actionType: 'claim_request',
     })
   })
 

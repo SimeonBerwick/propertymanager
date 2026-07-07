@@ -14,16 +14,16 @@ export function AccessTypeSelector({ error }: { error?: string }) {
 
   return (
     <div className="stack" style={{ gap: 14 }}>
-      <div className="muted">Choose who is signing in first.</div>
+      <div className="muted">Choose the role you want to use right now. If you are both a tenant and a vendor, pick one here and use the other sign-in when needed.</div>
       <div className="authRoleTabs" role="tablist" aria-label="Access type">
         <button type="button" className={tabClass('manager')} onClick={() => setSelectedRole('manager')}>
           Property manager
         </button>
-        <button type="button" className={tabClass('vendor')} onClick={() => setSelectedRole('vendor')}>
-          Vendor
-        </button>
         <button type="button" className={tabClass('tenant')} onClick={() => setSelectedRole('tenant')}>
           Tenant
+        </button>
+        <button type="button" className={tabClass('vendor')} onClick={() => setSelectedRole('vendor')}>
+          Vendor
         </button>
       </div>
 
