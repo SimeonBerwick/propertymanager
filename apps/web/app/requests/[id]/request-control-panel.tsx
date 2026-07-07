@@ -151,7 +151,7 @@ export function RequestControlPanel({
     <div className="stack" style={{ gap: 16 }}>
       {canChooseVendorPath ? (
         <div className="notice">
-          <strong>Choose one vendor path.</strong> Assign a trusted vendor for a service call when they should diagnose or handle a simple visit first. Ask for bids when you want pricing before anyone is chosen.
+          <strong>Choose one vendor path.</strong> Assign a trusted vendor for a service call when they should diagnose or handle a simple repair first. Ask for bids when you want pricing before anyone is chosen.
         </div>
       ) : null}
       {appointmentForm}

@@ -99,7 +99,7 @@ export default async function AccessPage() {
         reason: `The tenant has failed to open their tenant view ${frictionCount} times recently.`,
         primaryLabel: 'Help tenant sign in',
         href: `/units/${unit.id}/edit`,
-        actionType: 'help_renter_access_portal',
+        actionType: 'help_tenant_access_portal',
         group: 'Access blocked',
         score: 90,
       }]
@@ -112,7 +112,7 @@ export default async function AccessPage() {
         reason: 'The tenant has not used their sign-in code yet.',
         primaryLabel: 'Send tenant sign-in code',
         href: `/units/${unit.id}/edit`,
-        actionType: 'resend_renter_invite',
+        actionType: 'resend_tenant_invite',
         group: 'Codes waiting',
         score: 35,
       }]
@@ -125,7 +125,7 @@ export default async function AccessPage() {
         reason: 'The tenant has access, but has not opened their tenant view yet.',
         primaryLabel: 'Check tenant sign-in',
         href: `/units/${unit.id}/edit`,
-        actionType: 'confirm_renter_access',
+        actionType: 'confirm_tenant_access',
         group: 'Unused access',
         score: 10,
       }]

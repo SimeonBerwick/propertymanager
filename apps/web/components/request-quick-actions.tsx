@@ -39,9 +39,6 @@ export function RequestQuickActions({
     request.status === 'requested'
       ? { key: 'claim-for-review', label: 'Start review', tone: 'button primary', title: 'Start reviewing this request and notify the tenant that it is being looked at.' }
       : null,
-    ['approved', 'vendor_selected', 'reopened'].includes(request.status)
-      ? { key: 'mark-scheduled', label: 'Mark scheduled', tone: 'button', title: 'Move this request into scheduled status. Use request detail to add the actual time window.' }
-      : null,
     ['scheduled', 'vendor_selected'].includes(request.status)
       ? { key: 'start-work', label: 'Start work', tone: 'button', title: 'Move this request into in progress.' }
       : null,

@@ -101,7 +101,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if ((request.tenantAccessFailureCount ?? 0) >= 3) {
-    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help tenant sign in', reason: `The tenant has failed to open their tenant view ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_renter_access_portal', score: SCORE.accessBlocked }
+    return { ...base, id: `${request.id}:tenant-access`, href: request.unitId ? `/units/${request.unitId}/edit` : base.href, primaryLabel: 'Help tenant sign in', reason: `The tenant has failed to open their tenant view ${request.tenantAccessFailureCount} times recently.`, group: 'Access help', priority: 'urgent', actionType: 'help_tenant_access_portal', score: SCORE.accessBlocked }
   }
 
   if (request.status === 'requested' && !request.claimedAt) {

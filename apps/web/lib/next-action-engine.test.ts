@@ -44,7 +44,7 @@ describe('next action engine', () => {
       priority: 'urgent',
       primaryLabel: 'Help tenant sign in',
       href: '/units/u1/edit',
-      actionType: 'help_renter_access_portal',
+      actionType: 'help_tenant_access_portal',
     })
   })
 

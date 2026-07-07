@@ -10,7 +10,7 @@ describe('tenant request language', () => {
   test('explains the next step based on assignment and schedule', () => {
     expect(tenantRequestNextStep({ status: 'approved' })).toMatch(/choosing a vendor/i)
     expect(tenantRequestNextStep({ status: 'approved', assignedVendorName: 'ACME' })).toMatch(/ACME is being contacted/i)
-    expect(tenantRequestNextStep({ status: 'scheduled', vendorScheduledStart: '2026-06-15T10:00:00.000Z' })).toMatch(/appointment window/i)
+    expect(tenantRequestNextStep({ status: 'scheduled', vendorScheduledStart: '2026-06-15T10:00:00.000Z' })).toMatch(/appointment time/i)
   })
 
   test('uses decline and reassignment notes instead of a generic contact message', () => {
