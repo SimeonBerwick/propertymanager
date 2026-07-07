@@ -49,6 +49,11 @@ function formatProposedWindow(invite: RequestTenderView['invites'][number]) {
   ].filter(Boolean).join(' ')
 }
 
+function blurActiveField(form: HTMLFormElement) {
+  const active = form.ownerDocument.activeElement
+  if (active instanceof HTMLElement) active.blur()
+}
+
 export function RequestControlPanel({
   request,
   vendors,
@@ -89,7 +94,7 @@ export function RequestControlPanel({
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const canSetAppointment = hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
   const appointmentForm = canSetAppointment ? (
-    <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
+    <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }} onSubmit={(event) => blurActiveField(event.currentTarget)}>
       <div>
         <div className="kicker">Appointment</div>
         <h3 style={{ marginTop: 4 }}>Add the appointment time</h3>

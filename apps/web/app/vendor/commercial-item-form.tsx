@@ -8,11 +8,26 @@ const INITIAL_STATE: VendorCommercialActionState = { error: null }
 export function VendorCommercialItemForm({
   requestId,
   defaultItemType = 'bid',
+  context = 'general',
 }: {
   requestId: string
   defaultItemType?: 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+  context?: 'general' | 'service_call'
 }) {
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
+  const typeOptions = context === 'service_call'
+    ? [
+        { value: 'service_fee', label: 'Service charge' },
+        { value: 'overcost', label: 'Parts only' },
+        { value: 'bid', label: 'Estimated repair cost' },
+        { value: 'bill_to_property_manager', label: 'Final invoice' },
+      ]
+    : [
+        { value: 'bid', label: 'Bid' },
+        { value: 'service_fee', label: 'Service fee' },
+        { value: 'overcost', label: 'Extra cost' },
+        { value: 'bill_to_property_manager', label: 'Invoice property manager' },
+      ]
 
   return (
     <form action={action} className="stack">
@@ -22,10 +37,9 @@ export function VendorCommercialItemForm({
       <label className="field">
         <span className="field-label">Submission type</span>
         <select className="input" name="itemType" defaultValue={defaultItemType}>
-          <option value="bid">Bid</option>
-          <option value="service_fee">Service fee</option>
-          <option value="overcost">Extra cost</option>
-          <option value="bill_to_property_manager">Invoice property manager</option>
+          {typeOptions.map((option) => (
+            <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>
+          ))}
         </select>
       </label>
       <div className="grid cols-2">

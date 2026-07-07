@@ -5,27 +5,53 @@ import { submitVendorPortalResponse, type VendorPortalResponseState } from './ac
 
 const INITIAL_STATE: VendorPortalResponseState = { error: null }
 
-export function VendorRequestResponseForm({ requestId, initialResponse = 'contacted' }: { requestId: string; initialResponse?: string }) {
+function blurActiveField(form: HTMLFormElement) {
+  const active = form.ownerDocument.activeElement
+  if (active instanceof HTMLElement) active.blur()
+}
+
+export function VendorRequestResponseForm({
+  requestId,
+  initialResponse = 'contacted',
+  hasAppointment = false,
+  pendingBid = false,
+}: {
+  requestId: string
+  initialResponse?: string
+  hasAppointment?: boolean
+  pendingBid?: boolean
+}) {
   const [state, action, pending] = useActionState(submitVendorPortalResponse, INITIAL_STATE)
   const [response, setResponse] = useState(initialResponse)
-  const showBid = response === 'contacted' || response === 'accepted'
+  const showBid = pendingBid && (response === 'contacted' || response === 'accepted')
   const showSchedule = response === 'scheduled'
   const showPhotos = response === 'completed'
+  const responseOptions = hasAppointment && !pendingBid
+    ? [
+        ['in_progress', 'Started work'],
+        ['completed', 'Completed'],
+        ['canceled', 'Cannot continue'],
+      ]
+    : [
+        ['contacted', 'Contacted'],
+        ['accepted', 'Accepted'],
+        ['declined', 'Declined'],
+        ['canceled', 'Canceled after acceptance'],
+        ['scheduled', 'Scheduled'],
+        ['completed', 'Completed'],
+      ]
 
   return (
-    <form action={action} className="stack">
+    <form action={action} className="stack" onSubmit={(event) => blurActiveField(event.currentTarget)}>
       <input type="hidden" name="requestId" value={requestId} />
       {state.error ? <div className="notice error">{state.error}</div> : null}
 
       <label className="field">
         <span className="field-label">Response</span>
         <select className="input" name="dispatchStatus" value={response} onChange={(event) => setResponse(event.target.value)}>
-          <option value="contacted">Contacted</option>
-          <option value="accepted">Accepted</option>
-          <option value="declined">Declined</option>
-          <option value="canceled">Canceled after acceptance</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="completed">Completed</option>
+          {responseOptions.map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
         </select>
       </label>
 
@@ -66,7 +92,7 @@ export function VendorRequestResponseForm({ requestId, initialResponse = 'contac
       </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting...' : response === 'scheduled' ? 'Save appointment' : 'Send update'}
+        {pending ? 'Submitting...' : response === 'scheduled' ? 'Save appointment' : 'Send work update'}
       </button>
     </form>
   )

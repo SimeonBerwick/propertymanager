@@ -13,7 +13,7 @@ import { logServerActionError } from '@/lib/observability'
 
 export type VendorPortalResponseState = { error: string | null }
 
-const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', 'scheduled', 'completed', 'canceled']
+const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', 'scheduled', 'in_progress', 'completed', 'canceled']
 
 function tenantRequestActionUrl(requestId: string) {
   return `${getAppBaseUrl('tenant vendor update notifications')}/mobile/requests/${requestId}`
@@ -148,6 +148,8 @@ export async function submitVendorPortalResponse(
           : null
       const requestStatus: RequestStatus | undefined = dispatchStatus === 'scheduled'
         ? 'scheduled'
+        : dispatchStatus === 'in_progress'
+          ? 'in_progress'
         : dispatchStatus === 'completed'
           ? 'completed'
           : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
@@ -170,8 +172,8 @@ export async function submitVendorPortalResponse(
             assignedVendorEmail: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.email : undefined,
             assignedVendorPhone: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : acceptsWorkWithoutBid ? session.phone : undefined,
             dispatchStatus,
-            vendorScheduledStart: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledStart,
-            vendorScheduledEnd: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledEnd,
+            vendorScheduledStart: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledStartRaw ? scheduledStart : undefined,
+            vendorScheduledEnd: dispatchStatus === 'declined' || dispatchStatus === 'canceled' ? null : scheduledEndRaw ? scheduledEnd : dispatchStatus === 'scheduled' ? null : undefined,
             status: requestStatus,
             reviewState,
             reviewNote,

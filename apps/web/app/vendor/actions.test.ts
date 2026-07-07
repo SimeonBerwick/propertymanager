@@ -234,6 +234,49 @@ describe('submitVendorPortalResponse', () => {
     expect(refreshedRequest?.vendorScheduledStart).toBeNull()
   })
 
+  test('started work update preserves the confirmed appointment time', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Southwest Plumbing', email: 'southwest@example.com' },
+    })
+    const appointmentStart = new Date('2026-07-10T17:00:00.000Z')
+    const appointmentEnd = new Date('2026-07-10T18:00:00.000Z')
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'scheduled',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'scheduled',
+      vendorScheduledStart: appointmentStart,
+      vendorScheduledEnd: appointmentEnd,
+    })
+
+    vi.mocked(requireVendorSession).mockResolvedValue({
+      sessionId: 'vendor-session',
+      vendorId: vendor.id,
+      orgId: user.id,
+      vendorName: vendor.name,
+      email: vendor.email,
+      phone: null,
+    })
+
+    await expect(submitVendorPortalResponse(
+      { error: null },
+      formData({
+        requestId: request.id,
+        dispatchStatus: 'in_progress',
+        note: 'Arrived and started diagnosis',
+      }),
+    )).rejects.toThrow(/NEXT_REDIRECT/)
+
+    const refreshedRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(refreshedRequest?.status).toBe('in_progress')
+    expect(refreshedRequest?.dispatchStatus).toBe('in_progress')
+    expect(refreshedRequest?.vendorScheduledStart?.toISOString()).toBe(appointmentStart.toISOString())
+    expect(refreshedRequest?.vendorScheduledEnd?.toISOString()).toBe(appointmentEnd.toISOString())
+  })
+
   test('declining an assigned work order clears vendor assignment so it no longer appears as assigned work', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({
