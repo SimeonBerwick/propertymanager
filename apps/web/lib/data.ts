@@ -115,6 +115,11 @@ function mapUnit(u: any): Unit {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow {
+  const latestScheduledDispatch = Array.isArray(r.dispatchHistory)
+    ? r.dispatchHistory.find((entry: any) => entry.scheduledStart)
+    : undefined
+  const vendorScheduledStart = r.vendorScheduledStart ?? latestScheduledDispatch?.scheduledStart
+  const vendorScheduledEnd = r.vendorScheduledEnd ?? latestScheduledDispatch?.scheduledEnd
   const billingOpenBalanceCents = Array.isArray(r.billingDocuments)
     ? r.billingDocuments
         .filter((doc: any) => doc.status !== 'void')
@@ -146,8 +151,8 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     assignedVendorIds: r.assignedVendorId ? [r.assignedVendorId] : [],
     assignedVendorNames: r.assignedVendorName ? [r.assignedVendorName] : [],
     dispatchStatus: r.dispatchStatus ?? undefined,
-    vendorScheduledStart: r.vendorScheduledStart ? new Date(r.vendorScheduledStart).toISOString() : undefined,
-    vendorScheduledEnd: r.vendorScheduledEnd ? new Date(r.vendorScheduledEnd).toISOString() : undefined,
+    vendorScheduledStart: vendorScheduledStart ? new Date(vendorScheduledStart).toISOString() : undefined,
+    vendorScheduledEnd: vendorScheduledEnd ? new Date(vendorScheduledEnd).toISOString() : undefined,
     actualCompletedAt: r.actualCompletedAt ? new Date(r.actualCompletedAt).toISOString() : undefined,
     reviewState: r.reviewState ?? undefined,
     reviewNote: r.reviewNote ?? undefined,
@@ -508,6 +513,12 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
             where: { status: 'submitted' },
             select: { id: true, status: true, itemType: true },
           },
+          dispatchHistory: {
+            where: { scheduledStart: { not: null } },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { scheduledStart: true, scheduledEnd: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -649,6 +660,12 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
             vendorCommercialItems: {
               where: { status: 'submitted' },
               select: { id: true, status: true, itemType: true },
+            },
+            dispatchHistory: {
+              where: { scheduledStart: { not: null } },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { scheduledStart: true, scheduledEnd: true },
             },
           },
           orderBy: { createdAt: 'desc' },

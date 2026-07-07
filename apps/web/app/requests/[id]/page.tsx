@@ -92,6 +92,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     .sort((a, b) => new Date(b.activityAt).getTime() - new Date(a.activityAt).getTime())[0]
   const latestVendorDispatch = [...data.dispatchHistory]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+  const latestScheduledDispatch = [...data.dispatchHistory]
+    .filter((entry) => entry.scheduledStart)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
   const latestVisibleReply = [...data.comments]
     .filter((comment) => comment.visibility === 'external')
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
@@ -135,9 +138,20 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const hasBidDetails = data.tenders.length > 0 || Boolean(latestTenderReply) || Boolean(latestCommercialReply)
   const hasSubmittedBid = data.tenders.some((tender) => tender.invites.some((invite) => invite.status === 'bid_submitted'))
     || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
+  const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
+  const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
-  const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !data.request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
-  const actionSectionTitle = needsAppointmentTime
+  const effectiveVendorScheduledStart = data.request.vendorScheduledStart ?? latestScheduledDispatch?.scheduledStart
+  const effectiveVendorScheduledEnd = data.request.vendorScheduledEnd ?? latestScheduledDispatch?.scheduledEnd
+  const requestWithEffectiveAppointment = {
+    ...data.request,
+    vendorScheduledStart: effectiveVendorScheduledStart,
+    vendorScheduledEnd: effectiveVendorScheduledEnd,
+  }
+  const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const actionSectionTitle = pendingVendorCommercialItems.length
+    ? 'Approve vendor cost'
+    : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
       ? 'Approve vendor bid'
@@ -146,7 +160,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         : ['completed', 'closed'].includes(data.request.status)
           ? 'Close request actions'
           : 'Request actions'
-  const actionSectionSubtitle = needsAppointmentTime
+  const actionSectionSubtitle = pendingVendorCommercialItems.length
+    ? 'Review the vendor charge before billing, payment, or closeout.'
+    : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
       ? 'Review returned pricing and choose the vendor.'
@@ -155,8 +171,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         : ['completed', 'closed'].includes(data.request.status)
           ? 'Reopen only if more work is needed.'
           : 'Choose the next clear step for this request.'
-  const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
-  const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
   const needsTenantChargeDocument = tenantChargebackCents > 0
   const needsVendorPaymentDocument = vendorOutstandingCents > 0
@@ -166,7 +180,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   return (
     <div className="stack requestDetailPage">
       <RecommendedNextStepPanel request={{
-        ...data.request,
+        ...requestWithEffectiveAppointment,
         tenantAccessFailureCount: data.tenantAccessFailureCount,
         tenantStatusUpdatePending: data.tenantStatusUpdatePending,
         pendingVendorApprovalCount: pendingVendorCommercialItems.length,
@@ -204,10 +218,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
         <WorkOrderContext request={data.request} />
         <RequestControlPanel
-          request={data.request}
+          request={requestWithEffectiveAppointment}
           vendors={data.availableVendors}
           tenders={data.tenders}
-          statusControlPriority={canChooseVendor || hasSubmittedBid ? 'secondary' : 'primary'}
+          statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 ? 'secondary' : 'primary'}
         />
       </SectionCard>
       </div>
