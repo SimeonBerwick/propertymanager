@@ -161,6 +161,16 @@ describe('next action engine', () => {
     })
   })
 
+  it('waits for a vendor bill when completed work has no vendor charge recorded', () => {
+    expect(getRequestNextAction({ ...base, status: 'completed' as const, assignedVendorName: 'ACME Plumbing', vendorBillPending: true })).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Await vendor bill',
+      reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.',
+      href: '/requests/r1#billing',
+      actionType: 'await_vendor_bill',
+    })
+  })
+
   it('reviews submitted vendor costs before closeout', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
       priority: 'high',

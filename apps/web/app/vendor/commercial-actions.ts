@@ -29,6 +29,7 @@ export async function createVendorCommercialItemAction(
   const requestId = String(formData.get('requestId') ?? '')
   const itemType = String(formData.get('itemType') ?? '')
   const amount = String(formData.get('amount') ?? '')
+  const noCharge = formData.get('noCharge') === 'true'
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
   const attachmentFile = formData.get('attachment')
@@ -36,10 +37,12 @@ export async function createVendorCommercialItemAction(
 
   if (!requestId) return { error: 'Request is required.' }
   if (!['bid', 'service_fee', 'overcost', 'bill_to_property_manager'].includes(itemType)) return { error: 'Invalid submission type.' }
-  if (!title) return { error: 'Title is required.' }
+  const effectiveTitle = noCharge && !title ? 'No charge' : title
+  const effectiveItemType = noCharge ? 'service_fee' : itemType
+  if (!effectiveTitle) return { error: 'Title is required.' }
 
-  const amountCents = centsFromDollars(amount)
-  if (amountCents == null || amountCents <= 0) return { error: 'Valid USD amount is required.' }
+  const amountCents = noCharge ? 0 : centsFromDollars(amount)
+  if (amountCents == null || (!noCharge && amountCents <= 0)) return { error: 'Valid USD amount is required.' }
   const attachmentError = await validateVendorAttachment(attachment)
   if (attachmentError) return { error: attachmentError }
 
@@ -69,10 +72,10 @@ export async function createVendorCommercialItemAction(
         requestId: request.id,
         vendorId: session.vendorId,
         orgId: session.orgId ?? null,
-        itemType: itemType as VendorCommercialItemType,
+        itemType: effectiveItemType as VendorCommercialItemType,
         currency: 'usd',
         amountCents,
-        title,
+        title: effectiveTitle,
         description: description || null,
         ...attachmentData,
       },
@@ -85,15 +88,15 @@ export async function createVendorCommercialItemAction(
       entityType: 'vendorCommercialItem',
       entityId: item.id,
       action: 'vendorCommercialItem.created',
-      summary: `Vendor submitted ${itemType} for request ${request.id}.`,
-      metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title, hasAttachment: Boolean(savedAttachment) },
+      summary: `Vendor submitted ${effectiveItemType} for request ${request.id}.`,
+      metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title: effectiveTitle, noCharge, hasAttachment: Boolean(savedAttachment) },
     })
 
     revalidatePath('/vendor')
     revalidatePath('/vendor/summary')
     revalidatePath(`/vendor/requests/${request.id}`)
     revalidatePath(`/requests/${request.id}`)
-    return { error: null, success: true }
+    return { error: null, success: true, message: noCharge ? 'No-charge service call submitted to the property manager.' : undefined }
   } catch (error) {
     if (savedAttachment && isAttachmentColumnError(error)) {
       const droppedAttachment = savedAttachment
@@ -106,10 +109,10 @@ export async function createVendorCommercialItemAction(
             requestId: request.id,
             vendorId: session.vendorId,
             orgId: session.orgId ?? null,
-            itemType: itemType as VendorCommercialItemType,
+            itemType: effectiveItemType as VendorCommercialItemType,
             currency: 'usd',
             amountCents,
-            title,
+            title: effectiveTitle,
             description: [
               description || null,
               `Bill attachment could not be linked by the app. Vendor tried to attach: ${droppedAttachment.name}.`,
@@ -124,8 +127,8 @@ export async function createVendorCommercialItemAction(
           entityType: 'vendorCommercialItem',
           entityId: item.id,
           action: 'vendorCommercialItem.created',
-          summary: `Vendor submitted ${itemType} for request ${request.id}; attachment link was skipped.`,
-          metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title, attachmentSkipped: true },
+          summary: `Vendor submitted ${effectiveItemType} for request ${request.id}; attachment link was skipped.`,
+          metadata: { requestId: request.id, vendorId: session.vendorId, amountCents, title: effectiveTitle, noCharge, attachmentSkipped: true },
         })
 
         await logServerActionError('vendorCommercialItem.create.attachmentColumnsMissing', error, {

@@ -28,6 +28,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   unitLabel?: string
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents?: number
+  vendorBillPending?: boolean
   vendorPayableTo?: string
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
@@ -163,6 +164,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if (request.vendorScheduledStart && request.status === 'scheduled') {
     return { ...base, id: `${request.id}:scheduled`, primaryLabel: 'Wait for appointment', reason: 'The vendor is scheduled. No manager action is needed right now.', group: 'Monitoring', priority: 'low', actionType: 'monitor_scheduled_work', score: SCORE.routine }
+  }
+
+  if (request.vendorBillPending) {
+    return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
   }
 
   if ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0) {
