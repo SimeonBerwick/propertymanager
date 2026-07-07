@@ -147,7 +147,7 @@ export function RequestControlPanel({
     <div className="stack" style={{ gap: 16 }}>
       {canChooseVendorPath ? (
         <div className="notice">
-          <strong>Choose one vendor path.</strong> Use direct assignment when you already know who should do the work. Use bid invitations when you want vendors to send pricing or availability first. You do not need to do both.
+          <strong>Choose one vendor path.</strong> Assign a trusted vendor for a service call when they should diagnose or handle a simple visit first. Ask for bids when you want pricing before anyone is chosen.
         </div>
       ) : null}
       {appointmentForm}
@@ -192,23 +192,23 @@ export function RequestControlPanel({
       {canChooseVendorPath ? (
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
-          <div className="kicker">Path 1</div>
-          <h3 style={{ marginTop: 4 }}>Assign one vendor now</h3>
+          <div className="kicker">Path 1: Service call</div>
+          <h3 style={{ marginTop: 4 }}>Assign vendor to service call</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
         <label className="field">
-          <span className="field-label">Vendor to assign directly</span>
-          <select className="input" name="vendorId" aria-label="Vendor to assign directly" defaultValue="">
+          <span className="field-label">Vendor for service call</span>
+          <select className="input" name="vendorId" aria-label="Vendor for service call" defaultValue="">
             <option value="">No vendor selected</option>
             {vendors.map((vendor) => (
               <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
             ))}
           </select>
         </label>
-        <div className="muted">Use this when you already know the vendor for the job. This skips the bid process.</div>
+        <div className="muted">Use this when a trusted vendor should inspect the issue or complete a simple service call. If more work is needed, the vendor can submit a bid, overage, or invoice before you approve any cost.</div>
         <ActionFeedback error={vendorState.error} success={vendorState.success ? vendorState.message ?? 'Vendor updated.' : null} detail="The assignment is visible in the request timeline." />
         <button type="submit" className="button primary" disabled={vendorPending}>
-          {vendorPending ? 'Assigning...' : 'Assign this vendor'}
+          {vendorPending ? 'Assigning...' : 'Assign service call'}
         </button>
         {recommended.length ? <div className="muted">Available vendors: {recommended.map((vendor) => vendor.name).join(', ')}</div> : null}
       </form>
@@ -217,8 +217,8 @@ export function RequestControlPanel({
       {canChooseVendorPath ? (
       <form action={vendorAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
         <div>
-          <div className="kicker">Path 2</div>
-          <h3 style={{ marginTop: 4 }}>Ask vendors for bids first</h3>
+          <div className="kicker">Path 2: Bid first</div>
+          <h3 style={{ marginTop: 4 }}>Ask vendors for repair bids first</h3>
         </div>
         <input type="hidden" name="requestId" value={request.id} />
         <input type="hidden" name="mode" value="tender" />
@@ -230,7 +230,7 @@ export function RequestControlPanel({
             </label>
           )) : <div className="muted">No active vendors available.</div>}
         </div>
-        <div className="muted">Use this when you want vendors to return pricing or available times before you choose who gets the job.</div>
+        <div className="muted">Use this when the work should be priced before a vendor is selected.</div>
 
         <button type="submit" className="button" disabled={vendorPending || !vendors.length}>
           {vendorPending ? 'Sending...' : 'Send bid invitations'}

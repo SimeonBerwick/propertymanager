@@ -142,7 +142,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     : hasSubmittedBid
       ? 'Approve vendor bid'
       : canChooseVendor
-        ? 'Choose vendor path'
+        ? 'Choose service-call or bid path'
         : ['completed', 'closed'].includes(data.request.status)
           ? 'Close request actions'
           : 'Request actions'
@@ -151,7 +151,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     : hasSubmittedBid
       ? 'Review returned pricing and choose the vendor.'
       : canChooseVendor
-        ? 'Assign one vendor directly or ask multiple vendors for bids.'
+        ? 'Assign a trusted vendor for the service call, or ask vendors for repair bids before choosing.'
         : ['completed', 'closed'].includes(data.request.status)
           ? 'Reopen only if more work is needed.'
           : 'Choose the next clear step for this request.'

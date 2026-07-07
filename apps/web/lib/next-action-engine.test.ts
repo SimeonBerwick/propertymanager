@@ -153,7 +153,7 @@ describe('next action engine', () => {
 
   it('asks for vendor assignment before vendor cost approval when no vendor has been chosen', () => {
     expect(getRequestNextAction({ ...base, status: 'approved' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
-      primaryLabel: 'Invite vendors to bid',
+      primaryLabel: 'Assign service call',
       href: '/requests/r1#actions',
       actionType: 'assign_vendor',
     })

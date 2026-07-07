@@ -125,7 +125,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (!hasVendorChosen(request) && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
-    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Invite vendors to bid', reason: 'This request is ready for vendor bids or a direct vendor assignment.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
+    return { ...base, id: `${request.id}:assign`, primaryLabel: 'Assign service call', reason: 'Choose a trusted vendor for the service call, or ask vendors for repair bids first.', group: 'Vendor assignment', priority: 'normal', actionType: 'assign_vendor', score: SCORE.vendorAssignment }
   }
 
   if ((request.pendingVendorApprovalCount ?? 0) > 0 && canReviewVendorCosts(request)) {
