@@ -46,6 +46,7 @@ export async function submitMaintenanceRequest(
   }
 
   const orgSlug = getString(formData, 'orgSlug') || undefined
+  const managerMode = getString(formData, 'managerMode') === 'true'
   const propertyId = getString(formData, 'propertyId')
   const unitId = getString(formData, 'unitId')
   const tenantName = getString(formData, 'tenantName')
@@ -208,7 +209,7 @@ export async function submitMaintenanceRequest(
 
   const successUrl = orgSlug
     ? `/submit/${orgSlug}?submitted=${createdRequestId}`
-    : `/submit?submitted=${createdRequestId}`
+    : `/submit?submitted=${createdRequestId}${managerMode ? '&mode=manager' : ''}`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   redirect(successUrl as any)
 }

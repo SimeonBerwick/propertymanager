@@ -192,50 +192,9 @@ export default async function DashboardPage({
       <SectionCard
         kicker="Inbox"
         title="Open work orders"
-        subtitle="Scan fast and move the right request forward."
+        subtitle="Open the request that needs attention next."
         action={<Link href="/dashboard" className="button">Clear filters</Link>}
       >
-        <form method="get" className="filtersRow">
-          <input type="hidden" name="queue" value={selectedQueue} />
-          <label className="field" style={{ minWidth: 180 }}>
-            <span className="field-label">City</span>
-            <select className="input" name="city" defaultValue={selectedCity}>
-              <option value="all">All cities</option>
-              {cities.map((city) => <option key={city} value={city}>{city}</option>)}
-            </select>
-          </label>
-          <label className="field" style={{ minWidth: 180 }}>
-            <span className="field-label">Language</span>
-            <select className="input" name="language" defaultValue={selectedLanguage}>
-              <option value="all">All languages</option>
-              <option value="english">English</option>
-              <option value="spanish">Spanish</option>
-              <option value="french">French</option>
-            </select>
-          </label>
-          <label className="field" style={{ minWidth: 180 }}>
-            <span className="field-label">Sort order</span>
-            <select className="input" name="sort" defaultValue={selectedSort}>
-              <option value="newest">Newest to oldest</option>
-              <option value="oldest">Oldest to newest</option>
-            </select>
-          </label>
-          <button type="submit" className="button">Filter</button>
-        </form>
-        <DashboardViewControls />
-
-        <div className="filterChipRow">
-          <Link href="/dashboard" className="filterChip" style={selectedQueue === 'all' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>All</Link>
-          <Link href="/dashboard?queue=open" className="filterChip" style={selectedQueue === 'open' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Open only</Link>
-          <Link href="/dashboard?queue=declined" className="filterChip" style={selectedQueue === 'declined' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Declined</Link>
-          <Link href="/dashboard?queue=canceled" className="filterChip" style={selectedQueue === 'canceled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Canceled</Link>
-          <Link href="/dashboard?queue=completed" className="filterChip" style={selectedQueue === 'completed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Completed</Link>
-          <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
-          <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Not started</Link>
-          <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
-          <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue</Link>
-        </div>
-
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
           Showing {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
@@ -243,6 +202,52 @@ export default async function DashboardPage({
         </div>
 
         <RequestQueueList requests={focusNow} selectedSort={selectedSort} />
+
+        <details className="advancedDisclosure">
+          <summary>Filter and sort</summary>
+          <div className="stack" style={{ marginTop: 16 }}>
+            <form method="get" className="filtersRow">
+              <input type="hidden" name="queue" value={selectedQueue} />
+              <label className="field" style={{ minWidth: 180 }}>
+                <span className="field-label">City</span>
+                <select className="input" name="city" defaultValue={selectedCity}>
+                  <option value="all">All cities</option>
+                  {cities.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </label>
+              <label className="field" style={{ minWidth: 180 }}>
+                <span className="field-label">Language</span>
+                <select className="input" name="language" defaultValue={selectedLanguage}>
+                  <option value="all">All languages</option>
+                  <option value="english">English</option>
+                  <option value="spanish">Spanish</option>
+                  <option value="french">French</option>
+                </select>
+              </label>
+              <label className="field" style={{ minWidth: 180 }}>
+                <span className="field-label">Sort order</span>
+                <select className="input" name="sort" defaultValue={selectedSort}>
+                  <option value="newest">Newest to oldest</option>
+                  <option value="oldest">Oldest to newest</option>
+                </select>
+              </label>
+              <button type="submit" className="button">Filter</button>
+            </form>
+            <DashboardViewControls />
+
+            <div className="filterChipRow">
+              <Link href="/dashboard" className="filterChip" style={selectedQueue === 'all' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>All</Link>
+              <Link href="/dashboard?queue=open" className="filterChip" style={selectedQueue === 'open' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Open only</Link>
+              <Link href="/dashboard?queue=declined" className="filterChip" style={selectedQueue === 'declined' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Declined</Link>
+              <Link href="/dashboard?queue=canceled" className="filterChip" style={selectedQueue === 'canceled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Canceled</Link>
+              <Link href="/dashboard?queue=completed" className="filterChip" style={selectedQueue === 'completed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Completed</Link>
+              <Link href="/dashboard?queue=follow-up" className="filterChip" style={selectedQueue === 'follow-up' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Needs follow-up</Link>
+              <Link href="/dashboard?queue=unclaimed" className="filterChip" style={selectedQueue === 'unclaimed' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Not started</Link>
+              <Link href="/dashboard?queue=scheduled-today" className="filterChip" style={selectedQueue === 'scheduled-today' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Scheduled today</Link>
+              <Link href="/dashboard?queue=overdue-scheduled" className="filterChip" style={selectedQueue === 'overdue-scheduled' ? { color: '#2f9e44', borderColor: '#2f9e44' } : undefined}>Overdue</Link>
+            </div>
+          </div>
+        </details>
       </SectionCard>
         </div>
       </details>

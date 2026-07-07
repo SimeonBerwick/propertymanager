@@ -14,9 +14,16 @@ function SubmitButton() {
 }
 
 export function LoginForm({ error }: { error?: string }) {
+  const showHelp = Boolean(error)
+
   return (
     <form action={loginRouteAction} className="stack">
-      {error ? <div className="notice error">{error}</div> : null}
+      {error ? (
+        <div className="notice error stack" style={{ gap: 8 }}>
+          <span>{error}</span>
+          <span>Check the email and password, or contact support if you need your password reset.</span>
+        </div>
+      ) : null}
 
       <label className="field">
         <span className="field-label">Email</span>
@@ -42,6 +49,11 @@ export function LoginForm({ error }: { error?: string }) {
       </label>
 
       <SubmitButton />
+      {showHelp ? (
+        <a className="button" href="mailto:support@simeonware.com?subject=Password%20reset%20help">
+          Get sign-in help
+        </a>
+      ) : null}
     </form>
   )
 }

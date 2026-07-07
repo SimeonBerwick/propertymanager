@@ -109,7 +109,7 @@ export default async function VendorDashboardPage({
 
       <section className="card stack">
         <div>
-          <div className="kicker">Do next</div>
+          <div className="kicker">Next step</div>
           <h2 style={{ margin: '4px 0' }}>Work waiting on you</h2>
           <div className="muted">Bid invites, chosen work, scheduled appointments, and requested updates are shown first.</div>
         </div>
