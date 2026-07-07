@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import { redirect } from 'next/navigation'
+import { PortalMainAppLink } from '@/components/portal-main-app-link'
 import { getVendorSession } from '@/lib/vendor-session'
 
 export default async function VendorAuthLandingPage({
@@ -26,7 +27,7 @@ export default async function VendorAuthLandingPage({
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/vendor/auth/login' as Route} className="button primary">Vendor sign in</Link>
-        <Link href={'/' as Route} className="button">Back to main app</Link>
+        <PortalMainAppLink />
       </div>
     </div>
   )

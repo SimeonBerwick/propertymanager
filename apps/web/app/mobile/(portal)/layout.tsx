@@ -18,7 +18,7 @@ export default async function TenantMobileLayout({ children }: { children: React
             <h2 style={{ margin: '4px 0' }}>{session.propertyName} - {session.unitLabel}</h2>
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
-          <details className="actionMenu" style={{ marginLeft: 'auto' }}>
+          <details className="actionMenu portalActionMenu" style={{ marginLeft: 'auto' }}>
             <summary>Portal menu</summary>
             <div className="actionMenuPanel">
               <Link href={'/mobile' as Route}>Dashboard</Link>
