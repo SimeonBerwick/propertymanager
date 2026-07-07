@@ -160,7 +160,7 @@ body { min-height: 100vh; }
   list-style: none;
 }
 .navMenu summary::-webkit-details-marker, .actionMenu summary::-webkit-details-marker { display: none; }
-.navMenu summary::after, .actionMenu summary::after { content: "⌄"; color: var(--muted); font-size: 12px; }
+.navMenu summary::after, .actionMenu summary::after { content: "v"; color: var(--muted); font-size: 12px; }
 .navMenu[open] summary, .navMenu summary:hover, .actionMenu[open] summary, .actionMenu summary:hover {
   border-color: var(--border);
   background: var(--chip);
@@ -209,6 +209,7 @@ body { min-height: 100vh; }
   left: auto;
   right: 0;
   width: min(280px, calc(100vw - 56px));
+  max-width: calc(100vw - 32px);
 }
 .portalHeaderActions {
   flex-wrap: wrap;

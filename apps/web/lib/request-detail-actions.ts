@@ -752,9 +752,10 @@ export async function approveVendorCommercialItemAction(
     })
 
     let draftPosted = true
+    let draftDocument: Awaited<ReturnType<typeof upsertVendorRemittanceDraft>> = null
     try {
       await prisma.$transaction(async (tx) => {
-        await upsertVendorRemittanceDraft(tx, {
+        draftDocument = await upsertVendorRemittanceDraft(tx, {
           requestId,
           vendorId: item.vendorId,
           vendorName: item.vendor.name,
@@ -808,6 +809,9 @@ export async function approveVendorCommercialItemAction(
     }
     if (!draftPosted) {
       return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved. Create or update the vendor payment record before closeout.' : 'Vendor cost approved. Create or update the vendor payment record before closeout.' }
+    }
+    if (!draftDocument) {
+      return { error: null, success: true, message: item.amountCents <= 0 ? 'No-charge submission approved. No vendor payment record is needed.' : 'Vendor submission approved. No vendor payment record was needed.' }
     }
     return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
   } catch (error) {

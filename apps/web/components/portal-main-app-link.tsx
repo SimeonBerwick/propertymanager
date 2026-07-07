@@ -10,7 +10,7 @@ export function PortalMainAppLink() {
         window.location.replace('/')
       }}
     >
-      Back to main app
+      Choose another sign-in
     </a>
   )
 }

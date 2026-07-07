@@ -62,8 +62,8 @@ describe('request guidance', () => {
 
     expect(getWorkflowStep(request)).toBe(5)
     expect(getRecommendedAction(request)).toMatchObject({
-      label: 'Collect payment before closeout',
-      detail: 'Vendor payment is still open for ACME Plumbing.',
+      label: 'Settle billing before closeout',
+      detail: 'Vendor payment or a billing document still has an open balance.',
       tone: 'normal',
     })
     expect(getAttentionScore(request)).toBeGreaterThan(0)
