@@ -28,6 +28,15 @@ function isAccessAction(action: RecommendedAction) {
   return action.group === 'Access help' || action.group === 'Access actions' || action.group === 'Unused access'
 }
 
+function OverviewMetric({ label, value, href }: { label: string; value: number; href: Route }) {
+  return (
+    <Link href={href} className="overviewMetric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </Link>
+  )
+}
+
 function ActionRow({ action, compact = false }: { action: RecommendedAction, compact?: boolean }) {
   const subtitle = actionSubtitle(action)
 
@@ -56,36 +65,54 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
   const remainingActions = primaryAction ? nextActions.slice(1) : nextActions
   const actionGroups = groupDashboardNextActions(remainingActions)
   const hasScheduledToday = overview.scheduledToday.length > 0
+  const waitingOnVendors = overview.waitingOnOthers.filter((request) => (
+    (request.activeTenderInviteCount ?? 0) > 0
+    || Boolean(request.assignedVendorName || request.assignedVendorId || request.vendorScheduledStart)
+  )).length
 
   return (
     <div className="stack todayOverview">
       <section className="card todayOverviewHero">
-        <div>
+        <div className="nextStepCopy">
           <div className="kicker">Today &middot; {formatDateOnly(now)}</div>
-          <h1 className="pageTitle">{primaryAction ? 'Do this next' : 'All caught up'}</h1>
-          <div className="muted">
-            {primaryAction
-              ? primaryAction.reason
-              : hasScheduledToday
-                ? "No requests need a manager decision right now. Monitor today's appointments and incoming updates."
-                : 'No requests need a manager decision right now.'}
+          <h1 className="pageTitle">{primaryAction ? 'Next step' : 'No manager decision needed'}</h1>
+          {primaryAction ? (
+            <div className="nextStepSummary">
+              <strong>{primaryAction.title}</strong>
+              {actionSubtitle(primaryAction) ? <span>{actionSubtitle(primaryAction)}</span> : null}
+              <p>{primaryAction.reason}</p>
+            </div>
+          ) : (
+            <div className="muted">
+              {hasScheduledToday
+                ? "Monitor today's appointments and incoming updates."
+                : 'Open work orders are waiting on vendors, tenants, or scheduled activity.'}
+            </div>
+          )}
+        </div>
+        <div className="nextStepActions">
+          {primaryAction ? (
+            <Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>
+          ) : hasScheduledToday ? (
+            <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
+          ) : (
+            <Link href="/dashboard?queue=open" className="button primary">Review open work</Link>
+          )}
+          <div className="overviewMetricGrid" aria-label="Dashboard summary">
+            <OverviewMetric label="Needs decision" value={nextActions.length} href="/exceptions" />
+            <OverviewMetric label="Scheduled today" value={overview.scheduledToday.length} href="/dashboard?queue=scheduled-today" />
+            <OverviewMetric label="Waiting on vendors" value={waitingOnVendors} href="/dashboard?queue=open" />
           </div>
         </div>
-        {primaryAction ? (
-          <Link href={(primaryAction.href ?? '/dashboard') as Route} className="button primary">{primaryAction.primaryLabel}</Link>
-        ) : hasScheduledToday ? (
-          <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
-        ) : (
-          <Link href="/dashboard?queue=open" className="button primary">Review open work</Link>
-        )}
       </section>
 
       {actionGroups.length ? (
-        <div id="needs-your-action">
+        <details className="advancedDisclosure" id="needs-your-action">
+          <summary>Other decisions</summary>
           <SectionCard
-            kicker="Needs attention"
-            title="Needs attention"
-            subtitle={primaryAction ? 'Only items that still need a manager decision.' : 'Requests that need a manager decision, follow-up, or review.'}
+            kicker="Needs decision"
+            title="Needs decision"
+            subtitle={primaryAction ? 'Other items that still need a manager decision.' : 'Requests that need a manager decision, follow-up, or review.'}
             action={<Link href="/exceptions" className="button">View all</Link>}
           >
             <div className="nextActionGroups">
@@ -106,7 +133,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
               })}
             </div>
           </SectionCard>
-        </div>
+        </details>
       ) : null}
 
       {hasScheduledToday ? (
