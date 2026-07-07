@@ -1,4 +1,5 @@
 import type { MaintenanceRequest, RequestStatus, ReviewStatus } from '@/lib/types'
+import { formatAppointmentDateTime } from '@/lib/appointment-time'
 
 const DISPLAY_TIME_ZONE = process.env.NEXT_PUBLIC_DISPLAY_TIME_ZONE || 'America/Phoenix'
 
@@ -25,14 +26,7 @@ export function getCityFromAddress(address: string) {
 }
 
 export function formatDateTime(value?: Date | string | null) {
-  if (!value) return 'Not scheduled'
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: DISPLAY_TIME_ZONE,
-  }).format(new Date(value))
+  return formatAppointmentDateTime(value)
 }
 
 export function formatRelativeAge(value: string) {

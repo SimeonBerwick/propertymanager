@@ -8,6 +8,7 @@ import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 
 type VendorDashboardFilter = 'open' | 'recent' | 'bids' | 'billing' | 'commercial'
 
@@ -120,7 +121,7 @@ export default async function VendorDashboardPage({
                 <div className="kicker">{attentionLabel}</div>
                 <div style={{ fontWeight: 700, marginTop: 4 }}>{request.title}</div>
                 <div className="muted">{request.property.name} - {request.unit.label} - {viewState.statusLabel}</div>
-                {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Appointment {new Date(request.vendorScheduledStart).toLocaleString()}</div> : null}
+                {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Appointment {formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}</div> : null}
               </div>
               <span className="button primary">View details</span>
             </div>
@@ -223,7 +224,7 @@ export default async function VendorDashboardPage({
                   Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
                 </div>
                 <div className="muted">
-                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
+                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Appointment ${formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
                 </div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>

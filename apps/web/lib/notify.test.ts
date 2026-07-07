@@ -38,14 +38,14 @@ describe('notification email markup', () => {
       tenantEmail: 'maya@example.com',
       vendorName: 'Desert Air',
       dispatchStatus: 'scheduled',
-      scheduledStart: '2026-07-03T16:00:00.000Z',
-      scheduledEnd: '2026-07-03T17:00:00.000Z',
+      scheduledStart: '2026-07-03T23:30:00.000Z',
       note: 'Vendor will call on arrival.',
     })
 
     expect(message.subject).toContain('Maintenance work scheduled')
     expect(message.text).toContain('Your maintenance work has been scheduled.')
-    expect(message.text).toContain('Schedule')
+    expect(message.text).toContain('Schedule     : Jul 3, 4:30 PM')
+    expect(message.text).not.toContain(' to ')
     expect(message.text).toContain('Vendor will call on arrival.')
     expect(message.html).toContain('Your maintenance work has been scheduled.')
   })

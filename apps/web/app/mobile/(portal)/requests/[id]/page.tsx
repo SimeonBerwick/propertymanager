@@ -6,6 +6,7 @@ import { MediaPhotoCard } from '@/components/media-photo-card'
 import { TenantRequestCancelForm } from './cancel-form'
 import { TenantWorkOrderMessageForm } from './message-form'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 
 function classifyCommentSource(
   comment: {
@@ -59,7 +60,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   }
 
   const appointmentLabel = request.vendorScheduledStart
-    ? `${new Date(request.vendorScheduledStart).toLocaleString()}${request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}`
+    ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
     : null
 
   return (
@@ -97,8 +98,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div><strong>{request.assignedVendorName}</strong></div>
           {request.vendorScheduledStart ? (
             <div className="muted">
-              Appointment: {new Date(request.vendorScheduledStart).toLocaleString()}
-              {request.vendorScheduledEnd ? ` to ${new Date(request.vendorScheduledEnd).toLocaleString()}` : ''}
+              Appointment: {formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}
             </div>
           ) : (
             <div className="muted">No appointment time has been confirmed yet.</div>
@@ -140,8 +140,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
             </div>
             {(entry.scheduledStart || entry.scheduledEnd) ? (
               <div className="muted">
-                {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '-'}
-                {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                {entry.scheduledStart ? formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd) : '-'}
               </div>
             ) : null}
             <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>

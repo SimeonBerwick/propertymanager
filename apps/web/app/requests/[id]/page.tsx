@@ -7,6 +7,7 @@ import { reviewStateLabel, formatDateTime } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { SectionCard } from '@/components/section-card'
 import { BillingDocumentForm } from '@/components/billing-document-form'
 import { BillingDocumentList } from '@/components/billing-document-list'
@@ -276,8 +277,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   <div className="inlineNotice">
                     <strong>Current appointment</strong>
                     <span>
-                      {new Date(effectiveVendorScheduledStart).toLocaleString()}
-                      {effectiveVendorScheduledEnd ? ` to ${new Date(effectiveVendorScheduledEnd).toLocaleString()}` : ''}
+                      {formatAppointmentWindow(effectiveVendorScheduledStart, effectiveVendorScheduledEnd)}
                     </span>
                   </div>
                 ) : null}
@@ -299,8 +299,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     {latestVendorDispatch.note ? <div>{latestVendorDispatch.note}</div> : <div className="muted">No note attached.</div>}
                     {(latestVendorDispatch.scheduledStart || latestVendorDispatch.scheduledEnd) ? (
                       <div className="muted">
-                        Appointment: {latestVendorDispatch.scheduledStart ? new Date(latestVendorDispatch.scheduledStart).toLocaleString() : '-'}
-                        {latestVendorDispatch.scheduledEnd ? ` to ${new Date(latestVendorDispatch.scheduledEnd).toLocaleString()}` : ''}
+                        Appointment: {latestVendorDispatch.scheduledStart ? formatAppointmentWindow(latestVendorDispatch.scheduledStart, latestVendorDispatch.scheduledEnd) : '-'}
                       </div>
                     ) : null}
                     <div className="muted">Sent {new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
@@ -466,8 +465,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                       </div>
                       {(invite.proposedStart || invite.proposedEnd) ? (
                         <div className="muted">
-                          {invite.proposedStart ? new Date(invite.proposedStart).toLocaleString() : '-'}
-                          {invite.proposedEnd ? ` to ${new Date(invite.proposedEnd).toLocaleString()}` : ''}
+                          {invite.proposedStart ? formatAppointmentWindow(invite.proposedStart, invite.proposedEnd) : '-'}
                         </div>
                       ) : null}
                       <div className="muted">
@@ -545,8 +543,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 {entry.note ? <div>{entry.note}</div> : null}
                 {(entry.scheduledStart || entry.scheduledEnd) ? (
                   <div className="muted">
-                    {entry.scheduledStart ? new Date(entry.scheduledStart).toLocaleString() : '-'}
-                    {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                    {entry.scheduledStart ? formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd) : '-'}
                   </div>
                 ) : null}
                 <div className="muted">{entry.actorName} - {new Date(entry.createdAt).toLocaleString()}</div>

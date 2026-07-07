@@ -4,6 +4,7 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getTenantOwnedRequestsForDashboard } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep } from '@/lib/tenant-request-language'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 
 type TenantDashboardFilter = 'open' | 'all' | 'charges'
 
@@ -52,7 +53,7 @@ export default async function TenantMobileDashboardPage({
           <div>
             <div className="kicker">Next appointment</div>
             <h2 style={{ margin: '4px 0' }}>{nextAppointment.title}</h2>
-            <div>{new Date(nextAppointment.vendorScheduledStart!).toLocaleString()}{nextAppointment.vendorScheduledEnd ? ` to ${new Date(nextAppointment.vendorScheduledEnd).toLocaleString()}` : ''}</div>
+            <div>{formatAppointmentWindow(nextAppointment.vendorScheduledStart, nextAppointment.vendorScheduledEnd)}</div>
           </div>
           <Link href={`/mobile/requests/${nextAppointment.id}#message-manager-vendor` as Route} className="button primary">Message about this appointment</Link>
         </section>
@@ -111,7 +112,7 @@ export default async function TenantMobileDashboardPage({
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
                   {tenantRequestCloseoutLabel(request)}
-                  {request.vendorScheduledStart ? ` - Appointment ${new Date(request.vendorScheduledStart).toLocaleString()}` : ''}
+                  {request.vendorScheduledStart ? ` - Appointment ${formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}` : ''}
                 </div>
                 <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
                 {request.billingDocuments.length ? (

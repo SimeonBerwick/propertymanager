@@ -18,6 +18,7 @@ import {
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
+import { parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
@@ -777,27 +778,33 @@ export async function approveVendorCommercialItemAction(
       metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
     })
 
-    await applyRequestAutomation(requestId)
+    await applyRequestAutomation(requestId).catch((error) => (
+      logServerActionError('vendorCommercialItem.approve.automation', error, { requestId, itemId })
+    ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     if (item.itemType === 'bid' && item.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
-      const dispatchLink = await createVendorDispatchLink(requestId, item.vendorId).catch(() => null)
-      await sendNotification(buildVendorAwardedMessage({
-        requestId,
-        title: item.request.title,
-        propertyName: item.request.property.name,
-        unitLabel: item.request.unit.label,
-        vendorName: item.vendor.name,
-        vendorEmail: item.vendor.email,
-        tenantName: item.request.submittedByName ?? undefined,
-        tenantEmail: item.request.submittedByEmail ?? undefined,
-        urgency: item.request.urgency,
-        category: item.request.category,
-        preferredCurrency: item.request.preferredCurrency,
-        preferredLanguage: item.request.preferredLanguage,
-        bidAmountLabel: `USD ${(item.amountCents / 100).toFixed(2)}`,
-        responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
-      }), { ownerUserId: session.userId, requestId })
+      try {
+        const dispatchLink = await createVendorDispatchLink(requestId, item.vendorId).catch(() => null)
+        await sendNotification(buildVendorAwardedMessage({
+          requestId,
+          title: item.request.title,
+          propertyName: item.request.property.name,
+          unitLabel: item.request.unit.label,
+          vendorName: item.vendor.name,
+          vendorEmail: item.vendor.email,
+          tenantName: item.request.submittedByName ?? undefined,
+          tenantEmail: item.request.submittedByEmail ?? undefined,
+          urgency: item.request.urgency,
+          category: item.request.category,
+          preferredCurrency: item.request.preferredCurrency,
+          preferredLanguage: item.request.preferredLanguage,
+          bidAmountLabel: `USD ${(item.amountCents / 100).toFixed(2)}`,
+          responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
+        }), { ownerUserId: session.userId, requestId })
+      } catch (error) {
+        await logServerActionError('vendorCommercialItem.approve.vendorAwardNotification', error, { requestId, itemId, vendorId: item.vendorId })
+      }
     }
     if (!draftPosted) {
       return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved. Create or update the vendor payment record before closeout.' : 'Vendor cost approved. Create or update the vendor payment record before closeout.' }
@@ -836,8 +843,8 @@ export async function updateDispatchFormAction(
 
   if (!VALID_DISPATCH_STATUSES.includes(dispatchStatus)) return { error: 'Invalid work status.' }
 
-  const scheduledStart = scheduledStartRaw ? new Date(scheduledStartRaw) : null
-  const scheduledEnd = scheduledEndRaw ? new Date(scheduledEndRaw) : null
+  const scheduledStart = scheduledStartRaw ? parseDateTimeLocalInDisplayTimeZone(scheduledStartRaw) : null
+  const scheduledEnd = scheduledEndRaw ? parseDateTimeLocalInDisplayTimeZone(scheduledEndRaw) : null
 
   if (scheduledStart && Number.isNaN(scheduledStart.getTime())) return { error: 'Enter a valid scheduled start time.' }
   if (scheduledEnd && Number.isNaN(scheduledEnd.getTime())) return { error: 'Enter a valid scheduled end time.' }

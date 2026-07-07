@@ -11,6 +11,7 @@ import { vendorSignoutAction } from '@/app/vendor/auth/signout/actions'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
+import { formatAppointmentWindow } from '@/lib/appointment-time'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -198,7 +199,7 @@ export default async function VendorRequestDetailPage({
         </div>
         <div className="muted">
           {viewState.canSeeSchedule && effectiveScheduledStart
-            ? `Appointment: ${new Date(effectiveScheduledStart).toLocaleString()}${effectiveScheduledEnd ? ` to ${new Date(effectiveScheduledEnd).toLocaleString()}` : ''}`
+            ? `Appointment: ${formatAppointmentWindow(effectiveScheduledStart, effectiveScheduledEnd)}`
             : 'No appointment time confirmed for your vendor account.'}
         </div>
       </section>
@@ -229,8 +230,7 @@ export default async function VendorRequestDetailPage({
             {entry.note ? <div>{entry.note}</div> : null}
             {entry.scheduledStart ? (
               <div className="muted">
-                {new Date(entry.scheduledStart).toLocaleString()}
-                {entry.scheduledEnd ? ` to ${new Date(entry.scheduledEnd).toLocaleString()}` : ''}
+                {formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd)}
               </div>
             ) : null}
             <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
