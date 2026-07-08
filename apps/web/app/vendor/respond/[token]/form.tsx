@@ -55,6 +55,12 @@ export function VendorResponseForm({ token }: { token: string }) {
             <input className="input" type="datetime-local" name="scheduledEnd" />
           </label>
         </div>
+        <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={(event) => {
+          const form = event.currentTarget.form
+          if (form) blurActiveField(form)
+        }}>
+          Confirm selected time
+        </button>
       </div> : null}
 
       <label className="field">

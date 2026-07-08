@@ -123,6 +123,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:reassign`, primaryLabel: 'Assign replacement', reason: 'The current vendor cannot complete the work.', group: 'Vendor assignment', priority: 'high', actionType: 'assign_replacement_vendor', score: SCORE.vendorAssignment }
   }
 
+  if (isTenantQuestionFollowUp(request)) {
+    return { ...base, id: `${request.id}:tenant-message-review`, href: `/requests/${request.id}?comment=tenant#tenant-message-review`, primaryLabel: 'Review tenant question', reason: 'The tenant asked a question about this work order.', group: 'Tenant messages', priority: 'high', actionType: 'review_tenant_message', score: SCORE.overdueUpdate }
+  }
+
   if ((request.pendingBidCount ?? 0) > 0) {
     return { ...base, id: `${request.id}:award-bid`, primaryLabel: 'Approve bid', reason: `${request.pendingBidCount} vendor bid${request.pendingBidCount === 1 ? ' is' : 's are'} waiting for manager approval.`, group: 'Bid decisions', priority: 'normal', actionType: 'award_bid', score: SCORE.bidDecision }
   }
@@ -145,10 +149,6 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if (request.reviewState === 'vendor_completed_pending_review') {
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
-  }
-
-  if (isTenantQuestionFollowUp(request)) {
-    return { ...base, id: `${request.id}:tenant-message-review`, href: `/requests/${request.id}?comment=tenant#tenant-message-review`, primaryLabel: 'Review tenant question', reason: 'The tenant asked a question about this work order.', group: 'Tenant messages', priority: 'high', actionType: 'review_tenant_message', score: SCORE.overdueUpdate }
   }
 
   if (request.reviewState === 'needs_follow_up' || request.reviewState === 'vendor_update_pending_review') {

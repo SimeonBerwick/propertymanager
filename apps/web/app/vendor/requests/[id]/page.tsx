@@ -72,8 +72,8 @@ export default async function VendorRequestDetailPage({
     && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
   const hasAppointmentTime = Boolean(effectiveScheduledStart)
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
-  const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && (viewState.canControlDispatch || viewState.isPendingBid)
   const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime
+  const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && (viewState.canControlDispatch || viewState.isPendingBid)
 
   return (
     <div className="stack">
@@ -106,6 +106,8 @@ export default async function VendorRequestDetailPage({
         <div>{request.description}</div>
         {shouldPrioritizeInvoiceItem ? (
           <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Submit extra cost or invoice</a>
+        ) : shouldShowServiceCostForm ? (
+          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Send service charge or invoice</a>
         ) : canSendUpdate ? (
           <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : 'Send the next update'}</a>
         ) : null}
@@ -170,7 +172,7 @@ export default async function VendorRequestDetailPage({
       ) : shouldShowServiceCostForm ? (
         <section className="card stack" id="vendor-invoice-item">
           <div>
-            <div className="kicker">Cost or invoice</div>
+            <div className="kicker">Next action</div>
             <h3 style={{ marginTop: 4 }}>Send service charge, parts, estimate, or invoice</h3>
           </div>
           <div className="muted">

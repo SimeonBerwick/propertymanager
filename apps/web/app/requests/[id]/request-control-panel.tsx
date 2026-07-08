@@ -108,6 +108,12 @@ export function RequestControlPanel({
         <span className="field-label">End time, optional</span>
         <input className="input" type="datetime-local" name="scheduledEnd" />
       </label>
+      <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={(event) => {
+        const form = event.currentTarget.form
+        if (form) blurActiveField(form)
+      }}>
+        Confirm selected time
+      </button>
       <label className="field">
         <span className="field-label">Note, optional</span>
         <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />

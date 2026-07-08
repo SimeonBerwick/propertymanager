@@ -705,6 +705,11 @@ export async function approveVendorCommercialItemAction(
 
     if (!item) return { error: 'Vendor submission not found.' }
     if (item.status !== 'submitted') return { error: 'Vendor submission is already resolved.' }
+    if (!item.vendorId) return { error: 'This vendor submission is missing a vendor account. Ask the vendor to resend it from their portal.' }
+
+    const vendorName = item.vendor?.name ?? item.request.assignedVendorName ?? 'Vendor'
+    const vendorEmail = item.vendor?.email ?? item.request.assignedVendorEmail ?? null
+    const vendorPhone = item.vendor?.phone ?? item.request.assignedVendorPhone ?? null
 
     await prisma.$transaction(async (tx) => {
       await tx.vendorCommercialItem.update({
@@ -722,9 +727,9 @@ export async function approveVendorCommercialItemAction(
           where: { id: requestId },
           data: {
             assignedVendorId: item.vendorId,
-            assignedVendorName: item.vendor.name,
-            assignedVendorEmail: item.vendor.email ?? null,
-            assignedVendorPhone: item.vendor.phone ?? null,
+            assignedVendorName: vendorName,
+            assignedVendorEmail: vendorEmail,
+            assignedVendorPhone: vendorPhone,
             dispatchStatus: 'accepted',
             reviewState: 'none',
             reviewNote: null,
@@ -758,8 +763,8 @@ export async function approveVendorCommercialItemAction(
         draftDocument = await upsertVendorRemittanceDraft(tx, {
           requestId,
           vendorId: item.vendorId,
-          vendorName: item.vendor.name,
-          vendorEmail: item.vendor.email,
+          vendorName,
+          vendorEmail,
           userId: session.userId,
           approvedItemId: item.id,
         })
@@ -775,7 +780,7 @@ export async function approveVendorCommercialItemAction(
       entityType: 'vendorCommercialItem',
       entityId: itemId,
       action: 'vendorCommercialItem.approved',
-      summary: `Approved vendor ${item.itemType} submission from ${item.vendor.name}.`,
+      summary: `Approved vendor ${item.itemType} submission from ${vendorName}.`,
       metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
     })
 
@@ -784,7 +789,7 @@ export async function approveVendorCommercialItemAction(
     ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
-    if (item.itemType === 'bid' && item.vendor.email && await areEmailNotificationsEnabled(session.userId)) {
+    if (item.itemType === 'bid' && vendorEmail && await areEmailNotificationsEnabled(session.userId)) {
       try {
         const dispatchLink = await createVendorDispatchLink(requestId, item.vendorId).catch(() => null)
         await sendNotification(buildVendorAwardedMessage({
@@ -792,8 +797,8 @@ export async function approveVendorCommercialItemAction(
           title: item.request.title,
           propertyName: item.request.property.name,
           unitLabel: item.request.unit.label,
-          vendorName: item.vendor.name,
-          vendorEmail: item.vendor.email,
+          vendorName,
+          vendorEmail,
           tenantName: item.request.submittedByName ?? undefined,
           tenantEmail: item.request.submittedByEmail ?? undefined,
           urgency: item.request.urgency,
