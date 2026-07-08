@@ -181,12 +181,17 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     )
   const effectiveVendorScheduledStart = data.request.vendorScheduledStart ?? latestScheduledDispatch?.scheduledStart
   const effectiveVendorScheduledEnd = data.request.vendorScheduledEnd ?? latestScheduledDispatch?.scheduledEnd
+  const isEffectivelyCompleted = data.request.status === 'completed'
+    || data.request.dispatchStatus === 'completed'
+    || data.request.reviewState === 'vendor_completed_pending_review'
+  const effectiveRequestStatus = isEffectivelyCompleted && data.request.status !== 'closed' ? 'completed' : data.request.status
   const requestWithEffectiveAppointment = {
     ...data.request,
+    status: effectiveRequestStatus,
     vendorScheduledStart: effectiveVendorScheduledStart,
     vendorScheduledEnd: effectiveVendorScheduledEnd,
   }
-  const needsAppointmentTime = hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
     : data.request.status === 'requested'
@@ -201,7 +206,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Approve vendor bid'
       : canChooseVendor
         ? 'Choose service-call or bid path'
-        : ['completed', 'closed'].includes(data.request.status)
+        : ['completed', 'closed'].includes(effectiveRequestStatus)
           ? 'Close request actions'
           : 'Request actions'
   const actionSectionSubtitle = pendingVendorCommercialItems.length
@@ -218,7 +223,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review returned pricing and choose the vendor.'
       : canChooseVendor
         ? 'Assign a trusted vendor for the service call, or ask vendors for repair bids before choosing.'
-        : ['completed', 'closed'].includes(data.request.status)
+        : ['completed', 'closed'].includes(effectiveRequestStatus)
           ? 'Reopen only if more work is needed.'
           : 'Choose the next clear step for this request.'
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
@@ -253,8 +258,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           </div>
           <div className="requestHeroMeta">
-            {isCompleteButUnpaid ? <span className="badge billing-partial">{closeoutLanguage.managerLabel}</span> : <StatusBadge status={data.request.status} />}
-            {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={data.request} />}
+            {isCompleteButUnpaid ? <span className="badge billing-partial">{closeoutLanguage.managerLabel}</span> : <StatusBadge status={effectiveRequestStatus} />}
+            {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={requestWithEffectiveAppointment} />}
             <span className="muted">{data.request.category}</span>
             <span className="muted">Submitted {formatDateTime(data.request.createdAt)}</span>
           </div>
@@ -263,7 +268,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         </div>
       </section>
 
-      <GuidedRequestWorkflow request={data.request} />
+      <GuidedRequestWorkflow request={requestWithEffectiveAppointment} />
 
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>

@@ -144,6 +144,15 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 
+  if (
+    request.dispatchStatus === 'completed'
+    && (request.billingOpenBalanceCents ?? 0) === 0
+    && (request.vendorPayableBalanceCents ?? 0) === 0
+    && !request.vendorBillPending
+  ) {
+    return { ...base, id: `${request.id}:close`, primaryLabel: 'Close request', reason: 'Work is complete and payments are settled.', group: 'Closeout', priority: 'normal', actionType: 'close_request', score: SCORE.closeoutReady }
+  }
+
   if (request.dispatchStatus === 'completed') {
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }
