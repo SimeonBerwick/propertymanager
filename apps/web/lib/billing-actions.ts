@@ -345,6 +345,61 @@ export async function markBillingDocumentPaidFromDashboardAction(formData: FormD
   await updateBillingDocumentAction({ error: null }, formData)
 }
 
+export async function markAllOutstandingBillingDocumentsPaidAction(): Promise<void> {
+  const session = await getLandlordSession()
+  if (!session) return
+
+  try {
+    const candidateDocuments = await prisma.billingDocument.findMany({
+      where: {
+        status: { notIn: ['void', 'paid'] },
+        request: { property: { ownerId: session.userId } },
+      },
+      select: { id: true, requestId: true, totalCents: true, paidCents: true },
+    })
+    const documents = candidateDocuments.filter((document) => document.totalCents > document.paidCents)
+
+    if (!documents.length) return
+
+    await prisma.$transaction(
+      documents.map((document) => prisma.billingDocument.update({
+        where: { id: document.id },
+        data: {
+          paidCents: document.totalCents,
+          status: 'paid',
+          events: {
+            create: {
+              actorUserId: session.userId,
+              eventType: 'payment_state_updated',
+              note: 'Marked paid in full from dashboard bulk action.',
+            },
+          },
+        },
+      })),
+    )
+
+    await writeAuditLog({
+      actorUserId: session.userId,
+      entityType: 'billingDocument',
+      entityId: 'bulk-dashboard',
+      action: 'billingDocument.bulkPaid',
+      summary: `Marked ${documents.length} outstanding billing record${documents.length === 1 ? '' : 's'} paid.`,
+      metadata: { billingDocumentIds: documents.map((document) => document.id) },
+    })
+
+    for (const requestId of Array.from(new Set(documents.map((document) => document.requestId)))) {
+      await closeCompletedRequestIfFullySettled(requestId, session.userId)
+      revalidatePath(`/requests/${requestId}`)
+      revalidatePath(`/vendor/requests/${requestId}`)
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/vendor')
+  } catch (error) {
+    await logServerActionError('billing.bulkPaid.dashboard', error, { userId: session.userId })
+  }
+}
+
 export async function resendBillingDocumentAction(
   _prev: BillingActionState,
   formData: FormData,

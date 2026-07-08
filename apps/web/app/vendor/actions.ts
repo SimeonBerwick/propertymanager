@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { requireVendorSession } from '@/lib/vendor-session'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
@@ -18,6 +19,48 @@ const VALID_STATUSES: DispatchStatus[] = ['contacted', 'accepted', 'declined', '
 
 function tenantRequestActionUrl(requestId: string) {
   return `${getAppBaseUrl('tenant vendor update notifications')}/mobile/requests/${requestId}`
+}
+
+export async function markAllVendorOutstandingBillsPaidAction(): Promise<void> {
+  const session = await requireVendorSession()
+
+  try {
+    const candidateDocuments = await prisma.billingDocument.findMany({
+      where: {
+        recipientType: 'vendor',
+        status: { notIn: ['void', 'paid'] },
+        request: buildVendorRequestVisibilityWhere(session),
+      },
+      select: { id: true, requestId: true, totalCents: true, paidCents: true },
+    })
+    const documents = candidateDocuments.filter((document) => document.totalCents > document.paidCents)
+    if (!documents.length) return
+
+    await prisma.$transaction(
+      documents.map((document) => prisma.billingDocument.update({
+        where: { id: document.id },
+        data: {
+          paidCents: document.totalCents,
+          status: 'paid',
+          events: {
+            create: {
+              eventType: 'payment_state_updated',
+              note: 'Vendor marked payment received from dashboard bulk action.',
+            },
+          },
+        },
+      })),
+    )
+
+    for (const requestId of Array.from(new Set(documents.map((document) => document.requestId)))) {
+      revalidatePath(`/vendor/requests/${requestId}`)
+      revalidatePath(`/requests/${requestId}`)
+    }
+    revalidatePath('/vendor')
+    revalidatePath('/dashboard')
+  } catch (error) {
+    await logServerActionError('vendor.billing.bulkPaid', error, { vendorId: session.vendorId })
+  }
 }
 
 export async function submitVendorPortalResponse(

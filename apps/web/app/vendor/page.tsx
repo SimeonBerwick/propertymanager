@@ -9,6 +9,7 @@ import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
+import { markAllVendorOutstandingBillsPaidAction } from './actions'
 
 type VendorDashboardFilter = 'open' | 'recent' | 'bids' | 'billing' | 'commercial'
 
@@ -60,6 +61,9 @@ export default async function VendorDashboardPage({
   ].filter((item, index, items) => items.findIndex((candidate) => candidate.request.id === item.request.id) === index).slice(0, 5)
   const billingRequests = requests.filter((request) => request.billingDocuments.length > 0)
   const payableDocs = requests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
+  const outstandingPaymentDocumentCount = requests.reduce((sum, request) => (
+    sum + request.billingDocuments.filter((document) => document.status !== 'void' && document.status !== 'paid' && document.totalCents > document.paidCents).length
+  ), 0)
   const commercialCount = commercialItems.length
   const filteredRequests = filter === 'open'
     ? (openRequests.length ? openRequests : recentRequests)
@@ -181,6 +185,18 @@ export default async function VendorDashboardPage({
           <div className="muted">Bids, overages, and invoices</div>
         </Link>
       </section>
+
+      {outstandingPaymentDocumentCount > 1 ? (
+        <section className="notice stack" style={{ gap: 10 }}>
+          <div>
+            <strong>{outstandingPaymentDocumentCount} payment records still marked unpaid.</strong>
+            <div className="muted">Use this after those payments have been received outside the app.</div>
+          </div>
+          <form action={markAllVendorOutstandingBillsPaidAction}>
+            <button type="submit" className="button primary">Mark all outstanding bills paid</button>
+          </form>
+        </section>
+      ) : null}
 
       <section className="card stack">
         <div>

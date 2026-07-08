@@ -15,6 +15,7 @@ import { getOnboardingChecklist } from '@/lib/onboarding'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import { TodayOverview } from '@/components/today-overview'
 import { subscriptionCountdownNotice } from '@/lib/subscription-gate'
+import { markAllOutstandingBillingDocumentsPaidAction } from '@/lib/billing-actions'
 
 const QUEUE_TITLES: Record<string, string> = {
   all: 'Open work orders',
@@ -83,6 +84,7 @@ export default async function DashboardPage({
   })
 
   const focusNow = sortedRequests.slice(0, 12)
+  const outstandingBillingDocumentCount = data.requestRows.reduce((sum, request) => sum + (request.billingOpenDocumentCount ?? 0), 0)
   const subscriptionNotice = subscriptionCountdownNotice({
     subscriptionStatus: session.subscriptionStatus,
     trialEndsAt: session.trialEndsAt,
@@ -105,6 +107,17 @@ export default async function DashboardPage({
         </section>
       ) : null}
       {!isQueueView ? <TodayOverview requests={data.requestRows} masterQueueActions={data.masterQueueActions} now={now} /> : null}
+      {!isQueueView && outstandingBillingDocumentCount > 1 ? (
+        <section className="notice stack" style={{ gap: 10 }}>
+          <div>
+            <strong>{outstandingBillingDocumentCount} billing records still marked unpaid.</strong>
+            <div className="muted">Use this only after you know the outstanding vendor payments or tenant charges have been settled outside the app.</div>
+          </div>
+          <form action={markAllOutstandingBillingDocumentsPaidAction}>
+            <button type="submit" className="button primary">Mark all outstanding bills paid</button>
+          </form>
+        </section>
+      ) : null}
 
       <details className={`advancedDisclosure dashboardWorkspaceDisclosure ${isQueueView ? 'requestQueueDisclosure' : ''}`} open>
         <summary>{isQueueView ? 'Requests' : 'Open work orders'}</summary>
