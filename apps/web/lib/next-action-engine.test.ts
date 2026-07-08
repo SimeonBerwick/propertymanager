@@ -132,6 +132,22 @@ describe('next action engine', () => {
     })
   })
 
+  it('keeps tenant questions ahead of vendor cost approval prompts', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'scheduled' as const,
+      assignedVendorName: 'ACME Plumbing',
+      vendorScheduledStart: '2026-06-20T12:00:00.000Z',
+      reviewState: 'needs_follow_up' as const,
+      reviewNote: 'Tenant requested a different appointment time.',
+      pendingVendorApprovalCount: 1,
+    })).toMatchObject({
+      primaryLabel: 'Review tenant question',
+      href: '/requests/r1?comment=tenant#tenant-message-review',
+      actionType: 'review_tenant_message',
+    })
+  })
+
   it('keeps new tenant messages from replacing first request review', () => {
     expect(getRequestNextAction({
       ...base,
