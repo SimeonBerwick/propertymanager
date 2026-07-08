@@ -45,6 +45,7 @@ export default async function DashboardPage({
   const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
   const isQueueView = selectedQueue !== 'all'
   const queueTitle = QUEUE_TITLES[selectedQueue] ?? 'Requests'
+  const queueItemLabel = selectedQueue === 'all' || selectedQueue === 'open' ? 'open work orders' : 'requests in this queue'
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
@@ -57,7 +58,8 @@ export default async function DashboardPage({
   const filteredRequests = data.requestRows.filter((request) => {
     const cityMatch = selectedCity === 'all' || getCityFromAddress(request.propertyAddress) === selectedCity
     const languageMatch = selectedLanguage === 'all' || request.preferredLanguage === selectedLanguage
-    const queueMatch = selectedQueue === 'all'
+    const isOpenWorkOrder = !['closed', 'declined', 'canceled'].includes(request.status)
+    const queueMatch = (selectedQueue === 'all' && isOpenWorkOrder)
       || (selectedQueue === 'open' && !['closed', 'declined', 'canceled'].includes(request.status))
       || (selectedQueue === 'declined' && request.status === 'declined')
       || (selectedQueue === 'canceled' && request.status === 'canceled')
@@ -197,8 +199,8 @@ export default async function DashboardPage({
       >
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing {focusNow.length} of {filteredRequests.length} matching requests, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
-          {filteredRequests.length > focusNow.length ? ' Narrow the filters to see the rest.' : ''}
+          Showing {focusNow.length} of {filteredRequests.length} {queueItemLabel}, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+          {filteredRequests.length > focusNow.length ? ' Use filters to narrow the list.' : ''}
         </div>
 
         <RequestQueueList requests={focusNow} selectedSort={selectedSort} />
