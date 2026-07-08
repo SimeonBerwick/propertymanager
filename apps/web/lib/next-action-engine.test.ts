@@ -261,7 +261,7 @@ describe('next action engine', () => {
     })
   })
 
-  it('reviews completed work instead of watching the schedule when the vendor finishes early', () => {
+  it('asks for the vendor bill instead of watching the schedule when the vendor finishes early', () => {
     expect(getRequestNextAction({
       ...base,
       status: 'scheduled' as const,
@@ -270,9 +270,25 @@ describe('next action engine', () => {
       dispatchStatus: 'completed',
       vendorBillPending: true,
     }, new Date('2026-06-20T12:00:00.000Z'))).toMatchObject({
-      priority: 'high',
-      primaryLabel: 'Review completed work',
-      actionType: 'review_vendor_update',
+      priority: 'normal',
+      primaryLabel: 'Await vendor bill',
+      actionType: 'await_vendor_bill',
+    })
+  })
+
+  it('sends early completed work to payment when only the bill is unpaid', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'scheduled' as const,
+      assignedVendorName: 'ACME Plumbing',
+      vendorScheduledStart: '2026-06-20T16:00:00.000Z',
+      dispatchStatus: 'completed',
+      billingOpenBalanceCents: 70000,
+    }, new Date('2026-06-20T12:00:00.000Z'))).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Mark bill paid before closeout',
+      href: '/requests/r1#billing',
+      actionType: 'collect_payment_before_closeout',
     })
   })
 
