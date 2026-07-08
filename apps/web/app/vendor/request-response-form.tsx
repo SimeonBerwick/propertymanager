@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { submitVendorPortalResponse, type VendorPortalResponseState } from './actions'
+import { AppointmentDateTimeFields } from '@/components/appointment-date-time-fields'
 
 const INITIAL_STATE: VendorPortalResponseState = { error: null }
 
@@ -68,22 +69,7 @@ export function VendorRequestResponseForm({
 
       {showSchedule ? <div className="stack" style={{ gap: 8 }}>
         <div className="notice">This appointment time will be sent to the tenant.</div>
-        <div className="grid cols-2">
-          <label className="field">
-            <span className="field-label">Appointment start</span>
-            <input className="input" type="datetime-local" name="scheduledStart" required />
-          </label>
-          <label className="field">
-            <span className="field-label">Appointment end, optional</span>
-            <input className="input" type="datetime-local" name="scheduledEnd" />
-          </label>
-        </div>
-        <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={(event) => {
-          const form = event.currentTarget.form
-          if (form) blurActiveField(form)
-        }}>
-          Confirm selected time
-        </button>
+        <AppointmentDateTimeFields />
       </div> : null}
 
       <label className="field">

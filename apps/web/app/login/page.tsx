@@ -3,7 +3,7 @@ import { AccessTypeSelector } from './access-type-selector'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>
+  searchParams?: Promise<{ error?: string; role?: string }>
 }) {
   const params = searchParams ? await searchParams : undefined
   const error = params?.error === 'session-expired'
@@ -18,7 +18,7 @@ export default async function LoginPage({
           <div className="kicker">Choose access</div>
           <h2 style={{ margin: '4px 0 0' }}>Sign in</h2>
         </div>
-        <AccessTypeSelector error={error} />
+        <AccessTypeSelector error={error} mode={params?.role === 'manager' ? 'manager' : 'choose'} />
       </div>
     </div>
   )

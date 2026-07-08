@@ -148,6 +148,20 @@ describe('next action engine', () => {
     })
   })
 
+  it('keeps tenant questions ahead of appointment prompts after approval', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'approved' as const,
+      assignedVendorName: 'ACME Plumbing',
+      reviewState: 'needs_follow_up' as const,
+      reviewNote: 'Tenant asked a question about this work order.',
+    })).toMatchObject({
+      primaryLabel: 'Review tenant question',
+      href: '/requests/r1?comment=tenant#tenant-message-review',
+      actionType: 'review_tenant_message',
+    })
+  })
+
   it('keeps new tenant messages from replacing first request review', () => {
     expect(getRequestNextAction({
       ...base,

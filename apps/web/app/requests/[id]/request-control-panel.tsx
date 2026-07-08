@@ -7,6 +7,7 @@ import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } fro
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
+import { AppointmentDateTimeFields } from '@/components/appointment-date-time-fields'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -100,20 +101,7 @@ export function RequestControlPanel({
       </div>
       <input type="hidden" name="requestId" value={request.id} />
       <input type="hidden" name="dispatchStatus" value="scheduled" />
-      <label className="field">
-        <span className="field-label">Start time</span>
-        <input className="input" type="datetime-local" name="scheduledStart" required />
-      </label>
-      <label className="field">
-        <span className="field-label">End time, optional</span>
-        <input className="input" type="datetime-local" name="scheduledEnd" />
-      </label>
-      <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={(event) => {
-        const form = event.currentTarget.form
-        if (form) blurActiveField(form)
-      }}>
-        Confirm selected time
-      </button>
+      <AppointmentDateTimeFields />
       <label className="field">
         <span className="field-label">Note, optional</span>
         <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />

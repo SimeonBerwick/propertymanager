@@ -62,6 +62,10 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const appointmentLabel = request.vendorScheduledStart
     ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
     : null
+  const visibleReplies = request.comments.filter((comment) => {
+    const source = classifyCommentSource(comment, request.assignedVendorName)
+    return source.label === 'Property manager' || source.label === 'Vendor' || source.label === 'Visible note'
+  }).slice(-2).reverse()
 
   return (
     <div className="stack">
@@ -71,6 +75,25 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <strong>{appointmentLabel}</strong>
           <div>{request.assignedVendorName ? `${request.assignedVendorName} is scheduled for this repair.` : 'The repair appointment is scheduled.'}</div>
           <a href="#message-manager-vendor" className="button primary" style={{ alignSelf: 'flex-start' }}>Request a different time</a>
+        </section>
+      ) : null}
+
+      {visibleReplies.length ? (
+        <section className="card stack tenantStatusSummary">
+          <div className="kicker">Latest reply</div>
+          {visibleReplies.map((comment) => {
+            const source = classifyCommentSource(comment, request.assignedVendorName)
+
+            return (
+              <div key={comment.id} className="timelineRow">
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  {source.label}{source.byline ? ` - ${source.byline}` : ''}
+                </div>
+                <div>{comment.body}</div>
+                <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
+              </div>
+            )
+          })}
         </section>
       ) : null}
 

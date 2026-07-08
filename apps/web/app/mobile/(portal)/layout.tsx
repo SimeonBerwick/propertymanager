@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { Route } from 'next'
 import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { tenantMobileSignoutAction } from '@/app/mobile/auth/signout/actions'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function TenantMobileLayout({ children }: { children: ReactNode }) {
   const session = await requireTenantMobileSession()
@@ -20,6 +21,7 @@ export default async function TenantMobileLayout({ children }: { children: React
             <Link href={'/mobile' as Route} className="button">Dashboard</Link>
             <Link href={'/mobile/requests/new' as Route} className="button">New request</Link>
             <Link href={'/support' as Route} className="button">Support</Link>
+            <ThemeToggle />
             <form action={tenantMobileSignoutAction}>
               <button type="submit" className="button">Sign out</button>
             </form>
