@@ -2,7 +2,7 @@ import { currencyLabel, languageLabel, type MaintenanceRequest } from '@/lib/typ
 import { reviewStateLabel } from '@/lib/ui-utils'
 
 function urgencyTone(urgency: MaintenanceRequest['urgency']) {
-  if (urgency === 'urgent') return { className: 'badge signalUrgent', label: 'Urgent' }
+  if (urgency === 'urgent') return { className: 'badge signalUrgent', label: 'Urgent - time sensitive' }
   if (urgency === 'high') return { className: 'badge signalHigh', label: 'High urgency' }
   if (urgency === 'medium') return { className: 'badge signalMedium', label: 'Medium urgency' }
   return { className: 'badge', label: 'Low urgency' }
@@ -35,6 +35,9 @@ export function RequestSignalStrip({
   return (
     <div className="requestMetaLine" style={{ flexWrap: 'wrap' }}>
       <span className={urgency.className}>{urgency.label}</span>
+      {request.urgency === 'urgent' ? (
+        <span className="badge signalUrgent">Manager review needed now</span>
+      ) : null}
       <span className={sla.className}>{sla.label}</span>
       {request.reviewState && request.reviewState !== 'none' ? (
         <span className="badge signalWarn">Review: {reviewStateLabel(request.reviewState)}</span>

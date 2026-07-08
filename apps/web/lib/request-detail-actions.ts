@@ -1460,7 +1460,9 @@ async function upsertVendorRemittanceDraft(
     ? commercialItems.find((item) => item.itemType === 'bid' && item.status === 'submitted')
     : undefined
   const extraItems = commercialItems.filter((item) => item.itemType !== 'bid' && item.status === 'approved')
-  const extrasCents = extraItems.reduce((sum, item) => sum + item.amountCents, 0)
+  const finalInvoice = [...extraItems].reverse().find((item) => item.itemType === 'bill_to_property_manager')
+  const addOnItems = finalInvoice ? [] : extraItems
+  const extrasCents = addOnItems.reduce((sum, item) => sum + item.amountCents, 0)
   const existingDraft = await tx.billingDocument.findFirst({
     where: {
       requestId: input.requestId,
@@ -1483,14 +1485,15 @@ async function upsertVendorRemittanceDraft(
     assignedSubmittedBid?.amountCents ?? 0,
   )
   const bidCents = Math.max(recordedBidCents, existingBaseCents)
-  const totalCents = bidCents + extrasCents
+  const totalCents = finalInvoice?.amountCents ?? (bidCents + extrasCents)
   if (totalCents <= 0) return null
 
   const title = `Vendor payment - ${input.vendorName}`
   const descriptionLines = [
     `Amount owed to ${input.vendorName} for ${request.title}.`,
     bidCents > 0 ? `${recordedBidCents > 0 ? 'Approved bid' : 'Approved vendor amount'}: USD ${(bidCents / 100).toFixed(2)}` : null,
-    ...extraItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
+    finalInvoice ? `${finalInvoice.title}: USD ${(finalInvoice.amountCents / 100).toFixed(2)} total${bidCents > 0 ? ` (overage USD ${(Math.max(finalInvoice.amountCents - bidCents, 0) / 100).toFixed(2)})` : ''}` : null,
+    ...addOnItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
   ].filter(Boolean) as string[]
   const description = descriptionLines.join('\n')
   const pdfHtml = renderBillingPdfHtml({

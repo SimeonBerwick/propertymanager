@@ -35,6 +35,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   activeTenderInviteCount?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
+  dispatchStatus?: string
 }
 
 const CLOSED_STATUSES = ['closed', 'declined', 'canceled'] as const
@@ -141,6 +142,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if ((request.pendingVendorApprovalCount ?? 0) > 0 && canReviewVendorCosts(request)) {
     return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
+  }
+
+  if (request.dispatchStatus === 'completed') {
+    return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }
 
   if (isOverdue(request, now)) {
