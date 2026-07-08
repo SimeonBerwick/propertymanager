@@ -16,6 +16,7 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
     if (state.success) {
       formRef.current?.reset()
       router.refresh()
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
     }
   }, [router, state.success])
 
@@ -28,7 +29,7 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
           className="input textarea"
           name="body"
           rows={3}
-          placeholder="Add an internal note or tenant-facing update…"
+          placeholder="Add an internal note or tenant-facing update..."
           required
           style={{ minHeight: 80 }}
         />
@@ -39,7 +40,7 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
           <option value="external">Tenant-facing</option>
         </select>
         <button type="submit" className="button primary" disabled={isPending}>
-          {isPending ? 'Saving…' : 'Add comment'}
+          {isPending ? 'Saving...' : 'Add comment'}
         </button>
       </div>
       {defaultVisibility === 'external' ? <div className="notice">This update is tenant-facing and will clear the tenant update alert after it is saved.</div> : null}
