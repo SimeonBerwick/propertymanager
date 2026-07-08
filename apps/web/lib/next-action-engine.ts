@@ -144,6 +144,14 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 
+  if (request.dispatchStatus === 'completed' && request.vendorBillPending) {
+    return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
+  }
+
+  if (request.dispatchStatus === 'completed' && ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0)) {
+    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Mark bill paid before closeout', reason: 'The work is complete and the remaining step is to mark the open bill paid.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
+  }
+
   if (
     request.dispatchStatus === 'completed'
     && (request.billingOpenBalanceCents ?? 0) === 0
