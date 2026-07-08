@@ -730,13 +730,14 @@ export async function approveVendorCommercialItemAction(
     const vendorEmail = item.vendor?.email ?? item.request.assignedVendorEmail ?? null
     const vendorPhone = item.vendor?.phone ?? item.request.assignedVendorPhone ?? null
 
-    await prisma.$transaction(async (tx) => {
-      await tx.vendorCommercialItem.update({
-        where: { id: itemId },
-        data: { status: 'approved' },
-      })
+    if (item.itemType === 'bid') {
+      await prisma.$transaction(async (tx) => {
+        const updatedItem = await tx.vendorCommercialItem.updateMany({
+          where: { id: itemId, requestId, status: 'submitted' },
+          data: { status: 'approved' },
+        })
+        if (updatedItem.count === 0) throw new Error('Vendor submission was already resolved before approval completed.')
 
-      if (item.itemType === 'bid') {
         const nextStatus: RequestStatus =
           item.request.status === 'requested' || item.request.status === 'approved' || item.request.status === 'reopened'
             ? 'vendor_selected'
@@ -771,9 +772,14 @@ export async function approveVendorCommercialItemAction(
             note: 'Vendor bid approved from vendor submissions.',
           },
         })
-      }
-
-    })
+      })
+    } else {
+      const updatedItem = await prisma.vendorCommercialItem.updateMany({
+        where: { id: itemId, requestId, status: 'submitted' },
+        data: { status: 'approved' },
+      })
+      if (updatedItem.count === 0) return { error: 'Vendor submission is already resolved.' }
+    }
 
     let draftPosted = true
     let draftDocument: Awaited<ReturnType<typeof upsertVendorRemittanceDraft>> = null
