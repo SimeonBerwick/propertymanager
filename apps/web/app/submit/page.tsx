@@ -11,9 +11,10 @@ export default async function SubmitPage({
   searchParams: Promise<{ submitted?: string; mode?: string }>
 }) {
   const { submitted, mode } = await searchParams
-  const isManagerMode = mode === 'manager'
-  const session = isManagerMode ? await getLandlordSession() : null
-  if (isManagerMode && !session) redirect('/login?error=session-expired')
+  const landlordSession = await getLandlordSession()
+  const isManagerMode = mode === 'manager' || Boolean(landlordSession)
+  const session = isManagerMode ? landlordSession : null
+  if (mode === 'manager' && !session) redirect('/login?error=session-expired')
 
   // Redirect to the scoped submit URL when exactly one landlord has a slug configured.
   // This is the common single-landlord deployment case and gives tenants a properly

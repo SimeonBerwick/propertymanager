@@ -610,6 +610,19 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <SectionCard kicker="Billing records" title="Billing records, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
         <div className="stack billingCompact" style={{ gap: 14 }}>
           <WorkOrderContext request={data.request} />
+          {billingOpenBalanceCents > 0 ? (
+            <div className="card stack" style={{ padding: 14, background: 'var(--table-row)' }}>
+              <div>
+                <div className="kicker">Pay before closing</div>
+                <h3 style={{ marginTop: 4 }}>Open billing records</h3>
+              </div>
+              <div className="notice">
+                Mark every open balance paid before closing this request. Tenant chargeback choices can wait unless you need to bill the tenant.
+              </div>
+              <BillingSummaryCards documents={data.billingDocuments} />
+              <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
+            </div>
+          ) : null}
           <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
             <div className="kicker">Step 1: Tenant chargeback decision</div>
             <div className="muted" style={{ marginTop: 6 }}>
@@ -681,7 +694,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <strong>Closeout checklist:</strong> {vendorBillPending ? 'get the vendor bill, ' : ''}{needsTenantChargeDocument ? 'create/send the tenant charge, ' : ''}{needsVendorPaymentDocument ? 'record the vendor payment, ' : ''}mark every open balance paid, then close the request.
             </div>
           )}
-          {data.billingDocuments.length ? <BillingSummaryCards documents={data.billingDocuments} /> : null}
+          {data.billingDocuments.length && billingOpenBalanceCents === 0 ? <BillingSummaryCards documents={data.billingDocuments} /> : null}
           {hasVendorChosen && needsBillingDocument ? (
             <BillingDocumentForm
               requestId={data.request.id}
@@ -698,7 +711,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ) : (
             <div className="notice">No billing document can be created until there is a tenant charge or vendor balance.</div>
           )}
-          {data.billingDocuments.length ? <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} /> : null}
+          {data.billingDocuments.length && billingOpenBalanceCents === 0 ? <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} /> : null}
           <BillingEventList documents={data.billingDocuments} />
         </div>
       </SectionCard>

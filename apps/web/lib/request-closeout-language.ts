@@ -34,7 +34,7 @@ const BASE_LABELS: Record<string, string> = {
   requested: 'Requested',
   approved: 'Ready for vendor bids',
   declined: 'Declined',
-  vendor_selected: 'Vendor chosen for work',
+  vendor_selected: 'Vendor chosen for service call',
   scheduled: 'Scheduled',
   in_progress: 'In progress',
   completed: 'Completed',

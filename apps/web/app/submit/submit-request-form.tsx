@@ -50,6 +50,13 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
   }, [filteredUnits, selectedUnitId])
 
   useEffect(() => {
+    if (!hydrated || !properties.length) return
+    if (!properties.some((property) => property.id === selectedPropertyId)) {
+      setSelectedPropertyId(properties[0].id)
+    }
+  }, [hydrated, properties, selectedPropertyId])
+
+  useEffect(() => {
     try {
       const draft = JSON.parse(window.localStorage.getItem(draftKey) ?? 'null')
       if (draft) {

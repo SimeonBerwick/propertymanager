@@ -659,7 +659,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
               orderBy: { updatedAt: 'desc' },
             },
             tenderInvites: {
-              where: { status: 'bid_submitted' },
+              where: { status: { in: ['bid_submitted', 'invited', 'viewed'] } },
               select: { id: true, status: true },
             },
             vendorCommercialItems: {
@@ -715,7 +715,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
           },
         },
         tenderInvites: {
-          where: { status: 'bid_submitted' },
+          where: { status: { in: ['bid_submitted', 'invited', 'viewed'] } },
           select: { id: true, status: true },
         },
         tenders: {

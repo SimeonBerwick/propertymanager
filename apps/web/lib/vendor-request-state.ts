@@ -124,6 +124,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
   }
 
   if (inviteAwarded) {
+    const completed = input.requestStatus === 'completed'
     return {
       canControlDispatch: true,
       canSeeSchedule: true,
@@ -131,11 +132,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: true,
       isOpenWork: true,
       isPendingBid: false,
-      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for work',
-      tenderLabel: 'Vendor chosen for work',
+      statusLabel: completed ? 'Work completed' : input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for service call',
+      tenderLabel: completed ? 'Work completed' : 'Vendor chosen for service call',
       heroNotice: {
-        title: 'Vendor chosen for work',
-        detail: 'The property manager chose your company for this work.',
+        title: completed ? 'Work completed' : 'Vendor chosen for service call',
+        detail: completed ? 'The work is marked complete. Send any final charge or invoice if needed.' : 'The property manager chose your company for this service call.',
         tone: 'success',
       },
     }
@@ -149,11 +150,11 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
       isAwardedToViewer: false,
       isOpenWork: true,
       isPendingBid: false,
-      statusLabel: input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for work',
-      tenderLabel: 'Vendor chosen for work',
+      statusLabel: input.requestStatus === 'completed' ? 'Work completed' : input.requestStatus === 'scheduled' ? 'Scheduled with you' : 'Vendor chosen for service call',
+      tenderLabel: input.requestStatus === 'completed' ? 'Work completed' : 'Vendor chosen for service call',
       heroNotice: {
-        title: 'Vendor chosen for work',
-        detail: 'The property manager chose your company for this work.',
+        title: input.requestStatus === 'completed' ? 'Work completed' : 'Vendor chosen for service call',
+        detail: input.requestStatus === 'completed' ? 'The work is marked complete. Send any final charge or invoice if needed.' : 'The property manager chose your company for this service call.',
         tone: 'info',
       },
     }
@@ -203,7 +204,7 @@ export function deriveVendorRequestViewState(input: VendorRequestStateInput): Ve
     isOpenWork: true,
     isPendingBid: inviteStatus === 'invited',
     statusLabel: inviteStatus === 'invited' ? 'Invited to bid' : input.requestStatus.replaceAll('_', ' '),
-    tenderLabel: inviteStatus === 'invited' ? 'Invited to bid' : 'Vendor chosen for work',
+    tenderLabel: inviteStatus === 'invited' ? 'Invited to bid' : 'Vendor chosen for service call',
     heroNotice: inviteStatus === 'invited'
       ? {
           title: 'Invited to bid',

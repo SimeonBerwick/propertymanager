@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from 'react'
 import { submitVendorResponse, type VendorResponseState } from './actions'
-import { AppointmentDateTimeFields } from '@/components/appointment-date-time-fields'
 
 const INITIAL_STATE: VendorResponseState = { error: null }
 
@@ -13,10 +12,8 @@ function blurActiveField(form: HTMLFormElement) {
 
 export function VendorResponseForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState(submitVendorResponse, INITIAL_STATE)
-  const [response, setResponse] = useState('contacted')
-  const showBid = response === 'contacted' || response === 'accepted'
-  const showSchedule = response === 'scheduled'
-  const showPhotos = response === 'completed'
+  const [response, setResponse] = useState('accepted')
+  const showBid = response === 'accepted'
 
   return (
     <form action={action} className="stack" onSubmit={(event) => blurActiveField(event.currentTarget)}>
@@ -26,41 +23,31 @@ export function VendorResponseForm({ token }: { token: string }) {
       <label className="field">
         <span className="field-label">Response</span>
         <select className="input" name="dispatchStatus" value={response} onChange={(event) => setResponse(event.target.value)}>
-          <option value="contacted">Contacted</option>
-          <option value="accepted">Accepted</option>
-          <option value="declined">Declined</option>
-          <option value="canceled">Canceled after acceptance</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="completed">Completed</option>
+          <option value="accepted">Submit bid</option>
+          <option value="declined">Decline invite</option>
         </select>
       </label>
-      {showBid ? <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">Bid amount (USD)</span>
-          <input className="input" type="number" step="0.01" min="0" name="bidAmount" placeholder="250.00" />
-        </label>
-        <label className="field">
-          <span className="field-label">Availability note</span>
-          <input className="input" type="text" name="availabilityNote" placeholder="Can attend Thursday morning" />
-        </label>
-      </div> : null}
-      {showSchedule ? <div className="stack" style={{ gap: 8 }}>
-        <div className="notice">This appointment time will be sent to the tenant.</div>
-        <AppointmentDateTimeFields />
-      </div> : null}
+
+      {showBid ? (
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Bid amount (USD)</span>
+            <input className="input" type="number" step="0.01" min="0" name="bidAmount" placeholder="250.00" />
+          </label>
+          <label className="field">
+            <span className="field-label">Availability note</span>
+            <input className="input" type="text" name="availabilityNote" placeholder="Can attend Thursday morning" />
+          </label>
+        </div>
+      ) : null}
 
       <label className="field">
         <span className="field-label">Note</span>
-        <textarea className="input" name="note" rows={4} placeholder={response === 'scheduled' ? 'Optional tenant-visible scheduling note' : 'Optional note for scope or completion details'} />
+        <textarea className="input" name="note" rows={4} placeholder={response === 'declined' ? 'Tell the manager why you cannot bid on this work' : 'Optional note for scope or availability'} />
       </label>
-      {showPhotos ? <label className="field">
-        <span className="field-label">Photos</span>
-        <input className="input" type="file" name="photos" accept="image/*" multiple />
-        <span className="muted">Up to 3 photos total per work order, 5 MB each.</span>
-      </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting…' : 'Send response'}
+        {pending ? 'Submitting...' : response === 'accepted' ? 'Submit bid' : 'Send response'}
       </button>
     </form>
   )

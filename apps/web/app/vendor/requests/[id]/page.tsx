@@ -50,16 +50,16 @@ export default async function VendorRequestDetailPage({
     billingDocuments: request.billingDocuments,
   })
   const isPaidClosed = request.status === 'closed' && closeoutLanguage.isPaid
-  const heroNotice = !isPaidClosed && awardedInvite && viewState.isAwardedToViewer
-    ? {
-        title: 'Vendor chosen for work',
-        detail: awardedInvite.bidAmountCents != null ? `Awarded on your bid for USD ${(awardedInvite.bidAmountCents / 100).toFixed(2)}.` : viewState.heroNotice?.detail ?? 'The property manager chose your company for this work.',
-        tone: 'success' as const,
-      }
-    : viewState.heroNotice
   const workMarkedComplete = request.status === 'completed'
     || request.dispatchStatus === 'completed'
     || request.reviewState === 'vendor_completed_pending_review'
+  const heroNotice = !isPaidClosed && !workMarkedComplete && awardedInvite && viewState.isAwardedToViewer
+    ? {
+        title: 'Vendor chosen for service call',
+        detail: awardedInvite.bidAmountCents != null ? `Awarded on your bid for USD ${(awardedInvite.bidAmountCents / 100).toFixed(2)}.` : viewState.heroNotice?.detail ?? 'The property manager chose your company for this service call.',
+        tone: 'success' as const,
+      }
+    : viewState.heroNotice
   const latestScheduledEvent = [...request.dispatchHistory]
     .reverse()
     .find((entry) => entry.scheduledStart)
@@ -146,7 +146,7 @@ export default async function VendorRequestDetailPage({
         </div>
         <VendorRequestResponseForm
           requestId={request.id}
-          initialResponse={needsAppointmentTime ? 'scheduled' : hasApprovedCostOrInvoice && !viewState.isPendingBid ? 'completed' : hasAppointmentTime && !viewState.isPendingBid ? 'in_progress' : 'contacted'}
+          initialResponse={viewState.isPendingBid ? 'accepted' : needsAppointmentTime ? 'scheduled' : hasApprovedCostOrInvoice ? 'completed' : hasAppointmentTime ? 'in_progress' : 'contacted'}
           hasAppointment={hasAppointmentTime}
           pendingBid={viewState.isPendingBid}
         />
