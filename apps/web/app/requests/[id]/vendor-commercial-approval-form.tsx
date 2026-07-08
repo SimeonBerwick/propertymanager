@@ -15,7 +15,7 @@ export function VendorCommercialApprovalForm({ requestId, itemId, label }: { req
       <input type="hidden" name="itemId" value={itemId} />
       <ActionFeedback error={state.error} success={state.success ? state.message ?? 'Approved.' : null} />
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Approving…' : (label ?? 'Approve')}
+        {pending ? 'Approving...' : (label ?? 'Approve')}
       </button>
     </form>
   )

@@ -153,15 +153,13 @@ export async function sendTenantWorkOrderMessageAction(
       },
     })
 
-    if (request.status !== 'requested') {
-      await tx.maintenanceRequest.update({
-        where: { id: requestId },
-        data: {
-          reviewState: 'needs_follow_up',
-          reviewNote: 'Tenant asked a question about this work order.',
-        },
-      })
-    }
+    await tx.maintenanceRequest.update({
+      where: { id: requestId },
+      data: {
+        reviewState: 'needs_follow_up',
+        reviewNote: 'Tenant asked a question about this work order.',
+      },
+    })
 
   })
 

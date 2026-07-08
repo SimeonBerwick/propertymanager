@@ -171,6 +171,17 @@ export async function updateStatusFormAction(
     if (!ownedRequest) return { error: 'Request not found.' }
 
     await prisma.$transaction(async (tx) => {
+      const tenantQuestion = toStatus === 'approved'
+        ? await tx.requestComment.findFirst({
+            where: {
+              requestId,
+              visibility: 'external',
+              body: { startsWith: 'Tenant message:' },
+            },
+            select: { id: true },
+          })
+        : null
+      const shouldReviewTenantQuestion = Boolean(tenantQuestion)
       const updated = await tx.maintenanceRequest.update({
         where: { id: requestId },
         data: {
@@ -180,8 +191,16 @@ export async function updateStatusFormAction(
           reopenedReason: toStatus === 'reopened' ? reason : null,
           closedAt: toStatus === 'closed' ? new Date() : toClosedTerminal(toStatus) ? null : undefined,
           actualCompletedAt: toStatus === 'completed' ? new Date() : undefined,
-          reviewState: toStatus === 'completed' ? 'vendor_completed_pending_review' : toStatus === 'closed' ? 'approved' : toStatus === 'reopened' ? 'reopened_after_review' : undefined,
-          reviewNote: reason || undefined,
+          reviewState: toStatus === 'completed'
+            ? 'vendor_completed_pending_review'
+            : toStatus === 'closed'
+              ? 'approved'
+              : toStatus === 'reopened'
+                ? 'reopened_after_review'
+                : shouldReviewTenantQuestion
+                  ? 'needs_follow_up'
+                  : undefined,
+          reviewNote: shouldReviewTenantQuestion ? 'Tenant asked a question about this work order.' : reason || undefined,
         },
         include: { property: true, unit: true },
       })
@@ -782,7 +801,9 @@ export async function approveVendorCommercialItemAction(
       action: 'vendorCommercialItem.approved',
       summary: `Approved vendor ${item.itemType} submission from ${vendorName}.`,
       metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
-    })
+    }).catch((error) => (
+      logServerActionError('vendorCommercialItem.approve.audit', error, { requestId, itemId, vendorId: item.vendorId })
+    ))
 
     await applyRequestAutomation(requestId).catch((error) => (
       logServerActionError('vendorCommercialItem.approve.automation', error, { requestId, itemId })

@@ -16,6 +16,7 @@ export function VendorCommercialItemForm({
 }) {
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
   const [noCharge, setNoCharge] = useState(false)
+  const defaultTitle = context === 'service_call' && defaultItemType === 'service_fee' ? 'Service charge' : ''
   const typeOptions = context === 'service_call'
     ? [
         { value: 'service_fee', label: 'Service charge' },
@@ -58,7 +59,7 @@ export function VendorCommercialItemForm({
       <div className="grid cols-2">
         <label className="field">
           <span className="field-label">Title</span>
-          <input className="input" type="text" name="title" placeholder={noCharge ? 'No charge' : 'Replacement parts and labor'} required={!noCharge} />
+          <input className="input" type="text" name="title" defaultValue={defaultTitle} placeholder={noCharge ? 'No charge' : 'Replacement parts and labor'} required={!noCharge} />
         </label>
         <label className="field">
           <span className="field-label">Amount (USD)</span>
