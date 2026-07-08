@@ -218,6 +218,10 @@ describe('next action engine', () => {
     })
   })
 
+  it('keeps closed settled requests out of dashboard next actions', () => {
+    expect(buildDashboardNextActions([{ ...base, status: 'closed' as const, billingOpenBalanceCents: 0 }])).toEqual([])
+  })
+
   it('keeps completed requests out of closeout when vendor payment is owed before a document exists', () => {
     expect(getRequestNextAction({ ...base, status: 'completed' as const, billingOpenBalanceCents: 0, vendorPayableBalanceCents: 50000 })).toMatchObject({
       priority: 'normal',

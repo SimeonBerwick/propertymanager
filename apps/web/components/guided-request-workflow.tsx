@@ -29,7 +29,7 @@ export function GuidedRequestWorkflow({ request, compact = false }: { request: G
           ))}
         </div>
       ) : null}
-      {compact ? (
+      {compact && recommendation ? (
         <div className={`recommendedAction recommendedAction-${recommendation.tone}`}>
           <div>
             <div className="kicker">Recommended next action</div>
