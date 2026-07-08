@@ -15,13 +15,16 @@ function SubmitButton() {
 
 export function LoginForm({ error }: { error?: string }) {
   const showHelp = Boolean(error)
+  const isCredentialError = Boolean(error)
+    && !error?.includes('link needs sign-in')
+    && !error?.includes('session expired')
 
   return (
     <form action={loginRouteAction} className="stack">
       {error ? (
         <div className="notice error stack" style={{ gap: 8 }}>
           <span>{error}</span>
-          <span>Check the email and password, or contact support if you need your password reset.</span>
+          {isCredentialError ? <span>Check the email and password, or contact support if you need your password reset.</span> : null}
         </div>
       ) : null}
 
