@@ -790,7 +790,7 @@ export async function approveVendorCommercialItemAction(
       })
     } catch (error) {
       draftPosted = false
-      await logServerActionError('vendorCommercialItem.approve.remittanceDraft', error, { requestId, itemId })
+      await logServerActionError('vendorCommercialItem.approve.remittanceDraft', error, { requestId, itemId }).catch(() => null)
     }
 
     await writeAuditLog({
@@ -802,11 +802,11 @@ export async function approveVendorCommercialItemAction(
       summary: `Approved vendor ${item.itemType} submission from ${vendorName}.`,
       metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
     }).catch((error) => (
-      logServerActionError('vendorCommercialItem.approve.audit', error, { requestId, itemId, vendorId: item.vendorId })
+      logServerActionError('vendorCommercialItem.approve.audit', error, { requestId, itemId, vendorId: item.vendorId }).catch(() => null)
     ))
 
     await applyRequestAutomation(requestId).catch((error) => (
-      logServerActionError('vendorCommercialItem.approve.automation', error, { requestId, itemId })
+      logServerActionError('vendorCommercialItem.approve.automation', error, { requestId, itemId }).catch(() => null)
     ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
@@ -830,7 +830,7 @@ export async function approveVendorCommercialItemAction(
           responseLink: dispatchLink ? vendorRespondActionUrl(dispatchLink.rawToken) : undefined,
         }), { ownerUserId: session.userId, requestId })
       } catch (error) {
-        await logServerActionError('vendorCommercialItem.approve.vendorAwardNotification', error, { requestId, itemId, vendorId: item.vendorId })
+        await logServerActionError('vendorCommercialItem.approve.vendorAwardNotification', error, { requestId, itemId, vendorId: item.vendorId }).catch(() => null)
       }
     }
     if (!draftPosted) {
@@ -841,7 +841,7 @@ export async function approveVendorCommercialItemAction(
     }
     return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
   } catch (error) {
-    await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId })
+    await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId }).catch(() => null)
     return { error: 'Could not approve vendor submission.' }
   }
 }
@@ -1345,6 +1345,23 @@ export async function addCommentFormAction(
     await prisma.requestComment.create({
       data: { requestId, body, visibility, authorUserId: session.userId },
     })
+    if (visibility === 'external') {
+      await prisma.maintenanceRequest.updateMany({
+        where: {
+          id: requestId,
+          property: { ownerId: session.userId },
+          reviewState: 'needs_follow_up',
+          reviewNote: {
+            contains: 'tenant',
+            mode: 'insensitive',
+          },
+        },
+        data: {
+          reviewState: 'none',
+          reviewNote: null,
+        },
+      })
+    }
     await writeAuditLog({
       orgId: session.userId,
       actorUserId: session.userId,
