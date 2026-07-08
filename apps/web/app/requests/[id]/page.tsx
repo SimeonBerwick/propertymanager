@@ -334,8 +334,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         <div id="vendor-approvals">
         <SectionCard
           kicker="Money decision needed"
-          title="Approve vendor cost before billing"
-          subtitle="This must be approved before vendor payment, tenant chargeback, or closeout."
+          title={data.request.status === 'completed' ? 'Approve vendor cost before billing' : 'Review vendor cost submission'}
+          subtitle={data.request.status === 'completed' ? 'This must be approved before vendor payment, tenant chargeback, or closeout.' : 'Approving records the vendor amount. Closeout still waits until the work is marked complete.'}
         >
           <WorkOrderContext request={data.request} />
           <div className="stack" style={{ gap: 12 }}>
@@ -350,7 +350,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     {item.description ? <div>{item.description}</div> : null}
                     {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
                   </div>
-                  <span className="badge billing-partial">Approve before billing</span>
+                  <span className="badge billing-partial">{data.request.status === 'completed' ? 'Approve before billing' : 'Review submission'}</span>
                 </div>
                 <VendorCommercialApprovalForm
                   requestId={data.request.id}

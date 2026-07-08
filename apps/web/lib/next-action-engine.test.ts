@@ -235,6 +235,15 @@ describe('next action engine', () => {
     })
   })
 
+  it('waits for the vendor after costs are approved but work is not complete', () => {
+    expect(getRequestNextAction({ ...base, status: 'in_progress' as const, assignedVendorName: 'ACME Plumbing' })).toMatchObject({
+      priority: 'low',
+      primaryLabel: 'Wait for vendor completion',
+      reason: 'The manager is up to date. The vendor needs to mark the work complete when finished.',
+      actionType: 'monitor_vendor_completion',
+    })
+  })
+
   it('does not show vendor cost approval for a new intake request even if stale counts exist', () => {
     expect(getRequestNextAction({ ...base, status: 'requested' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
       primaryLabel: 'Start review',
