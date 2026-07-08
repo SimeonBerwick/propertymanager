@@ -3,6 +3,7 @@ import { getAllUnits, getProperties } from '@/lib/data'
 import { prisma } from '@/lib/prisma'
 import { SubmitRequestForm } from './submit-request-form'
 import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
+import { getLandlordSession } from '@/lib/landlord-session'
 
 export default async function SubmitPage({
   searchParams,
@@ -11,6 +12,8 @@ export default async function SubmitPage({
 }) {
   const { submitted, mode } = await searchParams
   const isManagerMode = mode === 'manager'
+  const session = isManagerMode ? await getLandlordSession() : null
+  if (isManagerMode && !session) redirect('/login?error=session-expired')
 
   // Redirect to the scoped submit URL when exactly one landlord has a slug configured.
   // This is the common single-landlord deployment case and gives tenants a properly
@@ -28,7 +31,10 @@ export default async function SubmitPage({
     // DB unavailable — fall through to the unscoped form below.
   }
 
-  const [properties, units] = await Promise.all([getProperties(), getAllUnits()])
+  const [properties, units] = await Promise.all([
+    getProperties(session?.userId),
+    getAllUnits(session?.userId),
+  ])
 
   if (submitted) {
     return (
