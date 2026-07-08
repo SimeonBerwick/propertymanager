@@ -182,6 +182,16 @@ export function RequestControlPanel({
                     <div className="signalAccent">{formatBidAmount(invite.bidAmountCents)}</div>
                     {proposedWindow ? <div className="muted">{proposedWindow}</div> : null}
                     {invite.availabilityNote ? <div className="muted">{invite.availabilityNote}</div> : null}
+                    {invite.vendorEmail ? (
+                      <div style={{ marginTop: 8 }}>
+                        <a
+                          className="button"
+                          href={`mailto:${invite.vendorEmail}?subject=${encodeURIComponent('Revision requested for maintenance bid')}&body=${encodeURIComponent(`Please send a revised bid or appointment time for this work order. Current bid: ${formatBidAmount(invite.bidAmountCents)}${proposedWindow ? `. Proposed time: ${proposedWindow}` : ''}.`)}`}
+                        >
+                          Ask for revision
+                        </a>
+                      </div>
+                    ) : null}
                   </div>
                   <button type="submit" className="button primary" disabled={awardPending}>
                     {awardPending ? 'Approving...' : 'Approve bid'}
@@ -193,7 +203,7 @@ export function RequestControlPanel({
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
         </div>
       ) : null}
-      {(isCloseoutStage || (statusControlPriority === 'primary' && !canSetAppointment)) ? statusForm : (
+      {(isCloseoutStage || (statusControlPriority === 'primary' && !canSetAppointment)) ? statusForm : canSetAppointment ? null : (
         <details className="advancedDisclosure">
           <summary>Other request decisions</summary>
           {statusForm}

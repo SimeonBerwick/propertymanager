@@ -124,16 +124,23 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const hasActiveBidInvitations = (data.request.activeTenderInviteCount ?? 0) > 0
   const hasVendorChosen = !hasActiveBidInvitations && Boolean(payableVendorId || data.request.assignedVendorName || data.request.assignedVendorEmail)
   const approvedBidCents = awardedTenderBid?.bidAmountCents ?? acceptedVendorBid?.amountCents ?? 0
-  const approvedVendorExtrasCents = data.vendorCommercialItems
-    .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
+  const approvedFinalInvoice = data.vendorCommercialItems
+    .filter((item) => item.status === 'approved' && item.itemType === 'bill_to_property_manager' && (!payableVendorId || item.vendorId === payableVendorId))
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
+  const pendingFinalInvoice = data.vendorCommercialItems
+    .filter((item) => item.status === 'submitted' && item.itemType === 'bill_to_property_manager' && (!payableVendorId || item.vendorId === payableVendorId))
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
+  const approvedVendorExtrasCents = approvedFinalInvoice ? 0 : data.vendorCommercialItems
+    .filter((item) => item.status === 'approved' && item.itemType !== 'bid' && item.itemType !== 'bill_to_property_manager' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
   const vendorCommercialChargeRecords = data.vendorCommercialItems
     .filter((item) => ['approved', 'submitted'].includes(item.status) && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
-  const pendingVendorExtrasCents = data.vendorCommercialItems
-    .filter((item) => item.status === 'submitted' && item.itemType !== 'bid' && (!payableVendorId || item.vendorId === payableVendorId))
+  const pendingVendorExtrasCents = pendingFinalInvoice ? Math.max(pendingFinalInvoice.amountCents - (approvedFinalInvoice?.amountCents ?? 0), 0) : data.vendorCommercialItems
+    .filter((item) => item.status === 'submitted' && item.itemType !== 'bid' && item.itemType !== 'bill_to_property_manager' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
-  const vendorAmountOwedCents = approvedBidCents + approvedVendorExtrasCents
-  const vendorAmountIfPendingApprovedCents = vendorAmountOwedCents + pendingVendorExtrasCents
+  const vendorAmountOwedCents = approvedFinalInvoice?.amountCents ?? (approvedBidCents + approvedVendorExtrasCents)
+  const approvedOverageCents = approvedFinalInvoice ? Math.max(approvedFinalInvoice.amountCents - approvedBidCents, 0) : approvedVendorExtrasCents
+  const vendorAmountIfPendingApprovedCents = pendingFinalInvoice ? pendingFinalInvoice.amountCents : vendorAmountOwedCents + pendingVendorExtrasCents
   const postedVendorPayments = data.billingDocuments.filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
   const postedVendorPaymentCents = postedVendorPayments.reduce((sum, doc) => sum + doc.totalCents, 0)
   const postedVendorPaymentBalanceCents = postedVendorPayments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
@@ -650,6 +657,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             ) : vendorOutstandingCents > 0 ? (
               <div className="detailFactsGrid" style={{ marginTop: 10 }}>
                 <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
+                {approvedFinalInvoice ? <div><strong>Over approved bid</strong><div className="muted">{formatMoney(approvedOverageCents, data.request.preferredCurrency)}</div></div> : null}
                 <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
                 <div><strong>Still owed</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
               </div>
@@ -663,8 +671,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 <summary>Show the math</summary>
                 <div className="detailFactsGrid" style={{ marginTop: 10 }}>
                   <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>Approved extras</strong><div className="muted">{formatMoney(approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>Pending extras</strong><div className="muted">{formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>{approvedFinalInvoice ? 'Final invoice' : 'Approved extras'}</strong><div className="muted">{formatMoney(approvedFinalInvoice?.amountCents ?? approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
+                  <div><strong>{pendingFinalInvoice ? 'Pending final invoice' : 'Pending extras'}</strong><div className="muted">{formatMoney(pendingFinalInvoice?.amountCents ?? pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
                   <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
                   <div><strong>Payment balance</strong><div className="muted">{formatMoney(postedVendorPaymentBalanceCents, data.request.preferredCurrency)}</div></div>
                 </div>

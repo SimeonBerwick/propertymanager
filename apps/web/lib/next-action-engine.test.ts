@@ -261,6 +261,20 @@ describe('next action engine', () => {
     })
   })
 
+  it('reviews completed work instead of watching the schedule when the vendor finishes early', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'scheduled' as const,
+      assignedVendorName: 'ACME Plumbing',
+      vendorScheduledStart: '2026-06-20T16:00:00.000Z',
+      dispatchStatus: 'completed',
+    }, new Date('2026-06-20T12:00:00.000Z'))).toMatchObject({
+      priority: 'high',
+      primaryLabel: 'Review completed work',
+      actionType: 'review_vendor_update',
+    })
+  })
+
   it('does not show vendor cost approval for a new intake request even if stale counts exist', () => {
     expect(getRequestNextAction({ ...base, status: 'requested' as const, pendingVendorApprovalCount: 1 })).toMatchObject({
       primaryLabel: 'Start review',

@@ -657,6 +657,64 @@ describe('approveVendorCommercialItemAction', () => {
     expect(draft?.description).toContain('Approved bid: USD 400.00')
     expect(draft?.description).toContain('Approved extras: USD 100.00')
   })
+
+  test('approving a final invoice replaces the bid total and records the overage', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Pipe Pros', email: 'pipe@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'completed',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      preferredCurrency: 'usd',
+    })
+    const tender = await prisma.requestTender.create({
+      data: { requestId: request.id, status: 'awarded', sentAt: new Date(), awardedAt: new Date(), closedAt: new Date() },
+    })
+    await prisma.tenderInvite.create({
+      data: {
+        tenderId: tender.id,
+        requestId: request.id,
+        vendorId: vendor.id,
+        status: 'awarded',
+        bidAmountCents: 50000,
+        bidCurrency: 'usd',
+        awardedAt: new Date(),
+      },
+    })
+    const finalInvoice = await prisma.vendorCommercialItem.create({
+      data: {
+        requestId: request.id,
+        vendorId: vendor.id,
+        orgId: user.id,
+        itemType: 'bill_to_property_manager',
+        status: 'submitted',
+        currency: 'usd',
+        amountCents: 70000,
+        title: 'Final invoice',
+      },
+    })
+
+    const result = await approveVendorCommercialItemAction(
+      PREV,
+      formData({ requestId: request.id, itemId: finalInvoice.id }),
+    )
+
+    expect(result.error).toBeNull()
+
+    const draft = await prisma.billingDocument.findFirst({
+      where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },
+    })
+
+    expect(draft?.totalCents).toBe(70000)
+    expect(draft?.description).toContain('Approved bid: USD 500.00')
+    expect(draft?.description).toContain('Final invoice: USD 700.00 total')
+    expect(draft?.description).toContain('overage USD 200.00')
+  })
 })
 
 describe('updateDispatchFormAction', () => {
