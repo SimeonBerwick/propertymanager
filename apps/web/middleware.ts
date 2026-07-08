@@ -4,6 +4,24 @@ import { getIronSession } from 'iron-session'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { evaluateSubscriptionGate } from '@/lib/subscription-gate'
 
+const PROTECTED_MANAGER_PREFIXES = [
+  '/access',
+  '/account',
+  '/dashboard',
+  '/exceptions',
+  '/ops',
+  '/properties',
+  '/reports',
+  '/requests',
+  '/units',
+  '/vendors',
+  '/workflows',
+]
+
+function isProtectedManagerPath(pathname: string) {
+  return PROTECTED_MANAGER_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -67,9 +85,13 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (!isProtectedManagerPath(pathname)) {
+    return response
+  }
+
   if (!session.isLoggedIn) {
     const url = new URL('/login', request.url)
-    url.searchParams.set('error', 'session-expired')
+    url.searchParams.set('error', 'sign-in-required')
     return NextResponse.redirect(url)
   }
 
