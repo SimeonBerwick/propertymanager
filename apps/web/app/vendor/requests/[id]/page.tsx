@@ -71,10 +71,12 @@ export default async function VendorRequestDetailPage({
     && !effectiveScheduledStart
     && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status)
   const hasAppointmentTime = Boolean(effectiveScheduledStart)
-  const hasSubmittedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid')
+  const hasPendingCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'submitted')
+  const hasApprovedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'approved')
+  const hasActiveCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status !== 'declined')
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
-  const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasSubmittedCostOrInvoice
-  const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && (viewState.canControlDispatch || viewState.isPendingBid)
+  const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasActiveCostOrInvoice
+  const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && !hasPendingCostOrInvoice && (viewState.canControlDispatch || viewState.isPendingBid)
 
   return (
     <div className="stack">
@@ -110,14 +112,16 @@ export default async function VendorRequestDetailPage({
         ) : shouldShowServiceCostForm ? (
           <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Send service charge or invoice</a>
         ) : canSendUpdate ? (
-          <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : hasSubmittedCostOrInvoice ? 'Mark work complete' : 'Send the next update'}</a>
+          <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : hasApprovedCostOrInvoice ? 'Mark work complete' : 'Send the next update'}</a>
+        ) : hasPendingCostOrInvoice ? (
+          <div className="notice" style={{ alignSelf: 'flex-start' }}>Waiting for the property manager to approve the submitted charge.</div>
         ) : null}
       </section>
 
       {canSendUpdate ? <section className="card stack" id="vendor-next-action">
         <div>
           <div className="kicker">Next action</div>
-          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : needsAppointmentTime ? 'Add appointment time' : hasSubmittedCostOrInvoice ? 'Mark work complete' : 'Send work update'}</h3>
+          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : needsAppointmentTime ? 'Add appointment time' : hasApprovedCostOrInvoice ? 'Mark work complete' : 'Send work update'}</h3>
         </div>
         <div className="muted">
           {viewState.isPendingBid
@@ -125,14 +129,14 @@ export default async function VendorRequestDetailPage({
             : needsAppointmentTime
               ? 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.'
               : hasAppointmentTime
-                ? hasSubmittedCostOrInvoice
-                  ? 'The cost or invoice has been sent. Mark the work complete when the service call is finished.'
+                ? hasApprovedCostOrInvoice
+                  ? 'The cost or invoice has been approved. Mark the work complete when the service call is finished.'
                   : 'Update work progress only. Use the cost form below for service charges, parts, estimates, or invoices.'
                 : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
         </div>
         <VendorRequestResponseForm
           requestId={request.id}
-          initialResponse={needsAppointmentTime ? 'scheduled' : hasSubmittedCostOrInvoice && !viewState.isPendingBid ? 'completed' : hasAppointmentTime && !viewState.isPendingBid ? 'in_progress' : 'contacted'}
+          initialResponse={needsAppointmentTime ? 'scheduled' : hasApprovedCostOrInvoice && !viewState.isPendingBid ? 'completed' : hasAppointmentTime && !viewState.isPendingBid ? 'in_progress' : 'contacted'}
           hasAppointment={hasAppointmentTime}
           pendingBid={viewState.isPendingBid}
         />

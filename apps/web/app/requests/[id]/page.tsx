@@ -325,6 +325,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           vendors={data.availableVendors}
           tenders={data.tenders}
           statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
+          canCloseRequest={billingIsSettled}
         />
       </SectionCard>
       </div>
