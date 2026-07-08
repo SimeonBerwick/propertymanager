@@ -342,10 +342,10 @@ export async function updateVendorFormAction(
         where: { id: requestId },
         data: {
           assignedVendorId: null,
-          assignedVendorName: vendors.map((vendor) => vendor.name).join(', ') || null,
+          assignedVendorName: null,
           assignedVendorEmail: null,
           assignedVendorPhone: null,
-          dispatchStatus: 'assigned',
+          dispatchStatus: null,
           reviewState: 'none',
           reviewNote: null,
           status: 'approved',

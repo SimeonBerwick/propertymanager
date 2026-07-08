@@ -11,13 +11,13 @@ export default async function TenantMobileLayout({ children }: { children: React
   return (
     <div className="stack" style={{ maxWidth: 760, margin: '0 auto' }}>
       <section className="card">
-        <div className="row" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div className="row tenantPortalHeader" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div className="kicker">Tenant portal</div>
             <h2 style={{ margin: '4px 0' }}>{session.propertyName} - {session.unitLabel}</h2>
             <div className="muted">Signed in as {session.tenantName}</div>
           </div>
-          <div className="row portalHeaderActions" style={{ marginLeft: 'auto', gap: 8, justifyContent: 'flex-end' }}>
+          <div className="row portalHeaderActions" style={{ gap: 8, justifyContent: 'flex-end' }}>
             <Link href={'/mobile' as Route} className="button">Dashboard</Link>
             <Link href={'/mobile/requests/new' as Route} className="button">New request</Link>
             <Link href={'/support' as Route} className="button">Support</Link>

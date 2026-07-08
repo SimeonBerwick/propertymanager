@@ -26,7 +26,7 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
 
 function statusOptionLabel(status: RequestStatus) {
   if (status === 'approved') return 'Approve for vendor selection'
-  if (status === 'vendor_selected') return 'Vendor chosen for work'
+  if (status === 'vendor_selected') return 'Vendor chosen for service call'
   return deriveRequestCloseoutLanguage({ status }).managerLabel
 }
 
@@ -77,6 +77,11 @@ export function RequestControlPanel({
       router.refresh()
     }
   }, [awardState.success, dispatchState.success, router, statusState.success, vendorState.success])
+
+  useEffect(() => {
+    if (!awardState.success) return
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
+  }, [awardState.success])
   const nextStatuses = (STATUS_TRANSITIONS[request.status] ?? [])
     .filter((status) => status !== 'closed' || canCloseRequest)
   const recommended = vendors.slice(0, 8)

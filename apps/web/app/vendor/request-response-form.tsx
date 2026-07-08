@@ -24,10 +24,15 @@ export function VendorRequestResponseForm({
 }) {
   const [state, action, pending] = useActionState(submitVendorPortalResponse, INITIAL_STATE)
   const [response, setResponse] = useState(initialResponse)
-  const showBid = pendingBid && (response === 'contacted' || response === 'accepted')
+  const showBid = pendingBid && response === 'accepted'
   const showSchedule = response === 'scheduled'
   const showPhotos = response === 'completed'
-  const responseOptions = hasAppointment && !pendingBid
+  const responseOptions = pendingBid
+    ? [
+        ['accepted', 'Submit bid'],
+        ['declined', 'Decline invite'],
+      ]
+    : hasAppointment
     ? [
         ['in_progress', 'Started work'],
         ['completed', 'Completed'],
@@ -84,7 +89,7 @@ export function VendorRequestResponseForm({
       </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting...' : response === 'scheduled' ? 'Save appointment' : 'Send work update'}
+        {pending ? 'Submitting...' : pendingBid && response === 'accepted' ? 'Submit bid' : response === 'scheduled' ? 'Save appointment' : 'Send work update'}
       </button>
     </form>
   )
