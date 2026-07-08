@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { ActionFeedback } from '@/components/action-feedback'
 import { sendTenantWorkOrderMessageAction, type TenantRequestActionState } from './actions'
 
@@ -8,9 +9,19 @@ const INITIAL_STATE: TenantRequestActionState = { error: null }
 
 export function TenantWorkOrderMessageForm({ requestId }: { requestId: string }) {
   const [state, action, pending] = useActionState(sendTenantWorkOrderMessageAction, INITIAL_STATE)
+  const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset()
+      router.refresh()
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
+    }
+  }, [router, state.success])
 
   return (
-    <form action={action} className="stack" style={{ gap: 8 }}>
+    <form ref={formRef} action={action} className="stack" style={{ gap: 8 }}>
       <input type="hidden" name="requestId" value={requestId} />
       <label className="field">
         <span className="field-label">Message</span>

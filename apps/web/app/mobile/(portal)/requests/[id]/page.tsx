@@ -62,6 +62,14 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const appointmentLabel = request.vendorScheduledStart
     ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
     : null
+  const latestTenantAppointmentMessage = [...request.comments]
+    .reverse()
+    .find((comment) => {
+      const normalizedBody = comment.body.toLowerCase()
+      return normalizedBody.startsWith('tenant message:')
+        && (normalizedBody.includes('appointment') || normalizedBody.includes('different time') || normalizedBody.includes('reschedule') || normalizedBody.includes('time'))
+        && (!request.vendorScheduledStart || new Date(comment.createdAt).getTime() >= new Date(request.vendorScheduledStart).getTime())
+    })
   const visibleReplies = request.comments.filter((comment) => {
     const source = classifyCommentSource(comment, request.assignedVendorName)
     return source.label === 'Property manager' || source.label === 'Vendor' || source.label === 'Visible note'
@@ -69,7 +77,13 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
 
   return (
     <div className="stack">
-      {appointmentLabel ? (
+      {latestTenantAppointmentMessage ? (
+        <section className="card stack tenantStatusSummary">
+          <div className="kicker">Appointment request sent</div>
+          <strong>Your message was sent.</strong>
+          <div>The property manager and vendor can see your request about the appointment time.</div>
+        </section>
+      ) : appointmentLabel ? (
         <section className="card stack tenantStatusSummary">
           <div className="kicker">Appointment</div>
           <strong>{appointmentLabel}</strong>
