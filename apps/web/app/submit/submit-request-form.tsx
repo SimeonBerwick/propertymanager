@@ -33,6 +33,10 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     () => units.filter((unit) => unit.propertyId === selectedPropertyId),
     [selectedPropertyId, units],
   )
+  const selectedUnit = useMemo(
+    () => units.find((unit) => unit.id === selectedUnitId),
+    [selectedUnitId, units],
+  )
 
   useEffect(() => {
     if (!filteredUnits.length) {
@@ -78,6 +82,12 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     }, 500)
     return () => window.clearTimeout(timeout)
   }, [category, description, draftKey, hydrated, orgSlug, selectedPropertyId, selectedUnitId, tenantEmail, tenantName, title, urgency])
+
+  useEffect(() => {
+    if (!managerMode) return
+    setTenantName(selectedUnit?.tenantName ?? '')
+    setTenantEmail(selectedUnit?.tenantEmail ?? '')
+  }, [managerMode, selectedUnit])
 
   if (!properties.length) {
     return (
@@ -137,17 +147,26 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         </label>
       </div>
 
-      <div className="grid cols-2">
-        <label className="field">
-          <span className="field-label">{managerMode ? 'Resident name' : 'Your name'}</span>
-          <input className="input" type="text" name="tenantName" placeholder={managerMode ? 'Resident or caller name' : 'Taylor Reed'} value={tenantName} onChange={(event) => setTenantName(event.target.value)} required />
-        </label>
+      {managerMode ? (
+        <div className="notice">
+          <strong>Resident from selected unit</strong>
+          <span>{tenantName || 'No resident name on this unit'}{tenantEmail ? ` - ${tenantEmail}` : ' - no resident email on this unit'}</span>
+          <input type="hidden" name="tenantName" value={tenantName} />
+          <input type="hidden" name="tenantEmail" value={tenantEmail} />
+        </div>
+      ) : (
+        <div className="grid cols-2">
+          <label className="field">
+            <span className="field-label">Your name</span>
+            <input className="input" type="text" name="tenantName" placeholder="Taylor Reed" value={tenantName} onChange={(event) => setTenantName(event.target.value)} required />
+          </label>
 
-        <label className="field">
-          <span className="field-label">{managerMode ? 'Resident email' : 'Your email'}</span>
-          <input className="input" type="email" name="tenantEmail" placeholder={managerMode ? 'resident@example.com' : 'taylor@example.com'} value={tenantEmail} onChange={(event) => setTenantEmail(event.target.value)} required />
-        </label>
-      </div>
+          <label className="field">
+            <span className="field-label">Your email</span>
+            <input className="input" type="email" name="tenantEmail" placeholder="taylor@example.com" value={tenantEmail} onChange={(event) => setTenantEmail(event.target.value)} required />
+          </label>
+        </div>
+      )}
 
       <label className="field">
         <span className="field-label">Issue title</span>
@@ -207,7 +226,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         <span className="muted">Up to 3 images, 5 MB each.</span>
       </label>
 
-      <button type="submit" className="button primary" disabled={isPending || !selectedUnitId}>
+      <button type="submit" className="button primary" disabled={isPending || !selectedUnitId || (managerMode && (!tenantName || !tenantEmail))}>
         {isPending ? 'Submitting...' : managerMode ? 'Create work order' : 'Submit maintenance request'}
       </button>
     </form>

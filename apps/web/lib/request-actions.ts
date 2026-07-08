@@ -11,6 +11,7 @@ import { getLandlordBySlug } from '@/lib/data'
 import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
+import { getLandlordSession } from '@/lib/landlord-session'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -49,8 +50,8 @@ export async function submitMaintenanceRequest(
   const managerMode = getString(formData, 'managerMode') === 'true'
   const propertyId = getString(formData, 'propertyId')
   const unitId = getString(formData, 'unitId')
-  const tenantName = getString(formData, 'tenantName')
-  const tenantEmail = getString(formData, 'tenantEmail').toLowerCase()
+  let tenantName = getString(formData, 'tenantName')
+  let tenantEmail = getString(formData, 'tenantEmail').toLowerCase()
   const title = getString(formData, 'title')
   const description = getString(formData, 'description')
   const category = getString(formData, 'category')
@@ -61,7 +62,7 @@ export async function submitMaintenanceRequest(
     .getAll('photos')
     .filter((value): value is File => value instanceof File && value.size > 0)
 
-  if (!propertyId || !unitId || !tenantName || !tenantEmail || !title || !description || !category || !urgency) {
+  if (!propertyId || !unitId || (!managerMode && (!tenantName || !tenantEmail)) || !title || !description || !category || !urgency) {
     return { error: 'All required fields must be filled in.' }
   }
 
@@ -94,7 +95,11 @@ export async function submitMaintenanceRequest(
   let verifiedLandlordId: string | undefined
   let notificationOwner: { id: string; email: string; emailNotificationsEnabled: boolean } | undefined
 
-  if (orgSlug) {
+  if (managerMode) {
+    const session = await getLandlordSession()
+    if (!session) return { error: 'Sign in again to create a work order.' }
+    verifiedLandlordId = session.userId
+  } else if (orgSlug) {
     const landlord = await getLandlordBySlug(orgSlug)
     if (!landlord) {
       return { error: 'Invalid submission link. Please use the link provided by your property manager.' }
@@ -125,6 +130,13 @@ export async function submitMaintenanceRequest(
     })
     if (!unit) {
       return { error: 'The selected property or unit is no longer available for new requests.' }
+    }
+    if (managerMode) {
+      tenantName = unit.tenantName?.trim() ?? ''
+      tenantEmail = unit.tenantEmail?.trim().toLowerCase() ?? ''
+      if (!tenantName || !tenantEmail) {
+        return { error: 'This unit needs a resident name and email before you can create a manager work order.' }
+      }
     }
     unitLabel = unit.label
     propertyName = unit.property.name
