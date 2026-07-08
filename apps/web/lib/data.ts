@@ -29,6 +29,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   vendorPayablePaidCents?: number
   vendorPayableBalanceCents?: number
   billingOpenBalanceCents: number
+  billingOpenDocumentCount?: number
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
   activeTenderInviteCount?: number
@@ -125,6 +126,9 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
         .filter((doc: any) => doc.status !== 'void')
         .reduce((sum: number, doc: any) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
     : 0
+  const billingOpenDocumentCount = Array.isArray(r.billingDocuments)
+    ? r.billingDocuments.filter((doc: any) => doc.status !== 'void' && doc.totalCents > doc.paidCents).length
+    : 0
   const vendorPayable = Array.isArray(r.billingDocuments)
     ? r.billingDocuments
         .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void' && doc.totalCents > doc.paidCents)
@@ -183,6 +187,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     vendorPayablePaidCents: vendorPayable?.paidCents,
     vendorPayableBalanceCents: vendorPayable ? Math.max(vendorPayable.totalCents - vendorPayable.paidCents, 0) : undefined,
     billingOpenBalanceCents,
+    billingOpenDocumentCount,
     pendingVendorApprovalCount: Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted' && item.itemType !== 'bid').length : undefined,
     pendingBidCount: (Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : 0)
       + (Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted' && item.itemType === 'bid').length : 0),
