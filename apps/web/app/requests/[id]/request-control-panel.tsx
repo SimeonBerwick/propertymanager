@@ -58,11 +58,13 @@ export function RequestControlPanel({
   vendors,
   tenders,
   statusControlPriority = 'primary',
+  canCloseRequest = true,
 }: {
   request: Pick<MaintenanceRequest, 'id' | 'status' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
+  canCloseRequest?: boolean
 }) {
   const router = useRouter()
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
@@ -75,7 +77,8 @@ export function RequestControlPanel({
       router.refresh()
     }
   }, [awardState.success, dispatchState.success, router, statusState.success, vendorState.success])
-  const nextStatuses = STATUS_TRANSITIONS[request.status] ?? []
+  const nextStatuses = (STATUS_TRANSITIONS[request.status] ?? [])
+    .filter((status) => status !== 'closed' || canCloseRequest)
   const recommended = vendors.slice(0, 8)
   const bidDecisionInvites = tenders.flatMap((tender) => (
     tender.invites
@@ -119,6 +122,11 @@ export function RequestControlPanel({
         <div className="kicker">Request decision</div>
         <h3 style={{ marginTop: 4 }}>{request.status === 'requested' ? 'Review this request' : request.status === 'completed' ? 'Close or reopen this request' : 'Change request status'}</h3>
       </div>
+      {request.status === 'completed' && !canCloseRequest ? (
+        <div className="notice">
+          Mark open billing records paid before closing this request.
+        </div>
+      ) : null}
       <input type="hidden" name="requestId" value={request.id} />
       <input type="hidden" name="fromStatus" value={request.status} />
       <label className="field">
