@@ -167,6 +167,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:scheduled`, primaryLabel: 'Wait for appointment', reason: 'The vendor is scheduled. No manager action is needed right now.', group: 'Monitoring', priority: 'low', actionType: 'monitor_scheduled_work', score: SCORE.routine }
   }
 
+  if (hasVendorChosen(request) && request.status === 'in_progress') {
+    return { ...base, id: `${request.id}:wait-vendor-completion`, primaryLabel: 'Wait for vendor completion', reason: 'The manager is up to date. The vendor needs to mark the work complete when finished.', group: 'Monitoring', priority: 'low', actionType: 'monitor_vendor_completion', score: SCORE.routine }
+  }
+
   if (request.vendorBillPending) {
     return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
   }

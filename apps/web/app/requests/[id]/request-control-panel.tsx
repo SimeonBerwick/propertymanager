@@ -16,7 +16,7 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   approved: ['vendor_selected', 'declined', 'canceled'],
   declined: ['reopened'],
   vendor_selected: ['approved', 'canceled'],
-  scheduled: ['vendor_selected', 'in_progress', 'canceled'],
+  scheduled: ['vendor_selected', 'in_progress', 'completed', 'canceled'],
   in_progress: ['completed', 'vendor_selected'],
   completed: ['closed', 'reopened'],
   closed: ['reopened'],

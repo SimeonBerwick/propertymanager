@@ -5,18 +5,28 @@ import { createVendorCommercialItemAction, type VendorCommercialActionState } fr
 
 const INITIAL_STATE: VendorCommercialActionState = { error: null }
 
+type VendorCommercialItemType = 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+
+const SERVICE_CALL_TITLES: Record<VendorCommercialItemType, string> = {
+  bid: 'Estimated repair cost',
+  service_fee: 'Service charge',
+  overcost: 'Parts only',
+  bill_to_property_manager: 'Final invoice',
+}
+
 export function VendorCommercialItemForm({
   requestId,
   defaultItemType = 'bid',
   context = 'general',
 }: {
   requestId: string
-  defaultItemType?: 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+  defaultItemType?: VendorCommercialItemType
   context?: 'general' | 'service_call'
 }) {
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
   const [noCharge, setNoCharge] = useState(false)
-  const defaultTitle = context === 'service_call' && defaultItemType === 'service_fee' ? 'Service charge' : ''
+  const [selectedType, setSelectedType] = useState<VendorCommercialItemType>(defaultItemType)
+  const [title, setTitle] = useState(context === 'service_call' ? SERVICE_CALL_TITLES[defaultItemType] : '')
   const typeOptions = context === 'service_call'
     ? [
         { value: 'service_fee', label: 'Service charge' },
@@ -49,7 +59,20 @@ export function VendorCommercialItemForm({
       ) : null}
       <label className="field">
         <span className="field-label">Submission type</span>
-        <select className="input" name="itemType" defaultValue={defaultItemType} disabled={noCharge}>
+        <select
+          className="input"
+          name="itemType"
+          value={selectedType}
+          disabled={noCharge}
+          onChange={(event) => {
+            const nextType = event.target.value as VendorCommercialItemType
+            const currentDefault = SERVICE_CALL_TITLES[selectedType]
+            setSelectedType(nextType)
+            if (context === 'service_call' && (!title.trim() || title === currentDefault)) {
+              setTitle(SERVICE_CALL_TITLES[nextType])
+            }
+          }}
+        >
           {typeOptions.map((option) => (
             <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>
           ))}
@@ -59,7 +82,16 @@ export function VendorCommercialItemForm({
       <div className="grid cols-2">
         <label className="field">
           <span className="field-label">Title</span>
-          <input className="input" type="text" name="title" defaultValue={defaultTitle} placeholder={noCharge ? 'No charge' : 'Replacement parts and labor'} required={!noCharge} />
+          <input
+            className="input"
+            type="text"
+            name="title"
+            value={noCharge ? 'No charge' : title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder={noCharge ? 'No charge' : 'Replacement parts and labor'}
+            required={!noCharge}
+            readOnly={noCharge}
+          />
         </label>
         <label className="field">
           <span className="field-label">Amount (USD)</span>
