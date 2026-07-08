@@ -17,23 +17,20 @@ describe('request guidance', () => {
 
   it('guides a new unclaimed request into ownership', () => {
     const request = { ...base, status: 'requested' as const }
-    expect(getRecommendedAction(request).label).toBe('Start review')
+    expect(getRecommendedAction(request)?.label).toBe('Start review')
     expect(getWorkflowStep(request)).toBe(0)
   })
 
   it('prioritizes reassignment as a high-review action', () => {
     const request = { ...base, status: 'approved' as const, reviewState: 'reassignment_needed' as const }
-    expect(getRecommendedAction(request).tone).toBe('review')
+    expect(getRecommendedAction(request)?.tone).toBe('review')
     expect(getAttentionScore(request)).toBeGreaterThanOrEqual(8)
   })
 
-  it('treats closed requests as fully complete with no immediate action', () => {
+  it('does not show a recommendation for closed settled requests', () => {
     const request = { ...base, status: 'closed' as const, reviewState: 'vendor_completed_pending_review' as const }
     expect(getWorkflowStep(request)).toBe(5)
-    expect(getRecommendedAction(request)).toMatchObject({
-      label: 'View details',
-      tone: 'clear',
-    })
+    expect(getRecommendedAction(request)).toBeNull()
     expect(getAttentionScore(request)).toBe(0)
   })
 

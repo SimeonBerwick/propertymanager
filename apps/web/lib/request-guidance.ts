@@ -53,6 +53,7 @@ export function getWorkflowStep(request: GuidanceRequest) {
 
 export function getRecommendedAction(request: GuidanceRequest) {
   const nextAction = getRequestNextAction(request)
+  if (nextAction.score <= 0) return null
   const tone = nextAction.priority === 'urgent'
     ? 'urgent'
     : nextAction.priority === 'high'
@@ -72,6 +73,7 @@ export function getRecommendedAction(request: GuidanceRequest) {
 
 export function getAttentionScore(request: GuidanceRequest) {
   const recommendation = getRecommendedAction(request)
+  if (!recommendation) return 0
   if (recommendation.actionType === 'review_vendor_costs') return 7
   if (recommendation.actionType === 'award_bid') return 6
   if (recommendation.actionType === 'collect_payment_before_closeout') return request.status === 'closed' ? 7 : 6

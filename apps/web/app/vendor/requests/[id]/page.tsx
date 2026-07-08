@@ -74,6 +74,9 @@ export default async function VendorRequestDetailPage({
   const hasPendingCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'submitted')
   const hasApprovedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'approved')
   const hasActiveCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status !== 'declined')
+  const latestTenantMessage = [...request.comments]
+    .reverse()
+    .find((comment) => comment.body.startsWith('Tenant message:'))
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
   const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasActiveCostOrInvoice
   const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && !hasPendingCostOrInvoice && (viewState.canControlDispatch || viewState.isPendingBid)
@@ -107,6 +110,13 @@ export default async function VendorRequestDetailPage({
           Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
         </div>
         <div>{request.description}</div>
+        {latestTenantMessage ? (
+          <div className="notice">
+            <strong>Tenant message</strong>
+            <span>{latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}</span>
+            <span className="muted">{new Date(latestTenantMessage.createdAt).toLocaleString()}</span>
+          </div>
+        ) : null}
         {shouldPrioritizeInvoiceItem ? (
           <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Submit extra cost or invoice</a>
         ) : shouldShowServiceCostForm ? (

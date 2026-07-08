@@ -19,6 +19,7 @@ type RecommendedStepRequest = Pick<MaintenanceRequest,
 
 export function RecommendedNextStepPanel({ request }: { request: RecommendedStepRequest }) {
   const recommendation = getRecommendedAction(request)
+  if (!recommendation) return null
 
   return (
     <section className={`recommendedAction recommendedAction-${recommendation.tone}`} aria-labelledby="recommended-next-step-title">

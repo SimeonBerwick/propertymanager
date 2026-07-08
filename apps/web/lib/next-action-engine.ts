@@ -147,6 +147,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:overdue`, primaryLabel: 'Follow up', reason: 'The scheduled completion time has passed.', group: 'Overdue vendor updates', priority: 'high', actionType: 'follow_up_overdue_work', score: SCORE.overdueUpdate }
   }
 
+  if (request.status === 'completed' && ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0)) {
+    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'Vendor payment or a billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
+  }
+
   if (request.reviewState === 'vendor_completed_pending_review') {
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }

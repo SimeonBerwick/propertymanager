@@ -195,6 +195,19 @@ describe('next action engine', () => {
     })
   })
 
+  it('sends completed unpaid work to billing before completed-work review', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'completed' as const,
+      reviewState: 'vendor_completed_pending_review' as const,
+      billingOpenBalanceCents: 50000,
+    })).toMatchObject({
+      primaryLabel: 'Settle billing before closeout',
+      href: '/requests/r1#billing',
+      actionType: 'collect_payment_before_closeout',
+    })
+  })
+
   it('keeps closed requests visible when a billing document still has an open balance', () => {
     expect(getRequestNextAction({ ...base, status: 'closed' as const, billingOpenBalanceCents: 50000 })).toMatchObject({
       priority: 'normal',
@@ -203,6 +216,10 @@ describe('next action engine', () => {
       href: '/requests/r1#billing',
       actionType: 'collect_payment_before_closeout',
     })
+  })
+
+  it('keeps closed settled requests out of dashboard next actions', () => {
+    expect(buildDashboardNextActions([{ ...base, status: 'closed' as const, billingOpenBalanceCents: 0 }])).toEqual([])
   })
 
   it('keeps completed requests out of closeout when vendor payment is owed before a document exists', () => {
