@@ -268,10 +268,27 @@ describe('next action engine', () => {
       assignedVendorName: 'ACME Plumbing',
       vendorScheduledStart: '2026-06-20T16:00:00.000Z',
       dispatchStatus: 'completed',
+      vendorBillPending: true,
     }, new Date('2026-06-20T12:00:00.000Z'))).toMatchObject({
       priority: 'high',
       primaryLabel: 'Review completed work',
       actionType: 'review_vendor_update',
+    })
+  })
+
+  it('offers closeout when early completed work is already paid', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'scheduled' as const,
+      assignedVendorName: 'ACME Plumbing',
+      vendorScheduledStart: '2026-06-20T16:00:00.000Z',
+      dispatchStatus: 'completed',
+      billingOpenBalanceCents: 0,
+      vendorPayableBalanceCents: 0,
+    }, new Date('2026-06-20T12:00:00.000Z'))).toMatchObject({
+      priority: 'normal',
+      primaryLabel: 'Close request',
+      actionType: 'close_request',
     })
   })
 
