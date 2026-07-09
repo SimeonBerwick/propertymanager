@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
-import type { CurrencyOption, DispatchStatus, LanguageOption, RequestStatus, ReviewStatus } from '@/lib/types'
+import { isCurrencyOption, type CurrencyOption, type DispatchStatus, type LanguageOption, type RequestStatus, type ReviewStatus } from '@/lib/types'
 import {
   sendNotification,
   buildStatusChangedMessage,
@@ -514,7 +514,7 @@ export async function updatePreferencesFormAction(
   const preferredCurrency = ((formData.get('preferredCurrency') as string) ?? '').trim() as CurrencyOption
   const preferredLanguage = ((formData.get('preferredLanguage') as string) ?? '').trim() as LanguageOption
 
-  if (!['usd'].includes(preferredCurrency)) return { error: 'Invalid currency.' }
+  if (!isCurrencyOption(preferredCurrency)) return { error: 'Invalid currency.' }
   if (!['english', 'spanish', 'french'].includes(preferredLanguage)) return { error: 'Invalid language.' }
 
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)

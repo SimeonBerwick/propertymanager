@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { SubmitRequestForm } from './submit-request-form'
 import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
 import { getLandlordSession } from '@/lib/landlord-session'
+import type { CurrencyOption } from '@/lib/types'
 
 export default async function SubmitPage({
   searchParams,
@@ -36,6 +37,9 @@ export default async function SubmitPage({
     getProperties(session?.userId),
     getAllUnits(session?.userId),
   ])
+  const defaultCurrency: CurrencyOption = session
+    ? (await prisma.user.findUnique({ where: { id: session.userId }, select: { defaultCurrency: true } }))?.defaultCurrency ?? 'usd'
+    : 'usd'
 
   if (submitted) {
     return (
@@ -70,7 +74,7 @@ export default async function SubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} managerMode={isManagerMode} />
+        <SubmitRequestForm properties={properties} units={units} managerMode={isManagerMode} defaultCurrency={defaultCurrency} />
       </section>
     </div>
   )

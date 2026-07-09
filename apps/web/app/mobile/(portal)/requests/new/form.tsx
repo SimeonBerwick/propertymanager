@@ -41,7 +41,6 @@ export function TenantNewRequestForm() {
           {showDetails ? 'Hide details' : 'Adjust details'}
         </button>
       </div>
-      <input type="hidden" name="preferredCurrency" value="usd" />
       {!showDetails ? (
         <>
           <input type="hidden" name="category" value={category} />

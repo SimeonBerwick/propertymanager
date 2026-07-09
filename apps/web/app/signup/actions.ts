@@ -8,6 +8,7 @@ import { isDatabaseAvailable } from '@/lib/db-status'
 import { hashPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { parseCadence, parsePlan, trialEndsAtFrom } from '@/lib/billing-plans'
+import { isCurrencyOption } from '@/lib/types'
 import { writeAuditLog } from '@/lib/audit-log'
 
 export type SignupState = { error: string | null }
@@ -66,6 +67,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   const password = read(formData, 'password')
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
+  const defaultCurrency = read(formData, 'defaultCurrency') || 'usd'
   const promoCode = read(formData, 'promoCode')
   const promoDays = promoTrialDays(promoCode)
 
@@ -75,6 +77,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
   if (!plan || !cadence) return { error: 'Choose a subscription plan.' }
+  if (!isCurrencyOption(defaultCurrency)) return { error: 'Choose a valid default billing currency.' }
   if (promoCode && !promoDays) return { error: 'That promo code is not valid.' }
 
   const trialEndsAt = trialEndsAtFrom(undefined, promoDays ?? undefined)
@@ -95,6 +98,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
         subscriptionStatus: 'trialing',
         subscriptionPlan: plan,
         billingCadence: cadence,
+        defaultCurrency,
         trialEndsAt,
       },
     })
@@ -108,7 +112,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       summary: normalizedPromoCode
         ? `Started ${promoDays}-day trial on ${plan} ${cadence} with promo code.`
         : `Started free trial on ${plan} ${cadence}.`,
-      metadata: { plan, cadence, trialEndsAt: trialEndsAt.toISOString(), promoCode: normalizedPromoCode, promoDays },
+      metadata: { plan, cadence, defaultCurrency, trialEndsAt: trialEndsAt.toISOString(), promoCode: normalizedPromoCode, promoDays },
     })
 
     const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())

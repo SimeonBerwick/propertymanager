@@ -8,6 +8,7 @@ import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { centsFromDollars, deriveBillingStatus, formatMoney } from '@/lib/billing-utils'
 import { buildBillingDocumentMessage, sendNotification } from '@/lib/notify'
 import type { BillingDocumentStatus } from '@/lib/billing-types'
+import type { CurrencyOption } from '@/lib/types'
 import { writeAuditLog } from '@/lib/audit-log'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
@@ -119,7 +120,7 @@ async function notifyBillingRecipient({
   status: BillingDocumentStatus
   totalCents: number
   paidCents: number
-  currency: 'usd' | 'peso' | 'pound' | 'euro'
+  currency: CurrencyOption
   ownerUserId: string
   requestId: string
   actionUrl?: string

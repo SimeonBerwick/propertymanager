@@ -1,5 +1,5 @@
 import type { BillingDocumentStatus, BillingDocumentType } from '@/lib/billing-types'
-import { currencyLabel } from '@/lib/types'
+import { currencyLabel, type CurrencyOption } from '@/lib/types'
 
 export function centsFromDollars(value: string) {
   const parsed = Number(value)
@@ -7,7 +7,7 @@ export function centsFromDollars(value: string) {
   return Math.round(parsed * 100)
 }
 
-export function formatMoney(cents: number, currency: 'usd' | 'peso' | 'pound' | 'euro') {
+export function formatMoney(cents: number, currency: CurrencyOption) {
   return `${currencyLabel(currency)} ${((cents || 0) / 100).toFixed(2)}`
 }
 
