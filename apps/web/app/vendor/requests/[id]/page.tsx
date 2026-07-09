@@ -75,11 +75,12 @@ export default async function VendorRequestDetailPage({
   const hasPendingCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'submitted')
   const hasApprovedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'approved')
   const hasActiveCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status !== 'declined')
+  const activeFinalInvoice = request.vendorCommercialItems.find((item) => item.itemType === 'bill_to_property_manager' && item.status !== 'declined')
   const awardedFromBid = Boolean(awardedInvite)
   const latestTenantMessage = [...request.comments]
     .reverse()
     .find((comment) => comment.body.startsWith('Tenant message:'))
-  const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete
+  const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete && !activeFinalInvoice
   const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasActiveCostOrInvoice
   const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && !hasPendingCostOrInvoice && (viewState.canControlDispatch || viewState.isPendingBid)
 
@@ -119,8 +120,14 @@ export default async function VendorRequestDetailPage({
             <div className="muted">{formatDateTime(latestTenantMessage.createdAt)}</div>
           </div>
         ) : null}
-        {shouldPrioritizeInvoiceItem ? (
-          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Submit extra cost or invoice</a>
+        {activeFinalInvoice ? (
+          <div className={`notice ${activeFinalInvoice.status === 'approved' ? 'success' : ''}`} style={{ alignSelf: 'flex-start' }}>
+            {activeFinalInvoice.status === 'approved'
+              ? 'Final invoice approved. The property manager will post or mark the payment record next.'
+              : 'Final invoice sent. Waiting for the property manager to review it.'}
+          </div>
+        ) : shouldPrioritizeInvoiceItem ? (
+          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>{awardedFromBid || hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice'}</a>
         ) : shouldShowServiceCostForm ? (
           <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>{awardedFromBid ? 'Send invoice' : 'Send service charge or invoice'}</a>
         ) : canSendUpdate ? (
@@ -181,12 +188,14 @@ export default async function VendorRequestDetailPage({
         <section className="card stack" id="vendor-invoice-item">
           <div>
             <div className="kicker">Next action</div>
-            <h3 style={{ marginTop: 4 }}>Submit extra cost or invoice</h3>
+            <h3 style={{ marginTop: 4 }}>{awardedFromBid || hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice'}</h3>
           </div>
           <div className="muted">
-            Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.
+            {awardedFromBid || hasApprovedCostOrInvoice
+              ? 'Work is marked complete. Send the final invoice so the property manager can match it to the approved amount.'
+              : 'Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.'}
           </div>
-          <VendorCommercialItemForm requestId={request.id} defaultItemType="overcost" context="service_call" />
+          <VendorCommercialItemForm requestId={request.id} defaultItemType={awardedFromBid || hasApprovedCostOrInvoice ? 'bill_to_property_manager' : 'overcost'} context={awardedFromBid || hasApprovedCostOrInvoice ? 'general' : 'service_call'} />
         </section>
       ) : shouldShowServiceCostForm ? (
         <section className="card stack" id="vendor-invoice-item">
