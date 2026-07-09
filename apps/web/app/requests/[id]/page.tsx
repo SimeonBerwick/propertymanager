@@ -163,7 +163,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const hasBidDetails = data.tenders.length > 0 || Boolean(latestTenderReply) || Boolean(latestCommercialReply)
   const hasSubmittedBid = data.tenders.some((tender) => tender.invites.some((invite) => invite.status === 'bid_submitted'))
     || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
-  const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status === 'submitted')
+  const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => (
+    item.status === 'submitted'
+    && !(item.itemType === 'bill_to_property_manager' && item.amountCents <= vendorAmountOwedCents)
+  ))
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
   const reviewNoteLower = (data.request.reviewNote ?? '').toLowerCase()
@@ -227,7 +230,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           ? 'Reopen only if more work is needed.'
           : 'Choose the next clear step for this request.'
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
-  const needsTenantChargeDocument = tenantChargebackCents > 0
+  const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
+  const needsTenantChargeDocument = tenantChargebackCents > 0 && !hasTenantChargeDocument
   const needsVendorPaymentDocument = vendorOutstandingCents > 0
   const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
   const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
@@ -283,7 +287,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 </div>
                 <div>{latestTenantMessage?.body.replace(/^Tenant message:\s*/i, '')}</div>
                 <div className="muted">
-                  Sent by {latestTenantMessage?.authorName ?? data.request.submittedByName ?? 'Tenant'}{latestTenantMessage ? ` - ${new Date(latestTenantMessage.createdAt).toLocaleString()}` : ''}
+                  Sent by {latestTenantMessage?.authorName ?? data.request.submittedByName ?? 'Tenant'}{latestTenantMessage ? ` - ${formatDateTime(latestTenantMessage.createdAt)}` : ''}
                 </div>
                 {effectiveVendorScheduledStart ? (
                   <div className="inlineNotice">
@@ -314,7 +318,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                         Appointment: {latestVendorDispatch.scheduledStart ? formatAppointmentWindow(latestVendorDispatch.scheduledStart, latestVendorDispatch.scheduledEnd) : '-'}
                       </div>
                     ) : null}
-                    <div className="muted">Sent {new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
+                    <div className="muted">Sent {formatDateTime(latestVendorDispatch.createdAt)}</div>
                   </>
                 ) : (
                   <div className="muted">No vendor work update was found in the timeline.</div>
@@ -358,7 +362,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   <div>
                     <div style={{ fontWeight: 700 }}>{item.title}</div>
                     <div className="muted">
-                      {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
+                      {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
                     </div>
                     {item.description ? <div>{item.description}</div> : null}
                     {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
@@ -407,7 +411,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                         ? `Bid USD ${(latestTenderReply.invite.bidAmountCents / 100).toFixed(2)}`
                         : 'No bid amount yet'}
                     </div>
-                    <div className="muted">{new Date(latestTenderReply.activityAt).toLocaleString()}</div>
+                    <div className="muted">{formatDateTime(latestTenderReply.activityAt)}</div>
                   </>
                 ) : (
                   <div className="muted">No bid reply yet.</div>
@@ -421,7 +425,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     <div className="signalTitle" style={{ fontSize: 18 }}>{latestVendorDispatch.vendorName ?? 'Vendor update'}</div>
                     <div className="signalAccent">{statusLabel(latestVendorDispatch.status)}</div>
                     <div className="muted">{latestVendorDispatch.note ?? 'No note attached.'}</div>
-                    <div className="muted">{new Date(latestVendorDispatch.createdAt).toLocaleString()}</div>
+                    <div className="muted">{formatDateTime(latestVendorDispatch.createdAt)}</div>
                   </>
                 ) : (
                   <div className="muted">No work update yet.</div>
@@ -434,13 +438,13 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   <>
                     <div className="signalTitle" style={{ fontSize: 18 }}>{latestVisibleReply.authorName}</div>
                     <div className="muted">{latestVisibleReply.body}</div>
-                    <div className="muted">{new Date(latestVisibleReply.createdAt).toLocaleString()}</div>
+                    <div className="muted">{formatDateTime(latestVisibleReply.createdAt)}</div>
                   </>
                 ) : latestCommercialReply ? (
                   <>
                     <div className="signalTitle" style={{ fontSize: 18 }}>{latestCommercialReply.title}</div>
                     <div className="signalAccent">{vendorCommercialTypeLabel(latestCommercialReply.itemType)}</div>
-                    <div className="muted">{new Date(latestCommercialReply.submittedAt).toLocaleString()}</div>
+                    <div className="muted">{formatDateTime(latestCommercialReply.submittedAt)}</div>
                   </>
                 ) : (
                   <div className="muted">No recent reply signal yet.</div>
@@ -456,8 +460,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     <h3 style={{ marginTop: 4 }}>{bidRoundTitle(tender.title)}</h3>
                     <div className="muted">
                       {tender.status.replaceAll('_', ' ')}
-                      {tender.sentAt ? ` - Sent ${new Date(tender.sentAt).toLocaleString()}` : ''}
-                      {tender.awardedAt ? ` - Awarded ${new Date(tender.awardedAt).toLocaleString()}` : ''}
+                      {tender.sentAt ? ` - Sent ${formatDateTime(tender.sentAt)}` : ''}
+                      {tender.awardedAt ? ` - Awarded ${formatDateTime(tender.awardedAt)}` : ''}
                     </div>
                   </div>
                 </div>
@@ -482,8 +486,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                         </div>
                       ) : null}
                       <div className="muted">
-                        Invited {new Date(invite.invitedAt).toLocaleString()}
-                        {invite.respondedAt ? ` - Replied ${new Date(invite.respondedAt).toLocaleString()}` : ''}
+                        Invited {formatDateTime(invite.invitedAt)}
+                        {invite.respondedAt ? ` - Replied ${formatDateTime(invite.respondedAt)}` : ''}
                       </div>
                     </div>
                   ))}
@@ -530,7 +534,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   </span>
                 </div>
                 <div>{comment.body}</div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{new Date(comment.createdAt).toLocaleString()}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{formatDateTime(comment.createdAt)}</div>
               </div>
             )) : <div className="muted">No messages yet.</div>}
             <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
@@ -545,7 +549,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <div key={comment.id} className="timelineRow spotlightSuccess">
                 <div style={{ fontWeight: 600 }}>Tenant question</div>
                 <div>{comment.body.replace(/^Tenant message:\s*/i, '')}</div>
-                <div className="muted">{comment.authorName} - {new Date(comment.createdAt).toLocaleString()}</div>
+                <div className="muted">{comment.authorName} - {formatDateTime(comment.createdAt)}</div>
               </div>
             )) : null}
             {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
@@ -559,7 +563,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     {entry.scheduledStart ? formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd) : '-'}
                   </div>
                 ) : null}
-                <div className="muted">{entry.actorName} - {new Date(entry.createdAt).toLocaleString()}</div>
+                <div className="muted">{entry.actorName} - {formatDateTime(entry.createdAt)}</div>
               </div>
             )) : tenantTimelineMessages.length ? null : <div className="muted">No work activity yet.</div>}
           </SectionCard>
@@ -571,7 +575,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <div key={item.id} className="timelineRow">
                 <div style={{ fontWeight: 600 }}>{item.title}</div>
                 <div className="muted">
-                  {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
+                  {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
                 </div>
                 <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
                 {item.description ? <div>{item.description}</div> : null}

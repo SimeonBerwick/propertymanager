@@ -51,10 +51,32 @@ export async function createVendorCommercialItemAction(
       id: requestId,
       ...buildVendorRequestVisibilityWhere(session),
     },
-    select: { id: true },
+    select: {
+      id: true,
+      tenderInvites: {
+        where: { vendorId: session.vendorId, status: 'awarded' },
+        select: { bidAmountCents: true },
+      },
+      vendorCommercialItems: {
+        where: { vendorId: session.vendorId, status: 'approved' },
+        select: { itemType: true, amountCents: true },
+      },
+    },
   })
 
   if (!request) return { error: 'This request is not available for your vendor account.' }
+
+  const approvedTenderBidCents = request.tenderInvites.reduce((total, invite) => (
+    total + (invite.bidAmountCents ?? 0)
+  ), 0)
+  const approvedCommercialTotalCents = request.vendorCommercialItems
+    .filter((item) => item.itemType !== 'bill_to_property_manager')
+    .reduce((total, item) => total + item.amountCents, 0)
+  const approvedTotalCents = approvedTenderBidCents + approvedCommercialTotalCents
+  const matchesApprovedTotal = effectiveItemType === 'bill_to_property_manager'
+    && approvedTotalCents > 0
+    && amountCents <= approvedTotalCents
+  const initialStatus = matchesApprovedTotal ? 'approved' : 'submitted'
 
   let savedAttachment = await saveVendorAttachment(attachment)
 
@@ -73,6 +95,7 @@ export async function createVendorCommercialItemAction(
         vendorId: session.vendorId,
         orgId: session.orgId ?? null,
         itemType: effectiveItemType as VendorCommercialItemType,
+        status: initialStatus,
         currency: 'usd',
         amountCents,
         title: effectiveTitle,
@@ -96,7 +119,15 @@ export async function createVendorCommercialItemAction(
     revalidatePath('/vendor/summary')
     revalidatePath(`/vendor/requests/${request.id}`)
     revalidatePath(`/requests/${request.id}`)
-    return { error: null, success: true, message: noCharge ? 'No-charge service call submitted to the property manager.' : undefined }
+    return {
+      error: null,
+      success: true,
+      message: noCharge
+        ? 'No-charge service call submitted to the property manager.'
+        : matchesApprovedTotal
+          ? 'Final invoice recorded. It matches the approved amount, so no extra approval is needed.'
+          : undefined,
+    }
   } catch (error) {
     if (savedAttachment && isAttachmentColumnError(error)) {
       const droppedAttachment = savedAttachment
@@ -110,6 +141,7 @@ export async function createVendorCommercialItemAction(
             vendorId: session.vendorId,
             orgId: session.orgId ?? null,
             itemType: effectiveItemType as VendorCommercialItemType,
+            status: initialStatus,
             currency: 'usd',
             amountCents,
             title: effectiveTitle,
@@ -144,7 +176,9 @@ export async function createVendorCommercialItemAction(
         return {
           error: null,
           success: true,
-          message: 'Charge submitted. The bill photo could not be attached, so the property manager may ask for the photo again.',
+          message: matchesApprovedTotal
+            ? 'Final invoice recorded. It matches the approved amount. The bill photo could not be attached, so the property manager may ask for the photo again.'
+            : 'Charge submitted. The bill photo could not be attached, so the property manager may ask for the photo again.',
         }
       } catch (retryError) {
         await logServerActionError('vendorCommercialItem.create.retryWithoutAttachment', retryError, {
