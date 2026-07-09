@@ -126,8 +126,12 @@ export async function createVendorCommercialItemAction(
       message: noCharge
         ? 'No-charge service call submitted to the property manager.'
         : matchesApprovedTotal
-          ? 'Final invoice recorded. It matches the approved amount, so no extra approval is needed.'
-          : undefined,
+          ? savedAttachment
+            ? 'Final invoice recorded with attachment. It matches the approved amount, so no extra approval is needed.'
+            : 'Final invoice recorded. It matches the approved amount, so no extra approval is needed.'
+          : savedAttachment
+            ? 'Charge submitted with attachment.'
+            : undefined,
     }
   } catch (error) {
     if (savedAttachment && isAttachmentColumnError(error)) {
@@ -178,8 +182,8 @@ export async function createVendorCommercialItemAction(
           error: null,
           success: true,
           message: matchesApprovedTotal
-            ? 'Final invoice recorded. It matches the approved amount. The bill photo could not be attached, so the property manager may ask for the photo again.'
-            : 'Charge submitted. The bill photo could not be attached, so the property manager may ask for the photo again.',
+            ? 'Final invoice recorded, but the attachment did not save. Send the PDF or photo again if the property manager needs it.'
+            : 'Charge submitted, but the attachment did not save. Send the PDF or photo again if the property manager needs it.',
         }
       } catch (retryError) {
         await logServerActionError('vendorCommercialItem.create.retryWithoutAttachment', retryError, {
@@ -196,6 +200,6 @@ export async function createVendorCommercialItemAction(
       vendorId: session.vendorId,
       itemType,
     })
-    return { error: 'Could not save vendor invoice item.' }
+    return { error: 'Could not save this vendor charge or invoice. Try again, and if an attachment was selected, remove it and submit the amount first.' }
   }
 }

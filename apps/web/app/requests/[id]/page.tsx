@@ -9,12 +9,7 @@ import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { SectionCard } from '@/components/section-card'
-import { BillingDocumentForm } from '@/components/billing-document-form'
-import { BillingDocumentList } from '@/components/billing-document-list'
-import { BillingEventList } from '@/components/billing-event-list'
-import { BillingSummaryCards } from '@/components/billing-summary-cards'
 import { formatMoney } from '@/lib/billing-utils'
-import { RequestBillbackForm } from '@/components/request-billback-form'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { AddCommentForm } from './add-comment-form'
 import { vendorCommercialStatusLabel, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
@@ -26,6 +21,7 @@ import { RecommendedNextStepPanel } from '@/components/recommended-next-step-pan
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
+import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -54,13 +50,6 @@ function tenderInviteLabel(status: string) {
   if (status === 'awarded') return 'Bid approved'
   if (status === 'not_awarded') return 'Not selected'
   return status.replaceAll('_', ' ')
-}
-
-function tenantBillbackLabel(decision?: string) {
-  if (decision === 'bill_tenant') return 'Charge tenant'
-  if (decision === 'waived') return 'Waived'
-  if (decision === 'none') return 'No tenant chargeback'
-  return 'Not decided'
 }
 
 function WorkOrderContext({ request }: { request: { title: string; propertyName: string; unitLabel: string } }) {
@@ -665,117 +654,27 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </div>
 
       {hasVendorChosen || data.billingDocuments.length ? (
-      <div id="billing">
-      <SectionCard kicker="Billing records" title="Billing records, chargebacks, and closeout" subtitle="Follow this order: approve vendor costs, decide tenant chargeback, create/send documents, mark paid, then close.">
-        <div className="stack billingCompact" style={{ gap: 14 }}>
-          <WorkOrderContext request={data.request} />
-          {billingOpenBalanceCents > 0 ? (
-            <div className="card stack" style={{ padding: 14, background: 'var(--table-row)' }}>
-              <div>
-                <div className="kicker">Pay before closing</div>
-                <h3 style={{ marginTop: 4 }}>Open billing records</h3>
-              </div>
-              <div className="notice">
-                Mark every open balance paid before closing this request. Tenant chargeback choices can wait unless you need to bill the tenant.
-              </div>
-              <BillingSummaryCards documents={data.billingDocuments} />
-              <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} />
-            </div>
-          ) : null}
-          <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
-            <div className="kicker">Step 1: Tenant chargeback decision</div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Current: {tenantBillbackLabel(data.request.tenantBillbackDecision)}
-              {data.request.tenantBillbackDecision === 'bill_tenant' && typeof data.request.tenantBillbackAmountCents === 'number'
-                ? ` - $${(data.request.tenantBillbackAmountCents / 100).toFixed(2)}`
-                : ''}
-              {data.request.tenantBillbackReason ? ` - ${data.request.tenantBillbackReason}` : ''}
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <RequestBillbackForm
-                requestId={data.request.id}
-                decision={data.request.tenantBillbackDecision}
-                amountCents={data.request.tenantBillbackAmountCents}
-                reason={data.request.tenantBillbackReason}
-              />
-            </div>
-          </div>
-          <div className="card" style={{ padding: 14, background: 'var(--table-row)' }}>
-            <div className="kicker">Step 2: Vendor payment amount</div>
-            {vendorBillPending ? (
-              <div className="notice" style={{ marginTop: 10 }}>
-                <strong>Awaiting vendor bill.</strong> Work is marked complete, but no vendor service charge, invoice, or payment amount is recorded yet. Do not close this request until the vendor bill is submitted or entered.
-              </div>
-            ) : vendorOutstandingCents > 0 ? (
-              <div className="detailFactsGrid" style={{ marginTop: 10 }}>
-                <div><strong>Approved total</strong><div className="muted">{formatMoney(vendorAmountOwedCents, data.request.preferredCurrency)}</div></div>
-                {approvedFinalInvoice ? <div><strong>Over approved bid</strong><div className="muted">{formatMoney(approvedOverageCents, data.request.preferredCurrency)}</div></div> : null}
-                <div><strong>Paid</strong><div className="muted">{formatMoney(postedVendorPaymentCents, data.request.preferredCurrency)}</div></div>
-                <div><strong>Still owed</strong><div className="muted">{formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}</div></div>
-              </div>
-            ) : (
-              <div className="notice success" style={{ marginTop: 10 }}>
-                <strong>No vendor payment due.</strong> There is no open vendor balance on this request.
-              </div>
-            )}
-            {(pendingVendorExtrasCents > 0 || approvedVendorExtrasCents > 0 || postedVendorPaymentBalanceCents > 0) ? (
-              <details className="advancedDisclosure" style={{ marginTop: 10 }}>
-                <summary>Show the math</summary>
-                <div className="detailFactsGrid" style={{ marginTop: 10 }}>
-                  <div><strong>Approved bid</strong><div className="muted">{formatMoney(approvedBidCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>{approvedFinalInvoice ? 'Final invoice' : 'Approved extras'}</strong><div className="muted">{formatMoney(approvedFinalInvoice?.amountCents ?? approvedVendorExtrasCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>{pendingFinalInvoice ? 'Pending final invoice' : 'Pending extras'}</strong><div className="muted">{formatMoney(pendingFinalInvoice?.amountCents ?? pendingVendorExtrasCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>If pending approved</strong><div className="muted">{formatMoney(vendorAmountIfPendingApprovedCents, data.request.preferredCurrency)}</div></div>
-                  <div><strong>Payment balance</strong><div className="muted">{formatMoney(postedVendorPaymentBalanceCents, data.request.preferredCurrency)}</div></div>
-                </div>
-              </details>
-            ) : null}
-            {isCompleteButUnpaid ? (
-              <div className="inlineNotice" style={{ marginTop: 10 }}>
-                {closeoutLanguage.detail}
-              </div>
-            ) : null}
-            {vendorBillPending ? (
-              <div className="muted" style={{ marginTop: 10 }}>
-                The vendor still needs to submit the service charge or final invoice. If the vendor cannot submit it through the portal, enter the vendor payment amount after receiving it outside the app.
-              </div>
-            ) : vendorOutstandingCents > 0 ? (
-              <div className="muted" style={{ marginTop: 10 }}>
-                Approved vendor bids and overages create the vendor amount owed. Track payment records here, but handle money movement outside the app. Do not close the request until vendor payment and any tenant chargeback are settled.
-              </div>
-            ) : null}
-          </div>
-          {billingIsSettled ? (
-            <div className="notice success">
-              <strong>Billing settled.</strong> No open tenant charges or vendor balances remain.
-            </div>
-          ) : (
-            <div className="notice">
-              <strong>Closeout checklist:</strong> {vendorBillPending ? 'get the vendor bill, ' : ''}{needsTenantChargeDocument ? 'create/send the tenant charge, ' : ''}{needsVendorPaymentDocument ? 'record the vendor payment, ' : ''}mark every open balance paid, then close the request.
-            </div>
-          )}
-          {data.billingDocuments.length && billingOpenBalanceCents === 0 ? <BillingSummaryCards documents={data.billingDocuments} /> : null}
-          {hasVendorChosen && needsBillingDocument ? (
-            <BillingDocumentForm
-              requestId={data.request.id}
-              tenantEmail={data.request.submittedByEmail}
-              vendorEmail={data.request.assignedVendorEmail}
-              tenantBillbackDecision={data.request.tenantBillbackDecision}
-              tenantBillbackAmountCents={data.request.tenantBillbackAmountCents}
-              tenantBillbackReason={data.request.tenantBillbackReason}
-            />
-          ) : billingIsSettled ? (
-            <div className="muted">No billing document is needed for this request right now.</div>
-          ) : !hasVendorChosen ? (
-            <div className="notice">Choose a vendor before creating invoices or payments for this request.</div>
-          ) : (
-            <div className="notice">No billing document can be created until there is a tenant charge or vendor balance.</div>
-          )}
-          {data.billingDocuments.length && billingOpenBalanceCents === 0 ? <BillingDocumentList documents={data.billingDocuments} requestId={data.request.id} /> : null}
-          <BillingEventList documents={data.billingDocuments} />
-        </div>
-      </SectionCard>
-      </div>
+        <MoneyCloseoutPanel
+          request={data.request}
+          billingDocuments={data.billingDocuments}
+          vendorBillPending={vendorBillPending}
+          vendorAmountOwedCents={vendorAmountOwedCents}
+          approvedBidCents={approvedBidCents}
+          approvedOverageCents={approvedOverageCents}
+          pendingVendorExtrasCents={pendingVendorExtrasCents}
+          vendorOutstandingCents={vendorOutstandingCents}
+          postedVendorPaymentCents={postedVendorPaymentCents}
+          postedVendorPaymentBalanceCents={postedVendorPaymentBalanceCents}
+          billingOpenBalanceCents={billingOpenBalanceCents}
+          needsTenantChargeDocument={needsTenantChargeDocument}
+          needsVendorPaymentDocument={needsVendorPaymentDocument}
+          billingIsSettled={billingIsSettled}
+          hasVendorChosen={hasVendorChosen}
+          approvedFinalInvoice={approvedFinalInvoice}
+          pendingFinalInvoice={pendingFinalInvoice}
+          approvedVendorExtrasCents={approvedVendorExtrasCents}
+          vendorAmountIfPendingApprovedCents={vendorAmountIfPendingApprovedCents}
+        />
       ) : null}
     </div>
   )
