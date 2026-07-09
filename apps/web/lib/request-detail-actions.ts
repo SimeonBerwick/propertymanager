@@ -22,6 +22,7 @@ import { parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
+import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -816,6 +817,7 @@ export async function approveVendorCommercialItemAction(
         vendorId: true,
         itemType: true,
         status: true,
+        paymentTiming: true,
         amountCents: true,
         vendor: true,
         request: { include: { property: true, unit: true } },
@@ -917,7 +919,7 @@ export async function approveVendorCommercialItemAction(
       entityId: itemId,
       action: 'vendorCommercialItem.approved',
       summary: `Approved vendor ${item.itemType} submission from ${vendorName}.`,
-      metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents },
+      metadata: { requestId, vendorId: item.vendorId, itemType: item.itemType, amountCents: item.amountCents, paymentTiming: item.paymentTiming },
     }).catch((error) => (
       logServerActionError('vendorCommercialItem.approve.audit', error, { requestId, itemId, vendorId: item.vendorId }).catch(() => null)
     ))
@@ -1546,6 +1548,7 @@ async function upsertVendorRemittanceDraft(
         id: true,
         itemType: true,
         status: true,
+        paymentTiming: true,
         amountCents: true,
         title: true,
       },
@@ -1587,13 +1590,25 @@ async function upsertVendorRemittanceDraft(
   const bidCents = Math.max(recordedBidCents, existingBaseCents)
   const totalCents = finalInvoice?.amountCents ?? (bidCents + extrasCents)
   if (totalCents <= 0) return null
+  const approvedItem = input.approvedItemId ? commercialItems.find((item) => item.id === input.approvedItemId) : undefined
+  const approvedPaymentTiming = normalizeVendorPaymentTiming(approvedItem?.paymentTiming)
+  const upfrontCents = approvedItem && approvedItem.itemType !== 'bid' && vendorPaymentTimingRequiresUpfront(approvedPaymentTiming)
+    ? upfrontPaymentCents(approvedItem.amountCents, approvedPaymentTiming)
+    : 0
+  const documentTotalCents = upfrontCents > 0 ? upfrontCents : totalCents
+  const paymentTimingText = vendorPaymentTimingLabel(approvedPaymentTiming)
+  const isUpfrontDocument = upfrontCents > 0
 
-  const title = `Vendor payment - ${input.vendorName}`
+  const title = isUpfrontDocument ? `Vendor upfront payment - ${input.vendorName}` : `Vendor payment - ${input.vendorName}`
   const descriptionLines = [
-    `Amount owed to ${input.vendorName} for ${request.title}.`,
+    isUpfrontDocument
+      ? `Upfront payment required before the work moves forward for ${request.title}.`
+      : `Amount owed to ${input.vendorName} for ${request.title}.`,
+    approvedItem ? `Approved term: ${paymentTimingText}.` : null,
     bidCents > 0 ? `${recordedBidCents > 0 ? 'Approved bid' : 'Approved vendor amount'}: USD ${(bidCents / 100).toFixed(2)}` : null,
     finalInvoice ? `${finalInvoice.title}: USD ${(finalInvoice.amountCents / 100).toFixed(2)} total${bidCents > 0 ? ` (overage USD ${(Math.max(finalInvoice.amountCents - bidCents, 0) / 100).toFixed(2)})` : ''}` : null,
     ...addOnItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
+    isUpfrontDocument && approvedItem ? `Upfront amount to record now: USD ${(documentTotalCents / 100).toFixed(2)} of ${approvedItem.title}.` : null,
   ].filter(Boolean) as string[]
   const description = descriptionLines.join('\n')
   const pdfHtml = renderBillingPdfHtml({
@@ -1601,7 +1616,7 @@ async function upsertVendorRemittanceDraft(
     recipientLabel: input.vendorName,
     documentType: 'vendor_remittance',
     status: 'draft',
-    amountCents: totalCents,
+    amountCents: documentTotalCents,
     paidCents: 0,
     currency: request.preferredCurrency,
     description,
@@ -1614,7 +1629,7 @@ async function upsertVendorRemittanceDraft(
     const updated = await tx.billingDocument.update({
       where: { id: existingDraft.id },
       data: {
-        totalCents,
+        totalCents: documentTotalCents,
         paidCents: 0,
         title,
         description,
@@ -1638,7 +1653,7 @@ async function upsertVendorRemittanceDraft(
       documentType: 'vendor_remittance',
       status: 'draft',
       currency: request.preferredCurrency,
-      totalCents,
+      totalCents: documentTotalCents,
       paidCents: 0,
       title,
       description,

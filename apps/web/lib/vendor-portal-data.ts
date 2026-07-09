@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { VendorPortalScope } from '@/lib/vendor-session'
-import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
+import { normalizeVendorPaymentTiming, type VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 
 const VENDOR_BILLING_STATUSES = ['sent', 'partial', 'paid'] as const
 const VENDOR_TENDER_STATUSES = ['invited', 'viewed', 'bid_submitted', 'awarded'] as const
@@ -24,6 +24,7 @@ function mapVendorCommercialItem(item: any): VendorCommercialItemView {
     vendorName: item.vendor?.name ?? undefined,
     itemType: item.itemType,
     status: item.status,
+    paymentTiming: normalizeVendorPaymentTiming(item.paymentTiming),
     currency: item.currency,
     amountCents: item.amountCents,
     title: item.title,
@@ -39,6 +40,7 @@ const VENDOR_COMMERCIAL_ITEM_SELECT = {
   vendorId: true,
   itemType: true,
   status: true,
+  paymentTiming: true,
   currency: true,
   amountCents: true,
   title: true,

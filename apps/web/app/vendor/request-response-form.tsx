@@ -27,6 +27,17 @@ export function VendorRequestResponseForm({
   const showBid = pendingBid && response === 'accepted'
   const showSchedule = response === 'scheduled'
   const showPhotos = response === 'completed'
+  const submitLabel = pendingBid && response === 'accepted'
+    ? 'Submit bid'
+    : response === 'scheduled'
+      ? 'Save appointment'
+      : response === 'accepted'
+        ? 'Accept service call'
+        : response === 'declined'
+          ? 'Decline service call'
+          : response === 'completed'
+            ? 'Mark call completed'
+            : 'Send work status'
   const responseOptions = pendingBid
     ? [
         ['accepted', 'Submit bid'],
@@ -89,7 +100,7 @@ export function VendorRequestResponseForm({
       </label> : null}
 
       <button type="submit" className="button primary" disabled={pending}>
-        {pending ? 'Submitting...' : pendingBid && response === 'accepted' ? 'Submit bid' : response === 'scheduled' ? 'Save appointment' : 'Send work update'}
+        {pending ? 'Submitting...' : submitLabel}
       </button>
     </form>
   )

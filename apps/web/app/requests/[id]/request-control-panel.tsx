@@ -61,12 +61,14 @@ export function RequestControlPanel({
   tenders,
   statusControlPriority = 'primary',
   canCloseRequest = true,
+  upfrontVendorPaymentDueCents = 0,
 }: {
   request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
   canCloseRequest?: boolean
+  upfrontVendorPaymentDueCents?: number
 }) {
   const router = useRouter()
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
@@ -102,7 +104,8 @@ export function RequestControlPanel({
   const hasAssignedVendor = Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
-  const canSetAppointment = hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const upfrontPaymentBlocksWork = upfrontVendorPaymentDueCents > 0 && !['completed', 'closed'].includes(request.status)
+  const canSetAppointment = !upfrontPaymentBlocksWork && hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
   const isCloseoutStage = request.status === 'completed' || request.status === 'closed'
   const appointmentForm = canSetAppointment ? (
     <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }} onSubmit={(event) => blurActiveField(event.currentTarget)}>
@@ -173,6 +176,11 @@ export function RequestControlPanel({
       {canChooseVendorPath ? (
         <div className="notice">
           <strong>Choose one vendor path.</strong> Assign a trusted vendor for a service call when they should diagnose or handle a simple repair first. Ask for bids when you want pricing before anyone is chosen.
+        </div>
+      ) : null}
+      {upfrontPaymentBlocksWork ? (
+        <div className="notice">
+          <strong>Upfront vendor payment is the next step.</strong> The approved vendor terms require payment before scheduling, work start, or completion. Use the billing panel to mark the payment record paid after money is handled outside the app.
         </div>
       ) : null}
       {appointmentForm}

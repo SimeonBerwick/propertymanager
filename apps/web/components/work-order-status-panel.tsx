@@ -6,9 +6,9 @@ export function WorkOrderStatusPanel({ summary }: { summary: WorkOrderStateSumma
   const facts = [
     { label: 'Waiting on', value: summary.waitingOn },
     { label: 'Appointment', value: summary.appointment ?? 'Not set' },
-    { label: 'Money', value: summary.money ?? 'No open amount shown' },
+    summary.money ? { label: 'Money', value: summary.money } : null,
     { label: 'Latest', value: summary.latest ?? 'No new message' },
-  ]
+  ].filter((fact): fact is { label: string; value: string } => Boolean(fact))
 
   return (
     <section className={`workOrderStatusPanel workOrderStatus-${summary.tone}`} aria-labelledby="work-order-status-title">

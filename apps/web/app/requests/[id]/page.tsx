@@ -12,12 +12,11 @@ import { SectionCard } from '@/components/section-card'
 import { formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { AddCommentForm } from './add-comment-form'
-import { vendorCommercialStatusLabel, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { vendorCommercialStatusLabel, vendorCommercialTypeLabel, vendorPaymentTimingLabel } from '@/lib/vendor-commercial-types'
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
-import { RecommendedNextStepPanel } from '@/components/recommended-next-step-panel'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
@@ -186,6 +185,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     vendorScheduledEnd: effectiveVendorScheduledEnd,
   }
   const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const upfrontVendorPaymentDueCents = data.request.upfrontVendorPaymentDueCents ?? 0
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
     : data.request.status === 'requested'
@@ -194,6 +194,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review tenant question'
     : hasVendorUpdateReview
       ? 'Review vendor update'
+    : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
+      ? 'Record upfront vendor payment'
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -211,6 +213,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'The tenant sent a question on this work order. Reply or decide whether the request needs a status change.'
     : hasVendorUpdateReview
       ? 'The latest vendor update is shown here so you can decide what to do next.'
+    : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
+      ? 'The approved vendor terms require money before the work moves forward. Mark the vendor payment record paid after money is handled outside the app.'
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
@@ -255,6 +259,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     activeTenderInviteCount: data.request.activeTenderInviteCount,
     billingOpenBalanceCents,
     vendorPayableBalanceCents: vendorOutstandingCents,
+    upfrontVendorPaymentDueCents,
     vendorBillPending,
     needsAppointmentTime,
     canChooseVendor,
@@ -269,18 +274,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   return (
     <div className="stack requestDetailPage">
       <WorkOrderStatusPanel summary={managerWorkOrderSummary} />
-
-      <RecommendedNextStepPanel request={{
-        ...requestWithEffectiveAppointment,
-        tenantAccessFailureCount: data.tenantAccessFailureCount,
-        tenantStatusUpdatePending: data.tenantStatusUpdatePending,
-        pendingVendorApprovalCount: pendingVendorCommercialItems.length,
-        pendingBidCount: data.request.pendingBidCount,
-        activeTenderInviteCount: data.request.activeTenderInviteCount,
-        billingOpenBalanceCents,
-        vendorPayableBalanceCents: vendorOutstandingCents,
-        vendorBillPending,
-      }} />
 
       <section className="card requestHero">
         <div className="stack" style={{ gap: 14 }}>
@@ -374,6 +367,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           tenders={data.tenders}
           statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
           canCloseRequest={billingIsSettled}
+          upfrontVendorPaymentDueCents={upfrontVendorPaymentDueCents}
         />
       </SectionCard>
       </div>
@@ -396,6 +390,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     <div className="muted">
                       {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
                     </div>
+                    <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
                     {item.description ? <div>{item.description}</div> : null}
                     {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
                   </div>
@@ -610,6 +605,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
                 </div>
                 <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
+                <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
                 {item.description ? <div>{item.description}</div> : null}
                 {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
               </div>

@@ -41,6 +41,7 @@ export type VendorNextActionKey =
   | 'done'
   | 'review_tenant_message'
   | 'respond_bid'
+  | 'accept_service_call'
   | 'add_appointment'
   | 'waiting_manager_cost'
   | 'send_service_charge'
@@ -66,6 +67,7 @@ export type VendorNextAction = {
 
 export type VendorNextActionInput = {
   requestStatus: string
+  dispatchStatus?: string | null
   isPaidClosed?: boolean
   canControlDispatch?: boolean
   isPendingBid?: boolean
@@ -78,6 +80,7 @@ export type VendorNextActionInput = {
   hasActiveCostOrInvoice?: boolean
   activeFinalInvoiceStatus?: string | null
   vendorOpenBalanceCents?: number
+  upfrontVendorPaymentDueCents?: number
   awardedFromBid?: boolean
 }
 
@@ -125,6 +128,22 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
     })
   }
 
+  if (
+    input.canControlDispatch
+    && input.needsAppointmentTime
+    && !['accepted', 'scheduled', 'in_progress', 'completed'].includes(input.dispatchStatus ?? '')
+  ) {
+    return vendorAction({
+      key: 'accept_service_call',
+      label: 'Accept or decline service call',
+      detail: 'Confirm whether you can take this service call before scheduling it.',
+      href: '#vendor-next-action',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: 'accepted',
+    })
+  }
+
   if (input.needsAppointmentTime) {
     return vendorAction({
       key: 'add_appointment',
@@ -163,8 +182,19 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
     return vendorAction({
       key: 'waiting_manager_cost',
       label: 'Wait for manager approval',
-      detail: 'Your charge or invoice is with the property manager for approval.',
+      detail: 'You are still selected for the service call. The amount you sent is waiting for manager approval.',
       attentionLabel: 'Waiting on manager approval',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if ((input.upfrontVendorPaymentDueCents ?? 0) > 0 && !input.workMarkedComplete) {
+    return vendorAction({
+      key: 'waiting_payment_record',
+      label: 'Wait for upfront payment',
+      detail: 'The manager approved the amount, but your payment terms require money before the work moves forward.',
+      attentionLabel: 'Waiting on upfront payment',
       showResponseForm: false,
       showCommercialForm: false,
     })
@@ -173,10 +203,10 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
   if (input.hasAppointmentTime && !input.hasActiveCostOrInvoice && input.canControlDispatch && !input.workMarkedComplete) {
     return vendorAction({
       key: 'send_service_charge',
-      label: input.awardedFromBid ? 'Send invoice' : 'Send service charge or invoice',
+      label: input.awardedFromBid ? 'Send invoice' : 'Send service charge to property manager',
       detail: input.awardedFromBid
         ? 'Send the final invoice for the approved bid. It only needs manager approval if it is higher than the approved amount.'
-        : 'Use this for the service call charge, parts only, an estimated repair cost, or a final invoice.',
+        : 'Send the service call charge, parts-only amount, or repair estimate for manager approval.',
       href: '#vendor-invoice-item',
       showResponseForm: false,
       showCommercialForm: true,
@@ -200,10 +230,10 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
   if (input.workMarkedComplete && !input.activeFinalInvoiceStatus && input.canControlDispatch) {
     return vendorAction({
       key: 'send_final_invoice',
-      label: input.awardedFromBid || input.hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice',
+      label: input.awardedFromBid || input.hasApprovedCostOrInvoice ? 'Send final invoice' : 'Send final bill or no-charge note',
       detail: input.awardedFromBid || input.hasApprovedCostOrInvoice
         ? 'Work is marked complete. Send the final invoice so the property manager can match it to the approved amount.'
-        : 'Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.',
+        : 'Work is marked complete. Send the final bill, extra cost, or a no-charge note to the property manager.',
       href: '#vendor-invoice-item',
       showResponseForm: false,
       showCommercialForm: true,

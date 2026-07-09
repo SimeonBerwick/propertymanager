@@ -27,6 +27,7 @@ export interface WorkOrderStateInput {
   activeTenderInviteCount?: number
   billingOpenBalanceCents?: number
   vendorPayableBalanceCents?: number
+  upfrontVendorPaymentDueCents?: number
   vendorBillPending?: boolean
   needsAppointmentTime?: boolean
   canChooseVendor?: boolean
@@ -55,6 +56,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
   const appointment = input.appointmentLabel ?? (hasAppointment ? 'Appointment set' : null)
   const latest = input.latestSignal ?? null
   const money = input.moneyLabel ?? null
+  const workIsComplete = input.workMarkedComplete || input.status === 'completed' || input.status === 'closed'
 
   if (input.status === 'canceled' || input.status === 'declined') {
     return {
@@ -100,8 +102,10 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
 
   if ((input.pendingVendorApprovalCount ?? 0) > 0 || input.hasPendingCostOrInvoice) {
     return {
-      title: input.audience === 'manager' ? 'Vendor cost needs review' : 'Cost sent for review',
-      detail: input.audience === 'manager' ? 'A vendor submitted a charge or invoice. Review it before billing or closeout.' : 'The property manager needs to approve the charge before the job can move forward.',
+      title: input.audience === 'manager' ? 'Vendor cost needs review' : 'Charge waiting for approval',
+      detail: input.audience === 'manager'
+        ? 'A vendor submitted a charge or invoice. Approve it, decline it, or ask the vendor for a different amount.'
+        : 'You are selected for the service call. The amount you sent still needs manager approval before it becomes payable.',
       waitingOn: 'Property manager',
       nextAction: input.audience === 'manager' ? 'Review vendor cost' : 'Wait for review',
       nextHref: input.audience === 'manager' ? managerHref(input.id) : undefined,
@@ -196,6 +200,22 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
     }
   }
 
+  if ((input.upfrontVendorPaymentDueCents ?? 0) > 0 && !workIsComplete) {
+    return {
+      title: input.audience === 'vendor' ? 'Waiting on upfront payment' : 'Upfront vendor payment needed',
+      detail: input.audience === 'vendor'
+        ? 'The manager approved the charge, but the payment terms require money before the work moves forward.'
+        : 'The approved vendor terms require payment before scheduling, work start, or completion. Mark the payment record paid after the money is handled outside the app.',
+      waitingOn: 'Property manager',
+      nextAction: input.audience === 'manager' ? 'Record payment paid' : 'Wait for payment',
+      nextHref: input.audience === 'manager' ? '#billing' : undefined,
+      tone: input.audience === 'manager' ? 'review' : 'waiting',
+      appointment,
+      money,
+      latest,
+    }
+  }
+
   if (input.needsAppointmentTime) {
     return {
       title: 'Appointment time needed',
@@ -225,6 +245,22 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
   }
 
   if ((input.billingOpenBalanceCents ?? 0) > 0 || (input.vendorPayableBalanceCents ?? 0) > 0) {
+    if (!workIsComplete) {
+      return {
+        title: 'Approved charge recorded',
+        detail: input.audience === 'vendor'
+          ? 'The manager approved the amount. Finish the work, then send the final invoice or mark the call complete.'
+          : 'The vendor charge is approved, but the work is not marked complete yet. Payment and closeout wait until the job is finished.',
+        waitingOn: 'Vendor',
+        nextAction: input.audience === 'vendor' ? 'Continue work' : 'Waiting on completion',
+        nextHref: input.audience === 'vendor' ? '#vendor-next-action' : undefined,
+        tone: 'waiting',
+        appointment,
+        money,
+        latest,
+      }
+    }
+
     return {
       title: 'Payment record needs cleanup',
       detail: 'The job has an open balance. Mark payment records paid before closing out.',

@@ -33,6 +33,7 @@ type NextActionRequest = Pick<MaintenanceRequest,
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
   activeTenderInviteCount?: number
+  upfrontVendorPaymentDueCents?: number
   tenantAccessFailureCount?: number
   tenantStatusUpdatePending?: boolean
   dispatchStatus?: string
@@ -148,6 +149,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
   }
 
+  if ((request.upfrontVendorPaymentDueCents ?? 0) > 0 && request.dispatchStatus !== 'completed' && request.status !== 'completed') {
+    return { ...base, id: `${request.id}:upfront-vendor-payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Record upfront payment', reason: 'The approved vendor terms require payment before the work moves forward.', group: 'Payments to start work', priority: 'high', actionType: 'record_upfront_vendor_payment', score: SCORE.vendorCostApproval }
+  }
+
   if (request.dispatchStatus === 'completed' && ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0)) {
     return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Mark bill paid before closeout', reason: 'The work is complete and the remaining step is to mark the open bill paid.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
@@ -201,7 +206,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
   }
 
-  if ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0) {
+  if (request.status === 'completed' && ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0)) {
     return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'Vendor payment or a billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
 

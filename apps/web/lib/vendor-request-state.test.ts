@@ -86,9 +86,22 @@ describe('deriveVendorNextAction', () => {
     expect(result.href).toBe('#tenant-message')
   })
 
-  test('asks for appointment before service charge when no time is set', () => {
+  test('asks vendor to accept or decline a newly assigned service call', () => {
     const result = deriveVendorNextAction({
       requestStatus: 'vendor_selected',
+      canControlDispatch: true,
+      needsAppointmentTime: true,
+      hasAppointmentTime: false,
+    })
+
+    expect(result.key).toBe('accept_service_call')
+    expect(result.initialResponse).toBe('accepted')
+  })
+
+  test('asks for appointment after the vendor accepts the service call', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'vendor_selected',
+      dispatchStatus: 'accepted',
       canControlDispatch: true,
       needsAppointmentTime: true,
       hasAppointmentTime: false,

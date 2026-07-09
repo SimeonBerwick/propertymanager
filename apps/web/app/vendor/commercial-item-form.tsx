@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { createVendorCommercialItemAction, type VendorCommercialActionState } from './commercial-actions'
+import { VENDOR_PAYMENT_TIMING_LABELS, type VendorPaymentTiming } from '@/lib/vendor-commercial-types'
 
 const INITIAL_STATE: VendorCommercialActionState = { error: null }
 
@@ -103,6 +104,16 @@ export function VendorCommercialItemForm({
         <span className="field-label">Description</span>
         <textarea className="input" name="description" rows={3} placeholder="Optional scope, reason, or invoice note" />
       </label>
+      {!noCharge ? (
+        <label className="field">
+          <span className="field-label">Payment timing</span>
+          <select className="input" name="paymentTiming" defaultValue="on_completion">
+            {(Object.entries(VENDOR_PAYMENT_TIMING_LABELS) as Array<[VendorPaymentTiming, string]>).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label className="field">
         <span className="field-label">Attach bill PDF or photo</span>
         <input
