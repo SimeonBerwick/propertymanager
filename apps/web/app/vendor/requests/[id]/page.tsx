@@ -13,6 +13,8 @@ import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { formatDateTime } from '@/lib/ui-utils'
+import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
+import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -83,6 +85,34 @@ export default async function VendorRequestDetailPage({
   const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete && !activeFinalInvoice
   const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasActiveCostOrInvoice
   const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && !hasPendingCostOrInvoice && (viewState.canControlDispatch || viewState.isPendingBid)
+  const vendorOpenBalanceCents = request.billingDocuments
+    .filter((document) => document.status !== 'void')
+    .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
+  const latestVendorMoneyItem = request.vendorCommercialItems
+    .filter((item) => item.itemType !== 'bid')
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
+  const vendorAppointmentLabel = effectiveScheduledStart ? formatAppointmentWindow(effectiveScheduledStart, effectiveScheduledEnd) : null
+  const vendorWorkOrderSummary = deriveWorkOrderStateSummary({
+    audience: 'vendor',
+    id: request.id,
+    status: request.status,
+    reviewState: request.reviewState,
+    assignedVendorName: request.assignedVendorName ?? session.vendorName,
+    vendorScheduledStart: effectiveScheduledStart,
+    billingOpenBalanceCents: vendorOpenBalanceCents,
+    needsAppointmentTime,
+    workMarkedComplete,
+    activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
+    hasPendingCostOrInvoice,
+    isPendingBid: viewState.isPendingBid,
+    latestSignal: latestTenantMessage ? `Tenant: ${latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}` : null,
+    moneyLabel: latestVendorMoneyItem
+      ? `${vendorCommercialTypeLabel(latestVendorMoneyItem.itemType)} ${formatMoney(latestVendorMoneyItem.amountCents, latestVendorMoneyItem.currency)}`
+      : vendorOpenBalanceCents > 0
+        ? `Open balance ${formatMoney(vendorOpenBalanceCents, request.preferredCurrency)}`
+        : null,
+    appointmentLabel: vendorAppointmentLabel,
+  })
 
   return (
     <div className="stack">
@@ -92,6 +122,8 @@ export default async function VendorRequestDetailPage({
           <button type="submit" className="button">Sign out</button>
         </form>
       </section>
+
+      <WorkOrderStatusPanel summary={vendorWorkOrderSummary} />
 
       <section className="card stack">
         <div>

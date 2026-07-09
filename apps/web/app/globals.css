@@ -466,6 +466,39 @@ body { min-height: 100vh; }
 }
 .signalTitle { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; margin: 8px 0; }
 .signalAccent { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+.workOrderStatusPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 2px solid var(--border-strong);
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 180%);
+  box-shadow: 0 16px 45px rgba(31, 93, 190, .12);
+}
+.workOrderStatusHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.workOrderStatusHead h2 { margin: 0; font-size: 24px; line-height: 1.2; }
+.workOrderStatusFacts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.workOrderStatusFact {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--table-row);
+}
+.workOrderStatusFact strong { display: block; margin-top: 5px; line-height: 1.35; }
+.workOrderStatus-urgent { border-color: var(--error-border); background: var(--error-bg); }
+.workOrderStatus-review { border-color: var(--warn); }
+.workOrderStatus-waiting { border-color: rgba(96, 165, 250, 0.45); }
+.workOrderStatus-success { border-color: var(--success-border); background: var(--success-bg); }
 .requestDetailGrid {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(520px, 1.05fr);
@@ -936,6 +969,9 @@ body { min-height: 100vh; }
   .grid.cols-4, .grid.cols-3, .grid.cols-2, .photo-grid, .queueGrid, .opsCsvGrid, .detailFactsGrid, .requestHero, .requestDetailGrid, .inboxRow, .billingLayout {
     grid-template-columns: 1fr;
   }
+  .workOrderStatusHead { display: grid; }
+  .workOrderStatusHead .button { width: 100%; justify-content: center; }
+  .workOrderStatusFacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .todayOverviewHero { grid-template-columns: 1fr; align-items: flex-start; }
   .todayMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .todayScheduleRow { grid-template-columns: 1fr; }
@@ -979,6 +1015,7 @@ body { min-height: 100vh; }
   .managerHeader { justify-content: center; margin-bottom: 14px; }
   .managerHeader .brandLogo { width: 190px; }
   .managerHeader .nav { display: none; }
+  .workOrderStatusFacts { grid-template-columns: 1fr; }
   .overviewMetricGrid { grid-template-columns: 1fr; }
   .overviewMetric { min-height: 58px; }
   .demoModeNotice { padding: 9px 11px; font-size: 13px; line-height: 1.4; }

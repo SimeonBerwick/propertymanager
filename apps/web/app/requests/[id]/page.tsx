@@ -23,7 +23,9 @@ import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
 import { RecommendedNextStepPanel } from '@/components/recommended-next-step-panel'
+import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
+import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -235,9 +237,50 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const needsVendorPaymentDocument = vendorOutstandingCents > 0
   const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
   const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
+  const managerAppointmentLabel = effectiveVendorScheduledStart ? formatAppointmentWindow(effectiveVendorScheduledStart, effectiveVendorScheduledEnd) : null
+  const managerMoneyLabel = billingOpenBalanceCents > 0
+    ? `Open balance ${formatMoney(billingOpenBalanceCents, data.request.preferredCurrency)}`
+    : vendorOutstandingCents > 0
+      ? `Vendor balance ${formatMoney(vendorOutstandingCents, data.request.preferredCurrency)}`
+      : pendingVendorExtrasCents > 0
+        ? `Pending vendor amount ${formatMoney(pendingVendorExtrasCents, data.request.preferredCurrency)}`
+        : null
+  const managerLatestSignal = latestTenantMessage
+    ? `Tenant: ${latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}`
+    : latestCommercialReply
+      ? `Vendor: ${vendorCommercialTypeLabel(latestCommercialReply.itemType)} ${formatMoney(latestCommercialReply.amountCents, latestCommercialReply.currency)}`
+      : latestVendorDispatch
+        ? `Vendor: ${displayDispatchStatus(latestVendorDispatch.status)}`
+        : latestVisibleReply
+          ? `Note: ${latestVisibleReply.body}`
+          : null
+  const managerWorkOrderSummary = deriveWorkOrderStateSummary({
+    audience: 'manager',
+    id: data.request.id,
+    status: effectiveRequestStatus,
+    reviewState: data.request.reviewState,
+    assignedVendorName: data.request.assignedVendorName,
+    vendorScheduledStart: effectiveVendorScheduledStart,
+    pendingVendorApprovalCount: pendingVendorCommercialItems.length,
+    pendingBidCount: data.request.pendingBidCount,
+    activeTenderInviteCount: data.request.activeTenderInviteCount,
+    billingOpenBalanceCents,
+    vendorPayableBalanceCents: vendorOutstandingCents,
+    vendorBillPending,
+    needsAppointmentTime,
+    canChooseVendor,
+    hasTenantMessageReview,
+    hasVendorUpdateReview,
+    workMarkedComplete: isEffectivelyCompleted,
+    latestSignal: managerLatestSignal,
+    moneyLabel: managerMoneyLabel,
+    appointmentLabel: managerAppointmentLabel,
+  })
 
   return (
     <div className="stack requestDetailPage">
+      <WorkOrderStatusPanel summary={managerWorkOrderSummary} />
+
       <RecommendedNextStepPanel request={{
         ...requestWithEffectiveAppointment,
         tenantAccessFailureCount: data.tenantAccessFailureCount,
