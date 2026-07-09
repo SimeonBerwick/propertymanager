@@ -31,7 +31,16 @@ async function applyConfigurableRules(request: Record<string, unknown> & { id: s
 export async function applyRequestAutomation(requestId: string) {
   const request = await prisma.maintenanceRequest.findUnique({
     where: { id: requestId },
-    include: { property: { include: { owner: true } }, unit: true },
+    include: {
+      property: {
+        include: {
+          owner: {
+            select: { id: true, email: true, emailNotificationsEnabled: true },
+          },
+        },
+      },
+      unit: true,
+    },
   }).catch(() => null)
 
   if (!request) return
@@ -118,7 +127,10 @@ export async function runAutomationSweep() {
 }
 
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, emailNotificationsEnabled: true },
+  }).catch(() => null)
   if (!user?.email || user.emailNotificationsEnabled === false) return { ok: false, skipped: true }
 
   const requests = await prisma.maintenanceRequest.findMany({
