@@ -29,9 +29,11 @@ enum Urgency {
 
 enum CurrencyOption {
   usd
+  cad
   peso
   pound
   euro
+  aud
 }
 
 enum LanguageOption {
@@ -224,6 +226,7 @@ model User {
   subscriptionEndsAt DateTime?
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
+  defaultCurrency      CurrencyOption @default(usd)
   emailNotificationsEnabled Boolean @default(true)
   dailyCsvExportEnabled Boolean @default(false)
   dailyCsvExportLastSentAt DateTime?

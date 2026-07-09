@@ -1,6 +1,6 @@
 export type RequestStatus = 'requested' | 'approved' | 'declined' | 'vendor_selected' | 'scheduled' | 'in_progress' | 'completed' | 'closed' | 'canceled' | 'reopened'
 export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
-export type CurrencyOption = 'usd' | 'peso' | 'pound' | 'euro'
+export type CurrencyOption = 'usd' | 'cad' | 'peso' | 'pound' | 'euro' | 'aud'
 export type LanguageOption = 'english' | 'spanish' | 'french'
 export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'scheduled' | 'in_progress' | 'completed' | 'declined' | 'canceled'
 export type PhotoSource = 'tenant' | 'landlord' | 'vendor'
@@ -154,9 +154,24 @@ export interface StatusEvent {
 
 const CURRENCY_LABELS: Record<CurrencyOption, string> = {
   usd: 'USD',
-  peso: 'Peso',
-  pound: 'Pound',
-  euro: 'Euro',
+  cad: 'CAD',
+  peso: 'MXN',
+  pound: 'GBP',
+  euro: 'EUR',
+  aud: 'AUD',
+}
+
+export const CURRENCY_OPTIONS: Array<{ value: CurrencyOption; label: string }> = [
+  { value: 'usd', label: 'US Dollar' },
+  { value: 'cad', label: 'Canadian Dollar' },
+  { value: 'peso', label: 'Mexican Peso' },
+  { value: 'pound', label: 'British Pound' },
+  { value: 'euro', label: 'Euro' },
+  { value: 'aud', label: 'Australian Dollar' },
+]
+
+export function isCurrencyOption(value: string): value is CurrencyOption {
+  return CURRENCY_OPTIONS.some((option) => option.value === value)
 }
 
 const LANGUAGE_LABELS: Record<LanguageOption, string> = {

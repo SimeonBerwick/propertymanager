@@ -1,3 +1,5 @@
+import type { CurrencyOption } from '@/lib/types'
+
 export type BillingRecipientType = 'tenant' | 'vendor'
 export type BillingDocumentType = 'tenant_invoice' | 'vendor_remittance'
 export type BillingDocumentStatus = 'draft' | 'sent' | 'partial' | 'paid' | 'void'
@@ -17,7 +19,7 @@ export interface BillingDocumentView {
   recipientType: BillingRecipientType
   documentType: BillingDocumentType
   status: BillingDocumentStatus
-  currency: 'usd' | 'peso' | 'pound' | 'euro'
+  currency: CurrencyOption
   totalCents: number
   paidCents: number
   title: string

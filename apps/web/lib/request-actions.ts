@@ -12,6 +12,7 @@ import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-uploa
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
+import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -66,7 +67,7 @@ export async function submitMaintenanceRequest(
     return { error: 'All required fields must be filled in.' }
   }
 
-  if (preferredCurrency !== 'usd') {
+  if (!isCurrencyOption(preferredCurrency)) {
     return { error: 'Choose a valid preferred currency.' }
   }
 
@@ -160,7 +161,7 @@ export async function submitMaintenanceRequest(
           unitId,
           submittedByName: tenantName,
           submittedByEmail: tenantEmail,
-          preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
+          preferredCurrency: preferredCurrency as CurrencyOption,
           preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
           slaBucket,
           triageTagsCsv,

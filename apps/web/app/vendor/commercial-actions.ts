@@ -53,6 +53,7 @@ export async function createVendorCommercialItemAction(
     },
     select: {
       id: true,
+      preferredCurrency: true,
       tenderInvites: {
         where: { vendorId: session.vendorId, status: 'awarded' },
         select: { bidAmountCents: true },
@@ -96,7 +97,7 @@ export async function createVendorCommercialItemAction(
         orgId: session.orgId ?? null,
         itemType: effectiveItemType as VendorCommercialItemType,
         status: initialStatus,
-        currency: 'usd',
+        currency: request.preferredCurrency,
         amountCents,
         title: effectiveTitle,
         description: description || null,
@@ -142,7 +143,7 @@ export async function createVendorCommercialItemAction(
             orgId: session.orgId ?? null,
             itemType: effectiveItemType as VendorCommercialItemType,
             status: initialStatus,
-            currency: 'usd',
+            currency: request.preferredCurrency,
             amountCents,
             title: effectiveTitle,
             description: [

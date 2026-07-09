@@ -8,6 +8,7 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
+import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
 
 export type MobileRequestState = { error: string | null }
 
@@ -47,7 +48,7 @@ export async function submitTenantMobileRequestAction(
   const description = getString(formData, 'description')
   const category = getString(formData, 'category')
   const urgency = getString(formData, 'urgency')
-  const preferredCurrency = getString(formData, 'preferredCurrency') || 'usd'
+  const requestedCurrency = getString(formData, 'preferredCurrency')
   const preferredLanguage = getString(formData, 'preferredLanguage') || 'english'
   const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
 
@@ -55,7 +56,7 @@ export async function submitTenantMobileRequestAction(
     return { error: 'All fields are required.' }
   }
 
-  if (preferredCurrency !== 'usd') {
+  if (requestedCurrency && !isCurrencyOption(requestedCurrency)) {
     return { error: 'Choose a valid preferred currency.' }
   }
 
@@ -76,10 +77,6 @@ export async function submitTenantMobileRequestAction(
     return { error: photoError }
   }
 
-  const photoPaths = await savePhotos(photoFiles)
-  const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
-  const triageTagsCsv = triageTags.join(',')
-
   const activeUnit = await prisma.unit.findFirst({
     where: {
       id: session.unitId,
@@ -93,7 +90,7 @@ export async function submitTenantMobileRequestAction(
       property: {
         select: {
           name: true,
-          owner: { select: { id: true, email: true, emailNotificationsEnabled: true } },
+          owner: { select: { id: true, email: true, emailNotificationsEnabled: true, defaultCurrency: true } },
         },
       },
     },
@@ -102,6 +99,11 @@ export async function submitTenantMobileRequestAction(
   if (!activeUnit) {
     return { error: 'This unit is no longer active for new requests. Contact your property manager.' }
   }
+
+  const preferredCurrency = requestedCurrency || activeUnit.property.owner.defaultCurrency
+  const photoPaths = await savePhotos(photoFiles)
+  const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
+  const triageTagsCsv = triageTags.join(',')
 
   let requestId: string
   try {
@@ -113,7 +115,7 @@ export async function submitTenantMobileRequestAction(
         tenantIdentityId: session.tenantIdentityId,
         submittedByName: session.tenantName,
         submittedByEmail: session.email ?? undefined,
-        preferredCurrency: preferredCurrency as 'usd' | 'peso' | 'pound' | 'euro',
+        preferredCurrency: preferredCurrency as CurrencyOption,
         preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
         slaBucket,
         triageTagsCsv,

@@ -55,7 +55,7 @@ export default async function ScopedSubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} />
+        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} defaultCurrency={landlord.defaultCurrency} />
       </section>
     </div>
   )

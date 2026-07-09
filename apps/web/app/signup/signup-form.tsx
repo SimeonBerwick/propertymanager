@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey, type OfferedPlanKey } from '@/lib/billing-plans'
+import { CURRENCY_OPTIONS, type CurrencyOption } from '@/lib/types'
 import { signupAction, type SignupState } from './actions'
 
 declare global {
@@ -22,10 +23,12 @@ export function SignupForm({
   androidApp = false,
   initialPlan = 'growth',
   initialCadence = 'monthly',
+  initialCurrency = 'usd',
 }: {
   androidApp?: boolean
   initialPlan?: OfferedPlanKey
   initialCadence?: CadenceKey
+  initialCurrency?: CurrencyOption
 }) {
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
   const [runtimeAndroidApp, setRuntimeAndroidApp] = useState(androidApp)
@@ -74,6 +77,16 @@ export function SignupForm({
           placeholder="Optional"
         />
         <span className="muted">Shown to vendors so they know which property management business is contacting them.</span>
+      </label>
+
+      <label className="field">
+        <span className="field-label">Default billing currency</span>
+        <select className="input" name="defaultCurrency" defaultValue={initialCurrency} required>
+          {CURRENCY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        <span className="muted">Used for work orders, vendor bills, and tenant chargebacks. You can keep USD.</span>
       </label>
 
       <label className="field">

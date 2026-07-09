@@ -1,4 +1,4 @@
-import { currencyLabel } from '@/lib/types'
+import { currencyLabel, type CurrencyOption } from '@/lib/types'
 
 export interface BillingPdfInput {
   title: string
@@ -7,7 +7,7 @@ export interface BillingPdfInput {
   status: string
   amountCents: number
   paidCents: number
-  currency: 'usd' | 'peso' | 'pound' | 'euro'
+  currency: CurrencyOption
   description?: string
   requestTitle: string
   propertyName: string

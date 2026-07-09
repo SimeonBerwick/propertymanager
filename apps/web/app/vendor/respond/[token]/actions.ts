@@ -79,6 +79,7 @@ export async function submitVendorResponse(
         select: {
           assignedVendorId: true,
           status: true,
+          preferredCurrency: true,
           submittedByEmail: true,
           submittedByName: true,
           title: true,
@@ -120,7 +121,7 @@ export async function submitVendorResponse(
           data: {
             status: nextInviteStatus,
             bidAmountCents: bidAmountRaw ? bidAmountCents : undefined,
-            bidCurrency: bidAmountRaw ? 'usd' : undefined,
+            bidCurrency: bidAmountRaw ? currentRequest.preferredCurrency : undefined,
             availabilityNote: availabilityNote || null,
             proposedStart: scheduledStart,
             proposedEnd: scheduledEnd,

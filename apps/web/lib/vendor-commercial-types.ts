@@ -1,3 +1,5 @@
+import type { CurrencyOption } from '@/lib/types'
+
 export type VendorCommercialType = 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
 export type VendorCommercialStatus = 'submitted' | 'approved' | 'declined'
 
@@ -8,7 +10,7 @@ export interface VendorCommercialItemView {
   vendorName?: string
   itemType: VendorCommercialType
   status: VendorCommercialStatus
-  currency: 'usd' | 'peso' | 'pound' | 'euro'
+  currency: CurrencyOption
   amountCents: number
   title: string
   description?: string

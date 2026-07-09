@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
-import type { Property, Unit } from '@/lib/types'
+import type { CurrencyOption, Property, Unit } from '@/lib/types'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { submitMaintenanceRequest, type SubmitRequestState } from '@/lib/request-actions'
 import { trackProductEvent } from '@/components/analytics-tracker'
@@ -13,9 +13,10 @@ interface SubmitRequestFormProps {
   units: Unit[]
   orgSlug?: string
   managerMode?: boolean
+  defaultCurrency?: CurrencyOption
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd' }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -217,7 +218,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         </label>
       </div>
 
-      <input type="hidden" name="preferredCurrency" value="usd" />
+      <input type="hidden" name="preferredCurrency" value={defaultCurrency} />
       <label className="field">
         <span className="field-label">Preferred language</span>
         <select className="input" name="preferredLanguage" defaultValue="english" required>
