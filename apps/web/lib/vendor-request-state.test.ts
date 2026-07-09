@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { deriveVendorRequestViewState } from './vendor-request-state'
+import { deriveVendorNextAction, deriveVendorRequestViewState } from './vendor-request-state'
 
 describe('deriveVendorRequestViewState', () => {
   test('shows schedule only to the awarded or assigned vendor', () => {
@@ -70,5 +70,55 @@ describe('deriveVendorRequestViewState', () => {
     expect(result.isOpenWork).toBe(false)
     expect(result.statusLabel).toBe('Closed - payment open')
     expect(result.heroNotice?.detail).toMatch(/payment balance is still open/i)
+  })
+})
+
+describe('deriveVendorNextAction', () => {
+  test('puts tenant appointment messages ahead of generic vendor updates', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'scheduled',
+      canControlDispatch: true,
+      hasAppointmentTime: true,
+      hasTenantAppointmentRequest: true,
+    })
+
+    expect(result.key).toBe('review_tenant_message')
+    expect(result.href).toBe('#tenant-message')
+  })
+
+  test('asks for appointment before service charge when no time is set', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'vendor_selected',
+      canControlDispatch: true,
+      needsAppointmentTime: true,
+      hasAppointmentTime: false,
+    })
+
+    expect(result.key).toBe('add_appointment')
+    expect(result.initialResponse).toBe('scheduled')
+  })
+
+  test('waits on manager after a submitted vendor charge', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'scheduled',
+      canControlDispatch: true,
+      hasAppointmentTime: true,
+      hasPendingCostOrInvoice: true,
+    })
+
+    expect(result.key).toBe('waiting_manager_cost')
+    expect(result.showResponseForm).toBe(false)
+  })
+
+  test('asks for final invoice after completed work with no final invoice', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'completed',
+      canControlDispatch: true,
+      workMarkedComplete: true,
+      hasApprovedCostOrInvoice: true,
+    })
+
+    expect(result.key).toBe('send_final_invoice')
+    expect(result.defaultItemType).toBe('bill_to_property_manager')
   })
 })

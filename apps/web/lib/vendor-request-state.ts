@@ -37,6 +37,213 @@ export type VendorRequestViewState = {
     | null
 }
 
+export type VendorNextActionKey =
+  | 'done'
+  | 'review_tenant_message'
+  | 'respond_bid'
+  | 'add_appointment'
+  | 'waiting_manager_cost'
+  | 'send_service_charge'
+  | 'mark_complete'
+  | 'send_final_invoice'
+  | 'waiting_final_invoice_review'
+  | 'waiting_payment_record'
+  | 'send_update'
+  | 'wait'
+
+export type VendorNextAction = {
+  key: VendorNextActionKey
+  label: string
+  detail: string
+  href?: string
+  attentionLabel: string
+  showResponseForm: boolean
+  showCommercialForm: boolean
+  initialResponse?: string
+  defaultItemType?: 'bid' | 'service_fee' | 'overcost' | 'bill_to_property_manager'
+  context?: 'general' | 'service_call'
+}
+
+export type VendorNextActionInput = {
+  requestStatus: string
+  isPaidClosed?: boolean
+  canControlDispatch?: boolean
+  isPendingBid?: boolean
+  workMarkedComplete?: boolean
+  hasAppointmentTime?: boolean
+  needsAppointmentTime?: boolean
+  hasTenantAppointmentRequest?: boolean
+  hasPendingCostOrInvoice?: boolean
+  hasApprovedCostOrInvoice?: boolean
+  hasActiveCostOrInvoice?: boolean
+  activeFinalInvoiceStatus?: string | null
+  vendorOpenBalanceCents?: number
+  awardedFromBid?: boolean
+}
+
+function vendorAction(input: Omit<VendorNextAction, 'attentionLabel'> & { attentionLabel?: string }): VendorNextAction {
+  return {
+    ...input,
+    attentionLabel: input.attentionLabel ?? input.label,
+  }
+}
+
+export function deriveVendorNextAction(input: VendorNextActionInput): VendorNextAction {
+  if (input.isPaidClosed || ['closed', 'declined', 'canceled'].includes(input.requestStatus)) {
+    return vendorAction({
+      key: 'done',
+      label: 'No action needed',
+      detail: 'This request is no longer active for your vendor account.',
+      attentionLabel: 'Done',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.hasTenantAppointmentRequest && input.canControlDispatch) {
+    return vendorAction({
+      key: 'review_tenant_message',
+      label: 'Review tenant message',
+      detail: 'The tenant asked about the appointment. Check the message before sending another update.',
+      href: '#tenant-message',
+      attentionLabel: 'Tenant message needs review',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.isPendingBid) {
+    return vendorAction({
+      key: 'respond_bid',
+      label: 'Respond to bid invite',
+      detail: 'Send your bid amount, timing, and availability for manager approval.',
+      href: '#vendor-next-action',
+      attentionLabel: 'Respond to bid invite',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: 'accepted',
+    })
+  }
+
+  if (input.needsAppointmentTime) {
+    return vendorAction({
+      key: 'add_appointment',
+      label: 'Add appointment time',
+      detail: 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.',
+      href: '#vendor-next-action',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: 'scheduled',
+    })
+  }
+
+  if (input.activeFinalInvoiceStatus === 'submitted') {
+    return vendorAction({
+      key: 'waiting_final_invoice_review',
+      label: 'Wait for invoice review',
+      detail: 'Your final invoice is with the property manager.',
+      attentionLabel: 'Final invoice sent',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.activeFinalInvoiceStatus === 'approved') {
+    return vendorAction({
+      key: 'waiting_payment_record',
+      label: 'Wait for payment record',
+      detail: 'The property manager approved the final invoice and will handle the payment record.',
+      attentionLabel: 'Final invoice approved',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.hasPendingCostOrInvoice) {
+    return vendorAction({
+      key: 'waiting_manager_cost',
+      label: 'Wait for manager approval',
+      detail: 'Your charge or invoice is with the property manager for approval.',
+      attentionLabel: 'Waiting on manager approval',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.hasAppointmentTime && !input.hasActiveCostOrInvoice && input.canControlDispatch && !input.workMarkedComplete) {
+    return vendorAction({
+      key: 'send_service_charge',
+      label: input.awardedFromBid ? 'Send invoice' : 'Send service charge or invoice',
+      detail: input.awardedFromBid
+        ? 'Send the final invoice for the approved bid. It only needs manager approval if it is higher than the approved amount.'
+        : 'Use this for the service call charge, parts only, an estimated repair cost, or a final invoice.',
+      href: '#vendor-invoice-item',
+      showResponseForm: false,
+      showCommercialForm: true,
+      defaultItemType: input.awardedFromBid ? 'bill_to_property_manager' : 'service_fee',
+      context: input.awardedFromBid ? 'general' : 'service_call',
+    })
+  }
+
+  if (input.hasApprovedCostOrInvoice && !input.workMarkedComplete && input.canControlDispatch) {
+    return vendorAction({
+      key: 'mark_complete',
+      label: 'Mark work complete',
+      detail: 'The cost or invoice has been approved. Mark the work complete when the service call is finished.',
+      href: '#vendor-next-action',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: 'completed',
+    })
+  }
+
+  if (input.workMarkedComplete && !input.activeFinalInvoiceStatus && input.canControlDispatch) {
+    return vendorAction({
+      key: 'send_final_invoice',
+      label: input.awardedFromBid || input.hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice',
+      detail: input.awardedFromBid || input.hasApprovedCostOrInvoice
+        ? 'Work is marked complete. Send the final invoice so the property manager can match it to the approved amount.'
+        : 'Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.',
+      href: '#vendor-invoice-item',
+      showResponseForm: false,
+      showCommercialForm: true,
+      defaultItemType: input.awardedFromBid || input.hasApprovedCostOrInvoice ? 'bill_to_property_manager' : 'overcost',
+      context: input.awardedFromBid || input.hasApprovedCostOrInvoice ? 'general' : 'service_call',
+    })
+  }
+
+  if ((input.vendorOpenBalanceCents ?? 0) > 0) {
+    return vendorAction({
+      key: 'waiting_payment_record',
+      label: 'Wait for payment record',
+      detail: 'A payment record is open. Payments are handled outside the app.',
+      attentionLabel: 'Payment record open',
+      showResponseForm: false,
+      showCommercialForm: false,
+    })
+  }
+
+  if (input.canControlDispatch) {
+    return vendorAction({
+      key: 'send_update',
+      label: 'Send work update',
+      detail: 'Tell the property manager what happened or update work progress.',
+      href: '#vendor-next-action',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: input.hasAppointmentTime ? 'in_progress' : 'contacted',
+    })
+  }
+
+  return vendorAction({
+    key: 'wait',
+    label: 'No action needed',
+    detail: 'Waiting on the property manager.',
+    showResponseForm: false,
+    showCommercialForm: false,
+  })
+}
+
 export function deriveVendorRequestViewState(input: VendorRequestStateInput): VendorRequestViewState {
   const inviteStatus = input.latestInvite?.status ?? null
   const inviteAwarded = inviteStatus === 'awarded' || !!input.latestInvite?.awardedAt
