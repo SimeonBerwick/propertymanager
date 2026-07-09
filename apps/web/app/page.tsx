@@ -201,7 +201,7 @@ export default async function HomePage() {
                 <li>Billing records and reports</li>
                 <li>Email notifications and history</li>
               </ul>
-              <Link href="/signup" className={`button ${plan === 'pro' ? 'primary' : ''}`}>Start free trial</Link>
+              <Link href={`/signup?plan=${plan}`} className={`button ${plan === 'pro' ? 'primary' : ''}`}>Start free trial</Link>
             </article>
           ))}
         </div>

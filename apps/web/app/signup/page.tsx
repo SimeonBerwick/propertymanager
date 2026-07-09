@@ -1,9 +1,17 @@
 import { headers } from 'next/headers'
 import { SignupForm } from './signup-form'
 import { isAndroidWebView } from '@/lib/android-webview'
+import { parseCadence, parsePlan } from '@/lib/billing-plans'
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ plan?: string; cadence?: string }>
+}) {
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
+  const query = await searchParams
+  const initialPlan = parsePlan(query?.plan ?? null) ?? 'growth'
+  const initialCadence = parseCadence(query?.cadence ?? null) ?? 'monthly'
 
   if (androidApp) {
     return (
@@ -19,7 +27,7 @@ export default async function SignupPage() {
         </section>
 
         <section className="card stack">
-          <SignupForm androidApp />
+          <SignupForm androidApp initialPlan={initialPlan} initialCadence={initialCadence} />
         </section>
       </main>
     )
@@ -38,7 +46,7 @@ export default async function SignupPage() {
       </section>
 
       <section className="card stack">
-        <SignupForm />
+        <SignupForm initialPlan={initialPlan} initialCadence={initialCadence} />
       </section>
     </main>
   )

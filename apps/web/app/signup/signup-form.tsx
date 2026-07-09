@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey } from '@/lib/billing-plans'
+import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey, type OfferedPlanKey } from '@/lib/billing-plans'
 import { signupAction, type SignupState } from './actions'
 
 declare global {
@@ -18,7 +18,15 @@ const INITIAL_STATE: SignupState = { error: null }
 const PLANS = OFFERED_PLANS
 const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
-export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
+export function SignupForm({
+  androidApp = false,
+  initialPlan = 'growth',
+  initialCadence = 'monthly',
+}: {
+  androidApp?: boolean
+  initialPlan?: OfferedPlanKey
+  initialCadence?: CadenceKey
+}) {
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
   const [runtimeAndroidApp, setRuntimeAndroidApp] = useState(androidApp)
 
@@ -75,8 +83,8 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
 
       {runtimeAndroidApp ? (
         <>
-          <input type="hidden" name="plan" value="growth" />
-          <input type="hidden" name="cadence" value="monthly" />
+          <input type="hidden" name="plan" value={initialPlan} />
+          <input type="hidden" name="cadence" value={initialCadence} />
           <div className="notice">
             Your free month starts when you create the account. Check simeonware.com in a web browser for subscription details and plan information.
           </div>
@@ -87,7 +95,7 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
             {PLANS.map((plan) => (
               <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
                 <span className="row" style={{ alignItems: 'center' }}>
-                  <input type="radio" name="plan" value={plan} defaultChecked={plan === 'growth'} />
+                  <input type="radio" name="plan" value={plan} defaultChecked={plan === initialPlan} />
                   <strong>{BILLING_PLANS[plan].name}</strong>
                 </span>
                 <span className="muted">{BILLING_PLANS[plan].description}</span>
@@ -96,16 +104,19 @@ export function SignupForm({ androidApp = false }: { androidApp?: boolean }) {
             ))}
           </div>
 
-          <div className="grid cols-2">
-            {CADENCES.map((cadence) => (
-              <label key={cadence} className="row" style={{ alignItems: 'center' }}>
-                <input type="radio" name="cadence" value={cadence} defaultChecked={cadence === 'monthly'} />
-                <span>
-                  <strong>{CADENCE_LABELS[cadence]}</strong>
-                  <span className="muted"> {cadence === 'annual' ? '10% discount' : 'pay month to month'}</span>
-                </span>
-              </label>
-            ))}
+          <div className="stack" style={{ gap: 8 }}>
+            <div className="field-label">Billing schedule after the free trial</div>
+            <div className="grid cols-2">
+              {CADENCES.map((cadence) => (
+                <label key={cadence} className="row" style={{ alignItems: 'center' }}>
+                  <input type="radio" name="cadence" value={cadence} defaultChecked={cadence === initialCadence} />
+                  <span>
+                    <strong>{CADENCE_LABELS[cadence]}</strong>
+                    <span className="muted"> {cadence === 'annual' ? 'billed once a year with 10% off' : 'billed month to month'}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="notice">
