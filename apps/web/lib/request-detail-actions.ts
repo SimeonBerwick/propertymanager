@@ -170,10 +170,14 @@ export async function updateStatusFormAction(
   const fromStatus = formData.get('fromStatus') as RequestStatus
   const toStatus = formData.get('toStatus') as RequestStatus
   const reason = String(formData.get('reason') ?? '').trim()
+  const assessedUrgency = String(formData.get('assessedUrgency') ?? '').trim()
 
   if (!VALID_STATUSES.includes(toStatus)) return { error: 'Invalid status.' }
   if (toStatus === fromStatus) return { error: 'Request is already in that status.' }
   if (!ALLOWED_STATUS_TRANSITIONS[fromStatus]?.includes(toStatus)) return { error: `Cannot move request from ${fromStatus} to ${toStatus}.` }
+  if (fromStatus === 'requested' && toStatus === 'approved' && assessedUrgency && !['low', 'medium', 'high', 'urgent'].includes(assessedUrgency)) {
+    return { error: 'Choose the manager-assessed priority before approving.' }
+  }
   if (['declined', 'canceled', 'reopened'].includes(toStatus) && !reason) return { error: 'A reason is required for this status change.' }
   if (toStatus === 'closed') {
     const closeoutBlocker = await getCloseoutBlocker(requestId, session.userId)
@@ -189,9 +193,10 @@ export async function updateStatusFormAction(
   try {
     const ownedRequest = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
-      select: { id: true },
+      select: { id: true, urgency: true },
     })
     if (!ownedRequest) return { error: 'Request not found.' }
+    const effectiveAssessedUrgency = assessedUrgency || ownedRequest.urgency
 
     await prisma.$transaction(async (tx) => {
       const tenantQuestion = toStatus === 'approved'
@@ -209,6 +214,9 @@ export async function updateStatusFormAction(
         where: { id: requestId },
         data: {
           status: toStatus,
+          urgency: fromStatus === 'requested' && toStatus === 'approved'
+            ? effectiveAssessedUrgency as 'low' | 'medium' | 'high' | 'urgent'
+            : undefined,
           declineReason: toStatus === 'declined' ? reason : null,
           cancelReason: toStatus === 'canceled' ? reason : null,
           reopenedReason: toStatus === 'reopened' ? reason : null,
@@ -249,7 +257,7 @@ export async function updateStatusFormAction(
     entityId: requestId,
     action: 'request.statusChanged',
     summary: `Changed request status from ${fromStatus} to ${toStatus}.`,
-    metadata: { fromStatus, toStatus, reason: reason || null },
+    metadata: { fromStatus, toStatus, reason: reason || null, assessedUrgency: assessedUrgency || null },
   })
 
   revalidatePath(`/requests/${requestId}`)

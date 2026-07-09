@@ -43,7 +43,7 @@ export default async function DashboardPage({
   const selectedCity = params?.city ?? 'all'
   const selectedLanguage = params?.language ?? 'all'
   const selectedQueue = params?.queue ?? 'all'
-  const selectedSort = params?.sort === 'oldest' ? 'oldest' : 'newest'
+  const selectedSort = params?.sort === 'oldest' || params?.sort === 'newest' ? params.sort : 'priority'
   const isQueueView = selectedQueue !== 'all'
   const queueTitle = QUEUE_TITLES[selectedQueue] ?? 'Requests'
   const queueItemLabel = selectedQueue === 'all' || selectedQueue === 'open' ? 'open work orders' : 'requests in this queue'
@@ -76,6 +76,14 @@ export default async function DashboardPage({
   })
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
+    if (selectedSort === 'priority') {
+      const statusRank = (request: typeof a) => request.status === 'requested' ? 0 : 1
+      const priorityRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
+      return statusRank(a) - statusRank(b)
+        || (priorityRank[a.urgency] ?? 4) - (priorityRank[b.urgency] ?? 4)
+        || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+
     if (selectedSort === 'oldest') {
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     }
@@ -212,7 +220,7 @@ export default async function DashboardPage({
       >
         {selectedQueue !== 'all' ? <div className="muted" style={{ color: '#2f9e44', fontWeight: 600 }}>Queue filter active: {selectedQueue}</div> : null}
         <div className="notice">
-          Showing {focusNow.length} of {filteredRequests.length} {queueItemLabel}, sorted {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+          Showing {focusNow.length} of {filteredRequests.length} {queueItemLabel}, sorted {selectedSort === 'priority' ? 'new requests first, then priority' : selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
           {filteredRequests.length > focusNow.length ? ' Use filters to narrow the list.' : ''}
         </div>
 
@@ -242,6 +250,7 @@ export default async function DashboardPage({
               <label className="field" style={{ minWidth: 180 }}>
                 <span className="field-label">Sort order</span>
                 <select className="input" name="sort" defaultValue={selectedSort}>
+                  <option value="priority">New requests, then priority</option>
                   <option value="newest">Newest to oldest</option>
                   <option value="oldest">Oldest to newest</option>
                 </select>

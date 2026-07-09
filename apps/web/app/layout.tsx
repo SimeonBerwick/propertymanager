@@ -38,14 +38,21 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
   const pathname = (await headers()).get('x-pathname') ?? ''
+  const isTenantPortalRoute = pathname.startsWith('/mobile')
+  const isVendorPortalRoute = pathname.startsWith('/vendor')
+  const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute
   const dbAvailable = await isDatabaseAvailable()
-  const [tenantPortalSession, vendorPortalSession] = dbAvailable && !session.isLoggedIn
+  const [tenantPortalSession, vendorPortalSession] = dbAvailable
     ? await Promise.all([
         getTenantMobileSession().catch(() => null),
         getVendorSession().catch(() => null),
       ])
     : [null, null]
-  const logoHref: Route = session.isLoggedIn
+  const logoHref: Route = isTenantPortalRoute
+    ? '/mobile'
+    : isVendorPortalRoute
+      ? '/vendor'
+      : session.isLoggedIn
     ? '/dashboard'
     : tenantPortalSession
       ? '/mobile'
@@ -81,10 +88,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               No database is connected. All data shown is sample data. Writes (submitting requests, status updates, comments, creating properties) are disabled.
             </div>
           )}
-          <header className={`header ${session.isLoggedIn ? 'managerHeader' : ''}`}>
+          <header className={`header ${isManagerRoute ? 'managerHeader' : ''}`}>
             <BrandLogo href={logoHref} />
             <div className="nav">
-              {session.isLoggedIn && (
+              {isManagerRoute && (
                 <>
                   <Link href="/dashboard">Dashboard</Link>
                   <CommandPalette />
@@ -120,7 +127,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   </form>
                 </>
               )}
-              {!session.isLoggedIn && (
+              {!session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && (
                 <PublicMarketingNav />
               )}
             </div>
@@ -135,7 +142,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <a href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
             <Link href="/account-deletion">Account deletion</Link>
           </footer>
-          {session.isLoggedIn ? <ManagerMobileNav /> : null}
+          {isManagerRoute ? <ManagerMobileNav /> : null}
         </div>
       </body>
     </html>

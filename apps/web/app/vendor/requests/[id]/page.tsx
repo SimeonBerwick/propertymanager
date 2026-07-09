@@ -86,7 +86,7 @@ export default async function VendorRequestDetailPage({
   return (
     <div className="stack">
       <section className="row" style={{ justifyContent: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
-        <Link href={'/vendor' as Route} className="button">Back to Maintenance Ops</Link>
+        <Link href={'/vendor' as Route} className="button">Back to vendor dashboard</Link>
         <form action={vendorSignoutAction}>
           <button type="submit" className="button">Sign out</button>
         </form>
