@@ -182,6 +182,16 @@ export async function getVendorRequestsForDashboard(session: VendorPortalScope) 
         where: { vendorId: session.vendorId },
         orderBy: { createdAt: 'desc' },
       },
+      comments: {
+        where: { visibility: 'external' },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+      },
+      vendorCommercialItems: {
+        where: { vendorId: session.vendorId },
+        select: VENDOR_COMMERCIAL_ITEM_SELECT,
+        orderBy: { submittedAt: 'desc' },
+      },
     },
     orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
   })

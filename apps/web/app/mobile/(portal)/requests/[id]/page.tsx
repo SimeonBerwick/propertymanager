@@ -35,7 +35,14 @@ function classifyCommentSource(
   }
 
   if (
-    normalizedBody.startsWith('submitted from tenant mobile portal')
+    normalizedBody.startsWith('tenant message:')
+    || normalizedBody.startsWith('tenant asked:')
+    || normalizedBody.startsWith('tenant requested:')
+    || normalizedBody.startsWith('appointment request:')
+    || normalizedBody.startsWith('different appointment time:')
+    || normalizedBody.startsWith('reschedule request:')
+    || normalizedBody.startsWith('request update:')
+    || normalizedBody.startsWith('submitted from tenant mobile portal')
     || normalizedBody.startsWith('tenant canceled request:')
     || normalizedBody.startsWith('submitted by ')
   ) {
@@ -51,6 +58,17 @@ function classifyCommentSource(
   }
 }
 
+function displayCommentBody(body: string) {
+  return body
+    .replace(/^Tenant message:\s*/i, '')
+    .replace(/^Tenant asked:\s*/i, '')
+    .replace(/^Tenant requested:\s*/i, '')
+    .replace(/^Appointment request:\s*/i, '')
+    .replace(/^Different appointment time:\s*/i, '')
+    .replace(/^Reschedule request:\s*/i, '')
+    .replace(/^Request update:\s*/i, '')
+}
+
 export default async function TenantMobileRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireTenantMobileSession()
   const { id } = await params
@@ -64,25 +82,27 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const appointmentLabel = request.vendorScheduledStart
     ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
     : null
-  const latestTenantAppointmentMessage = [...request.comments]
-    .reverse()
-    .find((comment) => {
-      const normalizedBody = comment.body.toLowerCase()
-      return normalizedBody.startsWith('tenant message:')
-        && (normalizedBody.includes('appointment') || normalizedBody.includes('different time') || normalizedBody.includes('reschedule') || normalizedBody.includes('time'))
-        && (!request.vendorScheduledStart || new Date(comment.createdAt).getTime() >= new Date(request.vendorScheduledStart).getTime())
-    })
-  const visibleReplies = request.comments.filter((comment) => {
+  const newestComments = [...request.comments]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const tenantMessages = newestComments.filter((comment) => {
+    const source = classifyCommentSource(comment, request.assignedVendorName)
+    return source.label === 'Tenant'
+  })
+  const visibleReplies = newestComments.filter((comment) => {
     const source = classifyCommentSource(comment, request.assignedVendorName)
     return source.label === 'Property manager' || source.label === 'Vendor' || source.label === 'Visible note'
-  }).slice(-2).reverse()
+  }).slice(0, 2)
+  const latestCommunication = [...tenantMessages, ...visibleReplies]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null
+  const latestCommunicationSource = latestCommunication ? classifyCommentSource(latestCommunication, request.assignedVendorName) : null
+  const recentReplies = visibleReplies.filter((comment) => comment.id !== latestCommunication?.id)
   const tenantOpenBalanceCents = request.billingDocuments
     .filter((document) => document.status !== 'void')
     .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
-  const latestVisibleSignal = latestTenantAppointmentMessage
-    ? latestTenantAppointmentMessage.body.replace(/^Tenant message:\s*/i, '')
+  const latestVisibleSignal = latestCommunication
+    ? `${latestCommunicationSource?.label}: ${displayCommentBody(latestCommunication.body)}`
     : visibleReplies[0]
-      ? visibleReplies[0].body
+      ? displayCommentBody(visibleReplies[0].body)
       : null
   const tenantWorkOrderSummary = deriveWorkOrderStateSummary({
     audience: 'tenant',
@@ -101,13 +121,18 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
     <div className="stack">
       <WorkOrderStatusPanel summary={tenantWorkOrderSummary} />
 
-      {latestTenantAppointmentMessage ? (
+      {latestCommunication ? (
         <section className="card stack tenantStatusSummary">
-          <div className="kicker">Appointment request sent</div>
-          <strong>Your message was sent.</strong>
-          <div>The property manager and vendor can see your request about the appointment time.</div>
+          <div className="kicker">{latestCommunicationSource?.label === 'Tenant' ? 'Latest message sent' : 'Latest reply'}</div>
+          <strong>{latestCommunicationSource?.label === 'Tenant' ? 'Your message was sent.' : `${latestCommunicationSource?.label ?? 'Update'} replied`}</strong>
+          <div>{displayCommentBody(latestCommunication.body)}</div>
+          <div className="muted">
+            {latestCommunicationSource?.label}{latestCommunicationSource?.byline ? ` - ${latestCommunicationSource.byline}` : ''} - {new Date(latestCommunication.createdAt).toLocaleString()}
+          </div>
         </section>
-      ) : appointmentLabel ? (
+      ) : null}
+
+      {appointmentLabel ? (
         <section className="card stack tenantStatusSummary">
           <div className="kicker">Appointment</div>
           <strong>{appointmentLabel}</strong>
@@ -116,10 +141,10 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         </section>
       ) : null}
 
-      {visibleReplies.length ? (
+      {recentReplies.length ? (
         <section className="card stack tenantStatusSummary">
-          <div className="kicker">Latest reply</div>
-          {visibleReplies.map((comment) => {
+          <div className="kicker">Recent replies</div>
+          {recentReplies.map((comment) => {
             const source = classifyCommentSource(comment, request.assignedVendorName)
 
             return (
@@ -127,7 +152,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
                 <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                   {source.label}{source.byline ? ` - ${source.byline}` : ''}
                 </div>
-                <div>{comment.body}</div>
+                <div>{displayCommentBody(comment.body)}</div>
                 <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
               </div>
             )
@@ -229,7 +254,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div className="kicker">Comments</div>
           <h3 style={{ marginTop: 4 }}>Messages about this request</h3>
         </div>
-        {request.comments.length ? request.comments.map((comment) => (
+        {newestComments.length ? newestComments.map((comment) => (
           <div key={comment.id} className="timelineRow">
             {(() => {
               const source = classifyCommentSource(comment, request.assignedVendorName)
@@ -239,7 +264,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
                 </div>
               )
             })()}
-            <div>{comment.body}</div>
+            <div>{displayCommentBody(comment.body)}</div>
             <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
           </div>
         )) : <div className="muted">No comments yet.</div>}

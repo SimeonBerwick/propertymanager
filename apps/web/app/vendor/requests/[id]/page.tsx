@@ -9,7 +9,7 @@ import { VendorCommercialItemForm } from '@/app/vendor/commercial-item-form'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 import { vendorSignoutAction } from '@/app/vendor/auth/signout/actions'
 import { MediaPhotoCard } from '@/components/media-photo-card'
-import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
+import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { formatDateTime } from '@/lib/ui-utils'
@@ -82,9 +82,6 @@ export default async function VendorRequestDetailPage({
   const latestTenantMessage = [...request.comments]
     .reverse()
     .find((comment) => comment.body.startsWith('Tenant message:'))
-  const shouldPrioritizeInvoiceItem = !isPaidClosed && viewState.canControlDispatch && workMarkedComplete && !activeFinalInvoice
-  const shouldShowServiceCostForm = !isPaidClosed && !shouldPrioritizeInvoiceItem && viewState.canControlDispatch && hasAppointmentTime && !hasActiveCostOrInvoice
-  const canSendUpdate = !isPaidClosed && !shouldPrioritizeInvoiceItem && !shouldShowServiceCostForm && !hasPendingCostOrInvoice && (viewState.canControlDispatch || viewState.isPendingBid)
   const vendorOpenBalanceCents = request.billingDocuments
     .filter((document) => document.status !== 'void')
     .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
@@ -92,6 +89,27 @@ export default async function VendorRequestDetailPage({
     .filter((item) => item.itemType !== 'bid')
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
   const vendorAppointmentLabel = effectiveScheduledStart ? formatAppointmentWindow(effectiveScheduledStart, effectiveScheduledEnd) : null
+  const latestTenantAppointmentRequest = latestTenantMessage
+    && /appointment|different time|reschedule|schedule|time/i.test(latestTenantMessage.body)
+    && (!latestScheduledEvent || new Date(latestTenantMessage.createdAt).getTime() > new Date(latestScheduledEvent.createdAt).getTime())
+    ? latestTenantMessage
+    : null
+  const vendorNextAction = deriveVendorNextAction({
+    requestStatus: request.status,
+    isPaidClosed,
+    canControlDispatch: viewState.canControlDispatch,
+    isPendingBid: viewState.isPendingBid,
+    workMarkedComplete,
+    hasAppointmentTime,
+    needsAppointmentTime,
+    hasTenantAppointmentRequest: Boolean(latestTenantAppointmentRequest),
+    hasPendingCostOrInvoice,
+    hasApprovedCostOrInvoice,
+    hasActiveCostOrInvoice,
+    activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
+    vendorOpenBalanceCents,
+    awardedFromBid,
+  })
   const vendorWorkOrderSummary = deriveWorkOrderStateSummary({
     audience: 'vendor',
     id: request.id,
@@ -146,48 +164,30 @@ export default async function VendorRequestDetailPage({
         </div>
         <div>{request.description}</div>
         {latestTenantMessage ? (
-          <div className="notice stack" style={{ gap: 4 }}>
+          <div id="tenant-message" className={`notice stack${latestTenantAppointmentRequest ? ' tenantMessagePriority' : ''}`} style={{ gap: 4 }}>
             <strong>Tenant message</strong>
             <div>{latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}</div>
             <div className="muted">{formatDateTime(latestTenantMessage.createdAt)}</div>
           </div>
         ) : null}
-        {activeFinalInvoice ? (
-          <div className={`notice ${activeFinalInvoice.status === 'approved' ? 'success' : ''}`} style={{ alignSelf: 'flex-start' }}>
-            {activeFinalInvoice.status === 'approved'
-              ? 'Final invoice approved. The property manager will post or mark the payment record next.'
-              : 'Final invoice sent. Waiting for the property manager to review it.'}
+        {vendorNextAction.href ? (
+          <a href={vendorNextAction.href} className="button primary" style={{ alignSelf: 'flex-start' }}>{vendorNextAction.label}</a>
+        ) : vendorNextAction.key !== 'done' && vendorNextAction.key !== 'wait' ? (
+          <div className={`notice ${vendorNextAction.key === 'waiting_payment_record' ? 'success' : ''}`} style={{ alignSelf: 'flex-start' }}>
+            {vendorNextAction.detail}
           </div>
-        ) : shouldPrioritizeInvoiceItem ? (
-          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>{awardedFromBid || hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice'}</a>
-        ) : shouldShowServiceCostForm ? (
-          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>{awardedFromBid ? 'Send invoice' : 'Send service charge or invoice'}</a>
-        ) : canSendUpdate ? (
-          <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : hasApprovedCostOrInvoice ? 'Mark work complete' : 'Send the next update'}</a>
-        ) : hasPendingCostOrInvoice ? (
-          <div className="notice" style={{ alignSelf: 'flex-start' }}>Waiting for the property manager to approve the submitted charge.</div>
         ) : null}
       </section>
 
-      {canSendUpdate ? <section className="card stack" id="vendor-next-action">
+      {vendorNextAction.showResponseForm ? <section className="card stack" id="vendor-next-action">
         <div>
           <div className="kicker">Next action</div>
-          <h3 style={{ marginTop: 4 }}>{viewState.isPendingBid ? 'Respond to bid invite' : needsAppointmentTime ? 'Add appointment time' : hasApprovedCostOrInvoice ? 'Mark work complete' : 'Send work update'}</h3>
+          <h3 style={{ marginTop: 4 }}>{vendorNextAction.label}</h3>
         </div>
-        <div className="muted">
-          {viewState.isPendingBid
-            ? 'Send your bid amount, timing, and availability for manager approval.'
-            : needsAppointmentTime
-              ? 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.'
-              : hasAppointmentTime
-                ? hasApprovedCostOrInvoice
-                  ? 'The cost or invoice has been approved. Mark the work complete when the service call is finished.'
-                  : 'Update work progress only. Use the cost form below for service charges, parts, estimates, or invoices.'
-                : 'Tell the property manager what happened, confirm timing, or mark the work complete.'}
-        </div>
+        <div className="muted">{vendorNextAction.detail}</div>
         <VendorRequestResponseForm
           requestId={request.id}
-          initialResponse={viewState.isPendingBid ? 'accepted' : needsAppointmentTime ? 'scheduled' : hasApprovedCostOrInvoice ? 'completed' : hasAppointmentTime ? 'in_progress' : 'contacted'}
+          initialResponse={vendorNextAction.initialResponse ?? 'contacted'}
           hasAppointment={hasAppointmentTime}
           pendingBid={viewState.isPendingBid}
         />
@@ -216,31 +216,18 @@ export default async function VendorRequestDetailPage({
         ))}
       </section> : null}
 
-      {shouldPrioritizeInvoiceItem ? (
+      {vendorNextAction.showCommercialForm ? (
         <section className="card stack" id="vendor-invoice-item">
           <div>
             <div className="kicker">Next action</div>
-            <h3 style={{ marginTop: 4 }}>{awardedFromBid || hasApprovedCostOrInvoice ? 'Send final invoice' : 'Submit extra cost or invoice'}</h3>
+            <h3 style={{ marginTop: 4 }}>{vendorNextAction.label}</h3>
           </div>
-          <div className="muted">
-            {awardedFromBid || hasApprovedCostOrInvoice
-              ? 'Work is marked complete. Send the final invoice so the property manager can match it to the approved amount.'
-              : 'Work is marked complete. Send any extra cost, service fee, or final invoice item to the property manager for approval.'}
-          </div>
-          <VendorCommercialItemForm requestId={request.id} defaultItemType={awardedFromBid || hasApprovedCostOrInvoice ? 'bill_to_property_manager' : 'overcost'} context={awardedFromBid || hasApprovedCostOrInvoice ? 'general' : 'service_call'} />
-        </section>
-      ) : shouldShowServiceCostForm ? (
-        <section className="card stack" id="vendor-invoice-item">
-          <div>
-            <div className="kicker">Next action</div>
-            <h3 style={{ marginTop: 4 }}>{awardedFromBid ? 'Send invoice' : 'Send service charge, parts, estimate, or invoice'}</h3>
-          </div>
-          <div className="muted">
-            {awardedFromBid
-              ? 'Send the final invoice for the approved bid. It only needs manager approval if it is higher than the already approved amount.'
-              : 'Use this for the service call charge, parts only, an estimated repair cost, or a final invoice. The property manager must approve it before it becomes payable.'}
-          </div>
-          <VendorCommercialItemForm requestId={request.id} defaultItemType={awardedFromBid ? 'bill_to_property_manager' : 'service_fee'} context={awardedFromBid ? 'general' : 'service_call'} />
+          <div className="muted">{vendorNextAction.detail}</div>
+          <VendorCommercialItemForm
+            requestId={request.id}
+            defaultItemType={vendorNextAction.defaultItemType ?? 'overcost'}
+            context={vendorNextAction.context ?? 'general'}
+          />
         </section>
       ) : !isPaidClosed ? <details className="advancedDisclosure">
         <summary>Submit a bid, fee, extra cost, or invoice</summary>

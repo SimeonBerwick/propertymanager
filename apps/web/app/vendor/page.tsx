@@ -5,7 +5,7 @@ import { getSiblingVendorAccountCount, getVendorCommercialSummary, getVendorRequ
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { vendorSignoutAction } from './auth/signout/actions'
 import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
-import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
+import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
@@ -37,29 +37,57 @@ export default async function VendorDashboardPage({
     ? resolvedSearchParams.filter
     : 'open'
 
-  const requestViews = requests.map((request) => ({
-    request,
-    viewState: deriveVendorRequestViewState({
+  const requestViews = requests.map((request) => {
+    const viewState = deriveVendorRequestViewState({
       assignedVendorId: request.assignedVendorId,
       requestStatus: request.status,
       viewerVendorId: session.vendorId,
       latestInvite: request.tenderInvites[0],
       billingDocuments: request.billingDocuments,
-    }),
-  }))
-  const openRequests = requestViews.filter(({ request, viewState }) => viewState.isOpenWork && !['closed', 'declined', 'canceled', 'completed'].includes(request.status))
-  const recentRequests = requestViews.filter(({ request }) => ['closed', 'completed', 'canceled'].includes(request.status)).slice(0, 8)
-  const pendingBids = requestViews.filter(({ viewState }) => viewState.isPendingBid)
+    })
+    const workMarkedComplete = request.status === 'completed'
+      || request.dispatchStatus === 'completed'
+      || request.reviewState === 'vendor_completed_pending_review'
+    const hasAppointmentTime = Boolean(request.vendorScheduledStart)
+    const isPaidClosed = request.status === 'closed' && deriveRequestCloseoutLanguage({
+      status: request.status,
+      billingDocuments: request.billingDocuments,
+    }).isPaid
+    const hasPendingCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'submitted')
+    const hasApprovedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'approved')
+    const hasActiveCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status !== 'declined')
+    const activeFinalInvoice = request.vendorCommercialItems.find((item) => item.itemType === 'bill_to_property_manager' && item.status !== 'declined')
+    const latestTenantMessage = request.comments.find((comment) => comment.body.startsWith('Tenant message:'))
+    const vendorOpenBalanceCents = request.billingDocuments
+      .filter((document) => document.status !== 'void')
+      .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
+    const nextAction = deriveVendorNextAction({
+      requestStatus: request.status,
+      isPaidClosed,
+      canControlDispatch: viewState.canControlDispatch,
+      isPendingBid: viewState.isPendingBid,
+      workMarkedComplete,
+      hasAppointmentTime,
+      needsAppointmentTime: !isPaidClosed && !workMarkedComplete && viewState.canControlDispatch && !hasAppointmentTime && ['vendor_selected', 'scheduled', 'in_progress'].includes(request.status),
+      hasTenantAppointmentRequest: Boolean(latestTenantMessage && /appointment|different time|reschedule|schedule|time/i.test(latestTenantMessage.body)),
+      hasPendingCostOrInvoice,
+      hasApprovedCostOrInvoice,
+      hasActiveCostOrInvoice,
+      activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
+      vendorOpenBalanceCents,
+      awardedFromBid: request.tenderInvites.some((invite) => invite.status === 'awarded' || invite.awardedAt),
+    })
+
+    return { request, viewState, nextAction }
+  })
+  const openRequests = requestViews.filter(({ request, nextAction }) => !['closed', 'declined', 'canceled'].includes(request.status) && !['done', 'wait'].includes(nextAction.key))
+  const recentRequests = requestViews.filter(({ request, nextAction }) => ['closed', 'completed', 'canceled'].includes(request.status) || ['done', 'wait'].includes(nextAction.key)).slice(0, 8)
+  const pendingBids = requestViews.filter(({ nextAction }) => nextAction.key === 'respond_bid')
   const awardedRequests = openRequests.filter(({ viewState }) => viewState.isAwardedToViewer)
-  const scheduledVisits = openRequests.filter(({ request, viewState }) => viewState.canSeeSchedule && request.vendorScheduledStart)
-  const requiredUpdates = openRequests.filter(({ viewState }) => viewState.canControlDispatch)
-  const attentionItems = [
-    ...pendingBids.map((item) => ({ ...item, attentionLabel: 'Respond to bid invite' })),
-    ...awardedRequests.map((item) => ({ ...item, attentionLabel: 'Send an update on awarded work' })),
-    ...scheduledVisits.map((item) => ({ ...item, attentionLabel: 'Prepare for scheduled appointment' })),
-    ...requiredUpdates.map((item) => ({ ...item, attentionLabel: 'Update work status' })),
-  ].filter((item, index, items) => items.findIndex((candidate) => candidate.request.id === item.request.id) === index).slice(0, 5)
-  const billingRequests = requests.filter((request) => request.billingDocuments.length > 0)
+  const attentionItems = openRequests
+    .filter(({ nextAction }) => Boolean(nextAction.href || nextAction.showResponseForm || nextAction.showCommercialForm))
+    .slice(0, 5)
+  const billingRequests = requestViews.filter(({ request }) => request.billingDocuments.length > 0)
   const payableDocs = requests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
   const outstandingPaymentDocumentCount = requests.reduce((sum, request) => (
     sum + request.billingDocuments.filter((document) => document.status !== 'void' && document.status !== 'paid' && document.totalCents > document.paidCents).length
@@ -72,16 +100,7 @@ export default async function VendorDashboardPage({
       : filter === 'bids'
       ? pendingBids
       : filter === 'billing'
-        ? billingRequests.map((request) => ({
-            request,
-            viewState: deriveVendorRequestViewState({
-              assignedVendorId: request.assignedVendorId,
-              requestStatus: request.status,
-              viewerVendorId: session.vendorId,
-              latestInvite: request.tenderInvites[0],
-              billingDocuments: request.billingDocuments,
-            }),
-          }))
+        ? billingRequests
         : []
   const sectionTitle = filter === 'open'
     ? (openRequests.length ? 'Open work' : 'Recent work')
@@ -118,11 +137,11 @@ export default async function VendorDashboardPage({
           <h2 style={{ margin: '4px 0' }}>Work waiting on you</h2>
           <div className="muted">Bid invites, chosen work, scheduled appointments, and requested updates are shown first.</div>
         </div>
-        {attentionItems.length ? attentionItems.map(({ request, viewState, attentionLabel }) => (
+        {attentionItems.length ? attentionItems.map(({ request, viewState, nextAction }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <div className="kicker">{attentionLabel}</div>
+                <div className="kicker">{nextAction.attentionLabel}</div>
                 <div style={{ fontWeight: 700, marginTop: 4 }}>{request.title}</div>
                 <div className="muted">{request.property.name} - {request.unit.label} - {viewState.statusLabel}</div>
                 {viewState.canSeeSchedule && request.vendorScheduledStart ? <div className="signalAccent">Appointment {formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}</div> : null}
@@ -228,7 +247,7 @@ export default async function VendorDashboardPage({
               <span>Submitted bids, extra costs, and invoices will appear here after you send them from a request.</span>
             </div>
           )
-        ) : filteredRequests.length ? filteredRequests.map(({ request, viewState }) => (
+        ) : filteredRequests.length ? filteredRequests.map(({ request, viewState, nextAction }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
               <div>
@@ -240,7 +259,7 @@ export default async function VendorDashboardPage({
                   Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
                 </div>
                 <div className="muted">
-                  {viewState.canSeeSchedule && request.vendorScheduledStart ? `Appointment ${formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}` : viewState.isPendingBid ? 'Send your price and availability' : 'Open for details'}
+                  {nextAction.detail}
                 </div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>

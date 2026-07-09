@@ -748,6 +748,7 @@ body { min-height: 100vh; }
 .tenantChargeNotice { display: flex; justify-content: space-between; gap: 14px; align-items: center; text-decoration: none; }
 .tenantStatusSummary { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--accent); border-radius: 14px; background: var(--accent-soft); }
 .tenantStatusSummary strong { font-size: 20px; }
+.tenantMessagePriority { border-color: var(--warn); background: rgba(251, 191, 36, 0.12); }
 #vendor-next-action { scroll-margin-top: 18px; border-color: var(--accent); }
 .requestSectionNav { position: sticky; top: 8px; z-index: 15; display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--card-strong); box-shadow: var(--shadow); }
 .requestSectionNav a { padding: 8px 10px; border-radius: 9px; color: var(--muted); font-weight: 700; font-size: 13px; }
