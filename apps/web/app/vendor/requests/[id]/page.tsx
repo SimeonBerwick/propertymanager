@@ -113,10 +113,10 @@ export default async function VendorRequestDetailPage({
         </div>
         <div>{request.description}</div>
         {latestTenantMessage ? (
-          <div className="notice">
+          <div className="notice stack" style={{ gap: 4 }}>
             <strong>Tenant message</strong>
-            <span>{latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}</span>
-            <span className="muted">{formatDateTime(latestTenantMessage.createdAt)}</span>
+            <div>{latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}</div>
+            <div className="muted">{formatDateTime(latestTenantMessage.createdAt)}</div>
           </div>
         ) : null}
         {shouldPrioritizeInvoiceItem ? (
