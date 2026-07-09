@@ -3,7 +3,7 @@ import type { Route } from 'next'
 import { requireVendorSession } from '@/lib/vendor-session'
 import { getVendorCommercialSummary } from '@/lib/vendor-portal-data'
 import { formatMoney } from '@/lib/billing-utils'
-import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { cleanVendorCommercialDescription, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
 
 export default async function VendorSummaryPage() {
   const session = await requireVendorSession()
@@ -20,9 +20,9 @@ export default async function VendorSummaryPage() {
 
       <section className="grid cols-3">
         <div className="card">
-          <div className="kicker">Invoices</div>
+          <div className="kicker">Submitted items</div>
           <h2>{items.length}</h2>
-          <div className="muted">Submitted to property manager</div>
+          <div className="muted">Charges, bids, and invoices sent to the property manager</div>
         </div>
         <div className="card">
           <div className="kicker">Bids</div>
@@ -39,7 +39,7 @@ export default async function VendorSummaryPage() {
       <section className="card stack">
         <div>
           <div className="kicker">Vendor summary</div>
-          <h3 style={{ marginTop: 4 }}>Submitted invoices</h3>
+          <h3 style={{ marginTop: 4 }}>Submitted items</h3>
         </div>
         {items.length ? items.map((item) => (
           <Link key={item.id} href={`/vendor/requests/${item.requestId}` as Route} className="timelineRow" style={{ textDecoration: 'none' }}>
@@ -48,10 +48,10 @@ export default async function VendorSummaryPage() {
               {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {item.propertyName} - {item.unitLabel}
             </div>
             <div>{item.requestTitle}</div>
-            {item.description ? <div className="muted">{item.description}</div> : null}
+            {cleanVendorCommercialDescription(item.description) ? <div className="muted">{cleanVendorCommercialDescription(item.description)}</div> : null}
             <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
           </Link>
-        )) : <div className="muted">No vendor invoices submitted yet.</div>}
+        )) : <div className="muted">No vendor items submitted yet.</div>}
       </section>
     </div>
   )

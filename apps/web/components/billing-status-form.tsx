@@ -28,7 +28,7 @@ export function BillingStatusForm({ document }: { document: BillingDocumentView 
           <input type="hidden" name="billingDocumentId" value={document.id} />
           <input type="hidden" name="requestId" value={document.requestId} />
           <input type="hidden" name="paidAmount" value={paidInFullValue} />
-          <button type="submit" className="button primary">{pending ? 'Updating...' : 'Mark this document paid in full'}</button>
+          <button type="submit" className="button primary">{pending ? 'Updating...' : 'Mark this payment record paid'}</button>
         </form>
       ) : null}
       <ActionFeedback error={state.error} success={state.success && 'Payment status saved.'} />

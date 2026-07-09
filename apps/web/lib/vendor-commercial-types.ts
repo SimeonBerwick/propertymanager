@@ -51,6 +51,16 @@ export function upfrontPaymentCents(amountCents: number, value?: string | null) 
   return 0
 }
 
+export function cleanVendorCommercialDescription(description?: string | null) {
+  if (!description) return undefined
+  const cleaned = description
+    .split(/\r?\n/)
+    .filter((line) => !/^Payment timing:/i.test(line.trim()))
+    .join('\n')
+    .trim()
+  return cleaned || undefined
+}
+
 export function vendorCommercialTypeLabel(value: VendorCommercialType) {
   switch (value) {
     case 'bid':

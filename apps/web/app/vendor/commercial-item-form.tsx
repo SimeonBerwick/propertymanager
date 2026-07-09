@@ -15,6 +15,13 @@ const SERVICE_CALL_TITLES: Record<VendorCommercialItemType, string> = {
   bill_to_property_manager: 'Final invoice',
 }
 
+const GENERAL_TITLES: Record<VendorCommercialItemType, string> = {
+  bid: 'Bid',
+  service_fee: 'Service fee',
+  overcost: 'Extra cost',
+  bill_to_property_manager: 'Final invoice',
+}
+
 export function VendorCommercialItemForm({
   requestId,
   defaultItemType = 'bid',
@@ -27,7 +34,8 @@ export function VendorCommercialItemForm({
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
   const [noCharge, setNoCharge] = useState(false)
   const [selectedType, setSelectedType] = useState<VendorCommercialItemType>(defaultItemType)
-  const [title, setTitle] = useState(context === 'service_call' || defaultItemType === 'bill_to_property_manager' ? SERVICE_CALL_TITLES[defaultItemType] : '')
+  const titleDefaults = context === 'service_call' ? SERVICE_CALL_TITLES : GENERAL_TITLES
+  const [title, setTitle] = useState(titleDefaults[defaultItemType])
   const [attachmentName, setAttachmentName] = useState('')
   const typeOptions = context === 'service_call'
     ? [
@@ -68,10 +76,10 @@ export function VendorCommercialItemForm({
           disabled={noCharge}
           onChange={(event) => {
             const nextType = event.target.value as VendorCommercialItemType
-            const currentDefault = SERVICE_CALL_TITLES[selectedType]
+            const currentDefault = titleDefaults[selectedType]
             setSelectedType(nextType)
-            if (context === 'service_call' && (!title.trim() || title === currentDefault)) {
-              setTitle(SERVICE_CALL_TITLES[nextType])
+            if (!title.trim() || title === currentDefault) {
+              setTitle(titleDefaults[nextType])
             }
           }}
         >
