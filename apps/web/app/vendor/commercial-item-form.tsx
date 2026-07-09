@@ -26,7 +26,7 @@ export function VendorCommercialItemForm({
   const [state, action, pending] = useActionState(createVendorCommercialItemAction, INITIAL_STATE)
   const [noCharge, setNoCharge] = useState(false)
   const [selectedType, setSelectedType] = useState<VendorCommercialItemType>(defaultItemType)
-  const [title, setTitle] = useState(context === 'service_call' ? SERVICE_CALL_TITLES[defaultItemType] : '')
+  const [title, setTitle] = useState(context === 'service_call' || defaultItemType === 'bill_to_property_manager' ? SERVICE_CALL_TITLES[defaultItemType] : '')
   const typeOptions = context === 'service_call'
     ? [
         { value: 'service_fee', label: 'Service charge' },

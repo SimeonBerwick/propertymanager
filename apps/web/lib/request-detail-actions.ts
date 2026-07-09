@@ -111,18 +111,41 @@ async function getCloseoutBlocker(requestId: string, userId: string) {
     select: {
       id: true,
       vendorCommercialItems: {
-        where: { status: 'submitted' },
-        select: { id: true },
+        where: { status: { in: ['submitted', 'approved'] } },
+        select: { id: true, status: true, itemType: true, amountCents: true, vendorId: true },
       },
+      tenderInvites: {
+        where: { status: 'awarded' },
+        select: { vendorId: true, bidAmountCents: true },
+      },
+      tenantBillbackDecision: true,
+      tenantBillbackAmountCents: true,
       billingDocuments: {
         where: { status: { not: 'void' } },
-        select: { totalCents: true, paidCents: true },
+        select: { recipientType: true, documentType: true, totalCents: true, paidCents: true },
       },
     },
   })
 
   if (!request) return 'Request not found.'
-  if (request.vendorCommercialItems.length > 0) return 'Approve or decline vendor costs before closing this request.'
+  const approvedVendorTotalByVendor = new Map<string, number>()
+  for (const invite of request.tenderInvites) {
+    if (!invite.vendorId || !invite.bidAmountCents) continue
+    approvedVendorTotalByVendor.set(invite.vendorId, Math.max(approvedVendorTotalByVendor.get(invite.vendorId) ?? 0, invite.bidAmountCents))
+  }
+  for (const item of request.vendorCommercialItems) {
+    if (item.status !== 'approved' || !item.vendorId || item.itemType === 'bid' || item.itemType === 'bill_to_property_manager') continue
+    approvedVendorTotalByVendor.set(item.vendorId, (approvedVendorTotalByVendor.get(item.vendorId) ?? 0) + item.amountCents)
+  }
+  const unresolvedVendorItems = request.vendorCommercialItems.filter((item) => {
+    if (item.status !== 'submitted') return false
+    if (item.itemType !== 'bill_to_property_manager' || !item.vendorId) return true
+    return item.amountCents > (approvedVendorTotalByVendor.get(item.vendorId) ?? 0)
+  })
+  if (unresolvedVendorItems.length > 0) return 'Approve or decline vendor costs before closing this request.'
+  const needsTenantInvoice = request.tenantBillbackDecision === 'bill_tenant' && (request.tenantBillbackAmountCents ?? 0) > 0
+  const hasTenantInvoice = request.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice')
+  if (needsTenantInvoice && !hasTenantInvoice) return 'Create and send the tenant chargeback invoice before closing this request.'
   const openBalanceCents = request.billingDocuments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   if (openBalanceCents > 0) return 'Mark open billing records paid before closing this request.'
   return null
@@ -690,6 +713,75 @@ export async function awardTenderInviteAction(
   } catch (error) {
     await logServerActionError('request.tender.award', error, { requestId, tenderId, inviteId })
     return { error: 'Could not approve bid invite.' }
+  }
+}
+
+export async function requestTenderRevisionAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const tenderId = String(formData.get('tenderId') ?? '')
+  const inviteId = String(formData.get('inviteId') ?? '')
+  const requestedAmountRaw = String(formData.get('requestedAmount') ?? '').trim()
+  const requestedTiming = String(formData.get('requestedTiming') ?? '').trim()
+  const note = String(formData.get('revisionNote') ?? '').trim()
+
+  const requestedAmountCents = requestedAmountRaw ? centsFromDollarsInput(requestedAmountRaw) : null
+  if (requestedAmountRaw && requestedAmountCents == null) return { error: 'Enter a valid requested amount.' }
+
+  try {
+    const invite = await prisma.tenderInvite.findFirst({
+      where: {
+        id: inviteId,
+        tenderId,
+        requestId,
+        request: { property: { ownerId: session.userId } },
+      },
+      include: { vendor: true },
+    })
+    if (!invite) return { error: 'Bid invite not found.' }
+
+    const revisionNote = [
+      requestedAmountCents != null ? `Manager requested revised amount: USD ${(requestedAmountCents / 100).toFixed(2)}.` : null,
+      requestedTiming ? `Requested timing: ${requestedTiming}.` : null,
+      note || null,
+      invite.bidAmountCents != null ? `Previous bid: USD ${(invite.bidAmountCents / 100).toFixed(2)}.` : null,
+    ].filter(Boolean).join(' ')
+
+    await prisma.tenderInvite.update({
+      where: { id: inviteId },
+      data: {
+        status: 'viewed',
+        bidAmountCents: null,
+        bidCurrency: null,
+        bidSource: null,
+        availabilityNote: revisionNote || 'Manager requested a revised bid.',
+        respondedAt: null,
+      },
+    })
+
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'tenderInvite',
+      entityId: inviteId,
+      action: 'request.tenderRevisionRequested',
+      summary: `Requested revised bid from ${invite.vendor.name}.`,
+      metadata: { requestId, tenderId, inviteId, requestedAmountCents, requestedTiming, note: note || null },
+    })
+
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    revalidatePath('/vendor')
+    revalidatePath(`/vendor/requests/${requestId}`)
+    return { error: null, success: true, message: 'Revision requested. The vendor can now submit a revised bid in the app.' }
+  } catch (error) {
+    await logServerActionError('request.tender.revision', error, { requestId, tenderId, inviteId })
+    return { error: 'Could not request bid revision.' }
   }
 }
 

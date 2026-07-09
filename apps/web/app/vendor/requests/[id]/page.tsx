@@ -12,6 +12,7 @@ import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
+import { formatDateTime } from '@/lib/ui-utils'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -74,6 +75,7 @@ export default async function VendorRequestDetailPage({
   const hasPendingCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'submitted')
   const hasApprovedCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status === 'approved')
   const hasActiveCostOrInvoice = request.vendorCommercialItems.some((item) => item.itemType !== 'bid' && item.status !== 'declined')
+  const awardedFromBid = Boolean(awardedInvite)
   const latestTenantMessage = [...request.comments]
     .reverse()
     .find((comment) => comment.body.startsWith('Tenant message:'))
@@ -114,13 +116,13 @@ export default async function VendorRequestDetailPage({
           <div className="notice">
             <strong>Tenant message</strong>
             <span>{latestTenantMessage.body.replace(/^Tenant message:\s*/i, '')}</span>
-            <span className="muted">{new Date(latestTenantMessage.createdAt).toLocaleString()}</span>
+            <span className="muted">{formatDateTime(latestTenantMessage.createdAt)}</span>
           </div>
         ) : null}
         {shouldPrioritizeInvoiceItem ? (
           <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Submit extra cost or invoice</a>
         ) : shouldShowServiceCostForm ? (
-          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>Send service charge or invoice</a>
+          <a href="#vendor-invoice-item" className="button primary" style={{ alignSelf: 'flex-start' }}>{awardedFromBid ? 'Send invoice' : 'Send service charge or invoice'}</a>
         ) : canSendUpdate ? (
           <a href="#vendor-next-action" className="button primary" style={{ alignSelf: 'flex-start' }}>{viewState.isPendingBid ? 'Respond to invite' : needsAppointmentTime ? 'Add appointment time' : hasApprovedCostOrInvoice ? 'Mark work complete' : 'Send the next update'}</a>
         ) : hasPendingCostOrInvoice ? (
@@ -163,14 +165,14 @@ export default async function VendorRequestDetailPage({
               <div>
                 <div style={{ fontWeight: 700 }}>{tenderInviteLabel(invite.status)}</div>
                 <div className="muted">
-                  Invited {new Date(invite.invitedAt).toLocaleString()}
+                  Invited {formatDateTime(invite.invitedAt)}
                   {invite.bidAmountCents != null ? ` - Bid USD ${(invite.bidAmountCents / 100).toFixed(2)}` : ''}
                 </div>
               </div>
               {invite.status === 'awarded' || invite.awardedAt ? <span className="badge done">Awarded</span> : null}
             </div>
             {invite.availabilityNote ? <div>{invite.availabilityNote}</div> : null}
-            {invite.awardedAt ? <div className="signalAccent">Awarded {new Date(invite.awardedAt).toLocaleString()}</div> : null}
+            {invite.awardedAt ? <div className="signalAccent">Awarded {formatDateTime(invite.awardedAt)}</div> : null}
           </div>
         ))}
       </section> : null}
@@ -190,12 +192,14 @@ export default async function VendorRequestDetailPage({
         <section className="card stack" id="vendor-invoice-item">
           <div>
             <div className="kicker">Next action</div>
-            <h3 style={{ marginTop: 4 }}>Send service charge, parts, estimate, or invoice</h3>
+            <h3 style={{ marginTop: 4 }}>{awardedFromBid ? 'Send invoice' : 'Send service charge, parts, estimate, or invoice'}</h3>
           </div>
           <div className="muted">
-            Use this for the service call charge, parts only, an estimated repair cost, or a final invoice. The property manager must approve it before it becomes payable.
+            {awardedFromBid
+              ? 'Send the final invoice for the approved bid. It only needs manager approval if it is higher than the already approved amount.'
+              : 'Use this for the service call charge, parts only, an estimated repair cost, or a final invoice. The property manager must approve it before it becomes payable.'}
           </div>
-          <VendorCommercialItemForm requestId={request.id} defaultItemType="service_fee" context="service_call" />
+          <VendorCommercialItemForm requestId={request.id} defaultItemType={awardedFromBid ? 'bill_to_property_manager' : 'service_fee'} context={awardedFromBid ? 'general' : 'service_call'} />
         </section>
       ) : !isPaidClosed ? <details className="advancedDisclosure">
         <summary>Submit a bid, fee, extra cost, or invoice</summary>
@@ -252,7 +256,7 @@ export default async function VendorRequestDetailPage({
                 {formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd)}
               </div>
             ) : null}
-            <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(entry.createdAt)}</div>
           </div>
         )) : <div className="muted">No vendor updates yet.</div>}
       </section>
@@ -265,7 +269,7 @@ export default async function VendorRequestDetailPage({
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id}>
             <div>{comment.body}</div>
-            <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(comment.createdAt)}</div>
           </div>
         )) : <div className="muted">No visible notes yet.</div>}
       </section>
@@ -286,7 +290,7 @@ export default async function VendorRequestDetailPage({
               <div style={{ fontWeight: 600 }}>{document.title}</div>
               {document.description ? <div>{document.description}</div> : null}
               <div className="muted">
-                {billingStatusLabel(document.status)} - {new Date(document.createdAt).toLocaleString()}
+                {billingStatusLabel(document.status)} - {formatDateTime(document.createdAt)}
               </div>
               <div className="muted">
                 Total: {formatMoney(document.totalCents, document.currency)} - Paid: {formatMoney(document.paidCents, document.currency)} - Balance: {formatMoney(balanceCents, document.currency)}
@@ -310,7 +314,7 @@ export default async function VendorRequestDetailPage({
           <div key={item.id} className="timelineRow">
             <div style={{ fontWeight: 600 }}>{item.title}</div>
             <div className="muted">
-              {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {new Date(item.submittedAt).toLocaleString()}
+              {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
             </div>
             {item.description ? <div>{item.description}</div> : null}
             {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer">Open bill attachment</a> : null}

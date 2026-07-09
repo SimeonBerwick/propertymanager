@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { awardTenderInviteAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
+import { awardTenderInviteAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -70,13 +70,14 @@ export function RequestControlPanel({
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
   const [vendorState, vendorAction, vendorPending] = useActionState(updateVendorFormAction, INITIAL_STATE)
   const [awardState, awardAction, awardPending] = useActionState(awardTenderInviteAction, INITIAL_STATE)
+  const [revisionState, revisionAction, revisionPending] = useActionState(requestTenderRevisionAction, INITIAL_STATE)
   const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
 
   useEffect(() => {
-    if (statusState.success || vendorState.success || awardState.success || dispatchState.success) {
+    if (statusState.success || vendorState.success || awardState.success || revisionState.success || dispatchState.success) {
       router.refresh()
     }
-  }, [awardState.success, dispatchState.success, router, statusState.success, vendorState.success])
+  }, [awardState.success, dispatchState.success, revisionState.success, router, statusState.success, vendorState.success])
 
   useEffect(() => {
     if (!awardState.success) return
@@ -172,10 +173,7 @@ export function RequestControlPanel({
             const proposedWindow = formatProposedWindow(invite)
 
             return (
-              <form key={invite.id} action={awardAction} className="timelineRow">
-                <input type="hidden" name="requestId" value={request.id} />
-                <input type="hidden" name="tenderId" value={tender.id} />
-                <input type="hidden" name="inviteId" value={invite.id} />
+              <div key={invite.id} className="timelineRow">
                 <div className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
@@ -193,14 +191,52 @@ export function RequestControlPanel({
                       </div>
                     ) : null}
                   </div>
-                  <button type="submit" className="button primary" disabled={awardPending}>
-                    {awardPending ? 'Approving...' : 'Approve bid'}
-                  </button>
+                  <form action={awardAction}>
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <input type="hidden" name="tenderId" value={tender.id} />
+                    <input type="hidden" name="inviteId" value={invite.id} />
+                    <button type="submit" className="button primary" disabled={awardPending}>
+                      {awardPending ? 'Approving...' : 'Approve bid'}
+                    </button>
+                  </form>
                 </div>
-              </form>
+                <details className="advancedDisclosure" style={{ marginTop: 10 }}>
+                  <summary>Haggle in app</summary>
+                  <form action={revisionAction} className="stack" style={{ gap: 10, marginTop: 10 }}>
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <input type="hidden" name="tenderId" value={tender.id} />
+                    <input type="hidden" name="inviteId" value={invite.id} />
+                    <div className="grid cols-2">
+                      <label className="field">
+                        <span className="field-label">Counter amount (USD)</span>
+                        <input
+                          className="input"
+                          name="requestedAmount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder={invite.bidAmountCents ? (invite.bidAmountCents / 100).toFixed(2) : '500.00'}
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="field-label">Requested timing</span>
+                        <input className="input" name="requestedTiming" placeholder="Example: Earlier this week or 1 PM" />
+                      </label>
+                    </div>
+                    <label className="field">
+                      <span className="field-label">Message to vendor</span>
+                      <textarea className="input textarea" name="revisionNote" rows={2} placeholder="Ask for a different amount, date, or time." />
+                    </label>
+                    <button type="submit" className="button" disabled={revisionPending}>
+                      {revisionPending ? 'Sending...' : 'Send revision request in app'}
+                    </button>
+                  </form>
+                </details>
+              </div>
             )
           })}
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
+          <ActionFeedback error={revisionState.error} success={revisionState.success ? revisionState.message ?? 'Revision requested.' : null} />
         </div>
       ) : null}
       {(isCloseoutStage || (statusControlPriority === 'primary' && !canSetAppointment)) ? statusForm : canSetAppointment ? null : (
