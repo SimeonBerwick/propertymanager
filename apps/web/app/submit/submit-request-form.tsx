@@ -157,7 +157,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
       {managerMode ? (
         <div className="notice">
           <strong>Resident from selected unit</strong>
-          <span>{tenantName || 'No resident name on this unit'}{tenantEmail ? ` - ${tenantEmail}` : ' - no resident email on this unit'}</span>
+          <span style={{ display: 'block', marginTop: 4 }}>{tenantName || 'No resident name on this unit'}{tenantEmail ? ` - ${tenantEmail}` : ' - no resident email on this unit'}</span>
           <input type="hidden" name="tenantName" value={tenantName} />
           <input type="hidden" name="tenantEmail" value={tenantEmail} />
         </div>

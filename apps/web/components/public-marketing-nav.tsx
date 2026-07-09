@@ -39,6 +39,10 @@ export function PublicMarketingNav() {
     return null
   }
 
+  if (androidAppView && pathname.startsWith('/login')) {
+    return null
+  }
+
   return (
     <>
       <Link href="/#features">Features</Link>

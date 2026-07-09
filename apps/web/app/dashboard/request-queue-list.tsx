@@ -76,7 +76,7 @@ export function RequestQueueList({
       <>
         <div className="emptyState">
           <strong>No requests in this view</strong>
-          <span>Try the open queue if you are looking for active work, or share the request form when you are ready for new tenant requests.</span>
+          <span>No active work orders match these filters. Clear filters or share the request form when you are ready for new tenant requests.</span>
           <div className="row" style={{ justifyContent: 'center' }}>
             <Link href="/dashboard?queue=open" className="button">Open queue</Link>
             <Link href="/submit" className="button primary">Share request form</Link>
