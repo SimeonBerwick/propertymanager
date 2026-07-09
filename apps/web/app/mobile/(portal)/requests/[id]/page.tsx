@@ -7,6 +7,8 @@ import { TenantRequestCancelForm } from './cancel-form'
 import { TenantWorkOrderMessageForm } from './message-form'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
+import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
+import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 
 function classifyCommentSource(
   comment: {
@@ -74,9 +76,31 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
     const source = classifyCommentSource(comment, request.assignedVendorName)
     return source.label === 'Property manager' || source.label === 'Vendor' || source.label === 'Visible note'
   }).slice(-2).reverse()
+  const tenantOpenBalanceCents = request.billingDocuments
+    .filter((document) => document.status !== 'void')
+    .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
+  const latestVisibleSignal = latestTenantAppointmentMessage
+    ? latestTenantAppointmentMessage.body.replace(/^Tenant message:\s*/i, '')
+    : visibleReplies[0]
+      ? visibleReplies[0].body
+      : null
+  const tenantWorkOrderSummary = deriveWorkOrderStateSummary({
+    audience: 'tenant',
+    id: request.id,
+    status: request.status,
+    reviewState: request.reviewState,
+    assignedVendorName: request.assignedVendorName,
+    vendorScheduledStart: request.vendorScheduledStart,
+    billingOpenBalanceCents: tenantOpenBalanceCents,
+    latestSignal: latestVisibleSignal,
+    moneyLabel: tenantOpenBalanceCents > 0 ? `Balance ${formatMoney(tenantOpenBalanceCents, request.preferredCurrency)}` : null,
+    appointmentLabel,
+  })
 
   return (
     <div className="stack">
+      <WorkOrderStatusPanel summary={tenantWorkOrderSummary} />
+
       {latestTenantAppointmentMessage ? (
         <section className="card stack tenantStatusSummary">
           <div className="kicker">Appointment request sent</div>
