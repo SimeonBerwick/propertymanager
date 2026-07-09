@@ -85,7 +85,7 @@ export function CommandPalette() {
 
   return (
     <>
-      <button type="button" className="commandTrigger" onClick={() => setOpen(true)} aria-label="Open search and commands">
+      <button type="button" className="commandTrigger" onClick={() => setOpen(true)} aria-label="Search">
         Search <span>Ctrl K</span>
       </button>
       {open ? (

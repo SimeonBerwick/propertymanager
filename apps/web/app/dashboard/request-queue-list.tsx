@@ -23,7 +23,7 @@ export function RequestQueueList({
   selectedSort,
 }: {
   requests: DashboardQueueRequest[]
-  selectedSort: 'newest' | 'oldest'
+  selectedSort: 'priority' | 'newest' | 'oldest'
 }) {
   const [dismissedIds, setDismissedIds] = useState<string[]>([])
   const [lastDismissedId, setLastDismissedId] = useState<string | null>(null)
@@ -126,7 +126,7 @@ export function RequestQueueList({
         </article>
       ))}
       <div className="muted" style={{ fontSize: 12 }}>
-        Queue order: {selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
+        Queue order: {selectedSort === 'priority' ? 'new requests first, then priority' : selectedSort === 'oldest' ? 'oldest to newest' : 'newest to oldest'}.
       </div>
       {lastDismissedId ? (
         <div className="undoToast" role="status">

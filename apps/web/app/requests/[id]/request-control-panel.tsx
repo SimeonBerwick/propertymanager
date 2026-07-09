@@ -3,7 +3,7 @@
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { awardTenderInviteAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
-import type { MaintenanceRequest, RequestStatus, Vendor, RequestTenderView } from '@/lib/types'
+import type { MaintenanceRequest, RequestStatus, Urgency, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
@@ -23,6 +23,8 @@ const STATUS_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   canceled: ['reopened'],
   reopened: ['approved', 'vendor_selected'],
 }
+
+const REQUEST_PRIORITIES: Urgency[] = ['urgent', 'high', 'medium', 'low']
 
 function statusOptionLabel(status: RequestStatus) {
   if (status === 'approved') return 'Approve for vendor selection'
@@ -60,7 +62,7 @@ export function RequestControlPanel({
   statusControlPriority = 'primary',
   canCloseRequest = true,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
@@ -143,6 +145,17 @@ export function RequestControlPanel({
           ))}
         </select>
       </label>
+      {request.status === 'requested' ? (
+        <label className="field">
+          <span className="field-label">Manager-assessed priority</span>
+          <select className="input" name="assessedUrgency" defaultValue={request.urgency}>
+            {REQUEST_PRIORITIES.map((priority) => (
+              <option key={priority} value={priority}>{priority}</option>
+            ))}
+          </select>
+          <span className="muted">The tenant chose {request.urgency}. Confirm or change it before approving the work order.</span>
+        </label>
+      ) : null}
       <label className="field">
         <span className="field-label">Reason if needed</span>
         <textarea className="input textarea" name="reason" rows={3} placeholder="Required for declined, canceled, or reopened transitions." />
