@@ -12,6 +12,7 @@ import type {
 } from '@/lib/types'
 import type { BillingDocumentView } from '@/lib/billing-types'
 import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
+import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { prisma } from '@/lib/prisma'
 import { logAppError } from '@/lib/observability'
 import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
@@ -33,6 +34,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
   pendingVendorApprovalCount?: number
   pendingBidCount?: number
   activeTenderInviteCount?: number
+  upfrontVendorPaymentDueCents?: number
 }
 
 export interface DashboardData {
@@ -134,6 +136,17 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
         .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void' && doc.totalCents > doc.paidCents)
         .sort((a: any, b: any) => (b.totalCents - b.paidCents) - (a.totalCents - a.paidCents) || new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime())[0]
     : undefined
+  const approvedUpfrontCents = Array.isArray(r.vendorCommercialItems)
+    ? r.vendorCommercialItems
+        .filter((item: any) => item.status === 'approved' && item.itemType !== 'bid' && vendorPaymentTimingRequiresUpfront(item.paymentTiming))
+        .reduce((sum: number, item: any) => sum + upfrontPaymentCents(item.amountCents, item.paymentTiming), 0)
+    : 0
+  const vendorPaymentPaidCents = Array.isArray(r.billingDocuments)
+    ? r.billingDocuments
+        .filter((doc: any) => doc.recipientType === 'vendor' && doc.documentType === 'vendor_remittance' && doc.status !== 'void')
+        .reduce((sum: number, doc: any) => sum + Math.min(doc.paidCents, doc.totalCents), 0)
+    : 0
+  const upfrontVendorPaymentDueCents = Math.max(approvedUpfrontCents - vendorPaymentPaidCents, 0)
 
   return {
     id: r.id,
@@ -192,6 +205,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     pendingBidCount: (Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => invite.status === 'bid_submitted').length : 0)
       + (Array.isArray(r.vendorCommercialItems) ? r.vendorCommercialItems.filter((item: any) => item.status === 'submitted' && item.itemType === 'bid').length : 0),
     activeTenderInviteCount: Array.isArray(r.tenderInvites) ? r.tenderInvites.filter((invite: any) => ['invited', 'viewed'].includes(invite.status)).length : undefined,
+    upfrontVendorPaymentDueCents,
   }
 }
 
@@ -515,8 +529,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
             select: { id: true, status: true },
           },
           vendorCommercialItems: {
-            where: { status: 'submitted' },
-            select: { id: true, status: true, itemType: true },
+            where: { status: { in: ['submitted', 'approved'] } },
+            select: { id: true, status: true, itemType: true, amountCents: true, paymentTiming: true },
           },
           dispatchHistory: {
             where: { scheduledStart: { not: null } },
@@ -663,8 +677,8 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
               select: { id: true, status: true },
             },
             vendorCommercialItems: {
-              where: { status: 'submitted' },
-              select: { id: true, status: true, itemType: true },
+              where: { status: { in: ['submitted', 'approved'] } },
+              select: { id: true, status: true, itemType: true, amountCents: true, paymentTiming: true },
             },
             dispatchHistory: {
               where: { scheduledStart: { not: null } },
@@ -734,6 +748,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
             vendorId: true,
             itemType: true,
             status: true,
+            paymentTiming: true,
             currency: true,
             amountCents: true,
             title: true,
@@ -886,6 +901,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       vendorName: item.vendor?.name ?? undefined,
       itemType: item.itemType,
       status: item.status,
+      paymentTiming: normalizeVendorPaymentTiming(item.paymentTiming),
       currency: item.currency,
       amountCents: item.amountCents,
       title: item.title,

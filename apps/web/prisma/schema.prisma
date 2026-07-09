@@ -436,6 +436,7 @@ model VendorCommercialItem {
   orgId        String?
   itemType     VendorCommercialType
   status       VendorCommercialStatus @default(submitted)
+  paymentTiming String                 @default("on_completion")
   currency     CurrencyOption         @default(usd)
   amountCents  Int
   title        String

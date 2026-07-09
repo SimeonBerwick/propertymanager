@@ -6,7 +6,7 @@ import { getVendorRequestById } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { VendorRequestResponseForm } from '@/app/vendor/request-response-form'
 import { VendorCommercialItemForm } from '@/app/vendor/commercial-item-form'
-import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { vendorSignoutAction } from '@/app/vendor/auth/signout/actions'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
@@ -85,6 +85,13 @@ export default async function VendorRequestDetailPage({
   const vendorOpenBalanceCents = request.billingDocuments
     .filter((document) => document.status !== 'void')
     .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
+  const approvedUpfrontCents = request.vendorCommercialItems
+    .filter((item) => item.itemType !== 'bid' && item.status === 'approved' && vendorPaymentTimingRequiresUpfront(item.paymentTiming))
+    .reduce((sum, item) => sum + upfrontPaymentCents(item.amountCents, item.paymentTiming), 0)
+  const vendorPaidCents = request.billingDocuments
+    .filter((document) => document.status !== 'void')
+    .reduce((sum, document) => sum + Math.min(document.totalCents, document.paidCents), 0)
+  const upfrontVendorPaymentDueCents = Math.max(approvedUpfrontCents - vendorPaidCents, 0)
   const latestVendorMoneyItem = request.vendorCommercialItems
     .filter((item) => item.itemType !== 'bid')
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0]
@@ -96,6 +103,7 @@ export default async function VendorRequestDetailPage({
     : null
   const vendorNextAction = deriveVendorNextAction({
     requestStatus: request.status,
+    dispatchStatus: request.dispatchStatus,
     isPaidClosed,
     canControlDispatch: viewState.canControlDispatch,
     isPendingBid: viewState.isPendingBid,
@@ -108,8 +116,11 @@ export default async function VendorRequestDetailPage({
     hasActiveCostOrInvoice,
     activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
     vendorOpenBalanceCents,
+    upfrontVendorPaymentDueCents,
     awardedFromBid,
   })
+  const heroNoticeWouldRepeatState = ['waiting_manager_cost', 'waiting_final_invoice_review', 'waiting_payment_record'].includes(vendorNextAction.key)
+  const showHeroNotice = heroNoticeWouldRepeatState ? null : heroNotice
   const vendorWorkOrderSummary = deriveWorkOrderStateSummary({
     audience: 'vendor',
     id: request.id,
@@ -118,6 +129,7 @@ export default async function VendorRequestDetailPage({
     assignedVendorName: request.assignedVendorName ?? session.vendorName,
     vendorScheduledStart: effectiveScheduledStart,
     billingOpenBalanceCents: vendorOpenBalanceCents,
+    upfrontVendorPaymentDueCents,
     needsAppointmentTime,
     workMarkedComplete,
     activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
@@ -149,11 +161,11 @@ export default async function VendorRequestDetailPage({
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
         </div>
         {submitted ? <div className="notice success">Update saved. The property manager can now see your vendor update.</div> : null}
-        {heroNotice ? (
-          <div className={`awardHero awardHero-${heroNotice.tone}`}>
+        {showHeroNotice ? (
+          <div className={`awardHero awardHero-${showHeroNotice.tone}`}>
             <div className="kicker">Decision</div>
-            <div className="signalTitle" style={{ fontSize: 24 }}>{heroNotice.title}</div>
-            <div>{heroNotice.detail}</div>
+            <div className="signalTitle" style={{ fontSize: 24 }}>{showHeroNotice.title}</div>
+            <div>{showHeroNotice.detail}</div>
           </div>
         ) : null}
         <div className="muted">
@@ -344,6 +356,7 @@ export default async function VendorRequestDetailPage({
             <div className="muted">
               {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
             </div>
+            <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
             {item.description ? <div>{item.description}</div> : null}
             {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer">Open bill attachment</a> : null}
           </div>

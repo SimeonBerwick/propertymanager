@@ -4,7 +4,7 @@ import { requireVendorSession } from '@/lib/vendor-session'
 import { getSiblingVendorAccountCount, getVendorCommercialSummary, getVendorRequestsForDashboard } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { vendorSignoutAction } from './auth/signout/actions'
-import { vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -61,8 +61,16 @@ export default async function VendorDashboardPage({
     const vendorOpenBalanceCents = request.billingDocuments
       .filter((document) => document.status !== 'void')
       .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
+    const approvedUpfrontCents = request.vendorCommercialItems
+      .filter((item) => item.itemType !== 'bid' && item.status === 'approved' && vendorPaymentTimingRequiresUpfront(item.paymentTiming))
+      .reduce((sum, item) => sum + upfrontPaymentCents(item.amountCents, item.paymentTiming), 0)
+    const vendorPaidCents = request.billingDocuments
+      .filter((document) => document.status !== 'void')
+      .reduce((sum, document) => sum + Math.min(document.totalCents, document.paidCents), 0)
+    const upfrontVendorPaymentDueCents = Math.max(approvedUpfrontCents - vendorPaidCents, 0)
     const nextAction = deriveVendorNextAction({
       requestStatus: request.status,
+      dispatchStatus: request.dispatchStatus,
       isPaidClosed,
       canControlDispatch: viewState.canControlDispatch,
       isPendingBid: viewState.isPendingBid,
@@ -75,6 +83,7 @@ export default async function VendorDashboardPage({
       hasActiveCostOrInvoice,
       activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
       vendorOpenBalanceCents,
+      upfrontVendorPaymentDueCents,
       awardedFromBid: request.tenderInvites.some((invite) => invite.status === 'awarded' || invite.awardedAt),
     })
 
