@@ -12,7 +12,7 @@ import { SectionCard } from '@/components/section-card'
 import { formatMoney } from '@/lib/billing-utils'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { AddCommentForm } from './add-comment-form'
-import { vendorCommercialStatusLabel, vendorCommercialTypeLabel, vendorPaymentTimingLabel } from '@/lib/vendor-commercial-types'
+import { cleanVendorCommercialDescription, vendorCommercialStatusLabel, vendorCommercialTypeLabel, vendorPaymentTimingLabel } from '@/lib/vendor-commercial-types'
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { InlineRequestEditor } from './inline-request-editor'
@@ -391,7 +391,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                       {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
                     </div>
                     <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
-                    {item.description ? <div>{item.description}</div> : null}
+                    {cleanVendorCommercialDescription(item.description) ? <div>{cleanVendorCommercialDescription(item.description)}</div> : null}
                     {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
                   </div>
                   <span className="badge billing-partial">{data.request.status === 'completed' ? 'Approve before billing' : 'Review submission'}</span>
@@ -606,7 +606,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 </div>
                 <div className="muted">Status: {vendorCommercialStatusLabel(item.status)}</div>
                 <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
-                {item.description ? <div>{item.description}</div> : null}
+                {cleanVendorCommercialDescription(item.description) ? <div>{cleanVendorCommercialDescription(item.description)}</div> : null}
                 {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer" className="button">Open bill attachment</a> : null}
               </div>
             ))}

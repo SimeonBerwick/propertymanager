@@ -30,6 +30,8 @@ export interface WorkOrderStateInput {
   upfrontVendorPaymentDueCents?: number
   vendorBillPending?: boolean
   needsAppointmentTime?: boolean
+  vendorNeedsAcceptance?: boolean
+  vendorNeedsServiceCharge?: boolean
   canChooseVendor?: boolean
   hasTenantMessageReview?: boolean
   hasVendorUpdateReview?: boolean
@@ -210,6 +212,34 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
       nextAction: input.audience === 'manager' ? 'Record payment paid' : 'Wait for payment',
       nextHref: input.audience === 'manager' ? '#billing' : undefined,
       tone: input.audience === 'manager' ? 'review' : 'waiting',
+      appointment,
+      money,
+      latest,
+    }
+  }
+
+  if (input.audience === 'vendor' && input.vendorNeedsAcceptance) {
+    return {
+      title: 'Service call needs your response',
+      detail: 'Accept or decline this service call before scheduling it.',
+      waitingOn: 'Vendor',
+      nextAction: 'Accept or decline',
+      nextHref: '#vendor-next-action',
+      tone: 'review',
+      appointment,
+      money,
+      latest,
+    }
+  }
+
+  if (input.audience === 'vendor' && input.vendorNeedsServiceCharge) {
+    return {
+      title: 'Service charge needed',
+      detail: 'Send the service call charge and payment timing before scheduling the appointment.',
+      waitingOn: 'Vendor',
+      nextAction: 'Send service charge',
+      nextHref: '#vendor-invoice-item',
+      tone: 'review',
       appointment,
       money,
       latest,

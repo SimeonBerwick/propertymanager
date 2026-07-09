@@ -8,7 +8,7 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 import { logServerActionError } from '@/lib/observability'
 import { cleanupVendorAttachment, saveVendorAttachment, validateVendorAttachment } from '@/lib/vendor-commercial-attachment-upload'
-import { normalizeVendorPaymentTiming, vendorPaymentTimingLabel } from '@/lib/vendor-commercial-types'
+import { normalizeVendorPaymentTiming } from '@/lib/vendor-commercial-types'
 
 export type VendorCommercialActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -34,8 +34,6 @@ export async function createVendorCommercialItemAction(
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
   const paymentTiming = noCharge ? 'on_completion' : normalizeVendorPaymentTiming(String(formData.get('paymentTiming') ?? '').trim())
-  const paymentTimingNote = noCharge ? null : `Payment timing: ${vendorPaymentTimingLabel(paymentTiming)}.`
-  const fullDescription = [description || null, paymentTimingNote].filter(Boolean).join('\n\n')
   const attachmentFile = formData.get('attachment')
   const attachment = attachmentFile instanceof File && attachmentFile.size > 0 ? attachmentFile : null
 
@@ -105,7 +103,7 @@ export async function createVendorCommercialItemAction(
         currency: request.preferredCurrency,
         amountCents,
         title: effectiveTitle,
-        description: fullDescription || null,
+        description: description || null,
         ...attachmentData,
       },
       select: { id: true },
@@ -157,7 +155,7 @@ export async function createVendorCommercialItemAction(
             amountCents,
             title: effectiveTitle,
             description: [
-              fullDescription || null,
+              description || null,
               `Bill attachment could not be linked by the app. Vendor tried to attach: ${droppedAttachment.name}.`,
             ].filter(Boolean).join('\n\n'),
           },

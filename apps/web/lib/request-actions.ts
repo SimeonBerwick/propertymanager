@@ -152,6 +152,7 @@ export async function submitMaintenanceRequest(
   let createdRequestId: string
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
   const triageTagsCsv = triageTags.join(',')
+  const initialStatus = managerMode ? 'approved' : 'requested'
 
   try {
     const request = await prisma.$transaction(async (tx) => {
@@ -169,7 +170,10 @@ export async function submitMaintenanceRequest(
           description,
           category,
           urgency,
-          status: 'requested',
+          status: initialStatus,
+          firstReviewedAt: managerMode ? new Date() : undefined,
+          reviewState: managerMode ? 'approved' : undefined,
+          reviewNote: managerMode ? 'Created by property manager.' : undefined,
           photos: {
             create: savedPhotoPaths.map((imageUrl) => ({ imageUrl })),
           },
@@ -182,7 +186,7 @@ export async function submitMaintenanceRequest(
             ],
           },
           events: {
-            create: [{ toStatus: 'requested' }],
+            create: [{ toStatus: initialStatus }],
           },
         },
       })

@@ -24,8 +24,8 @@ const PRESETS = {
   },
   vendor_paid: {
     recipientType: 'vendor',
-    title: 'Record vendor paid in full',
-    description: 'Record that the approved vendor amount has been paid in full.',
+    title: 'Record vendor payment',
+    description: 'Record a vendor payment for this request.',
   },
 } as const
 
@@ -63,7 +63,7 @@ export function BillingDocumentForm({
           <option value="tenant_damage">Charge tenant for this work</option>
           <option value="tenant_reimbursement">Record tenant reimbursement</option>
           <option value="vendor_partial">Record partial vendor payment</option>
-          <option value="vendor_paid">Record vendor payment in full</option>
+          <option value="vendor_paid">Record vendor payment</option>
         </select>
       </label>
       <div className="grid cols-2">

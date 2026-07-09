@@ -6,7 +6,7 @@ import { getVendorRequestById } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { VendorRequestResponseForm } from '@/app/vendor/request-response-form'
 import { VendorCommercialItemForm } from '@/app/vendor/commercial-item-form'
-import { upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
+import { cleanVendorCommercialDescription, upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { vendorSignoutAction } from '@/app/vendor/auth/signout/actions'
 import { MediaPhotoCard } from '@/components/media-photo-card'
 import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
@@ -131,6 +131,8 @@ export default async function VendorRequestDetailPage({
     billingOpenBalanceCents: vendorOpenBalanceCents,
     upfrontVendorPaymentDueCents,
     needsAppointmentTime,
+    vendorNeedsAcceptance: vendorNextAction.key === 'accept_service_call',
+    vendorNeedsServiceCharge: vendorNextAction.key === 'send_service_charge',
     workMarkedComplete,
     activeFinalInvoiceStatus: activeFinalInvoice?.status ?? null,
     hasPendingCostOrInvoice,
@@ -245,8 +247,8 @@ export default async function VendorRequestDetailPage({
         <summary>Submit a bid, fee, extra cost, or invoice</summary>
         <section className="card stack">
           <div>
-            <div className="kicker">Invoices</div>
-            <h3 style={{ marginTop: 4 }}>Submit extra cost or invoice</h3>
+            <div className="kicker">Vendor submission</div>
+            <h3 style={{ marginTop: 4 }}>Send charge, bid, or invoice</h3>
           </div>
           <VendorCommercialItemForm requestId={request.id} defaultItemType={viewState.isPendingBid ? 'bid' : 'overcost'} />
         </section>
@@ -357,7 +359,7 @@ export default async function VendorRequestDetailPage({
               {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)} - {formatDateTime(item.submittedAt)}
             </div>
             <div className="muted">Payment timing: {vendorPaymentTimingLabel(item.paymentTiming)}</div>
-            {item.description ? <div>{item.description}</div> : null}
+            {cleanVendorCommercialDescription(item.description) ? <div>{cleanVendorCommercialDescription(item.description)}</div> : null}
             {item.attachmentUrl ? <a href={`/api/vendor-commercial-items/${item.id}/attachment`} target="_blank" rel="noreferrer">Open bill attachment</a> : null}
           </div>
         )) : <div className="muted">No invoice items submitted yet.</div>}

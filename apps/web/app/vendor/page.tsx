@@ -4,7 +4,7 @@ import { requireVendorSession } from '@/lib/vendor-session'
 import { getSiblingVendorAccountCount, getVendorCommercialSummary, getVendorRequestsForDashboard } from '@/lib/vendor-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { vendorSignoutAction } from './auth/signout/actions'
-import { upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
+import { cleanVendorCommercialDescription, upfrontPaymentCents, vendorCommercialTypeLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { deriveVendorNextAction, deriveVendorRequestViewState } from '@/lib/vendor-request-state'
 import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -247,7 +247,7 @@ export default async function VendorDashboardPage({
               </div>
               <div className="muted">Property manager: {item.propertyManagerName}</div>
               <div>{item.requestTitle}</div>
-              {item.description ? <div className="muted">{item.description}</div> : null}
+              {cleanVendorCommercialDescription(item.description) ? <div className="muted">{cleanVendorCommercialDescription(item.description)}</div> : null}
               <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
             </Link>
           )) : (

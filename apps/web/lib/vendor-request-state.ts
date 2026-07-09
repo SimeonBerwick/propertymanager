@@ -144,6 +144,25 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
     })
   }
 
+  if (
+    input.canControlDispatch
+    && input.needsAppointmentTime
+    && input.dispatchStatus === 'accepted'
+    && !input.hasActiveCostOrInvoice
+    && !input.workMarkedComplete
+  ) {
+    return vendorAction({
+      key: 'send_service_charge',
+      label: 'Send service charge to property manager',
+      detail: 'Send the service call charge and payment timing before scheduling the appointment.',
+      href: '#vendor-invoice-item',
+      showResponseForm: false,
+      showCommercialForm: true,
+      defaultItemType: 'service_fee',
+      context: 'service_call',
+    })
+  }
+
   if (input.needsAppointmentTime) {
     return vendorAction({
       key: 'add_appointment',

@@ -98,13 +98,28 @@ describe('deriveVendorNextAction', () => {
     expect(result.initialResponse).toBe('accepted')
   })
 
-  test('asks for appointment after the vendor accepts the service call', () => {
+  test('asks for service charge after the vendor accepts the service call', () => {
     const result = deriveVendorNextAction({
       requestStatus: 'vendor_selected',
       dispatchStatus: 'accepted',
       canControlDispatch: true,
       needsAppointmentTime: true,
       hasAppointmentTime: false,
+    })
+
+    expect(result.key).toBe('send_service_charge')
+    expect(result.defaultItemType).toBe('service_fee')
+  })
+
+  test('asks for appointment after the service charge is approved', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'vendor_selected',
+      dispatchStatus: 'accepted',
+      canControlDispatch: true,
+      needsAppointmentTime: true,
+      hasAppointmentTime: false,
+      hasApprovedCostOrInvoice: true,
+      hasActiveCostOrInvoice: true,
     })
 
     expect(result.key).toBe('add_appointment')
