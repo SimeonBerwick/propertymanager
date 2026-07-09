@@ -27,6 +27,7 @@ export function VendorCommercialItemForm({
   const [noCharge, setNoCharge] = useState(false)
   const [selectedType, setSelectedType] = useState<VendorCommercialItemType>(defaultItemType)
   const [title, setTitle] = useState(context === 'service_call' || defaultItemType === 'bill_to_property_manager' ? SERVICE_CALL_TITLES[defaultItemType] : '')
+  const [attachmentName, setAttachmentName] = useState('')
   const typeOptions = context === 'service_call'
     ? [
         { value: 'service_fee', label: 'Service charge' },
@@ -104,8 +105,16 @@ export function VendorCommercialItemForm({
       </label>
       <label className="field">
         <span className="field-label">Attach bill PDF or photo</span>
-        <input className="input" type="file" name="attachment" accept="application/pdf,image/*,.pdf" />
-        <span className="muted">Optional. Add the invoice PDF or a photo of the bill for the property manager. Max 10 MB.</span>
+        <input
+          className="input"
+          type="file"
+          name="attachment"
+          accept="application/pdf,image/*,.pdf"
+          onChange={(event) => setAttachmentName(event.target.files?.[0]?.name ?? '')}
+        />
+        <span className="muted">
+          {attachmentName ? `Selected: ${attachmentName}. It will be attached when this form is submitted.` : 'Optional. Add the invoice PDF or a photo of the bill for the property manager. Max 10 MB.'}
+        </span>
       </label>
       <button type="submit" className="button primary" disabled={pending}>
         {pending ? 'Submitting...' : 'Submit to property manager'}
