@@ -186,23 +186,13 @@ export function RequestControlPanel({
             const proposedWindow = formatProposedWindow(invite)
 
             return (
-              <div key={invite.id} className="timelineRow">
+              <div key={invite.id} className="timelineRow stack" style={{ gap: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{invite.vendorName}</div>
                     <div className="signalAccent">{formatBidAmount(invite.bidAmountCents)}</div>
                     {proposedWindow ? <div className="muted">{proposedWindow}</div> : null}
                     {invite.availabilityNote ? <div className="muted">{invite.availabilityNote}</div> : null}
-                    {invite.vendorEmail ? (
-                      <div style={{ marginTop: 8 }}>
-                        <a
-                          className="button"
-                          href={`mailto:${invite.vendorEmail}?subject=${encodeURIComponent('Revision requested for maintenance bid')}&body=${encodeURIComponent(`Please send a revised bid or appointment time for this work order. Current bid: ${formatBidAmount(invite.bidAmountCents)}${proposedWindow ? `. Proposed time: ${proposedWindow}` : ''}.`)}`}
-                        >
-                          Ask for revision
-                        </a>
-                      </div>
-                    ) : null}
                   </div>
                   <form action={awardAction}>
                     <input type="hidden" name="requestId" value={request.id} />
@@ -213,9 +203,12 @@ export function RequestControlPanel({
                     </button>
                   </form>
                 </div>
-                <details className="advancedDisclosure" style={{ marginTop: 10 }}>
-                  <summary>Haggle in app</summary>
-                  <form action={revisionAction} className="stack" style={{ gap: 10, marginTop: 10 }}>
+                <div className="notice stack" style={{ gap: 10 }}>
+                  <div>
+                    <strong>Negotiate this bid</strong>
+                    <div className="muted">Ask the vendor for a different amount, date, or time before approving.</div>
+                  </div>
+                  <form action={revisionAction} className="stack" style={{ gap: 10 }}>
                     <input type="hidden" name="requestId" value={request.id} />
                     <input type="hidden" name="tenderId" value={tender.id} />
                     <input type="hidden" name="inviteId" value={invite.id} />
@@ -244,7 +237,16 @@ export function RequestControlPanel({
                       {revisionPending ? 'Sending...' : 'Send revision request in app'}
                     </button>
                   </form>
-                </details>
+                  {invite.vendorEmail ? (
+                    <a
+                      className="button"
+                      style={{ alignSelf: 'flex-start' }}
+                      href={`mailto:${invite.vendorEmail}?subject=${encodeURIComponent('Revision requested for maintenance bid')}&body=${encodeURIComponent(`Please send a revised bid or appointment time for this work order. Current bid: ${formatBidAmount(invite.bidAmountCents)}${proposedWindow ? `. Proposed time: ${proposedWindow}` : ''}.`)}`}
+                    >
+                      Email vendor instead
+                    </a>
+                  ) : null}
+                </div>
               </div>
             )
           })}
