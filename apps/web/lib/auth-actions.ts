@@ -46,7 +46,20 @@ function isDatabaseUnavailable(error: unknown) {
 }
 
 async function authenticateAgainstDatabase(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } })
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      passwordHash: true,
+      subscriptionStatus: true,
+      subscriptionPlan: true,
+      billingCadence: true,
+      trialEndsAt: true,
+      subscriptionEndsAt: true,
+    },
+  })
 
   if (!user || user.role !== 'landlord' || !user.passwordHash) {
     return null
