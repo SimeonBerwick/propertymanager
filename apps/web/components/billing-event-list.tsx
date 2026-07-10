@@ -1,5 +1,6 @@
 import { billingEventLabel } from '@/lib/billing-utils'
 import type { BillingDocumentView } from '@/lib/billing-types'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export function BillingEventList({ documents }: { documents: BillingDocumentView[] }) {
   if (!documents.length) return null
@@ -22,7 +23,7 @@ export function BillingEventList({ documents }: { documents: BillingDocumentView
           <div>{event.documentTitle}</div>
           {event.note ? <div className="muted">{event.note}</div> : null}
           <div className="muted">
-            {(event.actorName || 'System')} - {new Date(event.createdAt).toLocaleString()}
+            {(event.actorName || 'System')} - {formatDateTime(event.createdAt)}
           </div>
         </div>
       ))}

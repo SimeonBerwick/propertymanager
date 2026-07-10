@@ -7,7 +7,7 @@ import { RequestOpsSignals } from '@/components/request-ops-signals'
 import { RequestQuickActions } from '@/components/request-quick-actions'
 import { getDashboardData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-utils'
+import { formatDateTime, formatRelativeAge, getCityFromAddress, isStaleClaim } from '@/lib/ui-utils'
 import { RequestQueueList } from './request-queue-list'
 import { DashboardViewControls } from '@/components/dashboard-view-controls'
 import { disconnectMailboxAction, syncMailboxAction, toggleEmailNotificationsAction } from './actions'
@@ -193,7 +193,7 @@ export default async function DashboardPage({
               <div className="mailboxRow" key={connection.id}>
                 <div>
                   <strong>{connection.provider === 'gmail' ? 'Gmail' : 'Outlook'} - {connection.email}</strong>
-                  <div className="muted">{connection.status}{connection.lastSyncedAt ? ` - synced ${new Date(connection.lastSyncedAt).toLocaleString()}` : ''}</div>
+                  <div className="muted">{connection.status}{connection.lastSyncedAt ? ` - synced ${formatDateTime(connection.lastSyncedAt)}` : ''}</div>
                   {connection.syncError ? <div className="muted" style={{ color: 'var(--danger)' }}>{connection.syncError}</div> : null}
                 </div>
                 <div className="requestHeroMeta">

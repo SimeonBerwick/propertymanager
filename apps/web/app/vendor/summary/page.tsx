@@ -4,6 +4,7 @@ import { requireVendorSession } from '@/lib/vendor-session'
 import { getVendorCommercialSummary } from '@/lib/vendor-portal-data'
 import { formatMoney } from '@/lib/billing-utils'
 import { cleanVendorCommercialDescription, vendorCommercialTypeLabel } from '@/lib/vendor-commercial-types'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export default async function VendorSummaryPage() {
   const session = await requireVendorSession()
@@ -49,7 +50,7 @@ export default async function VendorSummaryPage() {
             </div>
             <div>{item.requestTitle}</div>
             {cleanVendorCommercialDescription(item.description) ? <div className="muted">{cleanVendorCommercialDescription(item.description)}</div> : null}
-            <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(item.submittedAt)}</div>
           </Link>
         )) : <div className="muted">No vendor items submitted yet.</div>}
       </section>

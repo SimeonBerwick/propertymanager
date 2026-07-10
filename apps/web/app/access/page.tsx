@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getTenantLeaseLabel, getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
 import { type RecommendedAction, sortRecommendedActions } from '@/lib/recommended-actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 function recentFrictionKey(metadataJson: string | null) {
   if (!metadataJson) return null
@@ -266,7 +267,7 @@ export default async function AccessPage() {
                       ? `Vacant until ${occupancy.vacantUntil?.toLocaleDateString()}`
                       : 'Vacant'
                 const lastActivity = identity?.lastLoginAt
-                  ? new Date(identity.lastLoginAt).toLocaleString()
+                  ? formatDateTime(identity.lastLoginAt)
                   : identity?.verifiedAt
                     ? `Verified ${new Date(identity.verifiedAt).toLocaleDateString()}`
                     : 'No login yet'
@@ -329,7 +330,7 @@ export default async function AccessPage() {
                   <td style={{ fontWeight: 600 }}>{vendor.name}</td>
                   <td className="muted">{vendor.email ?? 'No email'}{vendor.phone ? ` - ${vendor.phone}` : ''}</td>
                   <td className="muted">{vendor.isActive ? (vendor.lastLoginAt ? 'Signed in' : 'No code used yet') : 'Inactive'}</td>
-                  <td className="muted">{vendor.lastLoginAt ? new Date(vendor.lastLoginAt).toLocaleString() : 'Never'}</td>
+                  <td className="muted">{vendor.lastLoginAt ? formatDateTime(vendor.lastLoginAt) : 'Never'}</td>
                   <td>
                       <Link href={`/vendors/${vendor.id}`} className="button">
                       Manage vendor sign-in

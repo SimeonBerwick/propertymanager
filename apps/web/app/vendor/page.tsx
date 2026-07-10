@@ -10,6 +10,7 @@ import { PushNotificationControl } from '@/components/push-notification-control'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { markAllVendorOutstandingBillsPaidAction } from './actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 type VendorDashboardFilter = 'open' | 'recent' | 'bids' | 'billing' | 'commercial'
 
@@ -248,7 +249,7 @@ export default async function VendorDashboardPage({
               <div className="muted">Property manager: {item.propertyManagerName}</div>
               <div>{item.requestTitle}</div>
               {cleanVendorCommercialDescription(item.description) ? <div className="muted">{cleanVendorCommercialDescription(item.description)}</div> : null}
-              <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
+              <div className="muted">{formatDateTime(item.submittedAt)}</div>
             </Link>
           )) : (
             <div className="emptyState">

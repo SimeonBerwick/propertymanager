@@ -9,7 +9,7 @@ import {
 } from './actions'
 import { getTenantLeaseLabel } from '@/lib/tenant-occupancy'
 import { ManagerAccessCodeForm } from '@/components/manager-access-code-form'
-import { formatDateOnly } from '@/lib/ui-utils'
+import { formatDateOnly, formatDateTime } from '@/lib/ui-utils'
 
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
@@ -76,8 +76,8 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           <div className="muted">Lease: {getTenantLeaseLabel(currentIdentity)}</div>
           <div className="muted">Phone: {currentIdentity.phoneE164}</div>
           {currentIdentity.email && <div className="muted">Email: {currentIdentity.email}</div>}
-          <div className="muted">Verified: {currentIdentity.verifiedAt ? new Date(currentIdentity.verifiedAt).toLocaleString() : 'No'}</div>
-          <div className="muted">Last login: {currentIdentity.lastLoginAt ? new Date(currentIdentity.lastLoginAt).toLocaleString() : 'Never'}</div>
+          <div className="muted">Verified: {currentIdentity.verifiedAt ? formatDateTime(currentIdentity.verifiedAt) : 'No'}</div>
+          <div className="muted">Last login: {currentIdentity.lastLoginAt ? formatDateTime(currentIdentity.lastLoginAt) : 'Never'}</div>
         </div>
       ) : (
         <div className="notice" style={{ background: '#fff8e1', borderColor: '#fcd34d' }}>
