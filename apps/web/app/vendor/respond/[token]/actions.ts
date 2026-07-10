@@ -98,8 +98,12 @@ export async function submitVendorResponse(
             select: { id: true, tenderId: true, status: true },
           })
         : null
+      if (currentInvite?.status === 'not_awarded' && dispatchStatus === 'accepted' && !bidAmountRaw) {
+        throw new Error('REVISED_BID_AMOUNT_REQUIRED')
+      }
       const acceptsWorkWithoutBid = !!currentInvite
         && !currentRequest.assignedVendorId
+        && currentInvite.status !== 'not_awarded'
         && !bidAmountRaw
         && ['accepted', 'scheduled', 'completed'].includes(dispatchStatus)
       const canControlDispatch = currentRequest.assignedVendorId === validation.vendorId
@@ -239,6 +243,10 @@ export async function submitVendorResponse(
       }
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'REVISED_BID_AMOUNT_REQUIRED') {
+      await cleanupPhotos(savedPhotoPaths)
+      return { error: 'Enter the revised bid amount before sending it back to the property manager.' }
+    }
     await logServerActionError('vendorToken.response.submit', error, {
       requestId: validation.requestId,
       vendorId: validation.vendorId,

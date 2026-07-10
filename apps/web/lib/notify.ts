@@ -470,6 +470,55 @@ export function buildVendorAwardedMessage(p: VendorAwardedParams): NotificationM
   }
 }
 
+export interface VendorCanceledParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  vendorName: string
+  vendorEmail: string
+  reason: string
+  revisedBidUrl?: string
+}
+
+export function buildVendorCanceledMessage(p: VendorCanceledParams): NotificationMessage {
+  return {
+    to: p.vendorEmail,
+    subject: `Work order canceled - ${p.title}`,
+    text: [
+      `Hi ${p.vendorName},`,
+      ``,
+      `The property manager canceled your selection for this work order.`,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Property     : ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel}`,
+      `  Reason       : ${p.reason}`,
+      ``,
+      p.revisedBidUrl
+        ? `If you can offer a revised price or availability, send it here: ${p.revisedBidUrl}`
+        : `No further action is needed for this work order unless the property manager contacts you again.`,
+    ].join('\n'),
+    html: htmlEmail(`
+      <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
+      <p style="margin:0 0 14px 0">The property manager canceled your selection for this work order.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+        ${dtRow('Reason', p.reason)}
+      </table>
+      ${p.revisedBidUrl
+        ? `${actionButton('Send revised bid', p.revisedBidUrl)}<p style="margin:14px 0 0 0">Use this only if you can offer a revised price or availability for this same work order.</p>`
+        : '<p style="margin:14px 0 0 0">No further action is needed for this work order unless the property manager contacts you again.</p>'}
+    `),
+    requestId: p.requestId,
+    actionUrl: p.revisedBidUrl,
+  }
+}
+
 export interface VendorOverdueUpdateParams {
   requestId: string
   title: string

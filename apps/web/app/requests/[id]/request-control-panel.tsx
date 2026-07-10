@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { awardTenderInviteAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
+import { awardTenderInviteAction, cancelSelectedVendorAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Urgency, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -76,12 +76,13 @@ export function RequestControlPanel({
   const [awardState, awardAction, awardPending] = useActionState(awardTenderInviteAction, INITIAL_STATE)
   const [revisionState, revisionAction, revisionPending] = useActionState(requestTenderRevisionAction, INITIAL_STATE)
   const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
+  const [cancelVendorState, cancelVendorAction, cancelVendorPending] = useActionState(cancelSelectedVendorAction, INITIAL_STATE)
 
   useEffect(() => {
-    if (statusState.success || vendorState.success || awardState.success || revisionState.success || dispatchState.success) {
+    if (statusState.success || vendorState.success || awardState.success || revisionState.success || dispatchState.success || cancelVendorState.success) {
       router.refresh()
     }
-  }, [awardState.success, dispatchState.success, revisionState.success, router, statusState.success, vendorState.success])
+  }, [awardState.success, cancelVendorState.success, dispatchState.success, revisionState.success, router, statusState.success, vendorState.success])
 
   useEffect(() => {
     if (!awardState.success) return
@@ -106,6 +107,7 @@ export function RequestControlPanel({
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const upfrontPaymentBlocksWork = upfrontVendorPaymentDueCents > 0 && !['completed', 'closed'].includes(request.status)
   const canSetAppointment = !upfrontPaymentBlocksWork && hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const canCancelSelectedVendor = hasAssignedVendor && !['completed', 'closed', 'canceled', 'declined'].includes(request.status)
   const isCloseoutStage = request.status === 'completed' || request.status === 'closed'
   const appointmentForm = canSetAppointment ? (
     <form action={dispatchAction} className="stack card" style={{ gap: 10, padding: 16, background: 'var(--panel)' }} onSubmit={(event) => blurActiveField(event.currentTarget)}>
@@ -184,6 +186,29 @@ export function RequestControlPanel({
         </div>
       ) : null}
       {appointmentForm}
+      {canCancelSelectedVendor ? (
+        <details className="advancedDisclosure">
+          <summary>Cancel selected vendor or switch vendors</summary>
+          <form action={cancelVendorAction} className="stack" style={{ gap: 10, padding: 16 }}>
+            <div>
+              <div className="kicker">Vendor change</div>
+              <h3 style={{ marginTop: 4 }}>Cancel this vendor and choose again</h3>
+              <div className="muted">
+                Use this if the accepted bid or selected vendor no longer works. This clears the current vendor and reopens vendor selection.
+              </div>
+            </div>
+            <input type="hidden" name="requestId" value={request.id} />
+            <label className="field">
+              <span className="field-label">Reason</span>
+              <textarea className="input textarea" name="reason" rows={3} placeholder="Example: Terms were not agreed, choosing a different vendor." />
+            </label>
+            <ActionFeedback error={cancelVendorState.error} success={cancelVendorState.success ? cancelVendorState.message ?? 'Selected vendor canceled.' : null} />
+            <button type="submit" className="button" disabled={cancelVendorPending}>
+              {cancelVendorPending ? 'Canceling...' : 'Cancel selected vendor'}
+            </button>
+          </form>
+        </details>
+      ) : null}
       {bidDecisionInvites.length ? (
         <div className="card stack" style={{ gap: 10, padding: 16, background: 'var(--panel)' }}>
           <div>

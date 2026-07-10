@@ -16,7 +16,7 @@ export default async function VendorRespondPage({
   }
 
   const session = await getVendorSession()
-  if (session?.vendorId === result.vendorId) {
+  if (session?.vendorId === result.vendorId && !result.tenderInviteId) {
     await markVendorDispatchLinkUsed(result.linkId)
     redirect(`/vendor/requests/${result.requestId}` as never)
   }
