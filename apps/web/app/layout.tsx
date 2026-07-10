@@ -19,6 +19,7 @@ import { PublicMarketingNav } from '@/components/public-marketing-nav'
 import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getVendorSession } from '@/lib/vendor-session'
 import { RouteScrollManager } from '@/components/route-scroll-manager'
+import { isAndroidWebView } from '@/lib/android-webview'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -37,7 +38,9 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
-  const pathname = (await headers()).get('x-pathname') ?? ''
+  const headerStore = await headers()
+  const pathname = headerStore.get('x-pathname') ?? ''
+  const androidApp = isAndroidWebView(headerStore.get('user-agent'))
   const isTenantPortalRoute = pathname.startsWith('/mobile')
   const isVendorPortalRoute = pathname.startsWith('/vendor')
   const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute
@@ -127,7 +130,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   </form>
                 </>
               )}
-              {!session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && (
+              {!androidApp && !session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && (
                 <PublicMarketingNav />
               )}
             </div>

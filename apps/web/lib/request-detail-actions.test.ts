@@ -106,6 +106,7 @@ describe('updateStatusFormAction', () => {
 
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
     expect(updated?.status).toBe('approved')
+    expect(updated?.firstReviewedAt).toBeInstanceOf(Date)
 
     const events = await prisma.statusEvent.findMany({ where: { requestId: request.id } })
     expect(events).toHaveLength(1)

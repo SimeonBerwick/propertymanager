@@ -29,22 +29,29 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
           className="input textarea"
           name="body"
           rows={3}
-          placeholder="Add an internal note or tenant-facing update..."
+        placeholder={defaultVisibility === 'external' ? 'Write the reply the tenant will receive...' : 'Add a private note for the property manager...'}
           required
           style={{ minHeight: 80 }}
         />
       </label>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <select className="input" name="visibility" defaultValue={defaultVisibility} style={{ width: 'auto' }}>
-          <option value="internal">Internal note</option>
-          <option value="external">Tenant-facing</option>
-        </select>
+        {defaultVisibility === 'external' ? (
+          <>
+            <input type="hidden" name="visibility" value="external" />
+            <span className="badge signalHigh">Tenant-facing reply</span>
+          </>
+        ) : (
+          <>
+            <input type="hidden" name="visibility" value="internal" />
+            <span className="badge signalNeutral">Private internal note</span>
+          </>
+        )}
         <button type="submit" className="button primary" disabled={isPending}>
-          {isPending ? 'Saving...' : 'Add comment'}
+          {isPending ? 'Sending...' : defaultVisibility === 'external' ? 'Send tenant reply' : 'Save internal note'}
         </button>
       </div>
       {defaultVisibility === 'external' ? <div className="notice">This update is tenant-facing and will clear the tenant update alert after it is saved.</div> : null}
-      <ActionFeedback error={state.error} success={state.success && 'Comment added.'} />
+      <ActionFeedback error={state.error} success={state.success && (defaultVisibility === 'external' ? 'Reply sent to tenant.' : 'Internal note saved.')} />
     </form>
   )
 }

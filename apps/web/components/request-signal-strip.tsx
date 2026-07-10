@@ -26,8 +26,10 @@ function triageTagLabel(tag: string) {
 
 export function RequestSignalStrip({
   request,
+  showReviewState = true,
 }: {
   request: Pick<MaintenanceRequest, 'urgency' | 'slaBucket' | 'reviewState' | 'triageTags'>
+  showReviewState?: boolean
 }) {
   const urgency = urgencyTone(request.urgency)
   const sla = slaTone(request.slaBucket)
@@ -39,7 +41,7 @@ export function RequestSignalStrip({
         <span className="badge signalUrgent">Manager review needed now</span>
       ) : null}
       <span className={sla.className}>{sla.label}</span>
-      {request.reviewState && request.reviewState !== 'none' ? (
+      {showReviewState && request.reviewState && request.reviewState !== 'none' ? (
         <span className="badge signalWarn">Review: {reviewStateLabel(request.reviewState)}</span>
       ) : null}
       {request.triageTags?.map((tag) => (

@@ -24,7 +24,7 @@ export function PublicMarketingNav() {
       const platform = capacitor?.getPlatform?.()
       const isNative = capacitor?.isNativePlatform?.() === true || (platform !== undefined && platform !== 'web')
 
-      if (isNative || /Android/i.test(navigator.userAgent)) {
+      if (isNative || /SimeonwareAndroidApp\/\d+(?:\.\d+)*/i.test(navigator.userAgent)) {
         setAndroidAppView(true)
       }
     }

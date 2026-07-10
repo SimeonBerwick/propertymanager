@@ -15,9 +15,9 @@ function isRunningInAndroidApp() {
   const capacitor = window.Capacitor
   const platform = capacitor?.getPlatform?.()
   const isNative = capacitor?.isNativePlatform?.() === true || (platform !== undefined && platform !== 'web')
-  const isAndroid = /Android/i.test(navigator.userAgent)
+  const isAndroidApp = /SimeonwareAndroidApp\/\d+(?:\.\d+)*/i.test(navigator.userAgent)
 
-  return isNative || isAndroid
+  return isNative || isAndroidApp
 }
 
 export function AndroidRuntimeMarker() {

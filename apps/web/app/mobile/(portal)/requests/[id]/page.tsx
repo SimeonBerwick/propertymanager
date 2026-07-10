@@ -8,6 +8,7 @@ import { TenantWorkOrderMessageForm } from './message-form'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusLabel } from '@/lib/tenant-request-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
+import { SectionJumpLink } from '@/components/section-jump-link'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { formatDateTime } from '@/lib/ui-utils'
 
@@ -138,7 +139,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <div className="kicker">Appointment</div>
           <strong>{appointmentLabel}</strong>
           <div>{request.assignedVendorName ? `${request.assignedVendorName} is scheduled for this repair.` : 'The repair appointment is scheduled.'}</div>
-          <a href="#message-manager-vendor" className="button primary" style={{ alignSelf: 'flex-start' }}>Request a different time</a>
+          <SectionJumpLink href="#message-manager-vendor" className="button primary" style={{ alignSelf: 'flex-start' }}>Request a different time</SectionJumpLink>
         </section>
       ) : null}
 

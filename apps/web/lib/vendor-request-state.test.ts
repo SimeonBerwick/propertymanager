@@ -126,6 +126,37 @@ describe('deriveVendorNextAction', () => {
     expect(result.initialResponse).toBe('scheduled')
   })
 
+  test('blocks appointment scheduling while an upfront payment is still due', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'vendor_selected',
+      dispatchStatus: 'accepted',
+      canControlDispatch: true,
+      needsAppointmentTime: true,
+      hasAppointmentTime: false,
+      hasApprovedCostOrInvoice: true,
+      hasActiveCostOrInvoice: true,
+      upfrontVendorPaymentDueCents: 7500,
+    })
+
+    expect(result.key).toBe('waiting_payment_record')
+    expect(result.showResponseForm).toBe(false)
+  })
+
+  test('blocks appointment scheduling while the service charge awaits approval', () => {
+    const result = deriveVendorNextAction({
+      requestStatus: 'vendor_selected',
+      dispatchStatus: 'accepted',
+      canControlDispatch: true,
+      needsAppointmentTime: true,
+      hasAppointmentTime: false,
+      hasPendingCostOrInvoice: true,
+      hasActiveCostOrInvoice: true,
+    })
+
+    expect(result.key).toBe('waiting_manager_cost')
+    expect(result.showResponseForm).toBe(false)
+  })
+
   test('waits on manager after a submitted vendor charge', () => {
     const result = deriveVendorNextAction({
       requestStatus: 'scheduled',
