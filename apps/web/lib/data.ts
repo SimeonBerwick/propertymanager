@@ -18,6 +18,7 @@ import { logAppError } from '@/lib/observability'
 import { getRuntimeChecks, isHostedRuntimeEnforced } from '@/lib/runtime-env'
 import { getUnitOccupancySnapshot } from '@/lib/tenant-occupancy'
 import { sortRecommendedActions, type RecommendedAction } from '@/lib/recommended-actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export interface DashboardRequestRow extends MaintenanceRequest {
   propertyName: string
@@ -424,7 +425,7 @@ function buildDeliveryQueueActions(failedEmails: any[], user: { dailyCsvExportEn
         priority: 'high',
         title: 'Daily CSV export needs attention',
         reason: user?.dailyCsvExportLastSentAt
-          ? `The last successful CSV export was ${user.dailyCsvExportLastSentAt.toLocaleString()}.`
+          ? `The last successful CSV export was ${formatDateTime(user.dailyCsvExportLastSentAt)}.`
           : 'Daily CSV export is enabled but no successful send is recorded.',
         primaryLabel: 'Open CSV settings',
         href: '/ops',

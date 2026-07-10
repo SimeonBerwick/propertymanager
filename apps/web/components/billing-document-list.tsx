@@ -3,6 +3,7 @@ import { billingDocumentTypeLabel, billingStatusLabel, formatMoney } from '@/lib
 import type { BillingDocumentView } from '@/lib/billing-types'
 import { BillingStatusForm } from '@/components/billing-status-form'
 import { BillingDocumentActions } from '@/components/billing-document-actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
@@ -20,7 +21,7 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
               <div>
                 <div style={{ fontWeight: 700 }}>{doc.title}</div>
                 <div className="muted" style={{ marginTop: 4 }}>
-                  {billingDocumentTypeLabel(doc.documentType)} - {doc.recipientType} - {new Date(doc.createdAt).toLocaleString()}
+                  {billingDocumentTypeLabel(doc.documentType)} - {doc.recipientType} - {formatDateTime(doc.createdAt)}
                 </div>
                 {doc.sentTo ? <div className="muted">Sent to: {doc.sentTo}</div> : null}
               </div>

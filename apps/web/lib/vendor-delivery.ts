@@ -1,4 +1,5 @@
 import { sendNotification } from '@/lib/notify'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export interface VendorDeliveryAdapter {
   sendOtp(input: { to: string; code: string; vendorName: string }): Promise<void>
@@ -29,7 +30,7 @@ class DefaultVendorDeliveryAdapter implements VendorDeliveryAdapter {
         '',
         `Your property manager created this one-time sign-in code for "${input.requestTitle}": ${input.code}`,
         `Enter it here: ${input.accessLink}`,
-        `It expires ${input.expiresAt.toLocaleString()}.`,
+        `It expires ${formatDateTime(input.expiresAt)}.`,
         '',
         'This code grants access only to the listed work order.',
       ].join('\n'),

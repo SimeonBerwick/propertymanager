@@ -9,6 +9,7 @@ import { tenantRequestCloseoutLabel, tenantRequestNextStep, tenantRequestStatusL
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
+import { formatDateTime } from '@/lib/ui-utils'
 
 function classifyCommentSource(
   comment: {
@@ -127,7 +128,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
           <strong>{latestCommunicationSource?.label === 'Tenant' ? 'Your message was sent.' : `${latestCommunicationSource?.label ?? 'Update'} replied`}</strong>
           <div>{displayCommentBody(latestCommunication.body)}</div>
           <div className="muted">
-            {latestCommunicationSource?.label}{latestCommunicationSource?.byline ? ` - ${latestCommunicationSource.byline}` : ''} - {new Date(latestCommunication.createdAt).toLocaleString()}
+            {latestCommunicationSource?.label}{latestCommunicationSource?.byline ? ` - ${latestCommunicationSource.byline}` : ''} - {formatDateTime(latestCommunication.createdAt)}
           </div>
         </section>
       ) : null}
@@ -153,7 +154,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
                   {source.label}{source.byline ? ` - ${source.byline}` : ''}
                 </div>
                 <div>{displayCommentBody(comment.body)}</div>
-                <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
+                <div className="muted">{formatDateTime(comment.createdAt)}</div>
               </div>
             )
           })}
@@ -229,7 +230,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
                 {entry.scheduledStart ? formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd) : '-'}
               </div>
             ) : null}
-            <div className="muted">{new Date(entry.createdAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(entry.createdAt)}</div>
           </div>
         )) : <div className="muted">No vendor updates yet.</div>}
       </section>
@@ -244,7 +245,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
             <div style={{ fontWeight: 600 }}>
               {event.fromStatus ? `${tenantRequestStatusLabel(event.fromStatus)} to ${tenantRequestStatusLabel(event.toStatus)}` : tenantRequestStatusLabel(event.toStatus)}
             </div>
-            <div className="muted">{new Date(event.createdAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(event.createdAt)}</div>
           </div>
         )) : <div className="muted">No updates yet.</div>}
       </section>
@@ -265,7 +266,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               )
             })()}
             <div>{displayCommentBody(comment.body)}</div>
-            <div className="muted">{new Date(comment.createdAt).toLocaleString()}</div>
+            <div className="muted">{formatDateTime(comment.createdAt)}</div>
           </div>
         )) : <div className="muted">No comments yet.</div>}
       </section>
@@ -283,7 +284,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
               <div style={{ fontWeight: 600 }}>{document.title}</div>
               {document.description ? <div>{document.description}</div> : null}
               <div className="muted">
-                {billingStatusLabel(document.status)} - {new Date(document.createdAt).toLocaleString()}
+                {billingStatusLabel(document.status)} - {formatDateTime(document.createdAt)}
               </div>
               <div className="muted">
                 Total: {formatMoney(document.totalCents, document.currency)} - Paid: {formatMoney(document.paidCents, document.currency)} - Balance: {formatMoney(balanceCents, document.currency)}

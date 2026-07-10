@@ -6,6 +6,7 @@ import {
   createVendorAccessCodeAction,
   type ManagerAccessCodeState,
 } from '@/lib/manager-access-actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 const INITIAL_STATE: ManagerAccessCodeState = { error: null }
 
@@ -71,7 +72,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       {state.code ? (
         <div className="notice success">
           Sign-in code: <strong style={{ letterSpacing: 3 }}>{state.code}</strong>
-          <div className="muted">Scope: {state.scope}. Expires {new Date(state.expiresAt!).toLocaleString()}.</div>
+          <div className="muted">Scope: {state.scope}. Expires {formatDateTime(state.expiresAt!)}.</div>
         </div>
       ) : null}
       {state.deliveryWarning ? (

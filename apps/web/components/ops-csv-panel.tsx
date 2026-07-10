@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { importTicketsCsv, importUnitsCsv, importVendorsCsv, sendSystemEmailTestAction, toggleDailyCsvExportAction, type OpsCsvState } from '@/app/ops/actions'
+import { formatDateTime } from '@/lib/ui-utils'
 
 const initialState: OpsCsvState = { error: null }
 
@@ -78,7 +79,7 @@ export function OpsCsvPanel({
         </label>
         <div className="muted">
           Sends changed units, vendors, and tickets as separate CSV attachments. Days without changes are skipped.
-          {dailyExportLastSentAt ? ` Last sent ${new Date(dailyExportLastSentAt).toLocaleString()}.` : ''}
+          {dailyExportLastSentAt ? ` Last sent ${formatDateTime(dailyExportLastSentAt)}.` : ''}
         </div>
         <button className="button compactToggle" type="submit" style={{ alignSelf: 'flex-start' }}>
           Save daily export preference

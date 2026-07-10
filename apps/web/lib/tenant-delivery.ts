@@ -1,4 +1,5 @@
 import { sendNotification } from '@/lib/notify'
+import { formatDateTime } from '@/lib/ui-utils'
 
 export interface TenantDeliveryAdapter {
   sendOtp(input: { to: string; code: string; tenantName: string }): Promise<void>
@@ -46,7 +47,7 @@ class DefaultTenantDeliveryAdapter implements TenantDeliveryAdapter {
         '',
         `Your property manager created this one-time tenant portal sign-in code: ${input.code}`,
         `Enter it here: ${input.accessLink}`,
-        `It expires ${input.expiresAt.toLocaleString()}.`,
+        `It expires ${formatDateTime(input.expiresAt)}.`,
         '',
         'If you did not expect this code, contact your property manager.',
       ].join('\n'),

@@ -178,6 +178,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'Vendor payment or a billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
   }
 
+  if ((request.billingOpenBalanceCents ?? 0) > 0 || (request.vendorPayableBalanceCents ?? 0) > 0) {
+    return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Record vendor payment', reason: 'A vendor payment record is open. Mark it paid after money is handled outside the app.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
+  }
+
   if (request.reviewState === 'vendor_completed_pending_review') {
     return { ...base, id: `${request.id}:vendor-update-review`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review completed work', reason: 'The vendor marked the work complete and needs manager review.', group: 'Vendor updates', priority: 'high', actionType: 'review_vendor_update', score: SCORE.overdueUpdate }
   }

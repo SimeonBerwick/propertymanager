@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import type { OpsActivityItem } from '@/lib/ops-activity'
+import { formatDateTime } from '@/lib/ui-utils'
 
 const ENTITY_LABELS: Record<string, string> = {
   property: 'Property',
@@ -44,7 +45,7 @@ export function OpsActivityFeed({ items }: { items: OpsActivityItem[] }) {
               {' - '}
               {item.actorName ?? 'System'}
               {' - '}
-              {new Date(item.createdAt).toLocaleString()}
+              {formatDateTime(item.createdAt)}
               {href ? <><span>{' - '}</span><Link href={href}>Open</Link></> : null}
             </div>
           </div>
