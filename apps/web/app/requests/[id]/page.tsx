@@ -3,9 +3,8 @@ import { notFound, redirect } from 'next/navigation'
 import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { languageLabel } from '@/lib/types'
-import { reviewStateLabel, formatDateTime } from '@/lib/ui-utils'
+import { formatDateTime } from '@/lib/ui-utils'
 import { StatusBadge } from '@/components/status-badge'
-import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { SectionCard } from '@/components/section-card'
@@ -21,6 +20,7 @@ import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
+import { SectionJumpLink } from '@/components/section-jump-link'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -191,7 +191,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
   const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
   const needsTenantChargeDocument = tenantChargebackCents > 0 && !hasTenantChargeDocument
-  const needsVendorPaymentDocument = vendorOutstandingCents > 0
+  const needsVendorPaymentDocument = unpostedVendorOwedCents > 0
   const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
   const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
   const moneyAction = pendingVendorCommercialItems.length
@@ -314,11 +314,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
           <div className="requestHeroMeta">
             {isCompleteButUnpaid ? <span className="badge billing-partial">{closeoutLanguage.managerLabel}</span> : <StatusBadge status={effectiveRequestStatus} />}
-            {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : <RequestFlowBadge request={requestWithEffectiveAppointment} />}
+            {isCompleteButUnpaid ? <span className="badge billing-partial">Vendor unpaid</span> : null}
             <span className="muted">{data.request.category}</span>
             <span className="muted">Submitted {formatDateTime(data.request.createdAt)}</span>
           </div>
-          <RequestSignalStrip request={data.request} />
+          <RequestSignalStrip request={data.request} showReviewState={false} />
           <InlineRequestEditor request={data.request} />
         </div>
       </section>
@@ -349,7 +349,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   </div>
                 ) : null}
               </div>
-              <a href="#communication" className="button primary">Reply or add note</a>
+              <SectionJumpLink href="#communication" className="button primary">Reply to tenant</SectionJumpLink>
             </div>
           </div>
         ) : hasVendorUpdateReview ? (
@@ -383,7 +383,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   </div>
                 ) : null}
               </div>
-              {pendingVendorCommercialItems.length ? <a href="#vendor-approvals" className="button primary">Review vendor charge</a> : <a href="#timeline" className="button">View timeline</a>}
+              {pendingVendorCommercialItems.length ? <SectionJumpLink href="#vendor-approvals" className="button primary">Review vendor charge</SectionJumpLink> : <SectionJumpLink href="#timeline" className="button">View timeline</SectionJumpLink>}
             </div>
           </div>
         ) : null}
@@ -393,7 +393,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <strong>{moneyAction.title}</strong>
               <div className="muted">{moneyAction.detail}</div>
             </div>
-            <a href="#billing" className="button primary" style={{ alignSelf: 'flex-start' }}>{moneyAction.button}</a>
+            <SectionJumpLink href="#billing" className="button primary" style={{ alignSelf: 'flex-start' }}>{moneyAction.button}</SectionJumpLink>
           </div>
         ) : (
           <RequestControlPanel
@@ -445,12 +445,12 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ) : null}
 
       <nav className="requestSectionNav" aria-label="Request sections">
-        <a href="#summary">Summary</a>
-        <a href="#actions">Next step</a>
-        <a href="#timeline">Timeline</a>
-        {pendingVendorCommercialItems.length ? <a href="#vendor-approvals">Approvals</a> : null}
-        {hasVendorChosen || data.billingDocuments.length ? <a href="#billing">Billing records</a> : null}
-        {hasBidDetails ? <a href="#advanced">More details</a> : null}
+        <SectionJumpLink href="#summary">Summary</SectionJumpLink>
+        <SectionJumpLink href="#actions">Next step</SectionJumpLink>
+        <SectionJumpLink href="#timeline">Timeline</SectionJumpLink>
+        {pendingVendorCommercialItems.length ? <SectionJumpLink href="#vendor-approvals">Approvals</SectionJumpLink> : null}
+        {hasVendorChosen || data.billingDocuments.length ? <SectionJumpLink href="#billing">Billing records</SectionJumpLink> : null}
+        {hasBidDetails ? <SectionJumpLink href="#advanced">More details</SectionJumpLink> : null}
       </nav>
 
       {hasBidDetails ? (
@@ -576,12 +576,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 <div><strong>Preferred language</strong><div className="muted">{languageLabel(data.request.preferredLanguage)}</div></div>
                 <div><strong>SLA / tags</strong><div className="muted">{data.request.slaBucket ?? 'standard'}{data.request.triageTags.length ? ` - ${data.request.triageTags.join(', ')}` : ''}</div></div>
                 <div><strong>Vendor</strong><div className="muted">{data.request.assignedVendorName ?? 'Unassigned'}</div></div>
-                <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : 'Not yet reviewed'}</div></div>
+                <div><strong>First reviewed</strong><div className="muted">{data.request.firstReviewedAt ? formatDateTime(data.request.firstReviewedAt) : data.request.status === 'requested' ? 'Not yet reviewed' : 'Reviewed'}</div></div>
               </div>
-              <RequestSignalStrip request={data.request} />
-              {data.request.reviewState && !['none', 'approved'].includes(data.request.reviewState) ? (
-                <div className="notice error">Review: {reviewStateLabel(data.request.reviewState)}{data.request.reviewNote ? ` - ${data.request.reviewNote}` : ''}</div>
-              ) : null}
             </div>
           </SectionCard>
           </div>

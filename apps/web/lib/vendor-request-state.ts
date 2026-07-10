@@ -163,18 +163,6 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
     })
   }
 
-  if (input.needsAppointmentTime) {
-    return vendorAction({
-      key: 'add_appointment',
-      label: 'Add appointment time',
-      detail: 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.',
-      href: '#vendor-next-action',
-      showResponseForm: true,
-      showCommercialForm: false,
-      initialResponse: 'scheduled',
-    })
-  }
-
   if (input.activeFinalInvoiceStatus === 'submitted') {
     return vendorAction({
       key: 'waiting_final_invoice_review',
@@ -216,6 +204,18 @@ export function deriveVendorNextAction(input: VendorNextActionInput): VendorNext
       attentionLabel: 'Waiting on upfront payment',
       showResponseForm: false,
       showCommercialForm: false,
+    })
+  }
+
+  if (input.needsAppointmentTime) {
+    return vendorAction({
+      key: 'add_appointment',
+      label: 'Add appointment time',
+      detail: 'Enter the confirmed appointment time. This appointment time will be sent to the tenant.',
+      href: '#vendor-next-action',
+      showResponseForm: true,
+      showCommercialForm: false,
+      initialResponse: 'scheduled',
     })
   }
 

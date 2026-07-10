@@ -767,7 +767,9 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     const comments: RequestComment[] = dbRequest.comments.map((c) => ({
       id: c.id,
       requestId: c.requestId,
-      authorName: c.author?.displayName ?? c.author?.email ?? 'System',
+      authorName: c.author?.displayName
+        ?? c.author?.email
+        ?? (c.body.startsWith('Tenant message:') ? dbRequest.submittedByName ?? 'Tenant' : 'System'),
       body: c.body,
       visibility: c.visibility as 'internal' | 'external',
       createdAt: c.createdAt.toISOString(),

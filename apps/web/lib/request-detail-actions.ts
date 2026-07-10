@@ -19,7 +19,7 @@ import {
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
-import { parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
+import { combineAppointmentDateAndTime, parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
@@ -216,6 +216,7 @@ export async function updateStatusFormAction(
         where: { id: requestId },
         data: {
           status: toStatus,
+          firstReviewedAt: fromStatus === 'requested' ? new Date() : undefined,
           urgency: fromStatus === 'requested' && toStatus === 'approved'
             ? effectiveAssessedUrgency as 'low' | 'medium' | 'high' | 'urgent'
             : undefined,
@@ -1134,8 +1135,14 @@ export async function updateDispatchFormAction(
   const requestId = formData.get('requestId') as string
   const dispatchStatus = ((formData.get('dispatchStatus') as string) ?? '').trim() as DispatchStatus
   const note = ((formData.get('note') as string) ?? '').trim()
-  const scheduledStartRaw = ((formData.get('scheduledStart') as string) ?? '').trim()
-  const scheduledEndRaw = ((formData.get('scheduledEnd') as string) ?? '').trim()
+  const appointmentStartDate = String(formData.get('appointmentStartDate') ?? '')
+  const appointmentStartTime = String(formData.get('appointmentStartTime') ?? '')
+  const appointmentEndDate = String(formData.get('appointmentEndDate') ?? '')
+  const appointmentEndTime = String(formData.get('appointmentEndTime') ?? '')
+  const scheduledStartRaw = String(formData.get('scheduledStart') ?? '').trim()
+    || combineAppointmentDateAndTime(appointmentStartDate, appointmentStartTime)
+  const scheduledEndRaw = String(formData.get('scheduledEnd') ?? '').trim()
+    || combineAppointmentDateAndTime(appointmentEndDate || appointmentStartDate, appointmentEndTime)
   let tenantNotification:
     | {
         tenantEmail: string

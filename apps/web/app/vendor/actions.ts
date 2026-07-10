@@ -11,7 +11,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import type { DispatchStatus, RequestStatus } from '@/lib/types'
 import { buildVendorRequestVisibilityWhere } from '@/lib/vendor-portal-data'
 import { logServerActionError } from '@/lib/observability'
-import { parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
+import { combineAppointmentDateAndTime, parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
 
 export type VendorPortalResponseState = { error: string | null }
 
@@ -73,8 +73,14 @@ export async function submitVendorPortalResponse(
   const note = String(formData.get('note') ?? '').trim()
   const bidAmountRaw = String(formData.get('bidAmount') ?? '').trim()
   const availabilityNote = String(formData.get('availabilityNote') ?? '').trim()
+  const appointmentStartDate = String(formData.get('appointmentStartDate') ?? '')
+  const appointmentStartTime = String(formData.get('appointmentStartTime') ?? '')
+  const appointmentEndDate = String(formData.get('appointmentEndDate') ?? '')
+  const appointmentEndTime = String(formData.get('appointmentEndTime') ?? '')
   const scheduledStartRaw = String(formData.get('scheduledStart') ?? '').trim()
+    || combineAppointmentDateAndTime(appointmentStartDate, appointmentStartTime)
   const scheduledEndRaw = String(formData.get('scheduledEnd') ?? '').trim()
+    || combineAppointmentDateAndTime(appointmentEndDate || appointmentStartDate, appointmentEndTime)
   const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
 
   if (!requestId) return { error: 'Request is required.' }

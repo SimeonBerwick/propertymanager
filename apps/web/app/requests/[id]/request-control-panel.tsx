@@ -8,6 +8,7 @@ import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { AppointmentDateTimeFields } from '@/components/appointment-date-time-fields'
+import { SectionJumpLink } from '@/components/section-jump-link'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -124,7 +125,7 @@ export function RequestControlPanel({
         <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />
       </label>
       <ActionFeedback error={dispatchState.error} success={dispatchState.success ? 'Appointment saved. Next: send the tenant update so they know the confirmed appointment time.' : null} />
-      {dispatchState.success ? <a href="#communication" className="button primary" style={{ alignSelf: 'flex-start' }}>Next: send tenant update</a> : null}
+      {dispatchState.success ? <SectionJumpLink href="#communication" className="button primary" style={{ alignSelf: 'flex-start' }}>Next: send tenant update</SectionJumpLink> : null}
       <button type="submit" className="button primary" disabled={dispatchPending}>
         {dispatchPending ? 'Saving...' : 'Save appointment'}
       </button>

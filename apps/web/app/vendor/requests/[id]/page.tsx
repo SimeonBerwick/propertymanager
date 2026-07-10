@@ -15,6 +15,7 @@ import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { formatDateTime } from '@/lib/ui-utils'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
+import { SectionJumpLink } from '@/components/section-jump-link'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -121,7 +122,7 @@ export default async function VendorRequestDetailPage({
   })
   const heroNoticeWouldRepeatState = ['waiting_manager_cost', 'waiting_final_invoice_review', 'waiting_payment_record'].includes(vendorNextAction.key)
   const showHeroNotice = heroNoticeWouldRepeatState ? null : heroNotice
-  const vendorWorkOrderSummary = deriveWorkOrderStateSummary({
+  const vendorWorkOrderSummaryBase = deriveWorkOrderStateSummary({
     audience: 'vendor',
     id: request.id,
     status: request.status,
@@ -145,6 +146,11 @@ export default async function VendorRequestDetailPage({
         : null,
     appointmentLabel: vendorAppointmentLabel,
   })
+  const vendorWorkOrderSummary = {
+    ...vendorWorkOrderSummaryBase,
+    nextAction: vendorNextAction.label,
+    nextHref: vendorNextAction.href,
+  }
 
   return (
     <div className="stack">
@@ -185,7 +191,7 @@ export default async function VendorRequestDetailPage({
           </div>
         ) : null}
         {vendorNextAction.href ? (
-          <a href={vendorNextAction.href} className="button primary" style={{ alignSelf: 'flex-start' }}>{vendorNextAction.label}</a>
+          <SectionJumpLink href={vendorNextAction.href as `#${string}`} className="button primary" style={{ alignSelf: 'flex-start' }}>{vendorNextAction.label}</SectionJumpLink>
         ) : vendorNextAction.key !== 'done' && vendorNextAction.key !== 'wait' ? (
           <div className={`notice ${vendorNextAction.key === 'waiting_payment_record' ? 'success' : ''}`} style={{ alignSelf: 'flex-start' }}>
             {vendorNextAction.detail}

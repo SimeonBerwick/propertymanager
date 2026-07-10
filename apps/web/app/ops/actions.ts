@@ -282,7 +282,7 @@ export async function importVendorsCsv(_prev: OpsCsvState, formData: FormData): 
       phone: value(row, 'phone', 'vendorPhone') || null,
       categoriesCsv: value(row, 'categories', 'category'),
       supportedLanguagesCsv: value(row, 'supportedLanguages', 'languages') || 'english',
-      supportedCurrenciesCsv: 'usd',
+      supportedCurrenciesCsv: value(row, 'supportedCurrencies', 'currencies') || 'usd',
       isActive: boolFromCsv(value(row, 'isActive', 'active'), true),
     }
     const existing = id

@@ -23,7 +23,7 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
       rowCount: units.length,
       content: toCsv([
         'id', 'updatedAt', 'propertyId', 'propertyName', 'propertyAddress', 'unitLabel',
-        'tenantName', 'tenantEmail', 'sizeSqFt', 'bedrooms', 'bathrooms', 'monthlyRent', 'isActive',
+        'city', 'state', 'tenantName', 'tenantEmail', 'sizeSqFt', 'bedrooms', 'bathrooms', 'monthlyRent', 'isActive',
       ], units.map((unit) => ({
         id: unit.id,
         updatedAt: unit.updatedAt.toISOString(),
@@ -31,6 +31,8 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
         propertyName: unit.property.name,
         propertyAddress: unit.property.address,
         unitLabel: unit.label,
+        city: unit.city,
+        state: unit.state,
         tenantName: unit.tenantName,
         tenantEmail: unit.tenantEmail,
         sizeSqFt: unit.sizeSqFt,
@@ -52,7 +54,7 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
       filename: 'propertymanager-vendors.csv',
       rowCount: vendors.length,
       content: toCsv([
-        'id', 'updatedAt', 'name', 'email', 'phone', 'categories', 'supportedLanguages', 'isActive',
+        'id', 'updatedAt', 'name', 'email', 'phone', 'categories', 'supportedLanguages', 'supportedCurrencies', 'isActive',
       ], vendors.map((vendor) => ({
         id: vendor.id,
         updatedAt: vendor.updatedAt.toISOString(),
@@ -61,6 +63,7 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
         phone: vendor.phone,
         categories: vendor.categoriesCsv,
         supportedLanguages: vendor.supportedLanguagesCsv,
+        supportedCurrencies: vendor.supportedCurrenciesCsv,
         isActive: vendor.isActive,
       }))),
     }

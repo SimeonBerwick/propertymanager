@@ -234,6 +234,45 @@ describe('submitVendorPortalResponse', () => {
     expect(refreshedRequest?.vendorScheduledStart).toBeNull()
   })
 
+  test('saves an appointment directly from the visible date and time fields', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Visible Fields Plumbing', email: 'visible-fields@example.com' },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'accepted',
+    })
+
+    vi.mocked(requireVendorSession).mockResolvedValue({
+      sessionId: 'vendor-session',
+      vendorId: vendor.id,
+      orgId: user.id,
+      vendorName: vendor.name,
+      email: vendor.email,
+      phone: null,
+    })
+
+    await expect(submitVendorPortalResponse(
+      { error: null },
+      formData({
+        requestId: request.id,
+        dispatchStatus: 'scheduled',
+        appointmentStartDate: '2026-07-15',
+        appointmentStartTime: '16:30',
+      }),
+    )).rejects.toThrow(/NEXT_REDIRECT/)
+
+    const refreshedRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(refreshedRequest?.status).toBe('scheduled')
+    expect(refreshedRequest?.vendorScheduledStart).toEqual(new Date('2026-07-15T23:30:00.000Z'))
+    expect(refreshedRequest?.vendorScheduledEnd).toBeNull()
+  })
+
   test('started work update preserves the confirmed appointment time', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({

@@ -1,5 +1,11 @@
 const DISPLAY_TIME_ZONE = process.env.NEXT_PUBLIC_DISPLAY_TIME_ZONE || 'America/Phoenix'
 
+export function combineAppointmentDateAndTime(date: string, time: string) {
+  const cleanDate = date.trim()
+  const cleanTime = time.trim()
+  return cleanDate && cleanTime ? `${cleanDate}T${cleanTime}` : ''
+}
+
 function timeZoneOffsetMinutes(timeZone: string, date: Date) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,

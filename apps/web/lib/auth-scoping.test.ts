@@ -73,6 +73,24 @@ describe('landlord data scoping', () => {
       const data = await getRequestDetailData(requestA.id, userB.id)
       expect(data).toBeNull()
     })
+
+    test('attributes tenant portal messages to the tenant instead of System', async () => {
+      const { user, property, unit } = await scaffoldLandlord()
+      const request = await createMaintenanceRequest(property.id, unit.id, {
+        orgId: user.id,
+        submittedByName: 'Taylor Tenant',
+      })
+      await prisma.requestComment.create({
+        data: {
+          requestId: request.id,
+          body: 'Tenant message: Can we move the appointment?',
+          visibility: 'external',
+        },
+      })
+
+      const data = await getRequestDetailData(request.id, user.id)
+      expect(data?.comments[0]?.authorName).toBe('Taylor Tenant')
+    })
   })
 
   describe('getPropertyDetailData', () => {
