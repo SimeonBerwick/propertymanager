@@ -896,20 +896,22 @@ export async function approveVendorCommercialItemAction(
 
     let draftPosted = true
     let draftDocument: Awaited<ReturnType<typeof upsertVendorRemittanceDraft>> = null
-    try {
-      await prisma.$transaction(async (tx) => {
-        draftDocument = await upsertVendorRemittanceDraft(tx, {
-          requestId,
-          vendorId: item.vendorId,
-          vendorName,
-          vendorEmail,
-          userId: session.userId,
-          approvedItemId: item.id,
+    if (item.itemType !== 'bid') {
+      try {
+        await prisma.$transaction(async (tx) => {
+          draftDocument = await upsertVendorRemittanceDraft(tx, {
+            requestId,
+            vendorId: item.vendorId,
+            vendorName,
+            vendorEmail,
+            userId: session.userId,
+            approvedItemId: item.id,
+          })
         })
-      })
-    } catch (error) {
-      draftPosted = false
-      await logServerActionError('vendorCommercialItem.approve.remittanceDraft', error, { requestId, itemId }).catch(() => null)
+      } catch (error) {
+        draftPosted = false
+        await logServerActionError('vendorCommercialItem.approve.remittanceDraft', error, { requestId, itemId }).catch(() => null)
+      }
     }
 
     await writeAuditLog({
@@ -953,12 +955,15 @@ export async function approveVendorCommercialItemAction(
       }
     }
     if (!draftPosted) {
-      return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved. Create or update the vendor payment record before closeout.' : 'Vendor cost approved. Create or update the vendor payment record before closeout.' }
+      return { error: null, success: true, message: 'Vendor cost approved. Create or update the vendor payment record before closeout.' }
+    }
+    if (item.itemType === 'bid') {
+      return { error: null, success: true, message: 'Bid approved. Next, confirm the appointment or wait for the vendor invoice.' }
     }
     if (!draftDocument) {
       return { error: null, success: true, message: item.amountCents <= 0 ? 'No-charge submission approved. No vendor payment record is needed.' : 'Vendor submission approved. No vendor payment record was needed.' }
     }
-    return { error: null, success: true, message: item.itemType === 'bid' ? 'Bid approved, vendor assigned, and payment draft posted.' : 'Vendor submission approved and payment draft posted.' }
+    return { error: null, success: true, message: 'Vendor submission approved and payment draft posted.' }
   } catch (error) {
     await logServerActionError('vendorCommercialItem.approve', error, { requestId, itemId }).catch(() => null)
     return { error: 'Could not approve vendor submission.' }
@@ -1576,19 +1581,18 @@ async function upsertVendorRemittanceDraft(
     },
     orderBy: { createdAt: 'desc' },
   })
-  const previouslyApprovedExtrasCents = extraItems
-    .filter((item) => item.id !== input.approvedItemId)
-    .reduce((sum, item) => sum + item.amountCents, 0)
-  const existingBaseCents = existingDraft
-    ? Math.max(existingDraft.totalCents - previouslyApprovedExtrasCents, 0)
-    : 0
   const recordedBidCents = Math.max(
     awardedInvite?.bidAmountCents ?? 0,
     approvedBid?.amountCents ?? 0,
     assignedSubmittedBid?.amountCents ?? 0,
   )
-  const bidCents = Math.max(recordedBidCents, existingBaseCents)
-  const totalCents = finalInvoice?.amountCents ?? (bidCents + extrasCents)
+  const previouslyApprovedExtrasCents = addOnItems
+    .filter((item) => item.id !== input.approvedItemId)
+    .reduce((sum, item) => sum + item.amountCents, 0)
+  const existingPaymentBaseCents = existingDraft && !finalInvoice
+    ? Math.max(existingDraft.totalCents - previouslyApprovedExtrasCents, 0)
+    : 0
+  const totalCents = finalInvoice?.amountCents ?? (existingPaymentBaseCents + extrasCents)
   if (totalCents <= 0) return null
   const approvedItem = input.approvedItemId ? commercialItems.find((item) => item.id === input.approvedItemId) : undefined
   const approvedPaymentTiming = normalizeVendorPaymentTiming(approvedItem?.paymentTiming)
@@ -1605,8 +1609,9 @@ async function upsertVendorRemittanceDraft(
       ? `Upfront payment required before the work moves forward for ${request.title}.`
       : `Amount owed to ${input.vendorName} for ${request.title}.`,
     approvedItem ? `Approved term: ${paymentTimingText}.` : null,
-    bidCents > 0 ? `${recordedBidCents > 0 ? 'Approved bid' : 'Approved vendor amount'}: USD ${(bidCents / 100).toFixed(2)}` : null,
-    finalInvoice ? `${finalInvoice.title}: USD ${(finalInvoice.amountCents / 100).toFixed(2)} total${bidCents > 0 ? ` (overage USD ${(Math.max(finalInvoice.amountCents - bidCents, 0) / 100).toFixed(2)})` : ''}` : null,
+    recordedBidCents > 0 ? `Approved bid: USD ${(recordedBidCents / 100).toFixed(2)}` : null,
+    existingPaymentBaseCents > 0 ? `Existing vendor payment: USD ${(existingPaymentBaseCents / 100).toFixed(2)}` : null,
+    finalInvoice ? `${finalInvoice.title}: USD ${(finalInvoice.amountCents / 100).toFixed(2)} total${recordedBidCents > 0 ? ` (overage USD ${(Math.max(finalInvoice.amountCents - recordedBidCents, 0) / 100).toFixed(2)})` : ''}` : null,
     ...addOnItems.map((item) => `${item.title}: USD ${(item.amountCents / 100).toFixed(2)}`),
     isUpfrontDocument && approvedItem ? `Upfront amount to record now: USD ${(documentTotalCents / 100).toFixed(2)} of ${approvedItem.title}.` : null,
   ].filter(Boolean) as string[]
