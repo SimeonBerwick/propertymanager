@@ -165,8 +165,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     && data.request.status !== 'requested'
     && hasTenantQuestionReviewNote
     && Boolean(latestTenantMessage)
+  const paymentActionIsNext = billingOpenBalanceCents > 0 || vendorOutstandingCents > 0 || (data.request.upfrontVendorPaymentDueCents ?? 0) > 0
   const hasVendorUpdateReview = data.request.status !== 'requested'
     && !hasTenantQuestionReviewNote
+    && !paymentActionIsNext
     && (
       data.request.reviewState === 'needs_follow_up'
       || data.request.reviewState === 'vendor_update_pending_review'
@@ -196,6 +198,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review vendor update'
     : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
       ? 'Record upfront vendor payment'
+    : billingOpenBalanceCents > 0
+      ? 'Record vendor payment'
+    : vendorOutstandingCents > 0
+      ? 'Create vendor payment record'
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -215,6 +221,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'The latest vendor update is shown here so you can decide what to do next.'
     : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
       ? 'The approved vendor terms require money before the work moves forward. Mark the vendor payment record paid after money is handled outside the app.'
+    : billingOpenBalanceCents > 0
+      ? 'A vendor payment record is open. Mark it paid after the money is handled outside the app.'
+    : vendorOutstandingCents > 0
+      ? 'The vendor amount is approved, but no payment record exists yet. Create the vendor payment record in the billing panel.'
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid

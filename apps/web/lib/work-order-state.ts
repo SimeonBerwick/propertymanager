@@ -160,7 +160,12 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
     }
   }
 
-  if (input.hasVendorUpdateReview) {
+  if (
+    input.hasVendorUpdateReview
+    && (input.billingOpenBalanceCents ?? 0) === 0
+    && (input.vendorPayableBalanceCents ?? 0) === 0
+    && (input.upfrontVendorPaymentDueCents ?? 0) === 0
+  ) {
     return {
       title: 'Vendor update needs review',
       detail: 'The vendor sent an update. Check the update before changing the next step.',
@@ -285,6 +290,20 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
         nextAction: input.audience === 'vendor' ? 'Continue work' : 'Waiting on completion',
         nextHref: input.audience === 'vendor' ? '#vendor-next-action' : undefined,
         tone: 'waiting',
+        appointment,
+        money,
+        latest,
+      }
+    }
+
+    if ((input.billingOpenBalanceCents ?? 0) === 0 && (input.vendorPayableBalanceCents ?? 0) > 0) {
+      return {
+        title: 'Vendor payment record needed',
+        detail: 'The vendor amount is approved, but no payment record exists yet. Create the vendor payment record in the billing panel.',
+        waitingOn: 'Property manager',
+        nextAction: input.audience === 'manager' ? 'Create payment record' : 'Wait for payment record',
+        nextHref: input.audience === 'manager' ? '#billing' : undefined,
+        tone: input.audience === 'manager' ? 'review' : 'waiting',
         appointment,
         money,
         latest,

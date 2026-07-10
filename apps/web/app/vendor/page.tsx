@@ -92,10 +92,10 @@ export default async function VendorDashboardPage({
   const openRequests = requestViews.filter(({ request, nextAction }) => !['closed', 'declined', 'canceled'].includes(request.status) && !['done', 'wait'].includes(nextAction.key))
   const recentRequests = requestViews.filter(({ request, nextAction }) => ['closed', 'completed', 'canceled'].includes(request.status) || ['done', 'wait'].includes(nextAction.key)).slice(0, 8)
   const pendingBids = requestViews.filter(({ nextAction }) => nextAction.key === 'respond_bid')
-  const awardedRequests = openRequests.filter(({ viewState }) => viewState.isAwardedToViewer)
   const attentionItems = openRequests
     .filter(({ nextAction }) => Boolean(nextAction.href || nextAction.showResponseForm || nextAction.showCommercialForm))
     .slice(0, 5)
+  const awardedRequests = attentionItems.filter(({ viewState }) => viewState.isAwardedToViewer)
   const billingRequests = requestViews.filter(({ request }) => request.billingDocuments.length > 0)
   const payableDocs = requests.reduce((sum, request) => sum + request.billingDocuments.length, 0)
   const outstandingPaymentDocumentCount = requests.reduce((sum, request) => (
