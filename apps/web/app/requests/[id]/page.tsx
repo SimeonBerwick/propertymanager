@@ -188,6 +188,36 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   }
   const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
   const upfrontVendorPaymentDueCents = data.request.upfrontVendorPaymentDueCents ?? 0
+  const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
+  const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
+  const needsTenantChargeDocument = tenantChargebackCents > 0 && !hasTenantChargeDocument
+  const needsVendorPaymentDocument = vendorOutstandingCents > 0
+  const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
+  const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
+  const moneyAction = pendingVendorCommercialItems.length
+    ? null
+    : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
+      ? {
+          title: 'Record upfront vendor payment',
+          subtitle: 'The approved vendor terms require money before the work moves forward.',
+          detail: 'Mark the vendor payment record paid after money is handled outside the app.',
+          button: 'Go to payment record',
+        }
+    : billingOpenBalanceCents > 0
+      ? {
+          title: 'Record vendor payment',
+          subtitle: 'A vendor payment record is open.',
+          detail: 'Mark the payment record paid after money is handled outside the app.',
+          button: 'Go to payment record',
+        }
+    : vendorOutstandingCents > 0
+      ? {
+          title: 'Create vendor payment record',
+          subtitle: 'The vendor amount is approved, but no payment record exists yet.',
+          detail: 'Create the vendor payment record in the billing panel.',
+          button: 'Create payment record',
+        }
+    : null
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
     : data.request.status === 'requested'
@@ -196,12 +226,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review tenant question'
     : hasVendorUpdateReview
       ? 'Review vendor update'
-    : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
-      ? 'Record upfront vendor payment'
-    : billingOpenBalanceCents > 0
-      ? 'Record vendor payment'
-    : vendorOutstandingCents > 0
-      ? 'Create vendor payment record'
+    : moneyAction
+      ? moneyAction.title
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -219,12 +245,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'The tenant sent a question on this work order. Reply or decide whether the request needs a status change.'
     : hasVendorUpdateReview
       ? 'The latest vendor update is shown here so you can decide what to do next.'
-    : upfrontVendorPaymentDueCents > 0 && !isEffectivelyCompleted
-      ? 'The approved vendor terms require money before the work moves forward. Mark the vendor payment record paid after money is handled outside the app.'
-    : billingOpenBalanceCents > 0
-      ? 'A vendor payment record is open. Mark it paid after the money is handled outside the app.'
-    : vendorOutstandingCents > 0
-      ? 'The vendor amount is approved, but no payment record exists yet. Create the vendor payment record in the billing panel.'
+    : moneyAction
+      ? moneyAction.subtitle
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
@@ -234,12 +256,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         : ['completed', 'closed'].includes(effectiveRequestStatus)
           ? 'Reopen only if more work is needed.'
           : 'Choose the next clear step for this request.'
-  const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
-  const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
-  const needsTenantChargeDocument = tenantChargebackCents > 0 && !hasTenantChargeDocument
-  const needsVendorPaymentDocument = vendorOutstandingCents > 0
-  const needsBillingDocument = needsTenantChargeDocument || needsVendorPaymentDocument
-  const billingIsSettled = billingOpenBalanceCents === 0 && !needsBillingDocument && !vendorBillPending
   const managerAppointmentLabel = effectiveVendorScheduledStart ? formatAppointmentWindow(effectiveVendorScheduledStart, effectiveVendorScheduledEnd) : null
   const managerMoneyLabel = billingOpenBalanceCents > 0
     ? `Open balance ${formatMoney(billingOpenBalanceCents, data.request.preferredCurrency)}`
@@ -371,14 +387,24 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           </div>
         ) : null}
-        <RequestControlPanel
-          request={requestWithEffectiveAppointment}
-          vendors={data.availableVendors}
-          tenders={data.tenders}
-          statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
-          canCloseRequest={billingIsSettled}
-          upfrontVendorPaymentDueCents={upfrontVendorPaymentDueCents}
-        />
+        {moneyAction ? (
+          <div className="notice stack" style={{ gap: 10 }}>
+            <div>
+              <strong>{moneyAction.title}</strong>
+              <div className="muted">{moneyAction.detail}</div>
+            </div>
+            <a href="#billing" className="button primary" style={{ alignSelf: 'flex-start' }}>{moneyAction.button}</a>
+          </div>
+        ) : (
+          <RequestControlPanel
+            request={requestWithEffectiveAppointment}
+            vendors={data.availableVendors}
+            tenders={data.tenders}
+            statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
+            canCloseRequest={billingIsSettled}
+            upfrontVendorPaymentDueCents={upfrontVendorPaymentDueCents}
+          />
+        )}
       </SectionCard>
       </div>
 
