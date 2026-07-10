@@ -48,6 +48,10 @@ function managerHref(id: string) {
   return `/requests/${id}#actions`
 }
 
+function managerBillingHref(id: string) {
+  return `/requests/${id}#billing`
+}
+
 function vendorActionHref(input: WorkOrderStateInput) {
   if (input.activeFinalInvoiceStatus || input.hasPendingCostOrInvoice) return undefined
   return input.needsAppointmentTime || input.isPendingBid ? '#vendor-next-action' : '#vendor-invoice-item'
@@ -79,8 +83,8 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
       title: hasOpenBalance ? 'Closed with payment still open' : 'Request closed',
       detail: hasOpenBalance ? 'The work order is closed, but a payment record still shows a balance.' : 'This repair is finished and closed.',
       waitingOn: hasOpenBalance ? 'Property manager' : 'Nobody',
-      nextAction: hasOpenBalance ? 'Mark paid' : 'Done',
-      nextHref: hasOpenBalance && input.audience === 'manager' ? managerHref(input.id) : undefined,
+      nextAction: hasOpenBalance ? 'Mark payment paid' : 'Done',
+      nextHref: hasOpenBalance && input.audience === 'manager' ? managerBillingHref(input.id) : undefined,
       tone: hasOpenBalance ? 'review' : 'success',
       appointment,
       money,
@@ -92,7 +96,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
     const approved = input.activeFinalInvoiceStatus === 'approved'
     return {
       title: approved ? 'Final invoice approved' : 'Final invoice sent',
-      detail: approved ? 'The property manager approved the invoice. Payment record cleanup is on their side now.' : 'Your invoice is with the property manager for review.',
+      detail: approved ? 'The property manager approved the invoice. They will record the payment outside the app.' : 'Your invoice is with the property manager for review.',
       waitingOn: 'Property manager',
       nextAction: approved ? 'Wait for payment record' : 'Wait for review',
       tone: approved ? 'success' : 'waiting',
@@ -215,7 +219,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
         : 'The approved vendor terms require payment before scheduling, work start, or completion. Mark the payment record paid after the money is handled outside the app.',
       waitingOn: 'Property manager',
       nextAction: input.audience === 'manager' ? 'Record payment paid' : 'Wait for payment',
-      nextHref: input.audience === 'manager' ? '#billing' : undefined,
+      nextHref: input.audience === 'manager' ? managerBillingHref(input.id) : undefined,
       tone: input.audience === 'manager' ? 'review' : 'waiting',
       appointment,
       money,
@@ -302,7 +306,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
         detail: 'The vendor amount is approved, but no payment record exists yet. Create the vendor payment record in the billing panel.',
         waitingOn: 'Property manager',
         nextAction: input.audience === 'manager' ? 'Create payment record' : 'Wait for payment record',
-        nextHref: input.audience === 'manager' ? '#billing' : undefined,
+        nextHref: input.audience === 'manager' ? managerBillingHref(input.id) : undefined,
         tone: input.audience === 'manager' ? 'review' : 'waiting',
         appointment,
         money,
@@ -311,11 +315,11 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
     }
 
     return {
-      title: 'Payment record needs cleanup',
-      detail: 'The job has an open balance. Mark payment records paid before closing out.',
+      title: 'Payment record open',
+      detail: 'A payment record is open. Mark it paid after the money is handled outside the app.',
       waitingOn: 'Property manager',
-      nextAction: input.audience === 'manager' ? 'Mark paid' : 'Wait for payment record',
-      nextHref: input.audience === 'manager' ? managerHref(input.id) : undefined,
+      nextAction: input.audience === 'manager' ? 'Mark payment paid' : 'Wait for payment record',
+      nextHref: input.audience === 'manager' ? managerBillingHref(input.id) : undefined,
       tone: 'review',
       appointment,
       money,

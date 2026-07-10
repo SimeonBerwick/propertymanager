@@ -122,6 +122,34 @@ export function MoneyCloseoutPanel({
         <StateBadge state={billingIsSettled ? 'done' : closeoutBlockers.length ? 'blocked' : 'needed'} />
       </div>
 
+      <div className="moneyCloseoutFocus">
+        {pendingVendorExtrasCents > 0 ? (
+          <div className="notice">
+            <strong>Next money step: approve or decline vendor charge.</strong> Review the submitted amount before creating payment records or closing this request.
+          </div>
+        ) : billingOpenBalanceCents > 0 ? (
+          <div className="notice">
+            <strong>Next money step: mark payment record paid.</strong> Do this after the money is settled outside the app.
+          </div>
+        ) : needsVendorPaymentDocument ? (
+          <div className="notice">
+            <strong>Next money step: create vendor payment record.</strong> The vendor amount is approved, but the payment record has not been created yet.
+          </div>
+        ) : needsTenantChargeDocument ? (
+          <div className="notice">
+            <strong>Next money step: create tenant chargeback invoice.</strong> The tenant chargeback decision is set, but the invoice has not been created yet.
+          </div>
+        ) : vendorBillPending ? (
+          <div className="notice">
+            <strong>Next money step: confirm vendor charge.</strong> If there is a bill, record it below. If there is no charge, no vendor payment document is needed.
+          </div>
+        ) : billingIsSettled ? (
+          <div className="notice success">
+            <strong>Money is settled.</strong> No open tenant charges or vendor balances remain.
+          </div>
+        ) : null}
+      </div>
+
       <div className="moneyStepGrid">
         <MoneyStep title="1. Vendor amount" state={vendorAmountState}>
           {pendingVendorExtrasCents > 0 ? (
@@ -155,26 +183,6 @@ export function MoneyCloseoutPanel({
         <MoneyStep title="4. Closeout" state={billingIsSettled ? 'done' : closeoutBlockers.length ? 'blocked' : 'needed'}>
           {billingIsSettled ? 'All money decisions are complete. The request can be closed when the work status is ready.' : closeoutBlockers.join(' ')}
         </MoneyStep>
-      </div>
-
-      <div className="moneyCloseoutFocus">
-        {billingOpenBalanceCents > 0 ? (
-          <div className="notice">
-            <strong>Closeout is blocked by open billing records.</strong> Mark every open balance paid after the money is settled outside the app.
-          </div>
-        ) : vendorBillPending ? (
-          <div className="notice">
-            <strong>Confirm vendor charge.</strong> If there is a bill, record it below. If there is no charge, no vendor payment document is needed.
-          </div>
-        ) : billingIsSettled ? (
-          <div className="notice success">
-            <strong>Money is settled.</strong> No open tenant charges or vendor balances remain.
-          </div>
-        ) : (
-          <div className="notice">
-            <strong>Next money step:</strong> {closeoutBlockers[0] ?? 'Create the needed billing record.'}
-          </div>
-        )}
       </div>
 
       {billingDocuments.length ? (
