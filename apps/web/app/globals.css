@@ -55,7 +55,7 @@ html { scroll-behavior: smooth; }
 html, body { margin: 0; padding: 0; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-elevated) 100%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 a { color: inherit; text-decoration: none; }
 body { min-height: 100vh; }
-.page { max-width: 1240px; margin: 0 auto; padding: 28px; }
+.page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px; }
 .authEntryLayout { max-width: 980px; margin: 48px auto 0; display: grid; gap: 18px; }
 .authRoleTabs { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .authRoleTab {
@@ -1048,7 +1048,33 @@ body { min-height: 100vh; }
 
 @media (max-width: 640px) {
   body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
-  .page { padding: 14px; }
+  .page {
+    width: 100%;
+    max-width: 100dvw;
+    padding: 14px;
+    overflow-x: clip;
+  }
+  .page > *,
+  .managerHeader,
+  .stack,
+  .grid,
+  .card,
+  .notice,
+  .sectionCard,
+  .sectionHead,
+  .requestDetailPage,
+  .requestHero,
+  .requestDetailGrid,
+  .workOrderStatusPanel,
+  .workOrderStatusFacts,
+  .requestSectionNav,
+  .timelineRow,
+  .row,
+  .field,
+  form {
+    min-width: 0;
+    max-width: 100%;
+  }
   .brandLogo { width: 220px; }
   .header { gap: 14px; margin-bottom: 22px; }
   .managerHeader { justify-content: center; margin-bottom: 14px; }
@@ -1067,7 +1093,23 @@ body { min-height: 100vh; }
   .muted { font-size: 15px; line-height: 1.55; }
   .button, .input, select, textarea { font-size: 15px; }
   .button { min-height: 42px; }
-  .badge { font-size: 11px; line-height: 1.25; }
+  .badge { font-size: 11px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+  .requestHeroMeta,
+  .breadcrumbs,
+  .mailboxMini {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .pageTitle,
+  .sectionTitle,
+  .signalTitle,
+  .muted,
+  .notice,
+  .workOrderStatusFact strong,
+  .timelineRow,
+  .mailboxMiniAddress {
+    overflow-wrap: anywhere;
+  }
   .requestQueueTitle { font-size: 18px; }
   .requestQueueMain { gap: 16px; }
   .inboxRow { padding: 16px; gap: 16px; }
@@ -1079,7 +1121,8 @@ body { min-height: 100vh; }
   .requestSectionNav { position: static; }
   .automationSentence { align-items: stretch; flex-direction: column; }
   .automationSentence .input { width: 100%; }
-  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; width: auto; max-width: calc(100vw - 16px); bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); }
+  .managerMobileNav { position: fixed; z-index: 90; left: 8px; right: 8px; width: calc(100dvw - 16px); max-width: calc(100dvw - 16px); bottom: max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--card-strong); box-shadow: 0 18px 50px rgba(2, 6, 23, .3); overflow: hidden; }
+  .managerMobileNav form { min-width: 0; width: 100%; }
   .managerMobileNav a, .managerMobileNav button { display: grid; gap: 2px; justify-items: center; width: 100%; padding: 7px 2px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font: inherit; font-size: 10px; }
   .managerMobileNav a span, .managerMobileNav button span { font-size: 17px; line-height: 1; }
   .managerMobileNav a.isActive { color: var(--accent); background: var(--accent-soft); }
