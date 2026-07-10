@@ -104,9 +104,10 @@ export function RequestControlPanel({
 
   const hasAssignedVendor = Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
+  const hasOpenBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length)
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const upfrontPaymentBlocksWork = upfrontVendorPaymentDueCents > 0 && !['completed', 'closed'].includes(request.status)
-  const canSetAppointment = !upfrontPaymentBlocksWork && hasAssignedVendor && !hasBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const canSetAppointment = !upfrontPaymentBlocksWork && hasAssignedVendor && !hasOpenBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
   const canCancelSelectedVendor = hasAssignedVendor && !['completed', 'closed', 'canceled', 'declined'].includes(request.status)
   const isCloseoutStage = request.status === 'completed' || request.status === 'closed'
   const appointmentForm = canSetAppointment ? (
