@@ -14,6 +14,7 @@ import {
   buildTenantVendorUpdateMessage,
   buildVendorAssignedMessage,
   buildVendorAwardedMessage,
+  buildVendorCanceledMessage,
 } from '@/lib/notify'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
@@ -791,6 +792,159 @@ export async function requestTenderRevisionAction(
   } catch (error) {
     await logServerActionError('request.tender.revision', error, { requestId, tenderId, inviteId })
     return { error: 'Could not request bid revision.' }
+  }
+}
+
+export async function cancelSelectedVendorAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const reason = String(formData.get('reason') ?? '').trim()
+  if (!reason) return { error: 'Add a short reason before canceling the selected vendor.' }
+
+  try {
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: requestId,
+        property: { ownerId: session.userId },
+      },
+      select: {
+        id: true,
+        status: true,
+        assignedVendorId: true,
+        assignedVendorName: true,
+        assignedVendorEmail: true,
+        title: true,
+        property: { select: { name: true } },
+        unit: { select: { label: true } },
+        tenderInvites: {
+          where: { status: 'awarded' },
+          select: { id: true, vendorId: true },
+          take: 1,
+        },
+        billingDocuments: {
+          where: { status: { not: 'void' } },
+          select: { id: true },
+          take: 1,
+        },
+        vendorCommercialItems: {
+          where: {
+            status: 'approved',
+            itemType: { not: 'bid' },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    })
+
+    if (!request) return { error: 'Request not found.' }
+    if (!request.assignedVendorId && !request.assignedVendorName && !request.assignedVendorEmail) return { error: 'No selected vendor to cancel.' }
+    if (['completed', 'closed', 'canceled', 'declined'].includes(request.status)) return { error: 'Reopen this request before changing the selected vendor.' }
+    if (request.billingDocuments.length > 0 || request.vendorCommercialItems.length > 0) {
+      return { error: 'This vendor already has approved charges or payment records. Resolve those before switching vendors.' }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.requestTender.updateMany({
+        where: { requestId, status: 'awarded' },
+        data: { status: 'canceled', canceledAt: new Date(), closedAt: new Date() },
+      })
+      await tx.tenderInvite.updateMany({
+        where: { requestId, status: 'awarded' },
+        data: { status: 'not_awarded' },
+      })
+      if (request.assignedVendorId) {
+        await tx.vendorCommercialItem.updateMany({
+          where: {
+            requestId,
+            vendorId: request.assignedVendorId,
+            itemType: 'bid',
+            status: 'approved',
+          },
+          data: { status: 'declined' },
+        })
+      }
+      await tx.vendorDispatchLink.updateMany({
+        where: { requestId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      })
+      await tx.vendorDispatchEvent.create({
+        data: {
+          requestId,
+          vendorId: request.assignedVendorId,
+          actorUserId: session.userId,
+          status: 'canceled',
+          note: reason,
+        },
+      })
+      await tx.maintenanceRequest.update({
+        where: { id: requestId },
+        data: {
+          assignedVendorId: null,
+          assignedVendorName: null,
+          assignedVendorEmail: null,
+          assignedVendorPhone: null,
+          dispatchStatus: 'canceled',
+          vendorScheduledStart: null,
+          vendorScheduledEnd: null,
+          status: 'approved',
+          reviewState: 'none',
+          reviewNote: null,
+        },
+      })
+      await tx.statusEvent.create({
+        data: { requestId, fromStatus: request.status, toStatus: 'approved', actorUserId: session.userId },
+      })
+    })
+
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.vendorSelectionCanceled',
+      summary: `Canceled selected vendor${request.assignedVendorName ? ` ${request.assignedVendorName}` : ''}.`,
+      metadata: { requestId, vendorId: request.assignedVendorId, reason },
+    }).catch((error) => (
+      logServerActionError('request.vendorSelectionCanceled.audit', error, { requestId }).catch(() => null)
+    ))
+
+    await applyRequestAutomation(requestId).catch((error) => (
+      logServerActionError('request.vendorSelectionCanceled.automation', error, { requestId }).catch(() => null)
+    ))
+    const awardedInvite = request.tenderInvites[0]
+    const revisedBidLink = request.assignedVendorId && request.assignedVendorEmail && awardedInvite?.vendorId === request.assignedVendorId
+      ? await createVendorDispatchLink(requestId, request.assignedVendorId, awardedInvite.id).catch((error) => {
+          logServerActionError('request.vendorSelectionCanceled.revisedBidLink', error, { requestId, vendorId: request.assignedVendorId }).catch(() => null)
+          return null
+        })
+      : null
+    if (request.assignedVendorEmail && await areEmailNotificationsEnabled(session.userId)) {
+      await sendNotification(buildVendorCanceledMessage({
+        requestId,
+        title: request.title,
+        propertyName: request.property.name,
+        unitLabel: request.unit.label,
+        vendorName: request.assignedVendorName ?? 'Vendor',
+        vendorEmail: request.assignedVendorEmail,
+        reason,
+        revisedBidUrl: revisedBidLink ? vendorRespondActionUrl(revisedBidLink.rawToken) : undefined,
+      }), { ownerUserId: session.userId, requestId }).catch((error) => (
+        logServerActionError('request.vendorSelectionCanceled.notification', error, { requestId, vendorEmail: request.assignedVendorEmail }).catch(() => null)
+      ))
+    }
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    revalidatePath('/vendor')
+    return { error: null, success: true, message: 'Selected vendor canceled. Choose a new service call vendor or send fresh bid invitations.' }
+  } catch (error) {
+    await logServerActionError('request.vendorSelectionCanceled', error, { requestId })
+    return { error: 'Could not cancel the selected vendor.' }
   }
 }
 

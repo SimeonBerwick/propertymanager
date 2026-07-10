@@ -27,6 +27,7 @@ vi.mock('@/lib/notify', () => ({
   buildTenantVendorUpdateMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
   buildVendorAssignedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
   buildVendorAwardedMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
+  buildVendorCanceledMessage: vi.fn().mockReturnValue({ to: '', subject: '', text: '' }),
 }))
 
 const PREV = { error: null }
