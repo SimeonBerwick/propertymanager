@@ -478,7 +478,7 @@ describe('approveVendorCommercialItemAction', () => {
     vi.mocked(getLandlordSession).mockResolvedValue(null)
   })
 
-  test('approving an overcost posts a draft vendor payment for awarded bid plus approved extras', async () => {
+  test('approving an overcost posts a draft vendor payment for the approved extra without charging the bid upfront', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const vendor = await prisma.vendor.create({
@@ -537,7 +537,7 @@ describe('approveVendorCommercialItemAction', () => {
     ])
 
     expect(refreshedOvercost?.status).toBe('approved')
-    expect(draft?.totalCents).toBe(62500)
+    expect(draft?.totalCents).toBe(12500)
     expect(draft?.sentTo).toBe(vendor.email)
     expect(draft?.description).toContain('Approved bid: USD 500.00')
     expect(draft?.description).toContain('Additional parts: USD 125.00')
@@ -598,11 +598,11 @@ describe('approveVendorCommercialItemAction', () => {
     })
 
     expect(draft?.totalCents).toBe(60000)
-    expect(draft?.description).toContain('Approved vendor amount: USD 400.00')
+    expect(draft?.description).toContain('Existing vendor payment: USD 400.00')
     expect(draft?.description).toContain('Approved overage: USD 200.00')
   })
 
-  test('approving an overcost includes the assigned vendor submitted bid when no tender award exists', async () => {
+  test('approving an overcost shows the assigned vendor bid without adding it to the payment draft', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const vendor = await prisma.vendor.create({
@@ -653,7 +653,7 @@ describe('approveVendorCommercialItemAction', () => {
       where: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'draft' },
     })
 
-    expect(draft?.totalCents).toBe(50000)
+    expect(draft?.totalCents).toBe(10000)
     expect(draft?.description).toContain('Approved bid: USD 400.00')
     expect(draft?.description).toContain('Approved extras: USD 100.00')
   })

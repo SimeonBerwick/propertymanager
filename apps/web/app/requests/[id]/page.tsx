@@ -128,7 +128,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const pendingVendorExtrasCents = pendingFinalInvoice ? Math.max(pendingFinalInvoice.amountCents - (approvedFinalInvoice?.amountCents ?? 0), 0) : data.vendorCommercialItems
     .filter((item) => item.status === 'submitted' && item.itemType !== 'bid' && item.itemType !== 'bill_to_property_manager' && (!payableVendorId || item.vendorId === payableVendorId))
     .reduce((sum, item) => sum + item.amountCents, 0)
-  const vendorAmountOwedCents = approvedFinalInvoice?.amountCents ?? (approvedBidCents + approvedVendorExtrasCents)
+  const approvedVendorCeilingCents = approvedBidCents + approvedVendorExtrasCents
+  const vendorAmountOwedCents = approvedFinalInvoice?.amountCents ?? approvedVendorExtrasCents
   const approvedOverageCents = approvedFinalInvoice ? Math.max(approvedFinalInvoice.amountCents - approvedBidCents, 0) : approvedVendorExtrasCents
   const vendorAmountIfPendingApprovedCents = pendingFinalInvoice ? pendingFinalInvoice.amountCents : vendorAmountOwedCents + pendingVendorExtrasCents
   const postedVendorPayments = data.billingDocuments.filter((doc) => doc.recipientType === 'vendor' && doc.status !== 'void')
@@ -136,8 +137,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   const postedVendorPaymentBalanceCents = postedVendorPayments.reduce((sum, doc) => sum + Math.max(doc.totalCents - doc.paidCents, 0), 0)
   const unpostedVendorOwedCents = Math.max(vendorAmountOwedCents - postedVendorPaymentCents, 0)
   const vendorOutstandingCents = postedVendorPaymentBalanceCents + unpostedVendorOwedCents
-  const hasVendorBillOrChargeOnRecord = Boolean(acceptedVendorBid || awardedTenderBid)
-    || vendorCommercialChargeRecords.length > 0
+  const hasVendorBillOrChargeOnRecord = vendorCommercialChargeRecords.length > 0
     || postedVendorPayments.length > 0
   const vendorBillPending = data.request.status === 'completed'
     && hasVendorChosen
@@ -155,7 +155,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     || data.vendorCommercialItems.some((item) => item.itemType === 'bid' && item.status === 'submitted')
   const pendingVendorCommercialItems = data.vendorCommercialItems.filter((item) => (
     item.status === 'submitted'
-    && !(item.itemType === 'bill_to_property_manager' && item.amountCents <= vendorAmountOwedCents)
+    && !(item.itemType === 'bill_to_property_manager' && item.amountCents <= approvedVendorCeilingCents)
   ))
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
