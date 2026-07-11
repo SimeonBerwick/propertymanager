@@ -72,6 +72,7 @@ function vendorBillingDocumentsInclude() {
     where: {
       recipientType: 'vendor' as const,
       status: { in: [...VENDOR_BILLING_STATUSES] },
+      totalCents: { gt: 0 },
     },
     orderBy: { createdAt: 'desc' as const },
   }

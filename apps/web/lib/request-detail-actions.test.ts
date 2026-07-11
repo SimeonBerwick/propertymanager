@@ -11,6 +11,7 @@ import {
   updateStatusFormAction,
   updateVendorFormAction,
   addCommentFormAction,
+  dismissTenantQuestionAction,
   approveVendorCommercialItemAction,
   awardTenderInviteAction,
   updateDispatchFormAction,
@@ -322,6 +323,42 @@ describe('addCommentFormAction', () => {
 
     const comments = await prisma.requestComment.findMany({ where: { requestId: request.id } })
     expect(comments[0].visibility).toBe('external')
+  })
+})
+
+describe('dismissTenantQuestionAction', () => {
+  beforeEach(() => {
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('clears a tenant question while preserving an internal audit note', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      reviewState: 'needs_follow_up',
+      reviewNote: 'Tenant asked a question about this work order.',
+    })
+
+    const result = await dismissTenantQuestionAction(PREV, formData({ requestId: request.id, reason: 'Information only' }))
+
+    expect(result).toMatchObject({ error: null, success: true })
+    const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(updated?.reviewState).toBe('none')
+    expect(updated?.reviewNote).toBeNull()
+    const note = await prisma.requestComment.findFirst({ where: { requestId: request.id, visibility: 'internal' } })
+    expect(note?.body).toContain('Information only')
+  })
+
+  test('does not clear a non-tenant review', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      reviewState: 'needs_follow_up',
+      reviewNote: 'Vendor needs clarification.',
+    })
+
+    const result = await dismissTenantQuestionAction(PREV, formData({ requestId: request.id }))
+    expect(result.error).toMatch(/already been cleared or answered/i)
   })
 })
 

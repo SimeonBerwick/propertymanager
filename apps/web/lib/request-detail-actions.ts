@@ -1681,6 +1681,58 @@ export async function addCommentFormAction(
   }
 }
 
+export async function dismissTenantQuestionAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const reason = String(formData.get('reason') ?? '').trim()
+  if (reason.length > 300) return { error: 'Keep the internal reason to 300 characters or fewer.' }
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: session.userId } },
+    select: { id: true, reviewState: true, reviewNote: true },
+  })
+  if (!request) return { error: 'Request not found.' }
+  if (request.reviewState !== 'needs_follow_up' || !request.reviewNote?.toLowerCase().includes('tenant')) {
+    return { error: 'This tenant question has already been cleared or answered.' }
+  }
+
+  const internalNote = reason
+    ? `Tenant question marked no reply needed: ${reason}`
+    : 'Tenant question marked no reply needed.'
+
+  try {
+    await prisma.$transaction([
+      prisma.maintenanceRequest.update({
+        where: { id: requestId },
+        data: { reviewState: 'none', reviewNote: null },
+      }),
+      prisma.requestComment.create({
+        data: { requestId, authorUserId: session.userId, visibility: 'internal', body: internalNote },
+      }),
+    ])
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'request',
+      entityId: requestId,
+      action: 'request.tenantQuestionDismissed',
+      summary: 'Marked tenant question as needing no reply.',
+      metadata: { reason: reason || null },
+    })
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/dashboard')
+    return { error: null, success: true, message: 'Tenant question cleared. No message was sent.' }
+  } catch (error) {
+    await logServerActionError('request.tenantQuestion.dismiss', error, { requestId })
+    return { error: 'Could not clear the tenant question.' }
+  }
+}
+
 function centsFromDollarsInput(raw: string) {
   const value = raw.trim()
   if (!value) return 0

@@ -9,6 +9,8 @@ import { OpsActionQueue } from '@/components/ops-action-queue'
 import { prisma } from '@/lib/prisma'
 import { getDashboardData } from '@/lib/data'
 import { groupRecommendedActions } from '@/lib/recommended-actions'
+import { getUnitBillingSummary } from '@/lib/unit-billing-summary'
+import { UnitBillingSummary } from '@/components/unit-billing-summary'
 
 export default async function OpsPage({
   searchParams,
@@ -26,7 +28,7 @@ export default async function OpsPage({
     entityType: entity || undefined,
     actionPrefix: action || undefined,
   }
-  const [activity, hasOlderActivity, csvPreference, dashboardData, assignedVendorRequests] = await Promise.all([
+  const [activity, hasOlderActivity, csvPreference, dashboardData, assignedVendorRequests, unitBilling] = await Promise.all([
     getOpsActivity(session.userId, 5000, { ...filters, createdAfter }),
     hasOlderOpsActivity(session.userId, createdAfter, filters),
     prisma.user.findUnique({
@@ -43,6 +45,7 @@ export default async function OpsPage({
       select: { id: true, title: true, assignedVendorId: true, unit: { select: { label: true } } },
       orderBy: { updatedAt: 'desc' },
     }),
+    getUnitBillingSummary(session.userId),
   ])
   const opsActions = dashboardData.masterQueueActions
   const primaryAction = opsActions[0]
@@ -75,6 +78,7 @@ export default async function OpsPage({
               <summary>Ops tools</summary>
               <div className="actionMenuPanel">
                 <a href="#ops-tools">CSV and email tools</a>
+                <a href="#unit-billing">Billing by unit</a>
                 <a href="#ops-activity">Activity log</a>
               </div>
             </details>
@@ -134,6 +138,8 @@ export default async function OpsPage({
             dailyExportEnabled={csvPreference?.dailyCsvExportEnabled ?? false}
             dailyExportLastSentAt={csvPreference?.dailyCsvExportLastSentAt?.toISOString()}
           />
+
+          <UnitBillingSummary rows={unitBilling} currentYear={new Date().getUTCFullYear()} />
 
       <section id="ops-activity" className="card stack">
         <div>
