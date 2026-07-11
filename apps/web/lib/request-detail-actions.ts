@@ -757,7 +757,7 @@ export async function requestTenderRevisionAction(
     if (!invite) return { error: 'Bid invite not found.' }
 
     const revisionNote = [
-      requestedAmountCents != null ? `Manager requested revised amount: USD ${(requestedAmountCents / 100).toFixed(2)}.` : null,
+      requestedAmountCents != null ? `Manager negotiation amount: USD ${(requestedAmountCents / 100).toFixed(2)}.` : null,
       requestedTiming ? `Requested timing: ${requestedTiming}.` : null,
       note || null,
       invite.bidAmountCents != null ? `Previous bid: USD ${(invite.bidAmountCents / 100).toFixed(2)}.` : null,
@@ -770,7 +770,7 @@ export async function requestTenderRevisionAction(
         bidAmountCents: null,
         bidCurrency: null,
         bidSource: null,
-        availabilityNote: revisionNote || 'Manager requested a revised bid.',
+        availabilityNote: revisionNote || 'Manager sent a negotiation request.',
         respondedAt: null,
       },
     })
@@ -789,10 +789,10 @@ export async function requestTenderRevisionAction(
     revalidatePath('/dashboard')
     revalidatePath('/vendor')
     revalidatePath(`/vendor/requests/${requestId}`)
-    return { error: null, success: true, message: 'Revision requested. The vendor can now submit a revised bid in the app.' }
+    return { error: null, success: true, message: 'Negotiation request sent. The vendor can now submit a revised bid in the app.' }
   } catch (error) {
     await logServerActionError('request.tender.revision', error, { requestId, tenderId, inviteId })
-    return { error: 'Could not request bid revision.' }
+    return { error: 'Could not send the negotiation request.' }
   }
 }
 

@@ -269,14 +269,14 @@ export function RequestControlPanel({
                       <textarea className="input textarea" name="revisionNote" rows={2} placeholder="Ask for a different amount, date, or time." />
                     </label>
                     <button type="submit" className="button" disabled={revisionPending}>
-                      {revisionPending ? 'Sending...' : 'Send revision request in app'}
+                      {revisionPending ? 'Sending...' : 'Send negotiation request in app'}
                     </button>
                   </form>
                   {invite.vendorEmail ? (
                     <a
                       className="button"
                       style={{ alignSelf: 'flex-start' }}
-                      href={`mailto:${invite.vendorEmail}?subject=${encodeURIComponent('Revision requested for maintenance bid')}&body=${encodeURIComponent(`Please send a revised bid or appointment time for this work order. Current bid: ${formatBidAmount(invite.bidAmountCents)}${proposedWindow ? `. Proposed time: ${proposedWindow}` : ''}.`)}`}
+                      href={`mailto:${invite.vendorEmail}?subject=${encodeURIComponent('Negotiation requested for maintenance bid')}&body=${encodeURIComponent(`Please send a revised bid or appointment time for this work order. Current bid: ${formatBidAmount(invite.bidAmountCents)}${proposedWindow ? `. Proposed time: ${proposedWindow}` : ''}.`)}`}
                     >
                       Email vendor instead
                     </a>
@@ -286,7 +286,7 @@ export function RequestControlPanel({
             )
           })}
           <ActionFeedback error={awardState.error} success={awardState.success ? awardState.message ?? 'Bid approved.' : null} />
-          <ActionFeedback error={revisionState.error} success={revisionState.success ? revisionState.message ?? 'Revision requested.' : null} />
+          <ActionFeedback error={revisionState.error} success={revisionState.success ? revisionState.message ?? 'Negotiation request sent.' : null} />
         </div>
       ) : null}
       {(isCloseoutStage || (statusControlPriority === 'primary' && !canSetAppointment)) ? statusForm : canSetAppointment ? null : (

@@ -197,6 +197,10 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       </section> : null}
 
       <section className="card stack" id="message-manager-vendor">
+        <div className="tenantMessageContext">
+          <strong>{request.title}</strong>
+          <span>{appointmentLabel ?? tenantRequestCloseoutLabel(request)}</span>
+        </div>
         <div>
           <div className="kicker">Message</div>
           <h3 style={{ marginTop: 4 }}>Message property manager and vendor</h3>
@@ -206,14 +210,17 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
       </section>
 
       {['requested', 'approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status) ? (
-        <section className="card stack">
-          <div>
-            <div className="kicker">Need to stop this request?</div>
-            <h3 style={{ marginTop: 4 }}>Cancel</h3>
-          </div>
-          <div className="muted">You can cancel before work is underway. If the vendor has already started, send a message instead.</div>
-          <TenantRequestCancelForm requestId={request.id} />
-        </section>
+        <details className="advancedDisclosure tenantCancelDisclosure">
+          <summary>More options: cancel this request</summary>
+          <section className="card stack">
+            <div>
+              <div className="kicker">Need to stop this request?</div>
+              <h3 style={{ marginTop: 4 }}>Cancel request</h3>
+            </div>
+            <div className="muted">You can cancel before work is underway. If the vendor has already started, send a message instead.</div>
+            <TenantRequestCancelForm requestId={request.id} />
+          </section>
+        </details>
       ) : null}
 
       <section className="card stack">

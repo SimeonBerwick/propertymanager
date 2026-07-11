@@ -9,7 +9,7 @@ export default async function TenantMobileLayout({ children }: { children: React
 
   return (
     <div className="stack" style={{ maxWidth: 760, margin: '0 auto' }}>
-      <section className="card">
+      <section className="card tenantPortalShell">
         <div className="row tenantPortalHeader" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div className="kicker">Tenant portal</div>
