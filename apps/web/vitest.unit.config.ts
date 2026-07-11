@@ -6,6 +6,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['lib/daily-csv-export.test.ts', 'lib/android-webview.test.ts', 'lib/billing-plans.test.ts', 'lib/workflow-rules.test.ts', 'lib/request-guidance.test.ts', 'lib/next-action-engine.test.ts', 'lib/onboarding.test.ts', 'lib/portal-auth-delivery.test.ts', 'lib/portal-subscription-access.test.ts', 'lib/today-overview.test.ts', 'lib/request-closeout-language.test.ts', 'lib/tenant-request-language.test.ts', 'lib/vendor-request-state.test.ts', 'lib/appointment-time.test.ts', 'lib/notify.test.ts'],
+    include: ['lib/daily-csv-export.test.ts', 'lib/android-webview.test.ts', 'lib/billing-plans.test.ts', 'lib/csv-tools.test.ts', 'lib/work-order-state.test.ts', 'lib/workflow-rules.test.ts', 'lib/request-guidance.test.ts', 'lib/next-action-engine.test.ts', 'lib/onboarding.test.ts', 'lib/portal-auth-delivery.test.ts', 'lib/portal-subscription-access.test.ts', 'lib/today-overview.test.ts', 'lib/request-closeout-language.test.ts', 'lib/tenant-request-language.test.ts', 'lib/vendor-request-state.test.ts', 'lib/appointment-time.test.ts', 'lib/notify.test.ts'],
   },
 })

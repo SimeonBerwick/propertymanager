@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Route } from 'next'
 import { addCommentFormAction, type RequestActionState } from '@/lib/request-detail-actions'
 import { ActionFeedback } from '@/components/action-feedback'
 
@@ -15,6 +16,7 @@ export function AddCommentForm({ requestId, defaultVisibility = 'internal' }: { 
   useEffect(() => {
     if (state.success) {
       formRef.current?.reset()
+      router.replace(`/requests/${requestId}` as Route, { scroll: false })
       router.refresh()
       window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
     }

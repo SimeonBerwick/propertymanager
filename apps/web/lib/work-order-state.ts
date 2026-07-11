@@ -52,6 +52,10 @@ function managerBillingHref(id: string) {
   return `/requests/${id}#billing`
 }
 
+function managerTenantReplyHref(id: string) {
+  return `/requests/${id}?comment=tenant#tenant-message-review`
+}
+
 function vendorActionHref(input: WorkOrderStateInput) {
   if (input.activeFinalInvoiceStatus || input.hasPendingCostOrInvoice) return undefined
   return input.needsAppointmentTime || input.isPendingBid ? '#vendor-next-action' : '#vendor-invoice-item'
@@ -142,7 +146,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
       detail: 'The tenant sent a message. Reply before moving the workflow ahead.',
       waitingOn: 'Property manager',
       nextAction: input.audience === 'manager' ? 'Reply to tenant' : 'Wait for reply',
-      nextHref: input.audience === 'manager' ? managerHref(input.id) : undefined,
+      nextHref: input.audience === 'manager' ? managerTenantReplyHref(input.id) : undefined,
       tone: input.audience === 'manager' ? 'review' : 'waiting',
       appointment,
       money,

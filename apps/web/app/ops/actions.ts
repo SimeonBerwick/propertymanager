@@ -133,8 +133,9 @@ function staleExport(row: Record<string, string>, updatedAt: Date) {
 }
 
 function importSummary(kind: string, preview: boolean, created: number, updated: number, skipped: number, conflicts: number, errors: string[]) {
-  const prefix = preview ? `${kind} preview` : `${kind} imported`
-  const detail = `${prefix}: ${created} to create, ${updated} to update, ${conflicts} conflicts, ${skipped} skipped.`
+  const detail = preview
+    ? `${kind} check complete: ${created} would be created, ${updated} would be updated, ${conflicts} conflicts, ${skipped} skipped.`
+    : `${kind} import complete: ${created} created, ${updated} updated, ${conflicts} conflicts, ${skipped} skipped.`
   return errors.length ? `${detail} ${errors.slice(0, 5).join(' ')}` : detail
 }
 
@@ -174,8 +175,16 @@ function boolFromCsv(raw: string, fallback = true) {
 async function csvRows(formData: FormData) {
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'Choose a CSV file.' }
+  if (!file.name.toLowerCase().endsWith('.csv')) return { error: 'Choose a file ending in .csv.' }
   if (file.size > 1_000_000) return { error: 'CSV must be 1 MB or smaller.' }
-  return { rows: parseCsv(await file.text()).slice(0, 1000) }
+  try {
+    const rows = parseCsv(await file.text())
+    if (!rows.length) return { error: 'The CSV has headers but no data rows.' }
+    if (rows.length > 1000) return { error: 'CSV can contain at most 1,000 data rows. Split this file into smaller uploads.' }
+    return { rows }
+  } catch (error) {
+    return { error: `CSV could not be read. ${error instanceof Error ? error.message : 'Check the file format and try again.'}` }
+  }
 }
 
 async function findOrCreateProperty(ownerId: string, name: string, address: string) {

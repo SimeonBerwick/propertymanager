@@ -26,11 +26,11 @@ function UploadForm({
       </div>
       <form action={formAction} className="row" style={{ justifyContent: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
         <input className="input" type="file" name="file" accept=".csv,text/csv" required />
-        <label className="row" style={{ gap: 6 }}><input type="checkbox" name="preview" value="true" defaultChecked /> Preview only</label>
-        <button className="button primary compactToggle" type="submit" disabled={pending}>{pending ? 'Checking' : 'Check / upload CSV'}</button>
+        <button className="button compactToggle" type="submit" name="preview" value="true" disabled={pending}>{pending ? 'Working...' : 'Check file'}</button>
+        <button className="button primary compactToggle" type="submit" name="preview" value="false" disabled={pending}>{pending ? 'Working...' : 'Import changes'}</button>
       </form>
       {formState.error ? <div className="muted" style={{ color: 'var(--danger)' }}>{formState.error}</div> : null}
-      {formState.success ? <div className="badge done" style={{ width: 'fit-content' }}>{formState.success}</div> : null}
+      {formState.success ? <div className="notice success">{formState.success}</div> : null}
     </div>
   )
 }
@@ -66,7 +66,7 @@ export function OpsCsvPanel({
       <div>
         <div className="kicker">CSV</div>
         <h3 style={{ marginTop: 4 }}>Import / export</h3>
-        <div className="muted">Downloads are direct browser files and do not require a connected inbox. Daily emails use the app sender and attach changed CSV files.</div>
+        <div className="muted">Download a current file for reporting or editing. Upload that file again to update records, or upload a compatible CSV from another system. Check file validates changes without saving them.</div>
       </div>
       <label className="field" style={{ maxWidth: 320 }}>
         <span className="field-label">Download changes since</span>

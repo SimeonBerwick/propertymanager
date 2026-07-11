@@ -26,7 +26,7 @@ export function WorkOrderStatusPanel({ summary }: { summary: WorkOrderStateSumma
       </div>
       <div className="workOrderStatusFacts">
         {facts.map((fact) => (
-          <div key={fact.label} className="workOrderStatusFact">
+          <div key={fact.label} className={`workOrderStatusFact workOrderStatusFact-${fact.label.toLowerCase().replaceAll(' ', '-')}`}>
             <div className="kicker">{fact.label}</div>
             <strong>{fact.value}</strong>
           </div>

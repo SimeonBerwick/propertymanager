@@ -30,6 +30,7 @@ function isAccessAction(action: RecommendedAction) {
 
 function contextualHref(action: RecommendedAction, fallback = '/dashboard') {
   const href = action.href ?? (action.requestId ? `/requests/${action.requestId}` : fallback)
+  if (action.actionType === 'review_tenant_message') return href
   return href.startsWith('/requests/') ? href.split('#')[0] : href
 }
 

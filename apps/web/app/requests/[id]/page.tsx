@@ -299,6 +299,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
 
   return (
     <div className="stack requestDetailPage">
+      <div className="requestMobileContext">
+        <strong>{data.request.title}</strong>
+        <span>{data.request.propertyName} - {data.request.unitLabel}</span>
+      </div>
       <WorkOrderStatusPanel summary={managerWorkOrderSummary} />
 
       <section className="card requestHero">
@@ -329,28 +333,24 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
         <WorkOrderContext request={data.request} />
         {hasTenantMessageReview ? (
-          <div id="tenant-message-review" className="timelineRow spotlightSuccess">
-            <div className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-              <div className="stack" style={{ gap: 8 }}>
-                <div>
-                  <div className="kicker">Tenant message to review</div>
-                  <h3 style={{ margin: '4px 0 0' }}>Tenant question</h3>
-                </div>
-                <div>{latestTenantMessage?.body.replace(/^Tenant message:\s*/i, '')}</div>
-                <div className="muted">
-                  Sent by {latestTenantMessage?.authorName ?? data.request.submittedByName ?? 'Tenant'}{latestTenantMessage ? ` - ${formatDateTime(latestTenantMessage.createdAt)}` : ''}
-                </div>
-                {effectiveVendorScheduledStart ? (
-                  <div className="inlineNotice">
-                    <strong>Current appointment</strong>
-                    <span>
-                      {formatAppointmentWindow(effectiveVendorScheduledStart, effectiveVendorScheduledEnd)}
-                    </span>
-                  </div>
-                ) : null}
+          <div id="tenant-message-review" className="timelineRow spotlightSuccess stack tenantReplyAction" style={{ gap: 12 }}>
+            <div className="stack" style={{ gap: 8 }}>
+              <div>
+                <div className="kicker">Tenant message to review</div>
+                <h3 style={{ margin: '4px 0 0' }}>Tenant question</h3>
               </div>
-              <SectionJumpLink href="#communication" className="button primary">Reply to tenant</SectionJumpLink>
+              <div>{latestTenantMessage?.body.replace(/^Tenant message:\s*/i, '')}</div>
+              <div className="muted">
+                Sent by {latestTenantMessage?.authorName ?? data.request.submittedByName ?? 'Tenant'}{latestTenantMessage ? ` - ${formatDateTime(latestTenantMessage.createdAt)}` : ''}
+              </div>
+              {effectiveVendorScheduledStart ? (
+                <div className="inlineNotice">
+                  <strong>Current appointment</strong>
+                  <span>{formatAppointmentWindow(effectiveVendorScheduledStart, effectiveVendorScheduledEnd)}</span>
+                </div>
+              ) : null}
             </div>
+            <AddCommentForm requestId={data.request.id} defaultVisibility="external" />
           </div>
         ) : hasVendorUpdateReview ? (
           <div id="vendor-update-review" className="timelineRow spotlightSuccess">
@@ -387,7 +387,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           </div>
         ) : null}
-        {moneyAction ? (
+        {hasTenantMessageReview ? null : moneyAction ? (
           <div className="notice stack" style={{ gap: 10 }}>
             <div>
               <strong>{moneyAction.title}</strong>
@@ -597,7 +597,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               </div>
             )) : <div className="muted">No messages yet.</div>}
             <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
-              <AddCommentForm requestId={data.request.id} defaultVisibility={defaultCommentVisibility} />
+              <AddCommentForm requestId={data.request.id} defaultVisibility={hasTenantMessageReview ? 'internal' : defaultCommentVisibility} />
             </div>
           </SectionCard>
           </div>
