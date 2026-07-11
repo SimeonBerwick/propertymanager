@@ -167,7 +167,15 @@ body { min-height: 100vh; }
   list-style: none;
 }
 .navMenu summary::-webkit-details-marker, .actionMenu summary::-webkit-details-marker { display: none; }
-.navMenu summary::after, .actionMenu summary::after { content: "v"; color: var(--muted); font-size: 12px; }
+.navMenu summary::after, .actionMenu summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+}
+.navMenu[open] summary::after, .actionMenu[open] summary::after { transform: rotate(225deg) translate(-2px, -1px); }
 .navMenu[open] summary, .navMenu summary:hover, .actionMenu[open] summary, .actionMenu summary:hover {
   border-color: var(--border);
   background: var(--chip);

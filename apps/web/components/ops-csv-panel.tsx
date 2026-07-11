@@ -22,12 +22,12 @@ function UploadForm({
     <div className="opsCsvBox">
       <div className="row" style={{ justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
         <strong>{title}</strong>
-        <a className="button compactToggle" href={downloadHref}>Download CSV</a>
+        <a className="button compactToggle" href={downloadHref} aria-label={`Download ${title.toLowerCase()} CSV`}>Download CSV</a>
       </div>
       <form action={formAction} className="row" style={{ justifyContent: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
-        <input className="input" type="file" name="file" accept=".csv,text/csv" required />
-        <button className="button compactToggle" type="submit" name="preview" value="true" disabled={pending}>{pending ? 'Working...' : 'Check file'}</button>
-        <button className="button primary compactToggle" type="submit" name="preview" value="false" disabled={pending}>{pending ? 'Working...' : 'Import changes'}</button>
+        <input className="input" type="file" name="file" accept=".csv,text/csv" required aria-label={`Choose ${title.toLowerCase()} CSV`} />
+        <button className="button compactToggle" type="submit" name="preview" value="true" disabled={pending} aria-label={`Check ${title.toLowerCase()} CSV without importing`}>{pending ? 'Working...' : 'Check file'}</button>
+        <button className="button primary compactToggle" type="submit" name="preview" value="false" disabled={pending} aria-label={`Import ${title.toLowerCase()} CSV changes`}>{pending ? 'Working...' : 'Import changes'}</button>
       </form>
       {formState.error ? <div className="muted" style={{ color: 'var(--danger)' }}>{formState.error}</div> : null}
       {formState.success ? <div className="notice success">{formState.success}</div> : null}
