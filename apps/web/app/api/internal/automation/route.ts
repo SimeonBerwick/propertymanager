@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { assertHostedRuntimeReady } from '@/lib/runtime-env'
 import { sendDueDailyCsvExports } from '@/lib/daily-csv-export'
 import { reconcileStripeSubscriptions } from '@/lib/subscription-reconciliation'
+import { resultHasFailures, sendOperatorFailureAlert } from '@/lib/operator-alerts'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -24,6 +25,8 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
   const dailyCsvExports = await sendDueDailyCsvExports()
   const subscriptionReconciliation = await reconcileStripeSubscriptions()
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation }
+  if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
   if (body.sendSummaries) {

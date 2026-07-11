@@ -228,6 +228,7 @@ model User {
   stripeSubscriptionId String? @unique
   defaultCurrency      CurrencyOption @default(usd)
   emailNotificationsEnabled Boolean @default(true)
+  dailyBriefingEnabled Boolean @default(true)
   dailyCsvExportEnabled Boolean @default(false)
   dailyCsvExportLastSentAt DateTime?
   createdAt    DateTime @default(now())

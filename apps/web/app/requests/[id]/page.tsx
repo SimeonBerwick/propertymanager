@@ -22,6 +22,7 @@ import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
+import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -608,28 +609,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
 
           <div id="timeline">
-          <SectionCard kicker="Timeline" title="Work history" subtitle="Appointments, status changes, and supporting records.">
-            {tenantTimelineMessages.length ? tenantTimelineMessages.map((comment) => (
-              <div key={comment.id} className="timelineRow spotlightSuccess">
-                <div style={{ fontWeight: 600 }}>Tenant question</div>
-                <div>{comment.body.replace(/^Tenant message:\s*/i, '')}</div>
-                <div className="muted">{comment.authorName} - {formatDateTime(comment.createdAt)}</div>
-              </div>
-            )) : null}
-            {data.dispatchHistory.length ? data.dispatchHistory.map((entry) => (
-              <div key={entry.id} className="timelineRow">
-                <div style={{ fontWeight: 600 }}>
-                  {entry.vendorName ? `${entry.vendorName} - ` : ''}{entry.status}
-                </div>
-                {entry.note ? <div>{entry.note}</div> : null}
-                {(entry.scheduledStart || entry.scheduledEnd) ? (
-                  <div className="muted">
-                    {entry.scheduledStart ? formatAppointmentWindow(entry.scheduledStart, entry.scheduledEnd) : '-'}
-                  </div>
-                ) : null}
-                <div className="muted">{entry.actorName} - {formatDateTime(entry.createdAt)}</div>
-              </div>
-            )) : tenantTimelineMessages.length ? null : <div className="muted">No work activity yet.</div>}
+          <SectionCard kicker="Activity" title="Complete work-order history" subtitle="Messages, appointments, vendor costs, and billing changes in newest-first order.">
+            <WorkOrderActivityFeed comments={data.comments} dispatchHistory={data.dispatchHistory} commercialItems={data.vendorCommercialItems} billingDocuments={data.billingDocuments} />
           </SectionCard>
           </div>
 
