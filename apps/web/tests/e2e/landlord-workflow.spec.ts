@@ -24,7 +24,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.getByRole('button', { name: 'Add property' }).click()
   await expect(page.getByRole('heading', { name: propertyName })).toBeVisible()
 
-  await page.getByRole('link', { name: 'Add unit' }).click()
+  await page.getByRole('link', { name: 'Add unit' }).first().click()
   await page.getByLabel('Unit label').fill(unitLabel)
   await page.getByLabel(/Tenant name/).fill('Maya Lopez')
   await page.getByLabel(/Tenant email/).fill('maya@example.com')

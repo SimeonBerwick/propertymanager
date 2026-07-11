@@ -28,6 +28,7 @@ const IDS = {
   vendor: 'play-review-vendor',
   tenantRequest: 'play-review-request-tenant',
   vendorRequest: 'play-review-request-vendor',
+  vendorApprovedCost: 'play-review-vendor-approved-cost',
 } as const
 
 async function main() {
@@ -225,6 +226,35 @@ async function main() {
       dispatchStatus: 'scheduled',
       vendorScheduledStart: new Date('2030-01-15T16:00:00Z'),
       vendorScheduledEnd: new Date('2030-01-15T18:00:00Z'),
+    },
+  })
+
+  await prisma.vendorCommercialItem.upsert({
+    where: { id: IDS.vendorApprovedCost },
+    update: {
+      requestId: IDS.vendorRequest,
+      vendorId: IDS.vendor,
+      orgId: landlord.id,
+      itemType: 'service_fee',
+      status: 'approved',
+      paymentTiming: 'on_completion',
+      currency: 'usd',
+      amountCents: 12500,
+      title: 'Approved service charge',
+      description: 'Stable approved charge for Android WebView completion testing.',
+    },
+    create: {
+      id: IDS.vendorApprovedCost,
+      requestId: IDS.vendorRequest,
+      vendorId: IDS.vendor,
+      orgId: landlord.id,
+      itemType: 'service_fee',
+      status: 'approved',
+      paymentTiming: 'on_completion',
+      currency: 'usd',
+      amountCents: 12500,
+      title: 'Approved service charge',
+      description: 'Stable approved charge for Android WebView completion testing.',
     },
   })
 

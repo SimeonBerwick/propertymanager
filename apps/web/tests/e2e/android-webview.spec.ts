@@ -33,7 +33,7 @@ async function signInManager(page: Page) {
   await page.getByLabel('Password').fill(process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'play-review-password-2026')
   await page.getByRole('button', { name: /^Sign in$/ }).click()
   await expect(page).toHaveURL(/\/dashboard/)
-  await expect(page.getByRole('heading', { name: /Maintenance queue|Today/ }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Next step|No manager decision needed/ })).toBeVisible()
 }
 
 async function signInTenantWithMagicLink(page: Page) {
@@ -64,7 +64,7 @@ test('manager login persists and CSV downloads work in Android WebView', async (
   await signInManager(page)
   await page.reload()
   await expect(page).toHaveURL(/\/dashboard/)
-  await expect(page.getByRole('heading', { name: /Needs your action|Maintenance queue/ }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Next step|No manager decision needed/ })).toBeVisible()
 
   await page.goto('/ops')
   const downloadPromise = page.waitForEvent('download')
@@ -83,7 +83,7 @@ test('tenant OTP magic link, persistent session, photo upload, links, and back n
   await expect(page.locator('a[href^="tel:"]').first()).toHaveAttribute('href', /16025550102/)
 
   await page.goto('/mobile')
-  await page.getByRole('link', { name: /Open details/ }).first().click()
+  await page.getByRole('link', { name: /View details/ }).first().click()
   await expect(page).toHaveURL(/\/mobile\/requests\//)
   await page.goBack()
   await expect(page).toHaveURL(/\/mobile/)
