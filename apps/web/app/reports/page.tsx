@@ -31,6 +31,32 @@ export default async function ReportsPage() {
         <div className="muted">Use reports to find aging requests, busy properties, vendor performance issues, and repeat problems.</div>
       </section>
 
+      {data.trendAlerts.length ? (
+        <section className="notice stack" style={{ gap: 8 }}>
+          <strong>Workload warnings</strong>
+          {data.trendAlerts.map((alert) => <div key={alert.kind}>{alert.message}</div>)}
+        </section>
+      ) : null}
+
+      <section className="card stack">
+        <div>
+          <div className="kicker">Command center</div>
+          <h3 style={{ marginTop: 4 }}>Portfolio operating signals</h3>
+        </div>
+        <div className="grid cols-4">
+          <div className="signalCard"><span>Open work</span><strong>{data.totalOpen}</strong></div>
+          <div className="signalCard"><span>Unclaimed</span><strong>{data.unclaimedOpenCount}</strong></div>
+          <div className="signalCard"><span>Stale claims</span><strong>{data.staleClaimedOpenCount}</strong></div>
+          <div className="signalCard"><span>Reopened</span><strong>{data.reopenCount}</strong></div>
+        </div>
+        <div className="grid cols-4">
+          <div className="signalCard"><span>First review</span><strong>{data.avgTimeToFirstReviewHours != null ? `${data.avgTimeToFirstReviewHours.toFixed(1)}h` : '-'}</strong></div>
+          <div className="signalCard"><span>Assign vendor</span><strong>{data.avgTimeToAssignHours != null ? `${data.avgTimeToAssignHours.toFixed(1)}h` : '-'}</strong></div>
+          <div className="signalCard"><span>Schedule</span><strong>{data.avgTimeToScheduleHours != null ? `${data.avgTimeToScheduleHours.toFixed(1)}h` : '-'}</strong></div>
+          <div className="signalCard"><span>Complete</span><strong>{data.avgTimeToCompleteDays != null ? `${data.avgTimeToCompleteDays.toFixed(1)}d` : '-'}</strong></div>
+        </div>
+      </section>
+
       <section className="card stack">
         <div>
           <div className="kicker">Open work by property</div>
@@ -89,6 +115,7 @@ export default async function ReportsPage() {
                 <div className="muted">Avg response: {vendor.avgResponseHours != null ? vendor.avgResponseHours.toFixed(1) + 'h' : 'Not enough data'}</div>
                 <div className="muted">Completion: {percent(vendor.completionRate)}</div>
                 <div className="muted">On time: {percent(vendor.onTimeCompletionRate)}</div>
+                <div className="muted">Avg completion: {vendor.avgCompletionDays != null ? vendor.avgCompletionDays.toFixed(1) + 'd' : 'Not enough data'}</div>
               </Link>
             ))}
           </div>

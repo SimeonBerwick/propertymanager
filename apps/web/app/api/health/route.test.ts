@@ -6,6 +6,17 @@ describe('GET /api/health', () => {
     const response = await GET()
     expect(response.status).toBe(200)
     const body = await response.json()
-    expect(body).toEqual({ ok: true, service: 'property-manager-v1-web' })
+    expect(body).toMatchObject({
+      ok: true,
+      service: 'property-manager-v1-web',
+      database: true,
+      capabilities: {
+        notifications: true,
+        media: true,
+        rateLimit: true,
+        billing: true,
+      },
+      failures: [],
+    })
   })
 })
