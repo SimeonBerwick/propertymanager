@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import type { CurrencyOption, Property, Unit } from '@/lib/types'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { submitMaintenanceRequest, type SubmitRequestState } from '@/lib/request-actions'
@@ -97,10 +98,24 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     setTenantEmail(selectedUnit?.tenantEmail ?? '')
   }, [managerMode, selectedUnit])
 
-  if (!properties.length) {
+  if (!properties.length || !units.length) {
     return (
-      <div className="notice">
-        No active properties or units are available for online request submission right now. Contact your property manager directly.
+      <div className="notice stack" style={{ gap: 10 }}>
+        <div>
+          {managerMode
+            ? properties.length
+              ? 'Add a unit before creating a work order.'
+              : 'Add a property and unit before creating a work order.'
+            : 'No active properties or units are available for online request submission right now. Contact your property manager directly.'}
+        </div>
+        {managerMode ? (
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <Link className="button primary" href={properties.length ? `/properties/${properties[0].id}` : '/properties/new'}>
+              {properties.length ? 'Add a unit' : 'Add property'}
+            </Link>
+            <Link className="button" href="/dashboard">Return to dashboard</Link>
+          </div>
+        ) : null}
       </div>
     )
   }

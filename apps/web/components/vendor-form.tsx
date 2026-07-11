@@ -6,7 +6,11 @@ import { createVendorAction, updateVendorAction, type VendorActionState } from '
 
 const INITIAL_STATE: VendorActionState = { error: null }
 const CATEGORY_OPTIONS = ['Plumbing', 'HVAC', 'Exterior', 'Electrical', 'Appliance', 'General']
-const LANGUAGE_OPTIONS = ['english', 'spanish', 'french']
+const LANGUAGE_OPTIONS = [
+  { value: 'english', label: 'English' },
+  { value: 'spanish', label: 'Spanish' },
+  { value: 'french', label: 'French' },
+] as const
 
 function hasValue(values: string[] | undefined, value: string) {
   return values?.includes(value) ?? false
@@ -35,6 +39,7 @@ export function VendorForm({ vendor }: { vendor?: Vendor }) {
           </select>
         </label>
       </div>
+      <div className="muted">Add an email so the vendor can receive invitations, sign-in codes, scheduling messages, and billing updates. Phone is optional.</div>
 
       <div className="grid cols-2">
         <label className="field">
@@ -60,9 +65,9 @@ export function VendorForm({ vendor }: { vendor?: Vendor }) {
       <fieldset className="card stack">
         <legend style={{ fontWeight: 600 }}>Supported languages</legend>
         {LANGUAGE_OPTIONS.map((language) => (
-          <label key={language} className="row" style={{ gap: 8, justifyContent: 'flex-start' }}>
-            <input type="checkbox" name="supportedLanguages" value={language} defaultChecked={hasValue(vendor?.supportedLanguages, language)} />
-            <span style={{ textTransform: 'capitalize' }}>{language}</span>
+          <label key={language.value} className="row" style={{ gap: 8, justifyContent: 'flex-start' }}>
+            <input type="checkbox" name="supportedLanguages" value={language.value} defaultChecked={hasValue(vendor?.supportedLanguages, language.value)} />
+            <span>{language.label}</span>
           </label>
         ))}
       </fieldset>
