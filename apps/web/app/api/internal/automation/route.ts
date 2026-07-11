@@ -4,6 +4,7 @@ import { syncAllMailboxReplies } from '@/lib/mailbox-sync'
 import { prisma } from '@/lib/prisma'
 import { assertHostedRuntimeReady } from '@/lib/runtime-env'
 import { sendDueDailyCsvExports } from '@/lib/daily-csv-export'
+import { reconcileStripeSubscriptions } from '@/lib/subscription-reconciliation'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -22,6 +23,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const sweep = await runAutomationSweep()
   const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
   const dailyCsvExports = await sendDueDailyCsvExports()
+  const subscriptionReconciliation = await reconcileStripeSubscriptions()
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
   if (body.sendSummaries) {
@@ -36,7 +38,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, mailboxSync, dailyCsvExports, summaryResults })
+  return NextResponse.json({ ok: true, sweep, mailboxSync, dailyCsvExports, subscriptionReconciliation, summaryResults })
 }
 
 export async function GET(request: NextRequest) {

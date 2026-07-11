@@ -7,7 +7,7 @@ export function BillingEventList({ documents }: { documents: BillingDocumentView
 
   const timeline = documents
     .flatMap((doc) => doc.events.map((event) => ({ ...event, documentTitle: doc.title })))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
   if (!timeline.length) return null
 
@@ -15,7 +15,8 @@ export function BillingEventList({ documents }: { documents: BillingDocumentView
     <div className="stack" style={{ gap: 10 }}>
       <div>
         <div className="kicker">Payment activity</div>
-        <h3 style={{ margin: '4px 0 0' }}>Event timeline</h3>
+        <h3 style={{ margin: '4px 0 0' }}>Billing timeline</h3>
+        <div className="muted">Oldest to newest, so approvals, invoices, and payments read in order.</div>
       </div>
       {timeline.map((event) => (
         <div key={event.id} className="timelineRow">
