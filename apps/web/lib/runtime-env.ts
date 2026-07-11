@@ -81,7 +81,7 @@ export function hasUpstashRateLimitConfig() {
 }
 
 export function isHostedRuntimeEnforced() {
-  return process.env.HOSTED_RUNTIME_REQUIRED === 'true' || process.env.VERCEL_ENV === 'production'
+  return process.env.HOSTED_RUNTIME_REQUIRED === 'true' || process.env.VERCEL === '1'
 }
 
 export function getRuntimeChecks(): RuntimeCheck[] {

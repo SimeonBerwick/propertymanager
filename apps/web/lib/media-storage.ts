@@ -164,6 +164,7 @@ export async function saveStoredMedia(storagePath: string, bytes: Buffer, conten
     return normalized
   }
 
+  assertHostedRuntimeReady('private media upload', ['media'])
   return normalized
 }
 
