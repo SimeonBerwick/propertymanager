@@ -11,6 +11,7 @@ import { BILLING_PLANS, CADENCE_LABELS, parseCadence, parsePlan, planAmountCents
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
+import { shouldManageExistingSubscription } from '@/lib/subscription-checkout'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -77,7 +78,14 @@ export async function startCheckoutAction(formData: FormData) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, email: true, displayName: true, stripeCustomerId: true },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      subscriptionStatus: true,
+    },
   })
   if (!user) redirect('/login?error=session-expired')
 
@@ -95,15 +103,26 @@ export async function startCheckoutAction(formData: FormData) {
     })
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      subscriptionPlan: plan,
-      billingCadence: cadence,
-    },
-  })
-
   const baseUrl = getAppBaseUrl('stripe checkout')
+  if (shouldManageExistingSubscription(user)) {
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${baseUrl}/account/subscription`,
+    })
+
+    await writeAuditLog({
+      orgId: user.id,
+      actorUserId: user.id,
+      entityType: 'user',
+      entityId: user.id,
+      action: 'subscription.planChangeRedirected',
+      summary: 'Opened Stripe billing to manage an existing subscription without creating a duplicate.',
+      metadata: { requestedPlan: plan, requestedCadence: cadence, stripeSubscriptionId: user.stripeSubscriptionId },
+    })
+
+    redirect(portal.url as Route)
+  }
+
   const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: stripeCustomerId,

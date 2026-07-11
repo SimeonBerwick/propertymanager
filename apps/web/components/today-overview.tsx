@@ -28,6 +28,10 @@ function isAccessAction(action: RecommendedAction) {
   return action.group === 'Access help' || action.group === 'Access actions' || action.group === 'Unused access'
 }
 
+function isSystemHealthAction(action: RecommendedAction) {
+  return action.actionType === 'review_system_health'
+}
+
 function contextualHref(action: RecommendedAction, fallback = '/dashboard') {
   const href = action.href ?? (action.requestId ? `/requests/${action.requestId}` : fallback)
   if (action.actionType === 'review_tenant_message') return href
@@ -64,8 +68,9 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
     ...buildDashboardNextActions(requests, now),
     ...masterQueueActions,
   ])
-  const requestActions = allActions.filter((action) => !isAccessAction(action))
-  const accessActions = allActions.filter(isAccessAction)
+  const userFacingActions = allActions.filter((action) => !isSystemHealthAction(action))
+  const requestActions = userFacingActions.filter((action) => !isAccessAction(action))
+  const accessActions = userFacingActions.filter(isAccessAction)
   const nextActions = requestActions.length ? requestActions : accessActions
   const primaryAction = nextActions[0]
   const remainingActions = primaryAction ? nextActions.slice(1) : nextActions

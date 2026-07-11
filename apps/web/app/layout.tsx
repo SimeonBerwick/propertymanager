@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const pathname = headerStore.get('x-pathname') ?? ''
   const androidApp = isAndroidWebView(headerStore.get('user-agent'))
   const isTenantPortalRoute = pathname.startsWith('/mobile')
-  const isVendorPortalRoute = pathname.startsWith('/vendor')
+  const isVendorPortalRoute = pathname === '/vendor' || pathname.startsWith('/vendor/')
   const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute
   const dbAvailable = await isDatabaseAvailable()
   const [tenantPortalSession, vendorPortalSession] = dbAvailable
