@@ -42,6 +42,10 @@ export async function getTenantOwnedRequestsForDashboard(session: TenantMobileSc
     where: buildTenantRequestOwnershipWhere(session),
     include: {
       billingDocuments: tenantBillingDocumentsInclude(),
+      dispatchHistory: {
+        select: { status: true },
+        orderBy: { createdAt: 'desc' as const },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })

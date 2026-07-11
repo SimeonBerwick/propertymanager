@@ -4,6 +4,7 @@ import { getRequestDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { languageLabel } from '@/lib/types'
 import { formatDateTime } from '@/lib/ui-utils'
+import { NoReplyNeededForm } from './no-reply-needed-form'
 import { StatusBadge } from '@/components/status-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
@@ -351,6 +352,10 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               ) : null}
             </div>
             <AddCommentForm requestId={data.request.id} defaultVisibility="external" />
+            <NoReplyNeededForm
+              requestId={data.request.id}
+              isTimeSensitive={/appointment|different time|reschedule|schedule|urgent|emergency|today|tomorrow/i.test(latestTenantMessage?.body ?? '')}
+            />
           </div>
         ) : hasVendorUpdateReview ? (
           <div id="vendor-update-review" className="timelineRow spotlightSuccess">

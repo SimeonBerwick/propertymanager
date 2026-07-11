@@ -39,16 +39,16 @@ export default async function VendorDashboardPage({
     : 'open'
 
   const requestViews = requests.map((request) => {
+    const workMarkedComplete = request.status === 'completed'
+      || request.dispatchStatus === 'completed'
+      || request.reviewState === 'vendor_completed_pending_review'
     const viewState = deriveVendorRequestViewState({
       assignedVendorId: request.assignedVendorId,
-      requestStatus: request.status,
+      requestStatus: workMarkedComplete && !['closed', 'canceled'].includes(request.status) ? 'completed' : request.status,
       viewerVendorId: session.vendorId,
       latestInvite: request.tenderInvites[0],
       billingDocuments: request.billingDocuments,
     })
-    const workMarkedComplete = request.status === 'completed'
-      || request.dispatchStatus === 'completed'
-      || request.reviewState === 'vendor_completed_pending_review'
     const hasAppointmentTime = Boolean(request.vendorScheduledStart)
     const isPaidClosed = request.status === 'closed' && deriveRequestCloseoutLanguage({
       status: request.status,
@@ -88,7 +88,7 @@ export default async function VendorDashboardPage({
       awardedFromBid: request.tenderInvites.some((invite) => invite.status === 'awarded' || invite.awardedAt),
     })
 
-    return { request, viewState, nextAction }
+    return { request, viewState, nextAction, workMarkedComplete }
   })
   const openRequests = requestViews.filter(({ request, nextAction }) => !['closed', 'declined', 'canceled'].includes(request.status) && !['done', 'wait'].includes(nextAction.key))
   const recentRequests = requestViews.filter(({ request, nextAction }) => ['closed', 'completed', 'canceled'].includes(request.status) || ['done', 'wait'].includes(nextAction.key)).slice(0, 8)
@@ -257,7 +257,7 @@ export default async function VendorDashboardPage({
               <span>Submitted bids, extra costs, and invoices will appear here after you send them from a request.</span>
             </div>
           )
-        ) : filteredRequests.length ? filteredRequests.map(({ request, viewState, nextAction }) => (
+        ) : filteredRequests.length ? filteredRequests.map(({ request, viewState, nextAction, workMarkedComplete }) => (
           <Link key={request.id} href={`/vendor/requests/${request.id}` as Route} className="card" style={{ textDecoration: 'none' }}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
               <div>
@@ -282,7 +282,9 @@ export default async function VendorDashboardPage({
                 ) : null}
               </div>
               <div style={{ textAlign: 'right' }}>
-                {viewState.isAwardedToViewer && !['completed', 'closed', 'canceled'].includes(request.status) ? (
+                {workMarkedComplete ? (
+                  <span className="badge done">Work completed</span>
+                ) : viewState.isAwardedToViewer && !['completed', 'closed', 'canceled'].includes(request.status) ? (
                   <span className="badge done">Vendor chosen for service call</span>
                 ) : ['completed', 'closed', 'canceled'].includes(request.status) ? null : (
                   <div className="muted">{viewState.tenderLabel}</div>

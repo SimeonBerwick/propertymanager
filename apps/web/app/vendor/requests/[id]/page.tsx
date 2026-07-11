@@ -42,9 +42,12 @@ export default async function VendorRequestDetailPage({
 
   const awardedInvite = request.tenderInvites.find((invite) => invite.status === 'awarded' || !!invite.awardedAt)
   const latestInvite = request.tenderInvites[0]
+  const workMarkedComplete = request.status === 'completed'
+    || request.dispatchStatus === 'completed'
+    || request.reviewState === 'vendor_completed_pending_review'
   const viewState = deriveVendorRequestViewState({
     assignedVendorId: request.assignedVendorId,
-    requestStatus: request.status,
+    requestStatus: workMarkedComplete && !['closed', 'canceled'].includes(request.status) ? 'completed' : request.status,
     viewerVendorId: session.vendorId,
     latestInvite,
     billingDocuments: request.billingDocuments,
@@ -54,9 +57,6 @@ export default async function VendorRequestDetailPage({
     billingDocuments: request.billingDocuments,
   })
   const isPaidClosed = request.status === 'closed' && closeoutLanguage.isPaid
-  const workMarkedComplete = request.status === 'completed'
-    || request.dispatchStatus === 'completed'
-    || request.reviewState === 'vendor_completed_pending_review'
   const heroNotice = !isPaidClosed && !workMarkedComplete && awardedInvite && viewState.isAwardedToViewer
     ? {
         title: 'Vendor chosen for service call',

@@ -11,6 +11,7 @@ import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { formatDateTime } from '@/lib/ui-utils'
+import { tenantEffectiveRequestStatus } from '@/lib/tenant-effective-status'
 
 function classifyCommentSource(
   comment: {
@@ -84,6 +85,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const appointmentLabel = request.vendorScheduledStart
     ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
     : null
+  const effectiveStatus = tenantEffectiveRequestStatus(request)
   const newestComments = [...request.comments]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const tenantMessages = newestComments.filter((comment) => {
@@ -109,7 +111,7 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   const tenantWorkOrderSummary = deriveWorkOrderStateSummary({
     audience: 'tenant',
     id: request.id,
-    status: request.status,
+    status: effectiveStatus,
     reviewState: request.reviewState,
     assignedVendorName: request.assignedVendorName,
     vendorScheduledStart: request.vendorScheduledStart,
@@ -169,8 +171,8 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
         </div>
         <div className="tenantStatusSummary">
           <div className="kicker">Current status</div>
-          <strong>{tenantRequestCloseoutLabel(request)}</strong>
-          <div>{tenantRequestNextStep(request)}</div>
+          <strong>{tenantRequestCloseoutLabel({ ...request, status: effectiveStatus })}</strong>
+          <div>{tenantRequestNextStep({ ...request, status: effectiveStatus })}</div>
         </div>
         <div className="muted">{request.category}</div>
         <div>{request.description}</div>

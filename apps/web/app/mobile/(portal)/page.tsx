@@ -5,6 +5,7 @@ import { getTenantOwnedRequestsForDashboard } from '@/lib/tenant-portal-data'
 import { billingStatusLabel, formatMoney } from '@/lib/billing-utils'
 import { tenantRequestCloseoutLabel, tenantRequestNextStep } from '@/lib/tenant-request-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
+import { tenantEffectiveRequestStatus } from '@/lib/tenant-effective-status'
 
 type TenantDashboardFilter = 'open' | 'all' | 'charges'
 
@@ -25,14 +26,15 @@ export default async function TenantMobileDashboardPage({
     ? resolvedSearchParams.filter
     : 'open'
 
-  const openRequests = requests.filter((request) => !['completed', 'closed', 'declined', 'canceled'].includes(request.status))
+  const effectiveStatus = (request: (typeof requests)[number]) => tenantEffectiveRequestStatus(request)
+  const openRequests = requests.filter((request) => !['completed', 'closed', 'declined', 'canceled'].includes(effectiveStatus(request)))
   const requestsWithCharges = requests.filter((request) => request.billingDocuments.length > 0)
   const outstandingChargeCount = requests.reduce(
     (sum, request) => sum + request.billingDocuments.filter((document) => Math.max(0, document.totalCents - document.paidCents) > 0).length,
     0,
   )
   const nextAppointment = openRequests
-    .filter((request) => request.vendorScheduledStart)
+    .filter((request) => request.vendorScheduledStart && new Date(request.vendorScheduledEnd ?? request.vendorScheduledStart).getTime() >= Date.now())
     .sort((a, b) => new Date(a.vendorScheduledStart!).getTime() - new Date(b.vendorScheduledStart!).getTime())[0]
 
   const filteredRequests = filter === 'open'
@@ -111,10 +113,10 @@ export default async function TenantMobileDashboardPage({
               <div>
                 <div style={{ fontWeight: 600 }}>{request.title}</div>
                 <div className="muted">
-                  {tenantRequestCloseoutLabel(request)}
+                  {tenantRequestCloseoutLabel({ ...request, status: effectiveStatus(request) })}
                   {request.vendorScheduledStart ? ` - Appointment ${formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)}` : ''}
                 </div>
-                <div style={{ marginTop: 6 }}>{tenantRequestNextStep(request)}</div>
+                <div style={{ marginTop: 6 }}>{tenantRequestNextStep({ ...request, status: effectiveStatus(request) })}</div>
                 {request.billingDocuments.length ? (
                   <div className="muted" style={{ marginTop: 6 }}>
                     {request.billingDocuments.map((document) => {
