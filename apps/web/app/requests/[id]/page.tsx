@@ -356,9 +356,13 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                 <div className="kicker">Tenant message to review</div>
                 <h3 style={{ margin: '4px 0 0' }}>Tenant question</h3>
               </div>
-              <div>{latestTenantMessage?.body.replace(/^Tenant message:\s*/i, '')}</div>
-              <div className="muted">
-                Sent by {latestTenantMessage?.authorName ?? data.request.submittedByName ?? 'Tenant'}{latestTenantMessage ? ` - ${formatDateTime(latestTenantMessage.createdAt)}` : ''}
+              <div className="stack" style={{ gap: 10 }}>
+                {tenantTimelineMessages.map((message) => (
+                  <div key={message.id} className="inlineNotice">
+                    <div>{message.body.replace(/^Tenant message:\s*/i, '')}</div>
+                    <div className="muted">Sent by {message.authorName ?? data.request.submittedByName ?? 'Tenant'} - {formatDateTime(message.createdAt)}</div>
+                  </div>
+                ))}
               </div>
               {effectiveVendorScheduledStart ? (
                 <div className="inlineNotice">

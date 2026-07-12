@@ -1212,6 +1212,16 @@ body { min-height: 100vh; }
 
 .simeonware-android-app .header { margin-top: 8px; }
 .simeonware-android-app .brandLogo { width: 190px; }
+
+.unitBillingTable { min-width: 920px; table-layout: fixed; }
+.unitBillingTable th:first-child, .unitBillingTable td:first-child { width: 24%; }
+.unitBillingTable th:nth-child(2), .unitBillingTable td:nth-child(2) { width: 18%; }
+.unitBillingTable th, .unitBillingTable td { vertical-align: top; padding: 14px 12px; }
+.unitBillingTable tbody tr:nth-child(even) { background: var(--panel); }
+.unitBillingTable tbody tr:hover { background: var(--accent-soft); }
+.unitBillingTableWrap { max-height: 70vh; overflow: auto; }
+.unitBillingTable thead { position: sticky; top: 0; z-index: 1; background: var(--card-strong); }
+
 @media (max-width: 640px) {
   .simeonware-android-app .page { padding-top: 18px; }
   .simeonware-android-app .header { gap: 10px; margin-bottom: 16px; }
