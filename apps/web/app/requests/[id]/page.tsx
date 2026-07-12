@@ -23,6 +23,7 @@ import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
+import { canScheduleRequest } from '@/lib/request-scheduling'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -188,7 +189,15 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     vendorScheduledStart: effectiveVendorScheduledStart,
     vendorScheduledEnd: effectiveVendorScheduledEnd,
   }
-  const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && data.request.dispatchStatus === 'accepted' && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const needsAppointmentTime = canScheduleRequest({
+    status: data.request.status,
+    dispatchStatus: data.request.dispatchStatus,
+    hasVendor: hasVendorChosen,
+    hasOpenBidActivity: hasActiveBidInvitations,
+    hasAppointment: Boolean(effectiveVendorScheduledStart),
+    upfrontPaymentDueCents: data.request.upfrontVendorPaymentDueCents,
+    workComplete: isEffectivelyCompleted,
+  })
   const vendorNeedsAcceptance = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && !['accepted', 'scheduled', 'in_progress', 'completed'].includes(data.request.dispatchStatus ?? '')
   const upfrontVendorPaymentDueCents = data.request.upfrontVendorPaymentDueCents ?? 0
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
