@@ -388,6 +388,52 @@ export interface VendorAssignedParams {
   actionUrl?: string
 }
 
+export interface VendorDailyReminderParams {
+  requestId: string
+  title: string
+  propertyName: string
+  unitLabel: string
+  vendorName: string
+  vendorEmail: string
+  actionLabel: string
+  actionDetail: string
+  actionUrl: string
+}
+
+export function buildVendorDailyReminderMessage(p: VendorDailyReminderParams): NotificationMessage {
+  return {
+    to: p.vendorEmail,
+    subject: `Reminder: ${p.actionLabel} - ${p.title}`,
+    text: [
+      `Hi ${p.vendorName},`,
+      ``,
+      `This work order is waiting for you: ${p.actionLabel}.`,
+      p.actionDetail,
+      ``,
+      `  Reference ID : ${p.requestId}`,
+      `  Issue        : ${p.title}`,
+      `  Property     : ${p.propertyName}`,
+      `  Unit         : ${p.unitLabel}`,
+      ``,
+      `Take action: ${p.actionUrl}`,
+    ].join('\n'),
+    html: htmlEmail(`
+      <p style="margin:0 0 14px 0">Hi ${esc(p.vendorName)},</p>
+      <p style="margin:0 0 8px 0">This work order is waiting for you: <strong>${esc(p.actionLabel)}</strong>.</p>
+      <p style="margin:0 0 14px 0">${esc(p.actionDetail)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:14px 0;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt">
+        ${dtRow('Reference ID', p.requestId)}
+        ${dtRow('Issue', p.title)}
+        ${dtRow('Property', p.propertyName)}
+        ${dtRow('Unit', p.unitLabel)}
+      </table>
+      ${actionButton('Open work order', p.actionUrl)}
+    `),
+    requestId: p.requestId,
+    actionUrl: p.actionUrl,
+  }
+}
+
 export function buildVendorAssignedMessage(p: VendorAssignedParams): NotificationMessage {
   const actionUrl = p.actionUrl ?? p.responseLink
   return {

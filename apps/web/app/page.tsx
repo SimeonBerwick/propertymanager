@@ -167,6 +167,11 @@ export default async function HomePage() {
             <h3>Suggested next step on every request</h3>
             <p>Each ticket shows the recommended next action first so managers know whether to assign, approve, update, bill, or close the work.</p>
           </article>
+          <article className="featureCard">
+            <span className="featureNumber">08</span>
+            <h3>Automatic vendor follow-up</h3>
+            <p>Send one daily reminder while a vendor action is outstanding, with a portfolio-wide default and an override on each ticket.</p>
+          </article>
         </div>
         <p className="featureNote">Payments are intentionally separate from the core maintenance manager. Today, Simeonware tracks approvals, billbacks, vendor payment records, and closeout status; online payment processing is planned as a future add-on.</p>
       </section>

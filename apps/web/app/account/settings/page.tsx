@@ -6,12 +6,12 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { logout } from '@/lib/auth-actions'
 import { CURRENCY_OPTIONS, currencyLabel } from '@/lib/types'
-import { updateDailyBriefingAction, updateDefaultCurrencyAction } from './actions'
+import { updateDailyBriefingAction, updateDefaultCurrencyAction, updateVendorRemindersAction } from './actions'
 
 export default async function AccountSettingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; briefing?: string }>
+  searchParams?: Promise<{ currency?: string; briefing?: string; vendorReminders?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -19,7 +19,7 @@ export default async function AccountSettingsPage({
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
   const account = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { defaultCurrency: true, dailyBriefingEnabled: true },
+    select: { defaultCurrency: true, dailyBriefingEnabled: true, vendorRemindersEnabled: true },
   })
   const defaultCurrency = account?.defaultCurrency ?? 'usd'
 
@@ -43,6 +43,15 @@ export default async function AccountSettingsPage({
           {query.briefing === 'updated' ? <div className="notice success">Daily briefing preference updated.</div> : null}
           <form action={updateDailyBriefingAction} className="row" style={{ justifyContent: 'flex-start' }}>
             <label className="row"><input type="checkbox" name="dailyBriefingEnabled" defaultChecked={account?.dailyBriefingEnabled !== false} /> Send my daily briefing</label>
+            <button type="submit" className="button primary">Save</button>
+          </form>
+        </div>
+        <div className="card stack">
+          <div><div className="kicker">Vendor follow-up</div><h3 style={{ margin: '4px 0 0' }}>Daily vendor reminders</h3></div>
+          <p className="muted" style={{ margin: 0 }}>Email vendors once daily only while a bid, acceptance, appointment, charge, completion, invoice, or work update is waiting on them. Individual tickets can override this default.</p>
+          {query.vendorReminders === 'updated' ? <div className="notice success">Vendor reminder preference updated.</div> : null}
+          <form action={updateVendorRemindersAction} className="row" style={{ justifyContent: 'flex-start' }}>
+            <label className="row"><input type="checkbox" name="vendorRemindersEnabled" defaultChecked={account?.vendorRemindersEnabled !== false} /> Send daily vendor reminders by default</label>
             <button type="submit" className="button primary">Save</button>
           </form>
         </div>
