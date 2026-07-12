@@ -67,8 +67,9 @@ test('manager login persists and CSV downloads work in Android WebView', async (
   await expect(page.getByRole('heading', { name: /Next step|No manager decision needed/ })).toBeVisible()
 
   await page.goto('/ops')
+  await page.getByText('Open tools, settings, and audit trail').click()
   const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('link', { name: 'Download CSV' }).first().click()
+  await page.getByRole('link', { name: 'Download units CSV' }).click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toMatch(/\.csv$/)
 })
@@ -117,7 +118,7 @@ test('vendor OTP magic link, persistent session, photo upload, and support link 
     buffer: JPEG_BYTES,
   })
   await page.getByLabel('Note').fill('Completed during Android WebView upload verification.')
-  await page.getByRole('button', { name: /Send update/ }).click()
+  await page.getByRole('button', { name: 'Mark call completed' }).click()
   await expect(page).toHaveURL(/submitted=1/)
   await expect(page.getByText(/Update saved/)).toBeVisible()
 
