@@ -214,20 +214,21 @@ describe('updateVendorFormAction', () => {
     expect(updated?.assignedVendorName).toBe('ACME Plumbing')
   })
 
-  test('clears vendor when empty string is submitted', async () => {
+  test('rejects an assignment with no selected vendor and preserves existing state', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
     const request = await createMaintenanceRequest(property.id, unit.id, {
       assignedVendorName: 'ACME',
     })
 
-    await updateVendorFormAction(
+    const result = await updateVendorFormAction(
       PREV,
       formData({ requestId: request.id, vendorName: '' }),
     )
 
+    expect(result.error).toMatch(/select a vendor/i)
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
-    expect(updated?.assignedVendorName).toBeNull()
+    expect(updated?.assignedVendorName).toBe('ACME')
   })
 })
 
@@ -759,6 +760,32 @@ describe('approveVendorCommercialItemAction', () => {
 describe('updateDispatchFormAction', () => {
   beforeEach(() => {
     vi.mocked(getLandlordSession).mockResolvedValue(null)
+  })
+
+  test('a final invoice creates only the balance beyond an already paid service charge', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({ data: { orgId: user.id, name: 'Paid Vendor', email: 'paid@example.com', isActive: true } })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id, status: 'completed', assignedVendorId: vendor.id, assignedVendorName: vendor.name, assignedVendorEmail: vendor.email,
+    })
+    await prisma.vendorCommercialItem.create({
+      data: { requestId: request.id, vendorId: vendor.id, orgId: user.id, itemType: 'service_fee', status: 'approved', currency: 'usd', amountCents: 45000, title: 'Service charge' },
+    })
+    await prisma.billingDocument.create({
+      data: { requestId: request.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'paid', currency: 'usd', totalCents: 45000, paidCents: 45000, title: 'Paid service charge', sentTo: vendor.email, createdByUserId: user.id },
+    })
+    const finalInvoice = await prisma.vendorCommercialItem.create({
+      data: { requestId: request.id, vendorId: vendor.id, orgId: user.id, itemType: 'bill_to_property_manager', status: 'submitted', currency: 'usd', amountCents: 50000, title: 'Final invoice' },
+    })
+
+    const result = await approveVendorCommercialItemAction(PREV, formData({ requestId: request.id, itemId: finalInvoice.id }))
+    expect(result.error).toBeNull()
+    const documents = await prisma.billingDocument.findMany({ where: { requestId: request.id, recipientType: 'vendor', status: { not: 'void' } }, orderBy: { createdAt: 'asc' } })
+    expect(documents.map((document) => ({ total: document.totalCents, paid: document.paidCents }))).toEqual([
+      { total: 45000, paid: 45000 },
+      { total: 5000, paid: 0 },
+    ])
   })
 
   test('rejects manager scheduling before the selected vendor accepts', async () => {

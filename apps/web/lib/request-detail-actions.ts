@@ -408,6 +408,8 @@ export async function updateVendorFormAction(
 
   const vendorId = singleVendorId
 
+  if (!shouldTender && !vendorId && !vendorName) return { error: 'Select a vendor before assigning the service call.' }
+
   if (vendorId) {
     const selectedVendor = await prisma.vendor.findFirst({
       where: { id: vendorId, orgId: session.userId, isActive: true },
@@ -1855,6 +1857,16 @@ async function upsertVendorRemittanceDraft(
     },
     orderBy: { createdAt: 'desc' },
   })
+  const existingVendorPayments = await tx.billingDocument.findMany({
+    where: {
+      requestId: input.requestId,
+      recipientType: 'vendor',
+      documentType: 'vendor_remittance',
+      status: { not: 'void' },
+      sentTo: input.vendorEmail,
+    },
+    select: { id: true, totalCents: true, paidCents: true },
+  })
   const recordedBidCents = Math.max(
     awardedInvite?.bidAmountCents ?? 0,
     approvedBid?.amountCents ?? 0,
@@ -1873,7 +1885,12 @@ async function upsertVendorRemittanceDraft(
   const upfrontCents = approvedItem && approvedItem.itemType !== 'bid' && vendorPaymentTimingRequiresUpfront(approvedPaymentTiming)
     ? upfrontPaymentCents(approvedItem.amountCents, approvedPaymentTiming)
     : 0
-  const documentTotalCents = upfrontCents > 0 ? upfrontCents : totalCents
+  const postedOutsideDraftCents = existingVendorPayments
+    .filter((document) => document.id !== existingDraft?.id)
+    .reduce((sum, document) => sum + document.totalCents, 0)
+  const remainingTotalCents = Math.max(totalCents - postedOutsideDraftCents, 0)
+  const documentTotalCents = upfrontCents > 0 ? upfrontCents : remainingTotalCents
+  if (documentTotalCents <= 0) return existingDraft ?? null
   const paymentTimingText = vendorPaymentTimingLabel(approvedPaymentTiming)
   const isUpfrontDocument = upfrontCents > 0
 
@@ -1909,7 +1926,7 @@ async function upsertVendorRemittanceDraft(
       where: { id: existingDraft.id },
       data: {
         totalCents: documentTotalCents,
-        paidCents: 0,
+        paidCents: Math.min(existingDraft.paidCents, documentTotalCents),
         title,
         description,
         pdfUrl: `data:text/html;charset=utf-8,${encodeURIComponent(pdfHtml)}`,

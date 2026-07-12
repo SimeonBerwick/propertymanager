@@ -31,8 +31,8 @@ export function UnitBillingSummary({ rows, currentYear }: { rows: UnitBillingSum
         <h3 style={{ marginTop: 4 }}>Tenant charges by unit</h3>
         <div className="muted">Approved costs for completed work and tenant bill-backs recorded through Simeonware. Final invoices replace earlier approved estimates.</div>
       </div>
-      <div className="tableWrap">
-        <table>
+      <div className="tableWrap unitBillingTableWrap">
+        <table className="unitBillingTable">
           <thead>
             <tr>
               <th>Unit</th>

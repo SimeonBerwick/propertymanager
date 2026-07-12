@@ -187,7 +187,7 @@ export function RequestControlPanel({
     <div className="stack" style={{ gap: 16 }}>
       {canChooseVendorPath ? (
         <div className="notice">
-          <strong>Choose one vendor path.</strong> Assign a trusted vendor for a service call when they should diagnose or handle a simple repair first. Ask for bids when you want pricing before anyone is chosen.
+          <strong>Choose your vendor path.</strong>
         </div>
       ) : null}
       {upfrontPaymentBlocksWork ? (
@@ -313,19 +313,17 @@ export function RequestControlPanel({
         <input type="hidden" name="requestId" value={request.id} />
         <label className="field">
           <span className="field-label">Vendor for service call</span>
-          <select className="input" name="vendorId" aria-label="Vendor for service call" defaultValue="">
+          <select className="input" name="vendorId" aria-label="Vendor for service call" defaultValue="" required>
             <option value="">No vendor selected</option>
             {vendors.map((vendor) => (
               <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
             ))}
           </select>
         </label>
-        <div className="muted">Use this when a trusted vendor should inspect the issue or complete a simple service call. If more work is needed, the vendor can submit a bid, overage, or invoice before you approve any cost.</div>
         <ActionFeedback error={vendorState.error} success={vendorState.success ? vendorState.message ?? 'Vendor updated.' : null} detail="The assignment is visible in the request timeline." />
         <button type="submit" className="button primary" disabled={vendorPending}>
           {vendorPending ? 'Assigning...' : 'Assign service call'}
         </button>
-        {recommended.length ? <div className="muted">Available vendors: {recommended.map((vendor) => vendor.name).join(', ')}</div> : null}
       </form>
       ) : null}
 

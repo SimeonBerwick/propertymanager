@@ -106,9 +106,7 @@ export function TodayOverview({ requests, masterQueueActions = [], now = new Dat
             <Link href={contextualHref(primaryAction) as Route} className="button primary">{primaryAction.primaryLabel}</Link>
           ) : hasScheduledToday ? (
             <Link href="/dashboard?queue=scheduled-today" className="button primary">Monitor schedule</Link>
-          ) : (
-            <Link href="/dashboard?queue=open" className="button primary">Review open work</Link>
-          )}
+          ) : <span className="badge done">All clear</span>}
           <div className="overviewMetricGrid" aria-label="Dashboard summary">
             <OverviewMetric label="Needs decision" value={nextActions.length} href="/exceptions" />
             <OverviewMetric label="Scheduled today" value={overview.scheduledToday.length} href="/dashboard?queue=scheduled-today" />
