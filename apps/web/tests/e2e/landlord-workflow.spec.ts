@@ -1,9 +1,16 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import path from 'node:path'
 
 const propertyName = `Playwright Desert ${Date.now()}`
 const unitLabel = 'Unit PW-1'
 const requestTitle = 'Playwright sink leak'
+
+async function clickAndWaitForURL(page: Page, locator: Locator, url: RegExp) {
+  await Promise.all([
+    page.waitForURL(url),
+    locator.click(),
+  ])
+}
 
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
   const photoPath = path.join(process.cwd(), 'tests/e2e/fixtures/leak.png')
@@ -11,24 +18,24 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.goto('/login')
   await page.getByLabel('Email').fill('landlord@example.com')
   await page.getByLabel('Password').fill('changeme')
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  await clickAndWaitForURL(page, page.getByRole('button', { name: 'Sign in' }), /\/dashboard$/)
   await expect(page).toHaveURL(/\/dashboard$/)
 
   await page.getByText('Portfolio', { exact: true }).click()
-  await page.getByRole('link', { name: 'Properties' }).click()
+  await clickAndWaitForURL(page, page.getByRole('link', { name: 'Properties' }), /\/properties$/)
   await expect(page).toHaveURL(/\/properties$/)
-  await page.getByRole('link', { name: 'Add property' }).click()
+  await clickAndWaitForURL(page, page.getByRole('link', { name: 'Add property' }), /\/properties\/new$/)
 
   await page.getByLabel('Property name').fill(propertyName)
   await page.getByLabel('Address').fill('500 Cactus Bloom Ave, Phoenix, AZ 85001')
-  await page.getByRole('button', { name: 'Add property' }).click()
+  await clickAndWaitForURL(page, page.getByRole('button', { name: 'Add property' }), /\/properties\/[^/]+$/)
   await expect(page.getByRole('heading', { name: propertyName })).toBeVisible()
 
-  await page.getByRole('link', { name: 'Add unit' }).first().click()
+  await clickAndWaitForURL(page, page.getByRole('link', { name: 'Add unit' }).first(), /\/properties\/[^/]+\/units\/new$/)
   await page.getByLabel('Unit label').fill(unitLabel)
   await page.getByLabel(/Tenant name/).fill('Maya Lopez')
   await page.getByLabel(/Tenant email/).fill('maya@example.com')
-  await page.getByRole('button', { name: 'Add unit' }).click()
+  await clickAndWaitForURL(page, page.getByRole('button', { name: 'Add unit' }), /\/properties\/[^/]+$/)
   await expect(page.getByRole('link', { name: unitLabel })).toBeVisible()
 
   await page.goto('/vendors/new')
@@ -37,7 +44,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.getByLabel('Phone').fill('+16025550199')
   await page.getByLabel('Plumbing').check()
   await page.getByLabel('English').check()
-  await page.getByRole('button', { name: 'Create vendor' }).click()
+  await clickAndWaitForURL(page, page.getByRole('button', { name: 'Create vendor' }), /\/vendors$/)
   await expect(page).toHaveURL(/\/vendors$/)
 
   await page.goto('/submit/landlord')
@@ -56,8 +63,8 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.goto('/dashboard?queue=open')
   const requestRow = page.locator('.inboxRow').filter({ hasText: requestTitle })
   await expect(requestRow).toBeVisible()
-  await requestRow.getByRole('link', { name: 'Open' }).click()
-
+  await clickAndWaitForURL(page, requestRow.getByRole('link', { name: 'Open' }), /\/requests\/[^/]+$/)
+  await expect(page).toHaveURL(/\/requests\/[^/]+$/)
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
 
   const decisionForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save decision' }) })
@@ -89,10 +96,10 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
   await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('completed')
 
-  await page.locator('.requestHero').getByRole('link', { name: propertyName, exact: true }).click()
+  await clickAndWaitForURL(page, page.locator('.requestHero').getByRole('link', { name: propertyName, exact: true }), /\/properties\/[^/]+$/)
   await expect(page).toHaveURL(/\/properties\/[^/]+$/)
   await expect(page.locator('a[href^="/requests/"]').filter({ hasText: requestTitle })).toBeVisible()
-  await page.getByRole('link', { name: unitLabel, exact: true }).click()
+  await clickAndWaitForURL(page, page.getByRole('link', { name: unitLabel, exact: true }), /\/units\/[^/]+$/)
   await expect(page).toHaveURL(/\/units\/[^/]+$/)
   await expect(page.getByRole('heading', { name: unitLabel })).toBeVisible()
   await expect(page.locator('a[href^="/requests/"]').filter({ hasText: requestTitle })).toBeVisible()
