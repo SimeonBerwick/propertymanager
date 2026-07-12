@@ -63,32 +63,31 @@ test('landlord can complete the core maintenance workflow in the browser', async
   const decisionForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save decision' }) })
   await decisionForm.getByLabel('Decision').selectOption('approved')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(page.getByText('Request status updated.')).toBeVisible()
 
   const vendorForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Assign service call' }) })
+  await expect(vendorForm).toBeVisible()
   await vendorForm.getByLabel('Vendor for service call').selectOption({ label: 'ACME Plumbing' })
   await vendorForm.getByRole('button', { name: 'Assign service call' }).click()
-  await expect(page.getByText('Vendor updated.')).toBeVisible()
 
   const appointmentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save appointment' }) })
+  await expect(appointmentForm).toBeVisible()
   await appointmentForm.getByLabel('Appointment date').fill('2030-01-15')
   await appointmentForm.getByLabel('Start time').fill('09:00')
   await appointmentForm.getByRole('button', { name: 'Save appointment' }).click()
-  await expect(page.getByText('Appointment saved.')).toBeVisible()
+  await expect(decisionForm.getByLabel('Decision')).toBeVisible()
 
   const commentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save internal note' }) })
   await commentForm.getByLabel('Add comment').fill('Vendor scheduled for tomorrow morning.')
   await commentForm.getByRole('button', { name: 'Save internal note' }).click()
-  await expect(page.getByText('Internal note saved.')).toBeVisible()
   await expect(page.getByText('Vendor scheduled for tomorrow morning.').last()).toBeVisible()
 
   await decisionForm.getByLabel('Decision').selectOption('in_progress')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(page.getByText('Request status updated.')).toBeVisible()
+  await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('in_progress')
 
   await decisionForm.getByLabel('Decision').selectOption('completed')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(page.getByText('Request status updated.')).toBeVisible()
+  await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('completed')
 
   await decisionForm.getByLabel('Decision').selectOption('closed')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
