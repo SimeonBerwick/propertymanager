@@ -163,7 +163,7 @@ export async function submitMaintenanceRequest(
           propertyId,
           unitId,
           submittedByName: tenantName,
-          submittedByEmail: tenantEmail,
+          submittedByEmail: tenantEmail || null,
           preferredCurrency: preferredCurrency as CurrencyOption,
           preferredLanguage: preferredLanguage as 'english' | 'spanish' | 'french',
           slaBucket,
