@@ -10,7 +10,7 @@ export async function loginRouteAction(formData: FormData) {
   const result = await authenticateLogin(formData)
 
   if (result.error || !result.user) {
-    redirect(`/login?error=${encodeURIComponent(result.error ?? 'Invalid email or password')}`)
+    redirect(`/login?role=manager&error=${encodeURIComponent(result.error ?? 'Invalid email or password')}`)
   }
 
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
