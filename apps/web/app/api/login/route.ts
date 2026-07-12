@@ -9,6 +9,7 @@ export async function POST(request: Request) {
 
   if (result.error || !result.user) {
     const url = new URL('/login', request.url)
+    url.searchParams.set('role', 'manager')
     url.searchParams.set('error', result.error ?? 'Invalid email or password')
     return NextResponse.redirect(url)
   }
