@@ -1192,6 +1192,8 @@ export async function updateDispatchFormAction(
       ? 'vendor_completed_pending_review'
       : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
         ? 'vendor_declined_reassignment_needed'
+        : dispatchStatus === 'scheduled' || dispatchStatus === 'in_progress'
+          ? 'none'
         : undefined
 
     await prisma.maintenanceRequest.update({
@@ -1208,7 +1210,9 @@ export async function updateDispatchFormAction(
         reviewState,
         reviewNote: dispatchStatus === 'declined' || dispatchStatus === 'canceled'
           ? 'Vendor could not continue with this assignment. Reassignment needed.'
-          : undefined,
+          : dispatchStatus === 'scheduled' || dispatchStatus === 'in_progress'
+            ? null
+            : undefined,
         actualCompletedAt: dispatchStatus === 'completed' ? new Date() : undefined,
       },
     })
