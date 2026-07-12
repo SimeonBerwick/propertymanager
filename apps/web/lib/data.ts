@@ -955,6 +955,7 @@ export interface RepeatIssueGroup {
   count: number
   requestIds: string[]
   requestTitles: string[]
+  recommendation: string
 }
 
 export interface VendorScorecard {
@@ -969,6 +970,8 @@ export interface VendorScorecard {
   completionRate: number | null
   onTimeCompletionRate: number | null
   avgCompletionDays: number | null
+  avgInvoiceVarianceRate: number | null
+  invoicesOverEstimateCount: number
 }
 
 export interface OperatorQueueMetric {
@@ -1103,6 +1106,9 @@ function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
         count: reqs.length,
         requestIds: reqs.map((r) => r.id),
         requestTitles: reqs.map((r) => r.title),
+        recommendation: reqs.length >= 4
+          ? `Schedule a ${category.toLowerCase()} inspection and consider replacement instead of another isolated repair.`
+          : `Review the previous ${category.toLowerCase()} work before approving another repair.`,
       })
     }
   }
@@ -1112,7 +1118,7 @@ function groupRepeatIssues(rows: DashboardRequestRow[]): RepeatIssueGroup[] {
 export async function getReportData(userId: string): Promise<ReportData> {
   const now = new Date()
   try {
-    const [dbProperties, openDbRequests, allDbRequests, dispatchEvents, vendors] = await Promise.all([
+    const [dbProperties, openDbRequests, allDbRequests, dispatchEvents, vendors, commercialItems] = await Promise.all([
       prisma.property.findMany({
         where: { ownerId: userId },
         include: {
@@ -1139,6 +1145,11 @@ export async function getReportData(userId: string): Promise<ReportData> {
       prisma.vendor.findMany({
         where: { orgId: userId },
         orderBy: { name: 'asc' },
+      }),
+      prisma.vendorCommercialItem.findMany({
+        where: { request: { property: { ownerId: userId } }, status: 'approved' },
+        select: { requestId: true, vendorId: true, itemType: true, amountCents: true, submittedAt: true },
+        orderBy: { submittedAt: 'asc' },
       }),
     ])
 
@@ -1214,6 +1225,14 @@ export async function getReportData(userId: string): Promise<ReportData> {
       const completedDurations = allDbRequests
         .filter((request) => request.assignedVendorId === vendor.id && request.closedAt)
         .map((request) => (request.closedAt!.getTime() - request.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+      const vendorCommercial = commercialItems.filter((item) => item.vendorId === vendor.id)
+      const requestIdsWithInvoices = new Set(vendorCommercial.filter((item) => item.itemType === 'bill_to_property_manager').map((item) => item.requestId))
+      const invoiceVarianceRates = Array.from(requestIdsWithInvoices).flatMap((requestId) => {
+        const items = vendorCommercial.filter((item) => item.requestId === requestId)
+        const estimate = [...items].reverse().find((item) => item.itemType === 'bid')?.amountCents
+        const invoice = [...items].reverse().find((item) => item.itemType === 'bill_to_property_manager')?.amountCents
+        return estimate && invoice != null ? [(invoice - estimate) / estimate] : []
+      })
 
       return {
         vendorId: vendor.id,
@@ -1227,6 +1246,8 @@ export async function getReportData(userId: string): Promise<ReportData> {
         completionRate: assignedRequestIds.size ? completedAssignedRequests.length / assignedRequestIds.size : null,
         onTimeCompletionRate: completedAssignedRequests.length ? onTimeCompletedRequests.length / completedAssignedRequests.length : null,
         avgCompletionDays: avg(completedDurations),
+        avgInvoiceVarianceRate: avg(invoiceVarianceRates),
+        invoicesOverEstimateCount: invoiceVarianceRates.filter((value) => value > 0.05).length,
       }
     })
 

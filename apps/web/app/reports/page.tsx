@@ -116,6 +116,8 @@ export default async function ReportsPage() {
                 <div className="muted">Completion: {percent(vendor.completionRate)}</div>
                 <div className="muted">On time: {percent(vendor.onTimeCompletionRate)}</div>
                 <div className="muted">Avg completion: {vendor.avgCompletionDays != null ? vendor.avgCompletionDays.toFixed(1) + 'd' : 'Not enough data'}</div>
+                <div className="muted">Invoice vs estimate: {vendor.avgInvoiceVarianceRate != null ? `${vendor.avgInvoiceVarianceRate >= 0 ? '+' : ''}${(vendor.avgInvoiceVarianceRate * 100).toFixed(0)}%` : 'Not enough data'}</div>
+                {vendor.invoicesOverEstimateCount ? <div className="badge age-warn">{vendor.invoicesOverEstimateCount} invoice{vendor.invoicesOverEstimateCount === 1 ? '' : 's'} over estimate</div> : null}
               </Link>
             ))}
           </div>
@@ -136,6 +138,7 @@ export default async function ReportsPage() {
                 <div>
                   <strong>{issue.unitLabel}</strong>
                   <div className="muted">{issue.propertyName} / {issue.category}</div>
+                  <div className="notice" style={{ marginTop: 8 }}><strong>Recommended:</strong> {issue.recommendation}</div>
                   <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                     {issue.requestIds.slice(0, 3).map((id, index) => (
                       <Link key={id} href={('/requests/' + id) as Route} className="filterChip">

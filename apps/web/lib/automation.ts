@@ -129,9 +129,9 @@ export async function runAutomationSweep() {
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, emailNotificationsEnabled: true },
+    select: { email: true, emailNotificationsEnabled: true, dailyBriefingEnabled: true },
   }).catch(() => null)
-  if (!user?.email || user.emailNotificationsEnabled === false) return { ok: false, skipped: true }
+  if (!user?.email || user.emailNotificationsEnabled === false || user.dailyBriefingEnabled === false) return { ok: false, skipped: true }
 
   const requests = await prisma.maintenanceRequest.findMany({
     where: {

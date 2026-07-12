@@ -150,7 +150,9 @@ export function MoneyCloseoutPanel({
         ) : null}
       </div>
 
-      <div className="moneyStepGrid">
+      <details className="advancedDisclosure" open={!billingIsSettled}>
+        <summary>{billingIsSettled ? 'Billing history and completed steps' : 'Current billing path'}</summary>
+      <div className="moneyStepGrid" style={{ padding: 16 }}>
         <MoneyStep title="1. Vendor amount" state={vendorAmountState}>
           {pendingVendorExtrasCents > 0 ? (
             <>A vendor charge or invoice is waiting for approval before payment records or closeout.</>
@@ -184,6 +186,7 @@ export function MoneyCloseoutPanel({
           {billingIsSettled ? 'All money decisions are complete. The request can be closed when the work status is ready.' : closeoutBlockers.join(' ')}
         </MoneyStep>
       </div>
+      </details>
 
       {billingDocuments.length ? (
         <div className="stack" style={{ gap: 12 }}>

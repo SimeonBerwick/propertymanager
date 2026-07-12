@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "dailyBriefingEnabled" BOOLEAN NOT NULL DEFAULT true;

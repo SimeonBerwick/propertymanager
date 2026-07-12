@@ -6,12 +6,12 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { logout } from '@/lib/auth-actions'
 import { CURRENCY_OPTIONS, currencyLabel } from '@/lib/types'
-import { updateDefaultCurrencyAction } from './actions'
+import { updateDailyBriefingAction, updateDefaultCurrencyAction } from './actions'
 
 export default async function AccountSettingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string }>
+  searchParams?: Promise<{ currency?: string; briefing?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -19,7 +19,7 @@ export default async function AccountSettingsPage({
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
   const account = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { defaultCurrency: true },
+    select: { defaultCurrency: true, dailyBriefingEnabled: true },
   })
   const defaultCurrency = account?.defaultCurrency ?? 'usd'
 
@@ -37,6 +37,15 @@ export default async function AccountSettingsPage({
       </section>
 
       <section className="grid cols-2">
+        <div className="card stack">
+          <div><div className="kicker">Daily briefing</div><h3 style={{ margin: '4px 0 0' }}>Morning work summary</h3></div>
+          <p className="muted" style={{ margin: 0 }}>Receive one concise email covering urgent work, unanswered messages, overdue appointments, and money actions.</p>
+          {query.briefing === 'updated' ? <div className="notice success">Daily briefing preference updated.</div> : null}
+          <form action={updateDailyBriefingAction} className="row" style={{ justifyContent: 'flex-start' }}>
+            <label className="row"><input type="checkbox" name="dailyBriefingEnabled" defaultChecked={account?.dailyBriefingEnabled !== false} /> Send my daily briefing</label>
+            <button type="submit" className="button primary">Save</button>
+          </form>
+        </div>
         <div className="card stack">
           <div>
             <div className="kicker">Plan</div>

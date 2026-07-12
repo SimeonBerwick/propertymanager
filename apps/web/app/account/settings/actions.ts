@@ -32,3 +32,10 @@ export async function updateDefaultCurrencyAction(formData: FormData) {
 
   redirect('/account/settings?currency=updated' as Route)
 }
+
+export async function updateDailyBriefingAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login?error=session-expired')
+  await prisma.user.update({ where: { id: session.userId }, data: { dailyBriefingEnabled: formData.get('dailyBriefingEnabled') === 'on' } })
+  redirect('/account/settings?briefing=updated' as Route)
+}

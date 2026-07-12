@@ -6,6 +6,7 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string; role?: string }>
 }) {
   const params = searchParams ? await searchParams : undefined
+  const mode = params?.role === 'choose' ? 'choose' : 'manager'
   const error = params?.error === 'session-expired'
     ? 'Your session expired, or this link needs sign-in. Sign in again to continue.'
     : params?.error === 'sign-in-required'
@@ -15,10 +16,10 @@ export default async function LoginPage({
     <div className="authEntryLayout">
       <div className="card stack">
         <div>
-          <div className="kicker">Choose access</div>
+          <div className="kicker">{mode === 'manager' ? 'Manager access' : 'Choose access'}</div>
           <h2 style={{ margin: '4px 0 0' }}>Sign in</h2>
         </div>
-        <AccessTypeSelector error={error} mode={params?.role === 'manager' ? 'manager' : 'choose'} />
+        <AccessTypeSelector error={error} mode={mode} />
       </div>
     </div>
   )
