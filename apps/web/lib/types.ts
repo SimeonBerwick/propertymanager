@@ -58,6 +58,8 @@ export interface MaintenanceRequest {
   assignedVendorIds?: string[]
   assignedVendorNames?: string[]
   dispatchStatus?: DispatchStatus
+  vendorReminderEnabled?: boolean
+  lastVendorReminderAt?: string
   vendorScheduledStart?: string
   vendorScheduledEnd?: string
   actualCompletedAt?: string

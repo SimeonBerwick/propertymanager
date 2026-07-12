@@ -428,6 +428,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
             canCloseRequest={billingIsSettled}
             upfrontVendorPaymentDueCents={upfrontVendorPaymentDueCents}
+            vendorRemindersEnabledByDefault={data.vendorRemindersEnabledByDefault}
           />
         )}
       </SectionCard>

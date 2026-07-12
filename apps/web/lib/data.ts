@@ -86,6 +86,7 @@ export interface RequestDetailData {
   vendorCommercialItems: VendorCommercialItemView[]
   tenantAccessFailureCount: number
   tenantStatusUpdatePending: boolean
+  vendorRemindersEnabledByDefault: boolean
 }
 
 // Prisma includes are typed inline; using any here keeps the mapper simple and
@@ -169,6 +170,8 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     assignedVendorIds: r.assignedVendorId ? [r.assignedVendorId] : [],
     assignedVendorNames: r.assignedVendorName ? [r.assignedVendorName] : [],
     dispatchStatus: r.dispatchStatus ?? undefined,
+    vendorReminderEnabled: r.vendorReminderEnabled ?? undefined,
+    lastVendorReminderAt: r.lastVendorReminderAt ? new Date(r.lastVendorReminderAt).toISOString() : undefined,
     vendorScheduledStart: vendorScheduledStart ? new Date(vendorScheduledStart).toISOString() : undefined,
     vendorScheduledEnd: vendorScheduledEnd ? new Date(vendorScheduledEnd).toISOString() : undefined,
     actualCompletedAt: r.actualCompletedAt ? new Date(r.actualCompletedAt).toISOString() : undefined,
@@ -709,7 +712,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     const dbRequest = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: userId } },
       include: {
-        property: true,
+        property: { include: { owner: { select: { vendorRemindersEnabled: true } } } },
         unit: true,
         photos: { orderBy: { createdAt: 'asc' } },
         comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
@@ -926,6 +929,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       vendorCommercialItems,
       tenantAccessFailureCount,
       tenantStatusUpdatePending,
+      vendorRemindersEnabledByDefault: dbRequest.property.owner.vendorRemindersEnabled,
     }
   } catch (error) {
     await logDataError('data.request_detail.load_failed', error, { requestId, userId })

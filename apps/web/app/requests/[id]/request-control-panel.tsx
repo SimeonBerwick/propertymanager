@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { awardTenderInviteAction, cancelSelectedVendorAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction } from '@/lib/request-detail-actions'
+import { awardTenderInviteAction, cancelSelectedVendorAction, requestTenderRevisionAction, type RequestActionState, updateDispatchFormAction, updateStatusFormAction, updateVendorFormAction, updateVendorReminderPreferenceAction } from '@/lib/request-detail-actions'
 import type { MaintenanceRequest, RequestStatus, Urgency, Vendor, RequestTenderView } from '@/lib/types'
 import { ActionFeedback } from '@/components/action-feedback'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
@@ -64,13 +64,15 @@ export function RequestControlPanel({
   statusControlPriority = 'primary',
   canCloseRequest = true,
   upfrontVendorPaymentDueCents = 0,
+  vendorRemindersEnabledByDefault,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState' | 'vendorReminderEnabled'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
   canCloseRequest?: boolean
   upfrontVendorPaymentDueCents?: number
+  vendorRemindersEnabledByDefault: boolean
 }) {
   const router = useRouter()
   const [statusState, statusAction, statusPending] = useActionState(updateStatusFormAction, INITIAL_STATE)
@@ -79,6 +81,7 @@ export function RequestControlPanel({
   const [revisionState, revisionAction, revisionPending] = useActionState(requestTenderRevisionAction, INITIAL_STATE)
   const [dispatchState, dispatchAction, dispatchPending] = useActionState(updateDispatchFormAction, INITIAL_STATE)
   const [cancelVendorState, cancelVendorAction, cancelVendorPending] = useActionState(cancelSelectedVendorAction, INITIAL_STATE)
+  const [reminderState, reminderAction, reminderPending] = useActionState(updateVendorReminderPreferenceAction, INITIAL_STATE)
 
   useEffect(() => {
     if (statusState.success || vendorState.success || awardState.success || revisionState.success || dispatchState.success || cancelVendorState.success) {
@@ -195,6 +198,27 @@ export function RequestControlPanel({
           <strong>Upfront vendor payment is the next step.</strong> The approved vendor terms require payment before scheduling, work start, or completion. Use the billing panel to mark the payment record paid after money is handled outside the app.
         </div>
       ) : null}
+      <details className="advancedDisclosure">
+        <summary>Vendor reminder: {(request.vendorReminderEnabled ?? vendorRemindersEnabledByDefault) ? 'On' : 'Off'}</summary>
+        <form action={reminderAction} className="stack" style={{ gap: 10, padding: 16 }}>
+          <input type="hidden" name="requestId" value={request.id} />
+          <label className="field">
+            <span className="field-label">Daily vendor reminder</span>
+            <select
+              className="input"
+              name="vendorReminderPreference"
+              defaultValue={request.vendorReminderEnabled == null ? 'inherit' : request.vendorReminderEnabled ? 'on' : 'off'}
+            >
+              <option value="inherit">Use account default ({vendorRemindersEnabledByDefault ? 'On' : 'Off'})</option>
+              <option value="on">On for this ticket</option>
+              <option value="off">Off for this ticket</option>
+            </select>
+          </label>
+          <div className="muted">Sent at most once daily while the vendor has a specific action outstanding. Reminders stop automatically when the action is completed.</div>
+          <ActionFeedback error={reminderState.error} success={reminderState.success ? reminderState.message : null} />
+          <button type="submit" className="button" disabled={reminderPending}>{reminderPending ? 'Saving...' : 'Save reminder setting'}</button>
+        </form>
+      </details>
       {appointmentForm}
       {canCancelSelectedVendor ? (
         <details className="advancedDisclosure">

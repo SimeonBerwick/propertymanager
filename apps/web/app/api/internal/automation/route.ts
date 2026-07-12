@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runAutomationSweep, sendDailyExceptionSummaryToLandlord } from '@/lib/automation'
+import { runAutomationSweep, sendDailyExceptionSummaryToLandlord, sendDailyVendorReminders } from '@/lib/automation'
 import { syncAllMailboxReplies } from '@/lib/mailbox-sync'
 import { prisma } from '@/lib/prisma'
 import { assertHostedRuntimeReady } from '@/lib/runtime-env'
@@ -22,10 +22,11 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   }
 
   const sweep = await runAutomationSweep()
+  const vendorReminders = await sendDailyVendorReminders()
   const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
   const dailyCsvExports = await sendDueDailyCsvExports()
   const subscriptionReconciliation = await reconcileStripeSubscriptions()
-  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation }
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, vendorReminders }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
@@ -41,7 +42,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, mailboxSync, dailyCsvExports, subscriptionReconciliation, summaryResults })
+  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, dailyCsvExports, subscriptionReconciliation, summaryResults })
 }
 
 export async function GET(request: NextRequest) {

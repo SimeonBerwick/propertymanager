@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
-import { buildLandlordExceptionSummaryMessage, buildVendorOverdueUpdateMessage, sendNotification } from '@/lib/notify'
+import { buildLandlordExceptionSummaryMessage, buildVendorDailyReminderMessage, buildVendorOverdueUpdateMessage, sendNotification } from '@/lib/notify'
 import { ruleMatches } from '@/lib/workflow-rules'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
+import { deriveAssignedVendorReminderAction, remindersEnabledForRequest, vendorReminderIsDue } from '@/lib/vendor-reminders'
 
 async function applyConfigurableRules(request: Record<string, unknown> & { id: string, property: { ownerId: string } }) {
   const rules = await prisma.automationRule.findMany({
@@ -124,6 +125,110 @@ export async function runAutomationSweep() {
   }
 
   return { processed: requests.length }
+}
+
+export async function sendDailyVendorReminders(now = new Date()) {
+  const requests = await prisma.maintenanceRequest.findMany({
+    where: {
+      status: { notIn: ['closed', 'declined', 'canceled'] },
+      OR: [
+        { assignedVendorId: { not: null } },
+        { tenderInvites: { some: { status: { in: ['invited', 'viewed'] } } } },
+      ],
+    },
+    include: {
+      property: { include: { owner: { select: { id: true, emailNotificationsEnabled: true, vendorRemindersEnabled: true } } } },
+      unit: true,
+      assignedVendor: true,
+      tenderInvites: { include: { vendor: true }, orderBy: { createdAt: 'desc' } },
+      vendorCommercialItems: true,
+      billingDocuments: true,
+    },
+  }).catch(() => [])
+
+  let sent = 0
+  let skipped = 0
+  let failed = 0
+
+  for (const request of requests) {
+    const owner = request.property.owner
+    const enabled = remindersEnabledForRequest(owner.vendorRemindersEnabled, request.vendorReminderEnabled)
+    if (!enabled || owner.emailNotificationsEnabled === false) {
+      skipped += 1
+      continue
+    }
+
+    const assignedVendor = request.assignedVendor
+    if (assignedVendor?.email && request.assignedVendorId) {
+      const action = deriveAssignedVendorReminderAction(request, request.assignedVendorId)
+      if (action && vendorReminderIsDue(request.lastVendorReminderAt, request.updatedAt, now)) {
+        const claimed = await prisma.maintenanceRequest.updateMany({
+          where: {
+            id: request.id,
+            updatedAt: request.updatedAt,
+            lastVendorReminderAt: request.lastVendorReminderAt,
+          },
+          data: { lastVendorReminderAt: now },
+        })
+        if (!claimed.count) continue
+        const result = await sendNotification(buildVendorDailyReminderMessage({
+          requestId: request.id,
+          title: request.title,
+          propertyName: request.property.name,
+          unitLabel: request.unit.label,
+          vendorName: assignedVendor.name,
+          vendorEmail: assignedVendor.email,
+          actionLabel: action.label,
+          actionDetail: action.detail,
+          actionUrl: `${getAppBaseUrl('daily vendor reminders')}/vendor/requests/${request.id}`,
+        }), { ownerUserId: owner.id, requestId: request.id })
+        if (result.ok) {
+          sent += 1
+        } else {
+          await prisma.maintenanceRequest.updateMany({
+            where: { id: request.id, lastVendorReminderAt: now },
+            data: { lastVendorReminderAt: request.lastVendorReminderAt },
+          })
+          failed += 1
+        }
+      }
+    }
+
+    for (const invite of request.tenderInvites.filter((candidate) => ['invited', 'viewed'].includes(candidate.status))) {
+      if (!invite.vendor.email || !vendorReminderIsDue(invite.lastVendorReminderAt, invite.invitedAt, now)) continue
+      const claimed = await prisma.tenderInvite.updateMany({
+        where: { id: invite.id, status: { in: ['invited', 'viewed'] }, lastVendorReminderAt: invite.lastVendorReminderAt },
+        data: { lastVendorReminderAt: now },
+      })
+      if (!claimed.count) continue
+      const dispatchLink = await createVendorDispatchLink(request.id, invite.vendorId, invite.id).catch(() => null)
+      const actionUrl = dispatchLink
+        ? `${getAppBaseUrl('daily vendor bid reminders')}/vendor/respond/${dispatchLink.rawToken}`
+        : `${getAppBaseUrl('daily vendor bid reminders')}/vendor/requests/${request.id}`
+      const result = await sendNotification(buildVendorDailyReminderMessage({
+        requestId: request.id,
+        title: request.title,
+        propertyName: request.property.name,
+        unitLabel: request.unit.label,
+        vendorName: invite.vendor.name,
+        vendorEmail: invite.vendor.email,
+        actionLabel: 'Respond to bid invite',
+        actionDetail: 'Send your bid amount, timing, and availability for manager approval.',
+        actionUrl,
+      }), { ownerUserId: owner.id, requestId: request.id })
+      if (result.ok) {
+        sent += 1
+      } else {
+        await prisma.tenderInvite.updateMany({
+          where: { id: invite.id, lastVendorReminderAt: now },
+          data: { lastVendorReminderAt: invite.lastVendorReminderAt },
+        })
+        failed += 1
+      }
+    }
+  }
+
+  return { ok: failed === 0, processed: requests.length, sent, skipped, deliveryFailureCount: failed }
 }
 
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {

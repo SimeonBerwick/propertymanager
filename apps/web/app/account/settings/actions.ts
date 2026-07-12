@@ -39,3 +39,13 @@ export async function updateDailyBriefingAction(formData: FormData) {
   await prisma.user.update({ where: { id: session.userId }, data: { dailyBriefingEnabled: formData.get('dailyBriefingEnabled') === 'on' } })
   redirect('/account/settings?briefing=updated' as Route)
 }
+
+export async function updateVendorRemindersAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login?error=session-expired')
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { vendorRemindersEnabled: formData.get('vendorRemindersEnabled') === 'on' },
+  })
+  redirect('/account/settings?vendorReminders=updated' as Route)
+}

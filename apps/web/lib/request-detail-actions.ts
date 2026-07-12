@@ -798,6 +798,36 @@ export async function requestTenderRevisionAction(
   }
 }
 
+export async function updateVendorReminderPreferenceAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+  const requestId = String(formData.get('requestId') ?? '')
+  const preference = String(formData.get('vendorReminderPreference') ?? '')
+  if (!['inherit', 'on', 'off'].includes(preference)) return { error: 'Choose a valid vendor reminder setting.' }
+
+  const value = preference === 'inherit' ? null : preference === 'on'
+  const updated = await prisma.maintenanceRequest.updateMany({
+    where: { id: requestId, property: { ownerId: session.userId } },
+    data: { vendorReminderEnabled: value },
+  }).catch(() => ({ count: 0 }))
+  if (!updated.count) return { error: 'Request not found or reminder setting could not be updated.' }
+
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'request',
+    entityId: requestId,
+    action: 'request.vendorReminderPreferenceUpdated',
+    summary: preference === 'inherit' ? 'Restored the default vendor reminder setting.' : `Turned vendor reminders ${preference}.`,
+    metadata: { preference },
+  })
+  revalidatePath(`/requests/${requestId}`)
+  return { error: null, success: true, message: 'Vendor reminder setting saved.' }
+}
+
 export async function cancelSelectedVendorAction(
   _prev: RequestActionState,
   formData: FormData,
