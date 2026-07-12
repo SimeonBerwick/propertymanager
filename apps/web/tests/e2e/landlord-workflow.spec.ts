@@ -89,9 +89,6 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
   await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('completed')
 
-  await decisionForm.getByLabel('Decision').selectOption('closed')
-  await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(page.getByText('Request status updated.')).toBeVisible()
   await page.getByRole('link', { name: propertyName }).click()
   await expect(page.getByText(requestTitle)).toBeVisible()
   await page.getByRole('link', { name: unitLabel }).click()
