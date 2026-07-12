@@ -32,6 +32,9 @@ export default defineConfig({
       'lib/vendor-request-state.test.ts',
       'lib/appointment-time.test.ts',
       'lib/notify.test.ts',
+      'lib/inspection-templates.test.ts',
+      'lib/inspection-report.test.ts',
+      'lib/unit-turn-templates.test.ts',
     ],
   },
 })

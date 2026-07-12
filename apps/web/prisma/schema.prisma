@@ -242,6 +242,8 @@ model User {
   vendorRemindersEnabled Boolean @default(true)
   dailyCsvExportEnabled Boolean @default(false)
   dailyCsvExportLastSentAt DateTime?
+  turnBoardStatusFilter String @default("active")
+  turnBoardPropertyFilter String?
   createdAt    DateTime @default(now())
 
   properties              Property[]
@@ -296,6 +298,8 @@ model Unit {
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]
   tenantIdentities TenantIdentity[]
+  inspections      Inspection[]
+  turns            UnitTurn[]
 
   @@index([propertyId, locationType, isActive])
 }
@@ -367,9 +371,146 @@ model MaintenanceRequest {
   tenderInvites           TenderInvite[]
   billingDocuments        BillingDocument[]
   vendorCommercialItems   VendorCommercialItem[]
+  inspectionFindings      InspectionItem[]
+  turnTasks               UnitTurnTask[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model InspectionTemplate {
+  id                    String   @id @default(cuid())
+  orgId                 String
+  name                  String
+  inspectionType        String
+  checklistJson         String
+  requirePhotoForIssues Boolean  @default(true)
+  requireNoteForIssues  Boolean  @default(true)
+  includePhotosInReport Boolean  @default(true)
+  defaultDueDays        Int      @default(7)
+  reportTitle           String   @default("Property inspection report")
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  inspections Inspection[]
+
+  @@index([orgId, isActive])
+}
+
+model Inspection {
+  id                    String   @id @default(cuid())
+  orgId                 String
+  unitId                String
+  templateId            String?
+  title                 String
+  inspectionType        String
+  templateName          String
+  status                String   @default("draft")
+  dueAt                 DateTime?
+  completedAt           DateTime?
+  requirePhotoForIssues Boolean  @default(true)
+  requireNoteForIssues  Boolean  @default(true)
+  includePhotosInReport Boolean  @default(true)
+  reportTitle           String   @default("Property inspection report")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  unit     Unit                @relation(fields: [unitId], references: [id])
+  template InspectionTemplate? @relation(fields: [templateId], references: [id])
+  items    InspectionItem[]
+
+  @@index([orgId, status, dueAt])
+  @@index([unitId, createdAt])
+}
+
+model InspectionItem {
+  id                   String   @id @default(cuid())
+  inspectionId         String
+  maintenanceRequestId String?
+  section              String
+  label                String
+  position             Int
+  result               String   @default("pending")
+  note                 String?
+  photoUrl             String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  inspection        Inspection         @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  maintenanceRequest MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id])
+
+  @@index([inspectionId, position])
+  @@index([maintenanceRequestId])
+}
+
+model UnitTurnTemplate {
+  id                        String   @id @default(cuid())
+  orgId                     String
+  name                      String
+  tasksJson                 String
+  defaultTargetDays         Int      @default(10)
+  requirePhotoForCompletion Boolean  @default(false)
+  requireNoteForCompletion  Boolean  @default(false)
+  requireAllTasksForReady   Boolean  @default(true)
+  isActive                  Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  turns UnitTurn[]
+
+  @@index([orgId, isActive])
+}
+
+model UnitTurn {
+  id                        String   @id @default(cuid())
+  orgId                     String
+  unitId                    String
+  templateId                String?
+  title                     String
+  templateName              String
+  status                    String   @default("planned")
+  moveOutAt                 DateTime
+  targetMoveInAt            DateTime?
+  readyAt                   DateTime?
+  requirePhotoForCompletion Boolean  @default(false)
+  requireNoteForCompletion  Boolean  @default(false)
+  requireAllTasksForReady   Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  unit     Unit              @relation(fields: [unitId], references: [id])
+  template UnitTurnTemplate? @relation(fields: [templateId], references: [id])
+  tasks    UnitTurnTask[]
+
+  @@index([orgId, status, targetMoveInAt])
+  @@index([unitId, createdAt])
+}
+
+model UnitTurnTask {
+  id                   String   @id @default(cuid())
+  turnId               String
+  maintenanceRequestId String?
+  assignedVendorId     String?
+  title                String
+  position             Int
+  expectedDays         Int      @default(1)
+  assignedType         String   @default("manager")
+  status               String   @default("not_started")
+  dueAt                DateTime?
+  completedAt          DateTime?
+  note                 String?
+  photoUrl             String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  turn               UnitTurn           @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  maintenanceRequest MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id])
+  assignedVendor     Vendor?             @relation(fields: [assignedVendorId], references: [id])
+
+  @@index([turnId, position])
+  @@index([maintenanceRequestId])
+  @@index([assignedVendorId, status])
 }
 
 model RequestTender {
@@ -444,6 +585,7 @@ model Vendor {
   sessions         VendorSession[]
   otpChallenges    VendorOtpChallenge[]
   commercialItems  VendorCommercialItem[]
+  turnTasks         UnitTurnTask[]
 
   @@index([orgId, isActive])
   @@index([email, isActive])

@@ -33,12 +33,22 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { unit, property, requests, openCount, closedCount } = data
-  const [tenantIdentities, auditLogs] = await Promise.all([
+  const [tenantIdentities, auditLogs, inspections, turns] = await Promise.all([
     prisma.tenantIdentity.findMany({
       where: { unitId: unit.id, property: { ownerId: session.userId } },
       orderBy: [{ leaseStartDate: 'asc' }, { createdAt: 'asc' }],
     }).catch(() => []),
     getAuditLogs('unit', unit.id),
+    prisma.inspection.findMany({
+      where: { unitId: unit.id, orgId: session.userId },
+      include: { items: { select: { result: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.unitTurn.findMany({
+      where: { unitId: unit.id, orgId: session.userId },
+      include: { tasks: { select: { status: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
   ])
   const occupancy = getUnitOccupancySnapshot(tenantIdentities)
 
@@ -141,6 +151,16 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
           actorName: item.actorUser?.email ?? undefined,
         }))}
       />
+
+      <section className="card stack">
+        <div className="row"><div><div className="kicker">Condition history</div><h3>Inspections</h3></div><Link href="/inspections/new" className="button">New inspection</Link></div>
+        {inspections.length ? <table className="table"><thead><tr><th>Inspection</th><th>Date</th><th>Findings</th><th>Status</th></tr></thead><tbody>{inspections.map((inspection) => <tr key={inspection.id}><td><Link href={`/inspections/${inspection.id}`}><strong>{inspection.title}</strong></Link></td><td>{formatDateOnly((inspection.completedAt ?? inspection.createdAt).toISOString())}</td><td>{inspection.items.filter((item) => item.result === 'needs_attention').length}</td><td><span className="badge">{inspection.status}</span></td></tr>)}</tbody></table> : <div className="muted">No inspections recorded for this unit.</div>}
+      </section>
+
+      <section className="card stack">
+        <div className="row"><div><div className="kicker">Vacancy history</div><h3>Unit turns</h3></div><Link href="/turns/new" className="button">Start unit turn</Link></div>
+        {turns.length ? <table className="table"><thead><tr><th>Turn</th><th>Move-out</th><th>Progress</th><th>Ready</th><th>Status</th></tr></thead><tbody>{turns.map((turn) => <tr key={turn.id}><td><Link href={`/turns/${turn.id}`}><strong>{turn.title}</strong></Link></td><td>{formatDateOnly(turn.moveOutAt.toISOString())}</td><td>{turn.tasks.filter((task) => task.status === 'completed').length}/{turn.tasks.length}</td><td>{turn.readyAt ? formatDateOnly(turn.readyAt.toISOString()) : 'Not ready'}</td><td><span className="badge">{turn.status.replaceAll('_', ' ')}</span></td></tr>)}</tbody></table> : <div className="muted">No unit turns recorded for this unit.</div>}
+      </section>
 
       <section className="card stack">
         <div>
