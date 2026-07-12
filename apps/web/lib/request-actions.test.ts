@@ -10,6 +10,8 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { submitMaintenanceRequest } from '@/lib/request-actions'
 import { scaffoldLandlord } from '@/test/helpers'
+import { prisma } from '@/lib/prisma'
+import { getLandlordSession } from '@/lib/landlord-session'
 
 // Minimal valid magic-byte headers.
 const JPEG_HEADER = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
@@ -17,6 +19,7 @@ const PNG_HEADER  = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
 vi.mock('@/lib/db-status', () => ({ isDatabaseAvailable: vi.fn().mockResolvedValue(true) }))
 vi.mock('@/lib/auth-config', () => ({ getLandlordEmail: vi.fn().mockReturnValue('landlord@example.com') }))
+vi.mock('@/lib/landlord-session', () => ({ getLandlordSession: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/lib/notify', () => ({
   sendNotification: vi.fn().mockResolvedValue({ ok: true }),
   buildNewRequestMessages: vi.fn().mockReturnValue([
@@ -67,6 +70,7 @@ describe('submitMaintenanceRequest — magic-byte validation', () => {
   beforeEach(() => {
     vi.mocked(mkdir).mockResolvedValue(undefined)
     vi.mocked(writeFile).mockResolvedValue(undefined)
+    vi.mocked(getLandlordSession).mockResolvedValue(null)
   })
 
   test('rejects a file with spoofed image/jpeg MIME type (PDF magic bytes)', async () => {
@@ -131,5 +135,27 @@ describe('submitMaintenanceRequest — magic-byte validation', () => {
       formData({ propertyId: 'x', unitId: 'y', tenantName: '', tenantEmail: '', title: '', description: '', category: '', urgency: '' }),
     )
     expect(result.error).toMatch(/required/i)
+  })
+
+  test('manager can create a common-area work order without a resident', async () => {
+    const { user, property } = await scaffoldLandlord()
+    const area = await prisma.unit.create({ data: { propertyId: property.id, label: 'Parking lot', locationType: 'common_area', areaType: 'parking' } })
+    vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, email: user.email } as never)
+
+    await expect(submitMaintenanceRequest(PREV, formData({
+      managerMode: 'true',
+      propertyId: property.id,
+      unitId: area.id,
+      tenantName: '',
+      tenantEmail: '',
+      title: 'Parking lot light is out',
+      description: 'The north-side light is not working.',
+      category: 'Electrical',
+      urgency: 'medium',
+    }))).rejects.toThrow(/NEXT_REDIRECT/)
+
+    const request = await prisma.maintenanceRequest.findFirst({ where: { unitId: area.id } })
+    expect(request?.status).toBe('approved')
+    expect(request?.submittedByEmail).toBeNull()
   })
 })

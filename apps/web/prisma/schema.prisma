@@ -211,6 +211,16 @@ enum EmailDeliveryStatus {
   ignored
 }
 
+enum PropertyType {
+  single_family
+  multifamily
+}
+
+enum PropertyLocationType {
+  residential
+  common_area
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -254,6 +264,7 @@ model Property {
   ownerId   String
   name      String
   address   String
+  propertyType PropertyType @default(single_family)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -268,6 +279,8 @@ model Unit {
   id               String   @id @default(cuid())
   propertyId       String
   label            String
+  locationType     PropertyLocationType @default(residential)
+  areaType         String?
   city             String?
   state            String?
   tenantName       String?
@@ -283,6 +296,8 @@ model Unit {
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]
   tenantIdentities TenantIdentity[]
+
+  @@index([propertyId, locationType, isActive])
 }
 
 model MaintenanceRequest {

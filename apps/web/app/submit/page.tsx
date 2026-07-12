@@ -69,7 +69,7 @@ export default async function SubmitPage({
           <h2 style={{ margin: '4px 0 0' }}>{isManagerMode ? 'Create work order' : 'Report a maintenance issue'}</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          {isManagerMode ? 'Log a repair for a property, assign the resident, and add photos if needed.' : 'Report the issue and add photos if needed.'}
+          {isManagerMode ? 'Log a repair for a residential unit or property area and add photos if needed.' : 'Report the issue and add photos if needed.'}
         </p>
       </section>
 

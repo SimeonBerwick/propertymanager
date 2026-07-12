@@ -12,6 +12,7 @@ export interface Property {
   id: string
   name: string
   address: string
+  propertyType: 'single_family' | 'multifamily'
   isActive: boolean
   unitCount: number
 }
@@ -20,6 +21,8 @@ export interface Unit {
   id: string
   propertyId: string
   label: string
+  locationType?: 'residential' | 'common_area'
+  areaType?: string
   tenantName?: string
   tenantEmail?: string
   sizeSqFt?: number
@@ -42,6 +45,7 @@ export interface MaintenanceRequest {
   id: string
   propertyId: string
   unitId: string
+  locationType?: 'residential' | 'common_area'
   submittedByName?: string
   submittedByEmail?: string
   preferredCurrency: CurrencyOption

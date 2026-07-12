@@ -330,7 +330,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             <div className="muted">
               <Link href={`/properties/${data.request.propertyId}`}>{data.request.propertyName}</Link>
               {' - '}
-              <Link href={`/units/${data.request.unitId}`}>{data.request.unitLabel}</Link>
+              {data.request.locationType === 'common_area'
+                ? <span>{data.request.unitLabel}</span>
+                : <Link href={`/units/${data.request.unitId}`}>{data.request.unitLabel}</Link>}
             </div>
           </div>
           <div className="requestHeroMeta">

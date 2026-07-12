@@ -218,7 +218,7 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
       continue
     }
     const existingById = id ? await prisma.unit.findFirst({
-      where: { id, property: { ownerId: session.userId } },
+      where: { id, locationType: 'residential', property: { ownerId: session.userId } },
       select: { id: true, updatedAt: true, propertyId: true },
     }) : null
     if (id && !existingById) {
@@ -247,8 +247,9 @@ export async function importUnitsCsv(_prev: OpsCsvState, formData: FormData): Pr
       bathrooms: optionalFloat(value(row, 'bathrooms', 'baths')),
       monthlyRentCents: optionalMoneyCents(value(row, 'monthlyRent', 'rent')),
       isActive: boolFromCsv(value(row, 'isActive', 'active'), true),
+      locationType: 'residential' as const,
     }
-    const existing = existingById ?? (property ? await prisma.unit.findFirst({ where: { propertyId: property.id, label }, select: { id: true, updatedAt: true, propertyId: true } }) : null)
+    const existing = existingById ?? (property ? await prisma.unit.findFirst({ where: { propertyId: property.id, label, locationType: 'residential' }, select: { id: true, updatedAt: true, propertyId: true } }) : null)
     if (existing) {
       if (!preview) await prisma.unit.update({ where: { id: existing.id }, data: { ...data, ...(property ? { propertyId: property.id } : {}) } })
       updated += 1

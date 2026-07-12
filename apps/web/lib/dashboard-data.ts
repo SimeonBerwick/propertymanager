@@ -1,8 +1,8 @@
 import type { MaintenanceRequest, Property, Unit } from '@/lib/types'
 
 export const properties: Property[] = [
-  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', isActive: true, unitCount: 2 },
-  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', isActive: true, unitCount: 4 },
+  { id: 'prop-1', name: 'Canyon View Duplex', address: '742 W Mesquite Ave, Phoenix, AZ', propertyType: 'multifamily', isActive: true, unitCount: 2 },
+  { id: 'prop-2', name: 'Palm Court Fourplex', address: '1810 N 14th St, Phoenix, AZ', propertyType: 'multifamily', isActive: true, unitCount: 4 },
 ]
 
 export const units: Unit[] = [

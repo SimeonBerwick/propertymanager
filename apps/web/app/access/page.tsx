@@ -31,7 +31,7 @@ export default async function AccessPage() {
 
   const [units, vendors, recentAccessEvents] = await Promise.all([
     prisma.unit.findMany({
-      where: { property: { ownerId: session.userId } },
+      where: { property: { ownerId: session.userId }, locationType: 'residential' },
       include: {
         property: { select: { id: true, name: true, isActive: true } },
         tenantIdentities: {

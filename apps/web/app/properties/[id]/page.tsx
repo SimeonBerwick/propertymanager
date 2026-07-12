@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs'
 import { StatusBadge } from '@/components/status-badge'
 import { AuditLogList } from '@/components/audit-log-list'
 import { getAuditLogs } from '@/lib/audit-log'
+import { PropertyAreaForm } from './property-area-form'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -132,6 +133,22 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           )}
         </div>
       </section>
+
+      {data.property.propertyType === 'multifamily' ? (
+        <section className="card stack">
+          <div>
+            <div className="kicker">Property areas</div>
+            <h3 style={{ marginTop: 4 }}>Common-area maintenance locations</h3>
+            <div className="muted">Use these locations for work that is not tied to a resident unit.</div>
+          </div>
+          <div className="grid cols-3">
+            {data.areas.filter((area) => area.isActive).map((area) => (
+              <div key={area.id} className="inlineNotice"><strong>{area.label}</strong></div>
+            ))}
+          </div>
+          <PropertyAreaForm propertyId={data.property.id} />
+        </section>
+      ) : null}
     </div>
   )
 }

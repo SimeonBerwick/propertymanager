@@ -14,6 +14,7 @@ import {
   vendors as seedVendors,
 } from '../lib/seed-data'
 import { getLandlordEmail, getLandlordSlug, getDevFallbackPassword, assertProductionAuthEnv } from '../lib/auth-config'
+import { DEFAULT_APARTMENT_AREAS } from '../lib/property-setup'
 import { hashPassword } from '../lib/password'
 
 const prisma = new PrismaClient()
@@ -50,9 +51,21 @@ async function main() {
         name: prop.name,
         address: prop.address,
         ownerId: landlord.id,
+        propertyType: prop.propertyType,
       },
-      create: { id: prop.id, name: prop.name, address: prop.address, ownerId: landlord.id },
+      create: { id: prop.id, name: prop.name, address: prop.address, ownerId: landlord.id, propertyType: prop.propertyType },
     })
+
+    if (prop.propertyType === 'multifamily') {
+      for (const [label, areaType] of DEFAULT_APARTMENT_AREAS) {
+        const id = `area-${prop.id}-${areaType}`
+        await prisma.unit.upsert({
+          where: { id },
+          update: { propertyId: prop.id, label, locationType: 'common_area', areaType },
+          create: { id, propertyId: prop.id, label, locationType: 'common_area', areaType },
+        })
+      }
+    }
   }
 
   for (const unit of seedUnits) {
@@ -67,6 +80,7 @@ async function main() {
         bedrooms: unit.bedrooms,
         bathrooms: unit.bathrooms,
         monthlyRentCents: unit.monthlyRentCents,
+        locationType: 'residential',
       },
       create: {
         id: unit.id,
@@ -78,6 +92,7 @@ async function main() {
         bedrooms: unit.bedrooms,
         bathrooms: unit.bathrooms,
         monthlyRentCents: unit.monthlyRentCents,
+        locationType: 'residential',
       },
     })
 

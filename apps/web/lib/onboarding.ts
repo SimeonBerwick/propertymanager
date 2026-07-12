@@ -35,7 +35,7 @@ export async function getOnboardingChecklist(userId: string) {
   const [user, properties, unitCount, vendorCount, requestCount, automationRuleCount] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } }),
     prisma.property.findMany({ where: { ownerId: userId, isActive: true }, select: { id: true }, take: 1 }),
-    prisma.unit.count({ where: { property: { ownerId: userId }, isActive: true } }),
+    prisma.unit.count({ where: { property: { ownerId: userId }, locationType: 'residential', isActive: true } }),
     prisma.vendor.count({ where: { orgId: userId, isActive: true } }),
     prisma.maintenanceRequest.count({ where: { property: { ownerId: userId } } }),
     prisma.automationRule.count({ where: { orgId: userId } }),
