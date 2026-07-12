@@ -219,6 +219,19 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
     }
   }
 
+  if (input.audience === 'manager' && input.vendorNeedsAcceptance) {
+    return {
+      title: 'Waiting for vendor acceptance',
+      detail: 'The vendor must accept the service call before an appointment is scheduled.',
+      waitingOn: 'Vendor',
+      nextAction: 'Wait for vendor response',
+      tone: 'waiting',
+      appointment,
+      money,
+      latest,
+    }
+  }
+
   if ((input.upfrontVendorPaymentDueCents ?? 0) > 0 && !workIsComplete) {
     return {
       title: input.audience === 'vendor' ? 'Waiting on upfront payment' : 'Upfront vendor payment needed',

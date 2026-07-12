@@ -1,9 +1,15 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import path from 'node:path'
+import { prisma } from '../../lib/prisma'
+import { createVendorOtpChallenge } from '../../lib/vendor-otp-lib'
 
 const propertyName = `Playwright Desert ${Date.now()}`
 const unitLabel = 'Unit PW-1'
 const requestTitle = 'Playwright sink leak'
+
+test.afterAll(async () => {
+  await prisma.$disconnect()
+})
 
 async function clickAndWaitForURL(page: Page, locator: Locator, url: RegExp) {
   await Promise.all([
@@ -76,7 +82,29 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await vendorForm.getByLabel('Vendor for service call').selectOption({ label: 'ACME Plumbing' })
   await vendorForm.getByRole('button', { name: 'Assign service call' }).click()
 
+  const requestUrl = page.url()
+  const requestId = new URL(requestUrl).pathname.split('/').filter(Boolean).at(-1)
+  expect(requestId).toBeTruthy()
+
   const appointmentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save appointment' }) })
+  await expect(appointmentForm).toBeHidden()
+  await expect(page.getByText('The vendor must accept the service call before an appointment is scheduled.')).toBeVisible()
+
+  const vendor = await prisma.vendor.findFirstOrThrow({
+    where: { email: 'dispatch@acme.test' },
+    select: { id: true },
+  })
+  const vendorOtp = await createVendorOtpChallenge(vendor.id, 'returning_login', 'email', { next: `/vendor/requests/${requestId}` })
+  await page.goto(`/vendor/auth/login/magic?challengeId=${vendorOtp.challengeId}&code=${vendorOtp.code}&next=/vendor/requests/${requestId}`)
+  await expect(page).toHaveURL(new RegExp(`/vendor/requests/${requestId}$`))
+  const vendorResponseForm = page.locator('form').filter({ has: page.getByRole('combobox', { name: 'Response' }) })
+  await vendorResponseForm.getByRole('combobox', { name: 'Response' }).selectOption('accepted')
+  await vendorResponseForm.getByLabel('Note').fill('ACME accepts this service call.')
+  await vendorResponseForm.getByRole('button', { name: 'Accept service call' }).click()
+  await expect(page.getByText(/Update saved/)).toBeVisible()
+
+  await page.goto(requestUrl)
+  await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
   await expect(appointmentForm).toBeVisible()
   await appointmentForm.getByLabel('Appointment date').fill('2030-01-15')
   await appointmentForm.getByLabel('Start time').fill('09:00')

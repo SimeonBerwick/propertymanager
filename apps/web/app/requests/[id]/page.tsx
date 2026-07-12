@@ -189,6 +189,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     vendorScheduledEnd: effectiveVendorScheduledEnd,
   }
   const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && data.request.dispatchStatus === 'accepted' && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const vendorNeedsAcceptance = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && !['accepted', 'scheduled', 'in_progress', 'completed'].includes(data.request.dispatchStatus ?? '')
   const upfrontVendorPaymentDueCents = data.request.upfrontVendorPaymentDueCents ?? 0
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
   const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
@@ -230,6 +231,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review vendor update'
     : moneyAction
       ? moneyAction.title
+    : vendorNeedsAcceptance
+      ? 'Waiting for vendor acceptance'
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -249,6 +252,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'The latest vendor update is shown here so you can decide what to do next.'
     : moneyAction
       ? moneyAction.subtitle
+    : vendorNeedsAcceptance
+      ? 'The vendor must accept the service call before an appointment is scheduled.'
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
@@ -290,6 +295,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     upfrontVendorPaymentDueCents,
     vendorBillPending,
     needsAppointmentTime,
+    vendorNeedsAcceptance,
     canChooseVendor,
     hasTenantMessageReview,
     hasVendorUpdateReview,
