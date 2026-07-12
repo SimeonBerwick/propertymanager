@@ -76,7 +76,9 @@ test('landlord can complete the core maintenance workflow in the browser', async
   const decisionForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save decision' }) })
   await decisionForm.getByLabel('Decision').selectOption('approved')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('approved', { timeout: 15_000 })
+  await expect(page.getByText('Request status updated.')).toBeVisible({ timeout: 15_000 })
+  await page.reload()
+  await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
 
   const vendorForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Assign service call' }) })
   await expect(vendorForm).toBeVisible({ timeout: 15_000 })
