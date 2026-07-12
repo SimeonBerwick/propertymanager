@@ -64,8 +64,8 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await expect(page).toHaveURL(/\/vendors$/)
 
   await page.goto('/submit/landlord')
-  await page.getByLabel('Property').selectOption({ label: propertyName })
-  await page.getByLabel('Unit').selectOption({ label: `${unitLabel} — Maya Lopez` })
+  await page.getByLabel('Property', { exact: true }).selectOption({ label: propertyName })
+  await page.getByLabel('Unit or property area', { exact: true }).selectOption({ label: `${unitLabel} — Maya Lopez` })
   await page.getByLabel('Your name').fill('Maya Lopez')
   await page.getByLabel('Your email').fill('maya@example.com')
   await page.getByLabel('Issue title').fill(requestTitle)
