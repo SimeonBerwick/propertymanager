@@ -102,7 +102,9 @@ test('landlord can complete the core maintenance workflow in the browser', async
 
   const appointmentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save appointment' }) })
   await expect(appointmentForm).toBeHidden()
-  await expect(page.getByText('The vendor must accept the service call before an appointment is scheduled.')).toBeVisible()
+  const workOrderStatus = page.locator('.workOrderStatusPanel')
+  await expect(workOrderStatus.getByRole('heading', { name: 'Waiting for vendor acceptance' })).toBeVisible()
+  await expect(workOrderStatus.getByText('The vendor must accept the service call before an appointment is scheduled.')).toBeVisible()
 
   const vendor = await prisma.vendor.findFirstOrThrow({
     where: { email: 'dispatch@acme.test' },
@@ -129,13 +131,13 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await expect(decisionForm.getByLabel('Decision')).toBeVisible()
 
   const messagesDisclosure = page.locator('details#communication')
-  await messagesDisclosure.getByText(/Messages and internal notes/).click()
+  await messagesDisclosure.locator('summary').click()
   await expect(messagesDisclosure).toHaveAttribute('open', '')
   const commentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save internal note' }) })
   await expect(commentForm).toBeVisible()
   await commentForm.getByLabel('Add comment').fill('Vendor scheduled for tomorrow morning.')
   await commentForm.getByRole('button', { name: 'Save internal note' }).click()
-  await expect(page.getByText('Vendor scheduled for tomorrow morning.').last()).toBeVisible()
+  await expect(messagesDisclosure.getByText('Vendor scheduled for tomorrow morning.', { exact: true })).toBeVisible()
 
   await decisionForm.getByLabel('Decision').selectOption('in_progress')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
