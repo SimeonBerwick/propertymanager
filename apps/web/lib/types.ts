@@ -12,6 +12,7 @@ export interface Property {
   id: string
   name: string
   address: string
+  propertyType: 'single_family' | 'multifamily'
   isActive: boolean
   unitCount: number
 }

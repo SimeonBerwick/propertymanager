@@ -10,6 +10,7 @@ import { getSessionOptions, type SessionData } from '@/lib/session'
 import { writeAuditLog } from '@/lib/audit-log'
 import { checkUnitCapacity } from '@/lib/account-limits'
 import { logServerActionError } from '@/lib/observability'
+import { buildBulkUnitLabels, type PropertyType } from '@/lib/property-setup'
 
 export type PropertyActionState = { error: string | null }
 
@@ -65,15 +66,39 @@ export async function createPropertyAction(
 
   const name = readTrimmedString(formData, 'name')
   const address = readTrimmedString(formData, 'address')
+  const propertyType = (readTrimmedString(formData, 'propertyType') || 'single_family') as PropertyType
+  const unitCountRaw = readTrimmedString(formData, 'unitCount')
+  const firstUnitNumberRaw = readTrimmedString(formData, 'firstUnitNumber')
+  const unitLabelPrefix = readTrimmedString(formData, 'unitLabelPrefix')
 
   if (!name) return { error: 'Property name is required.' }
   if (!address) return { error: 'Address is required.' }
   if (name.length > 200) return { error: 'Property name must be 200 characters or fewer.' }
   if (address.length > 400) return { error: 'Address must be 400 characters or fewer.' }
+  if (!['single_family', 'multifamily'].includes(propertyType)) return { error: 'Choose a valid property type.' }
+
+  let unitLabels: string[] = []
+  if (propertyType === 'multifamily') {
+    try {
+      unitLabels = buildBulkUnitLabels(Number(unitCountRaw), Number(firstUnitNumberRaw), unitLabelPrefix)
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Check the apartment unit setup.' }
+    }
+    const capacity = await checkUnitCapacity(ownerId)
+    if (!capacity.ok || (capacity.limit != null && capacity.activeUnits + unitLabels.length > capacity.limit)) {
+      return { error: `Your current plan supports up to ${capacity.limit} active units. Reduce the unit count or upgrade your plan.` }
+    }
+  }
 
   let propertyId: string
   try {
-    const property = await prisma.property.create({ data: { name, address, ownerId } })
+    const property = await prisma.$transaction(async (tx) => {
+      const created = await tx.property.create({ data: { name, address, ownerId, propertyType } })
+      if (unitLabels.length) {
+        await tx.unit.createMany({ data: unitLabels.map((label) => ({ propertyId: created.id, label })) })
+      }
+      return created
+    })
     propertyId = property.id
     await prisma.productEvent.create({ data: { orgId: ownerId, eventName: 'property_created', metadataJson: JSON.stringify({ propertyId: property.id }) } }).catch(() => null)
     await writeAuditLog({
@@ -83,7 +108,7 @@ export async function createPropertyAction(
       entityId: property.id,
       action: 'property.created',
       summary: `Created property ${name}.`,
-      metadata: { address },
+      metadata: { address, propertyType, unitsCreated: unitLabels.length },
     })
   } catch (error) {
     await logServerActionError('property.create', error, { ownerId })

@@ -69,6 +69,26 @@ describe('property-actions', () => {
     expect(property?.address).toBe('123 Cactus Rd')
   })
 
+  test('createPropertyAction creates numbered units for an apartment community', async () => {
+    const { user } = await scaffoldLandlord()
+    await prisma.user.update({ where: { id: user.id }, data: { subscriptionPlan: 'pro' } })
+    vi.mocked(getIronSession).mockResolvedValue(fakeSession(user.id))
+
+    await expect(createPropertyAction(PREV, formData({
+      name: 'Mesa Garden Apartments',
+      address: '500 Mesa Ave',
+      propertyType: 'multifamily',
+      unitCount: '3',
+      firstUnitNumber: '101',
+      unitLabelPrefix: 'Apartment',
+    }))).rejects.toThrow(/NEXT_REDIRECT:\/properties\//)
+
+    const property = await prisma.property.findFirstOrThrow({ where: { ownerId: user.id, name: 'Mesa Garden Apartments' } })
+    const units = await prisma.unit.findMany({ where: { propertyId: property.id }, orderBy: { label: 'asc' } })
+    expect(property.propertyType).toBe('multifamily')
+    expect(units.map((unit) => unit.label)).toEqual(['Apartment 101', 'Apartment 102', 'Apartment 103'])
+  })
+
   test('updatePropertyAction blocks cross-owner edits', async () => {
     const { property } = await scaffoldLandlord()
     const other = await scaffoldLandlord()

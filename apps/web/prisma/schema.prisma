@@ -211,6 +211,11 @@ enum EmailDeliveryStatus {
   ignored
 }
 
+enum PropertyType {
+  single_family
+  multifamily
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -254,6 +259,7 @@ model Property {
   ownerId   String
   name      String
   address   String
+  propertyType PropertyType @default(single_family)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

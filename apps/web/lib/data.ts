@@ -97,6 +97,7 @@ function mapProperty(p: any): Property {
     id: p.id,
     name: p.name,
     address: p.address,
+    propertyType: p.propertyType ?? 'single_family',
     isActive: p.isActive !== false,
     unitCount: p._count?.units ?? 0,
   }

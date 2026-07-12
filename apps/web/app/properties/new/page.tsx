@@ -12,7 +12,7 @@ export default function NewPropertyPage() {
           <h2 style={{ margin: '4px 0 0' }}>Add a property</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Enter the property name and address. You can add units after the property is created.
+          Choose the property type. Apartment communities can create their initial units all at once.
         </p>
       </section>
 
