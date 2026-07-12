@@ -145,6 +145,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:vendor-cost-approval`, href: `/requests/${request.id}#vendor-approvals`, primaryLabel: 'Vendor costs to approve', reason: `${request.pendingVendorApprovalCount} vendor cost${request.pendingVendorApprovalCount === 1 ? ' needs' : 's need'} approval before closing the request.`, group: 'Vendor costs to approve', priority: 'high', actionType: 'review_vendor_costs', score: SCORE.vendorCostApproval }
   }
 
+  if (hasVendorChosen(request) && request.dispatchStatus !== 'accepted' && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {
+    return { ...base, id: `${request.id}:vendor-acceptance`, primaryLabel: 'Wait for vendor response', reason: 'The vendor must accept the service call before an appointment is scheduled.', group: 'Waiting on vendors', priority: 'normal', actionType: 'await_vendor_acceptance', score: SCORE.scheduleNeeded }
+  }
+
   if (request.dispatchStatus === 'completed' && request.vendorBillPending) {
     return { ...base, id: `${request.id}:await-vendor-bill`, href: `/requests/${request.id}#billing`, primaryLabel: 'Await vendor bill', reason: 'Work is marked complete, but no vendor charge or bill is recorded yet.', group: 'Vendor billing', priority: 'normal', actionType: 'await_vendor_bill', score: SCORE.paymentIssue }
   }
@@ -190,7 +194,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
     return { ...base, id: `${request.id}:follow-up`, href: `/requests/${request.id}#vendor-update-review`, primaryLabel: 'Review update', reason: 'The latest vendor update needs a manager decision.', group: 'Vendor updates', priority: 'high', actionType: 'review_update', score: SCORE.overdueUpdate }
   }
 
-  if (hasVendorChosen(request) && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)) {
+  if (hasVendorChosen(request) && request.dispatchStatus === 'accepted' && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)) {
     return { ...base, id: `${request.id}:schedule`, primaryLabel: 'Add appointment time', reason: 'A vendor has been selected, but no appointment time is on the request yet.', group: 'Scheduling', priority: 'normal', actionType: 'schedule_work', score: SCORE.scheduleNeeded }
   }
 

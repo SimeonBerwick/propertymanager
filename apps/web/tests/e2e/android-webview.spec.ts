@@ -28,7 +28,7 @@ test.afterAll(async () => {
 })
 
 async function signInManager(page: Page) {
-  await page.goto('/login')
+  await page.goto('/login?role=manager')
   await page.getByLabel('Email').fill(REVIEWER_EMAILS.landlord)
   await page.getByLabel('Password').fill(process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'play-review-password-2026')
   await page.getByRole('button', { name: /^Sign in$/ }).click()

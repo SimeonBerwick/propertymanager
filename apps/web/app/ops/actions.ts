@@ -119,6 +119,7 @@ export async function toggleDailyCsvExportAction(formData: FormData) {
     summary: `Daily CSV export emails ${enabled ? 'enabled' : 'disabled'}.`,
   })
   revalidatePath('/ops')
+  revalidatePath('/dashboard')
 }
 
 function isPreview(formData: FormData) {

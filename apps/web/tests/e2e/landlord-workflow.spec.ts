@@ -15,7 +15,7 @@ async function clickAndWaitForURL(page: Page, locator: Locator, url: RegExp) {
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
   const photoPath = path.join(process.cwd(), 'tests/e2e/fixtures/leak.png')
 
-  await page.goto('/login')
+  await page.goto('/login?role=manager')
   await page.getByLabel('Email').fill('landlord@example.com')
   await page.getByLabel('Password').fill('changeme')
   await clickAndWaitForURL(page, page.getByRole('button', { name: 'Sign in' }), /\/dashboard$/)

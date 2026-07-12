@@ -14,7 +14,7 @@ describe('work order state links', () => {
     expect(result.nextHref).toBe('/requests/request-1?comment=tenant#tenant-message-review')
   })
 
-  test('keeps vendor cost review pointed at the general action section', () => {
+  test('points vendor cost review directly at the approval controls', () => {
     const result = deriveWorkOrderStateSummary({
       audience: 'manager',
       id: 'request-1',
@@ -22,6 +22,6 @@ describe('work order state links', () => {
       pendingVendorApprovalCount: 1,
     })
 
-    expect(result.nextHref).toBe('/requests/request-1#actions')
+    expect(result.nextHref).toBe('/requests/request-1#vendor-approvals')
   })
 })

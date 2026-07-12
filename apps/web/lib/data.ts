@@ -431,7 +431,7 @@ function buildDeliveryQueueActions(failedEmails: any[], user: { dailyCsvExportEn
         href: '/ops',
         actionType: 'review_csv_export_schedule',
         group: 'CSV delivery failures',
-        score: 65,
+        score: 5,
       }]
     : []
 
