@@ -7,6 +7,7 @@
   },
   "scripts": {
     "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && next build",
     "dev": "next dev",
     "dev:local": "SESSION_SECRET=${SESSION_SECRET:-local-dev-session-secret-2026-abcdef123456} LANDLORD_EMAIL=${LANDLORD_EMAIL:-landlord@example.com} LANDLORD_PASSWORD=${LANDLORD_PASSWORD:-changeme} next dev",
     "build": "next build",
