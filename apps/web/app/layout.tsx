@@ -105,6 +105,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                       <Link href="/properties">Properties</Link>
                       <Link href="/vendors">Vendors</Link>
                       <Link href="/reports">Reports</Link>
+                      <Link href="/inspections">Inspections</Link>
                     </div>
                   </details>
                   <details className="navMenu">

@@ -296,6 +296,7 @@ model Unit {
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]
   tenantIdentities TenantIdentity[]
+  inspections      Inspection[]
 
   @@index([propertyId, locationType, isActive])
 }
@@ -367,9 +368,76 @@ model MaintenanceRequest {
   tenderInvites           TenderInvite[]
   billingDocuments        BillingDocument[]
   vendorCommercialItems   VendorCommercialItem[]
+  inspectionFindings      InspectionItem[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model InspectionTemplate {
+  id                    String   @id @default(cuid())
+  orgId                 String
+  name                  String
+  inspectionType        String
+  checklistJson         String
+  requirePhotoForIssues Boolean  @default(true)
+  requireNoteForIssues  Boolean  @default(true)
+  includePhotosInReport Boolean  @default(true)
+  defaultDueDays        Int      @default(7)
+  reportTitle           String   @default("Property inspection report")
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  inspections Inspection[]
+
+  @@index([orgId, isActive])
+}
+
+model Inspection {
+  id                    String   @id @default(cuid())
+  orgId                 String
+  unitId                String
+  templateId            String?
+  title                 String
+  inspectionType        String
+  templateName          String
+  status                String   @default("draft")
+  dueAt                 DateTime?
+  completedAt           DateTime?
+  requirePhotoForIssues Boolean  @default(true)
+  requireNoteForIssues  Boolean  @default(true)
+  includePhotosInReport Boolean  @default(true)
+  reportTitle           String   @default("Property inspection report")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  unit     Unit                @relation(fields: [unitId], references: [id])
+  template InspectionTemplate? @relation(fields: [templateId], references: [id])
+  items    InspectionItem[]
+
+  @@index([orgId, status, dueAt])
+  @@index([unitId, createdAt])
+}
+
+model InspectionItem {
+  id                   String   @id @default(cuid())
+  inspectionId         String
+  maintenanceRequestId String?
+  section              String
+  label                String
+  position             Int
+  result               String   @default("pending")
+  note                 String?
+  photoUrl             String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  inspection        Inspection         @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  maintenanceRequest MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id])
+
+  @@index([inspectionId, position])
+  @@index([maintenanceRequestId])
 }
 
 model RequestTender {

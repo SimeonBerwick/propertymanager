@@ -33,12 +33,17 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { unit, property, requests, openCount, closedCount } = data
-  const [tenantIdentities, auditLogs] = await Promise.all([
+  const [tenantIdentities, auditLogs, inspections] = await Promise.all([
     prisma.tenantIdentity.findMany({
       where: { unitId: unit.id, property: { ownerId: session.userId } },
       orderBy: [{ leaseStartDate: 'asc' }, { createdAt: 'asc' }],
     }).catch(() => []),
     getAuditLogs('unit', unit.id),
+    prisma.inspection.findMany({
+      where: { unitId: unit.id, orgId: session.userId },
+      include: { items: { select: { result: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
   ])
   const occupancy = getUnitOccupancySnapshot(tenantIdentities)
 
@@ -141,6 +146,11 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
           actorName: item.actorUser?.email ?? undefined,
         }))}
       />
+
+      <section className="card stack">
+        <div className="row"><div><div className="kicker">Condition history</div><h3>Inspections</h3></div><Link href="/inspections/new" className="button">New inspection</Link></div>
+        {inspections.length ? <table className="table"><thead><tr><th>Inspection</th><th>Date</th><th>Findings</th><th>Status</th></tr></thead><tbody>{inspections.map((inspection) => <tr key={inspection.id}><td><Link href={`/inspections/${inspection.id}`}><strong>{inspection.title}</strong></Link></td><td>{formatDateOnly((inspection.completedAt ?? inspection.createdAt).toISOString())}</td><td>{inspection.items.filter((item) => item.result === 'needs_attention').length}</td><td><span className="badge">{inspection.status}</span></td></tr>)}</tbody></table> : <div className="muted">No inspections recorded for this unit.</div>}
+      </section>
 
       <section className="card stack">
         <div>
