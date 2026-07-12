@@ -27,6 +27,31 @@ const base: DashboardRequestRow = {
 }
 
 describe('next action engine', () => {
+  it('waits for service-call acceptance before offering scheduling', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'vendor_selected' as const,
+      assignedVendorId: 'vendor-1',
+      assignedVendorName: 'Mesa Plumbing',
+      dispatchStatus: 'contacted',
+      claimedAt: base.createdAt,
+    })).toMatchObject({
+      actionType: 'await_vendor_acceptance',
+      primaryLabel: 'Wait for vendor response',
+    })
+  })
+
+  it('offers scheduling after the selected vendor accepts', () => {
+    expect(getRequestNextAction({
+      ...base,
+      status: 'vendor_selected' as const,
+      assignedVendorId: 'vendor-1',
+      assignedVendorName: 'Mesa Plumbing',
+      dispatchStatus: 'accepted',
+      claimedAt: base.createdAt,
+    }).actionType).toBe('schedule_work')
+  })
+
   it('returns the shared next action shape for a request', () => {
     expect(getRequestNextAction(base)).toMatchObject({
       priority: 'normal',
@@ -71,7 +96,7 @@ describe('next action engine', () => {
   })
 
   it('asks for an appointment time when a vendor id is assigned without a visit time', () => {
-    expect(getRequestNextAction({ ...base, status: 'approved' as const, assignedVendorId: 'v1' })).toMatchObject({
+    expect(getRequestNextAction({ ...base, status: 'approved' as const, assignedVendorId: 'v1', dispatchStatus: 'accepted' })).toMatchObject({
       priority: 'normal',
       primaryLabel: 'Add appointment time',
       actionType: 'schedule_work',
@@ -79,7 +104,7 @@ describe('next action engine', () => {
   })
 
   it('asks for an appointment time when the request is scheduled without one', () => {
-    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing' })).toMatchObject({
+    expect(getRequestNextAction({ ...base, status: 'scheduled' as const, assignedVendorName: 'ACME Plumbing', dispatchStatus: 'accepted' })).toMatchObject({
       priority: 'normal',
       primaryLabel: 'Add appointment time',
       reason: 'A vendor has been selected, but no appointment time is on the request yet.',

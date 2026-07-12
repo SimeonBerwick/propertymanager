@@ -761,6 +761,63 @@ describe('updateDispatchFormAction', () => {
     vi.mocked(getLandlordSession).mockResolvedValue(null)
   })
 
+  test('rejects manager scheduling before the selected vendor accepts', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Pending Vendor', email: 'pending@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'assigned',
+    })
+
+    const result = await updateDispatchFormAction(
+      PREV,
+      formData({ requestId: request.id, dispatchStatus: 'scheduled', scheduledStart: '2030-01-15T09:00' }),
+    )
+
+    expect(result.error).toMatch(/vendor to accept/i)
+    const unchanged = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(unchanged?.status).toBe('vendor_selected')
+    expect(unchanged?.dispatchStatus).toBe('assigned')
+    expect(unchanged?.vendorScheduledStart).toBeNull()
+  })
+
+  test('scheduling an accepted vendor clears the pending vendor review', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const vendor = await prisma.vendor.create({
+      data: { orgId: user.id, name: 'Accepted Vendor', email: 'accepted@example.com', isActive: true },
+    })
+    const request = await createMaintenanceRequest(property.id, unit.id, {
+      orgId: user.id,
+      status: 'vendor_selected',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      dispatchStatus: 'accepted',
+      reviewState: 'vendor_update_pending_review',
+      reviewNote: 'Vendor accepted the service call.',
+    })
+
+    const result = await updateDispatchFormAction(
+      PREV,
+      formData({ requestId: request.id, dispatchStatus: 'scheduled', scheduledStart: '2030-01-15T09:00' }),
+    )
+
+    expect(result.error).toBeNull()
+    const scheduled = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(scheduled?.status).toBe('scheduled')
+    expect(scheduled?.dispatchStatus).toBe('scheduled')
+    expect(scheduled?.reviewState).toBe('none')
+    expect(scheduled?.reviewNote).toBeNull()
+  })
+
   test('moves a selected vendor back to approved with reassignment review when they decline', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))

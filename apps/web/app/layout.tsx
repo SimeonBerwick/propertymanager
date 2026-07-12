@@ -100,7 +100,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   <CommandPalette />
                   <Link href="/ops">Activity</Link>
                   <details className="navMenu">
-                    <summary>Portfolio</summary>
+                    <summary role="button">Portfolio</summary>
                     <div className="navMenuPanel">
                       <Link href="/properties">Properties</Link>
                       <Link href="/vendors">Vendors</Link>
@@ -108,7 +108,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     </div>
                   </details>
                   <details className="navMenu">
-                    <summary>Operations</summary>
+                    <summary role="button">Operations</summary>
                     <div className="navMenuPanel">
                       <Link href="/access">Tenant and vendor access</Link>
                       <Link href="/ops">Data &amp; activity</Link>
@@ -119,7 +119,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     </div>
                   </details>
                   <details className="navMenu">
-                    <summary>Preferences</summary>
+                    <summary role="button">Preferences</summary>
                     <div className="navMenuPanel navMenuControls">
                       <ThemeToggle />
                       <PushNotificationControl />

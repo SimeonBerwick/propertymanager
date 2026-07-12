@@ -5,5 +5,5 @@ import { revokeTenantMobileSession } from '@/lib/tenant-mobile-session'
 
 export async function tenantMobileSignoutAction() {
   await revokeTenantMobileSession()
-  redirect('/login' as never)
+  redirect('/login?role=choose' as never)
 }

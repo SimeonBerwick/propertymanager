@@ -9,6 +9,7 @@ import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { formatAppointmentWindow } from '@/lib/appointment-time'
 import { AppointmentDateTimeFields } from '@/components/appointment-date-time-fields'
 import { SectionJumpLink } from '@/components/section-jump-link'
+import { canScheduleRequest } from '@/lib/request-scheduling'
 
 const INITIAL_STATE: RequestActionState = { error: null }
 
@@ -64,7 +65,7 @@ export function RequestControlPanel({
   canCloseRequest = true,
   upfrontVendorPaymentDueCents = 0,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
@@ -108,7 +109,14 @@ export function RequestControlPanel({
   const hasOpenBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length)
   const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const upfrontPaymentBlocksWork = upfrontVendorPaymentDueCents > 0 && !['completed', 'closed'].includes(request.status)
-  const canSetAppointment = !upfrontPaymentBlocksWork && hasAssignedVendor && !hasOpenBidActivity && !request.vendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(request.status)
+  const canSetAppointment = canScheduleRequest({
+    status: request.status,
+    dispatchStatus: request.dispatchStatus,
+    hasVendor: hasAssignedVendor,
+    hasOpenBidActivity,
+    hasAppointment: Boolean(request.vendorScheduledStart),
+    upfrontPaymentDueCents: upfrontVendorPaymentDueCents,
+  })
   const canCancelSelectedVendor = hasAssignedVendor && !['completed', 'closed', 'canceled', 'declined'].includes(request.status)
   const isCloseoutStage = request.status === 'completed' || request.status === 'closed'
   const appointmentForm = canSetAppointment ? (

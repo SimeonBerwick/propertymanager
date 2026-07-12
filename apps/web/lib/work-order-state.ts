@@ -52,6 +52,10 @@ function managerBillingHref(id: string) {
   return `/requests/${id}#billing`
 }
 
+function managerVendorApprovalHref(id: string) {
+  return `/requests/${id}#vendor-approvals`
+}
+
 function managerTenantReplyHref(id: string) {
   return `/requests/${id}?comment=tenant#tenant-message-review`
 }
@@ -118,7 +122,7 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
         : 'You are selected for the service call. The amount you sent still needs manager approval before it becomes payable.',
       waitingOn: 'Property manager',
       nextAction: input.audience === 'manager' ? 'Review vendor cost' : 'Wait for review',
-      nextHref: input.audience === 'manager' ? managerHref(input.id) : undefined,
+      nextHref: input.audience === 'manager' ? managerVendorApprovalHref(input.id) : undefined,
       tone: input.audience === 'manager' ? 'review' : 'waiting',
       appointment,
       money,
@@ -209,6 +213,19 @@ export function deriveWorkOrderStateSummary(input: WorkOrderStateInput): WorkOrd
       nextAction: input.audience === 'vendor' ? 'Respond to invite' : 'Waiting on bids',
       nextHref: input.audience === 'vendor' ? '#vendor-next-action' : undefined,
       tone: input.audience === 'vendor' ? 'review' : 'waiting',
+      appointment,
+      money,
+      latest,
+    }
+  }
+
+  if (input.audience === 'manager' && input.vendorNeedsAcceptance) {
+    return {
+      title: 'Waiting for vendor acceptance',
+      detail: 'The vendor must accept the service call before an appointment is scheduled.',
+      waitingOn: 'Vendor',
+      nextAction: 'Wait for vendor response',
+      tone: 'waiting',
       appointment,
       money,
       latest,

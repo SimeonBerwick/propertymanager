@@ -1173,6 +1173,10 @@ export async function updateDispatchFormAction(
 
     if (!request) return { error: 'Request not found.' }
 
+    if ((dispatchStatus === 'scheduled' || scheduledStart || scheduledEnd) && request.dispatchStatus !== 'accepted' && request.dispatchStatus !== 'scheduled') {
+      return { error: 'Wait for the vendor to accept this service call before scheduling it.' }
+    }
+
     const awardedInvite = await getAwardedInvite(requestId, session.userId)
     const vendorId = awardedInvite?.vendorId ?? request.assignedVendorId ?? null
     const requestStatus: RequestStatus | undefined = dispatchStatus === 'scheduled'
@@ -1188,6 +1192,8 @@ export async function updateDispatchFormAction(
       ? 'vendor_completed_pending_review'
       : dispatchStatus === 'declined' || dispatchStatus === 'canceled'
         ? 'vendor_declined_reassignment_needed'
+        : dispatchStatus === 'scheduled' || dispatchStatus === 'in_progress'
+          ? 'none'
         : undefined
 
     await prisma.maintenanceRequest.update({
@@ -1204,7 +1210,9 @@ export async function updateDispatchFormAction(
         reviewState,
         reviewNote: dispatchStatus === 'declined' || dispatchStatus === 'canceled'
           ? 'Vendor could not continue with this assignment. Reassignment needed.'
-          : undefined,
+          : dispatchStatus === 'scheduled' || dispatchStatus === 'in_progress'
+            ? null
+            : undefined,
         actualCompletedAt: dispatchStatus === 'completed' ? new Date() : undefined,
       },
     })
@@ -1678,6 +1686,59 @@ export async function addCommentFormAction(
   } catch (error) {
     await logServerActionError('request.comment.add', error, { requestId, visibility })
     return { error: 'Could not save comment. Database may not be connected.' }
+  }
+}
+
+export async function requestVendorCommercialRevisionAction(
+  _prev: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+
+  const requestId = String(formData.get('requestId') ?? '')
+  const itemId = String(formData.get('itemId') ?? '')
+  const note = String(formData.get('note') ?? '').trim()
+  const counterAmount = String(formData.get('counterAmount') ?? '').trim()
+  const parsedCounter = counterAmount ? Number(counterAmount.replace(/[$,]/g, '')) : null
+  if (!note) return { error: 'Tell the vendor what should change.' }
+  if (parsedCounter != null && (!Number.isFinite(parsedCounter) || parsedCounter < 0)) return { error: 'Enter a valid counter amount.' }
+
+  try {
+    const item = await prisma.vendorCommercialItem.findFirst({
+      where: { id: itemId, requestId, status: 'submitted', request: { property: { ownerId: session.userId } } },
+      include: { vendor: true, request: { include: { property: true, unit: true } } },
+    })
+    if (!item) return { error: 'Vendor submission is no longer waiting for review.' }
+
+    const counterLabel = parsedCounter == null ? '' : ` Manager counter: ${item.currency} ${parsedCounter.toFixed(2)}.`
+    const revisionMessage = `Manager requested changes: ${note}.${counterLabel}`
+    await prisma.vendorCommercialItem.update({
+      where: { id: item.id },
+      data: { description: [item.description, revisionMessage].filter(Boolean).join('\n\n') },
+    })
+    await writeAuditLog({
+      orgId: session.userId,
+      actorUserId: session.userId,
+      entityType: 'vendorCommercialItem',
+      entityId: item.id,
+      action: 'vendorCommercialItem.revisionRequested',
+      summary: `Requested changes to vendor charge from ${item.vendor?.name ?? 'vendor'}.`,
+      metadata: { requestId, counterAmountCents: parsedCounter == null ? null : Math.round(parsedCounter * 100), note },
+    })
+    if (item.vendor?.email && await areEmailNotificationsEnabled(session.userId)) {
+      await sendNotification({
+        to: item.vendor.email,
+        subject: `Charge revision requested: ${item.request.title}`,
+        text: [`A property manager requested changes to your charge for ${item.request.property.name} - ${item.request.unit.label}.`, counterLabel.trim(), `Message: ${note}`, '', 'Open your vendor portal to submit the revised charge.'].filter(Boolean).join('\n'),
+      }, { ownerUserId: session.userId, requestId })
+    }
+    revalidatePath(`/requests/${requestId}`)
+    revalidatePath('/vendor')
+    return { error: null, success: true, message: 'Revision request sent. The charge remains pending until the vendor responds.' }
+  } catch (error) {
+    await logServerActionError('vendorCommercialItem.revisionRequested', error, { requestId, itemId }).catch(() => null)
+    return { error: 'Could not send the revision request.' }
   }
 }
 

@@ -82,7 +82,7 @@ export function OpsCsvPanel({
           {dailyExportLastSentAt ? ` Last sent ${formatDateTime(dailyExportLastSentAt)}.` : ''}
         </div>
         <button className="button compactToggle" type="submit" style={{ alignSelf: 'flex-start' }}>
-          Save daily export preference
+          {dailyExportEnabled ? 'Turn off daily CSV emails' : 'Save daily export preference'}
         </button>
       </form>
       <SystemEmailTestForm />

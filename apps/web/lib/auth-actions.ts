@@ -206,5 +206,5 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
 export async function logout(): Promise<void> {
   const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
   session.destroy()
-  redirect('/login')
+  redirect('/login?role=choose')
 }

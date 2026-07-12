@@ -5,5 +5,5 @@ import { revokeVendorSession } from '@/lib/vendor-session'
 
 export async function vendorSignoutAction() {
   await revokeVendorSession()
-  redirect('/login' as never)
+  redirect('/login?role=choose' as never)
 }

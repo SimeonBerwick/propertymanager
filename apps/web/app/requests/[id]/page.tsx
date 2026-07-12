@@ -23,6 +23,7 @@ import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
+import { canScheduleRequest } from '@/lib/request-scheduling'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -188,7 +189,16 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     vendorScheduledStart: effectiveVendorScheduledStart,
     vendorScheduledEnd: effectiveVendorScheduledEnd,
   }
-  const needsAppointmentTime = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && ['approved', 'vendor_selected', 'scheduled', 'reopened'].includes(data.request.status)
+  const needsAppointmentTime = canScheduleRequest({
+    status: data.request.status,
+    dispatchStatus: data.request.dispatchStatus,
+    hasVendor: hasVendorChosen,
+    hasOpenBidActivity: hasActiveBidInvitations,
+    hasAppointment: Boolean(effectiveVendorScheduledStart),
+    upfrontPaymentDueCents: data.request.upfrontVendorPaymentDueCents,
+    workComplete: isEffectivelyCompleted,
+  })
+  const vendorNeedsAcceptance = !isEffectivelyCompleted && hasVendorChosen && !hasActiveBidInvitations && !effectiveVendorScheduledStart && !['accepted', 'scheduled', 'in_progress', 'completed'].includes(data.request.dispatchStatus ?? '')
   const upfrontVendorPaymentDueCents = data.request.upfrontVendorPaymentDueCents ?? 0
   const tenantChargebackCents = data.request.tenantBillbackDecision === 'bill_tenant' ? data.request.tenantBillbackAmountCents ?? 0 : 0
   const hasTenantChargeDocument = data.billingDocuments.some((doc) => doc.recipientType === 'tenant' && doc.documentType === 'tenant_invoice' && doc.status !== 'void')
@@ -230,6 +240,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review vendor update'
     : moneyAction
       ? moneyAction.title
+    : vendorNeedsAcceptance
+      ? 'Waiting for vendor acceptance'
     : needsAppointmentTime
     ? 'Add appointment time'
     : hasSubmittedBid
@@ -249,6 +261,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'The latest vendor update is shown here so you can decide what to do next.'
     : moneyAction
       ? moneyAction.subtitle
+    : vendorNeedsAcceptance
+      ? 'The vendor must accept the service call before an appointment is scheduled.'
     : needsAppointmentTime
     ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
     : hasSubmittedBid
@@ -290,6 +304,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     upfrontVendorPaymentDueCents,
     vendorBillPending,
     needsAppointmentTime,
+    vendorNeedsAcceptance,
     canChooseVendor,
     hasTenantMessageReview,
     hasVendorUpdateReview,
@@ -588,7 +603,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </SectionCard>
           </div>
 
-          <div id="communication">
+          <details className="advancedDisclosure" id="communication">
+          <summary>Messages and internal notes ({data.comments.length})</summary>
           <SectionCard kicker="Messages" title="Tenant and internal notes">
             {data.comments.length ? data.comments.map((comment) => (
               <div key={comment.id} className="commentRow">
@@ -606,15 +622,18 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               <AddCommentForm requestId={data.request.id} defaultVisibility={hasTenantMessageReview ? 'internal' : defaultCommentVisibility} />
             </div>
           </SectionCard>
-          </div>
+          </details>
 
-          <div id="timeline">
+          <details className="advancedDisclosure" id="timeline">
+          <summary>Complete work-order history</summary>
           <SectionCard kicker="Activity" title="Complete work-order history" subtitle="Messages, appointments, vendor costs, and billing changes in newest-first order.">
             <WorkOrderActivityFeed comments={data.comments} dispatchHistory={data.dispatchHistory} commercialItems={data.vendorCommercialItems} billingDocuments={data.billingDocuments} />
           </SectionCard>
-          </div>
+          </details>
 
           {resolvedVendorCommercialItems.length ? (
+          <details className="advancedDisclosure">
+          <summary>Resolved vendor costs ({resolvedVendorCommercialItems.length})</summary>
           <SectionCard kicker="Invoices" title="Resolved vendor costs" subtitle="Approved or declined bids, fees, extra costs, and invoices sent from the vendor portal.">
             {resolvedVendorCommercialItems.map((item) => (
               <div key={item.id} className="timelineRow">
@@ -629,11 +648,14 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               </div>
             ))}
           </SectionCard>
+          </details>
           ) : null}
 
         </div>
       </div>
 
+      {(issuePhotos.length || vendorPhotos.length) ? <details className="advancedDisclosure">
+      <summary>Work photos ({issuePhotos.length + vendorPhotos.length})</summary>
       <div className="grid cols-3 requestEvidenceGrid">
         <SectionCard kicker="Photos" title="Tenant photos">
           {issuePhotos.length ? (
@@ -666,6 +688,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         </SectionCard>
 
       </div>
+      </details> : null}
 
       {hasVendorChosen || data.billingDocuments.length ? (
         <MoneyCloseoutPanel

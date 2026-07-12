@@ -6,7 +6,7 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string; role?: string }>
 }) {
   const params = searchParams ? await searchParams : undefined
-  const mode = params?.role === 'choose' ? 'choose' : 'manager'
+  const mode = params?.role === 'manager' ? 'manager' : 'choose'
   const error = params?.error === 'session-expired'
     ? 'Your session expired, or this link needs sign-in. Sign in again to continue.'
     : params?.error === 'sign-in-required'
