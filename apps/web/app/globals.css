@@ -418,6 +418,26 @@ body { min-height: 100vh; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { text-align: left; padding: 14px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .table th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.calendarToolbar, .calendarFilters { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.calendarToolbar h2 { margin: 0; text-align: center; }
+.calendarFilters { padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); justify-content: flex-start; }
+.calendarFilters label { min-width: 170px; flex: 1; }
+.maintenanceCalendar { border: 1px solid var(--border); overflow: hidden; background: var(--card); }
+.calendarWeekdays, .calendarGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendarWeekdays div { padding: 10px; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; border-right: 1px solid var(--border); }
+.calendarDay { min-width: 0; min-height: 142px; padding: 8px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--card); }
+.maintenanceCalendar.week .calendarDay { min-height: 460px; }
+.calendarDay.outside { background: var(--surface); color: var(--muted); }
+.calendarDay.today { box-shadow: inset 0 0 0 2px var(--primary); }
+.calendarDayNumber { font-weight: 700; margin-bottom: 6px; }
+.calendarDayEvents { display: grid; gap: 5px; }
+.calendarEvent { display: grid; min-width: 0; padding: 6px; border-left: 3px solid #2774a8; background: #eaf4fb; color: #17364c; text-decoration: none; font-size: 12px; line-height: 1.25; }
+.calendarEvent.inspection { border-color: #2b7a4b; background: #edf8f1; color: #1e5034; }
+.calendarEvent.turn_target, .calendarEvent.turn_task { border-color: #8a5d16; background: #fff6e5; color: #65420f; }
+.calendarEvent.overdue { border-color: #b42318; background: #fff0ee; color: #7a271a; }
+.calendarEvent span, .calendarEvent small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendarEvent small { opacity: .75; }
 .photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .photo-card { display: block; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); background: var(--table-row); }
 .photo-image { width: 100%; height: 220px; object-fit: cover; display: block; }
@@ -1208,6 +1228,18 @@ body { min-height: 100vh; }
     font-size: 15px;
   }
   .popularLabel { font-size: 12px; }
+}
+
+@media (max-width: 760px) {
+  .calendarToolbar { align-items: stretch; }
+  .calendarToolbar h2 { order: -1; width: 100%; text-align: left; }
+  .calendarToolbar > .row, .calendarViewControl { width: 100%; }
+  .calendarToolbar .button { flex: 1; text-align: center; }
+  .calendarFilters { align-items: stretch; }
+  .calendarFilters label { min-width: 100%; }
+  .maintenanceCalendar { overflow-x: auto; }
+  .calendarWeekdays, .calendarGrid { min-width: 760px; }
+  .calendarDay { min-height: 120px; }
 }
 
 .simeonware-android-app .header { margin-top: 8px; }
