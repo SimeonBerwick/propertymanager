@@ -18,6 +18,16 @@ async function clickAndWaitForURL(page: Page, locator: Locator, url: RegExp) {
   ])
 }
 
+async function expectRequestState(requestId: string, expected: { status?: string; dispatchStatus?: string; assignedVendorName?: string }) {
+  await expect.poll(async () => {
+    const request = await prisma.maintenanceRequest.findUnique({
+      where: { id: requestId },
+      select: { status: true, dispatchStatus: true, assignedVendorName: true },
+    })
+    return request
+  }, { timeout: 15_000 }).toMatchObject(expected)
+}
+
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
   const photoPath = path.join(process.cwd(), 'tests/e2e/fixtures/leak.png')
 
@@ -72,10 +82,14 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await clickAndWaitForURL(page, requestRow.getByRole('link', { name: 'Open' }), /\/requests\/[^/]+$/)
   await expect(page).toHaveURL(/\/requests\/[^/]+$/)
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
+  const requestUrl = page.url()
+  const requestId = new URL(requestUrl).pathname.split('/').filter(Boolean).at(-1)
+  if (!requestId) throw new Error('Request ID was missing from the request detail URL.')
 
   const decisionForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save decision' }) })
   await decisionForm.getByLabel('Decision').selectOption('approved')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
+  await expectRequestState(requestId, { status: 'approved' })
   await page.reload()
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
 
@@ -83,10 +97,8 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await expect(vendorForm).toBeVisible({ timeout: 15_000 })
   await vendorForm.getByLabel('Vendor for service call').selectOption({ label: 'ACME Plumbing' })
   await vendorForm.getByRole('button', { name: 'Assign service call' }).click()
-
-  const requestUrl = page.url()
-  const requestId = new URL(requestUrl).pathname.split('/').filter(Boolean).at(-1)
-  expect(requestId).toBeTruthy()
+  await expectRequestState(requestId, { status: 'vendor_selected', dispatchStatus: 'assigned', assignedVendorName: 'ACME Plumbing' })
+  await page.reload()
 
   const appointmentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save appointment' }) })
   await expect(appointmentForm).toBeHidden()
@@ -104,6 +116,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await vendorResponseForm.getByLabel('Note').fill('ACME accepts this service call.')
   await vendorResponseForm.getByRole('button', { name: 'Accept service call' }).click()
   await expect(page.getByText(/Update saved/)).toBeVisible()
+  await expectRequestState(requestId, { status: 'vendor_selected', dispatchStatus: 'accepted', assignedVendorName: 'ACME Plumbing' })
 
   await page.goto(requestUrl)
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
@@ -111,20 +124,30 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await appointmentForm.getByLabel('Appointment date').fill('2030-01-15')
   await appointmentForm.getByLabel('Start time').fill('09:00')
   await appointmentForm.getByRole('button', { name: 'Save appointment' }).click()
+  await expectRequestState(requestId, { status: 'scheduled', dispatchStatus: 'scheduled' })
+  await page.reload()
   await expect(decisionForm.getByLabel('Decision')).toBeVisible()
 
+  const messagesDisclosure = page.locator('details#communication')
+  await messagesDisclosure.getByText(/Messages and internal notes/).click()
+  await expect(messagesDisclosure).toHaveAttribute('open', '')
   const commentForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Save internal note' }) })
+  await expect(commentForm).toBeVisible()
   await commentForm.getByLabel('Add comment').fill('Vendor scheduled for tomorrow morning.')
   await commentForm.getByRole('button', { name: 'Save internal note' }).click()
   await expect(page.getByText('Vendor scheduled for tomorrow morning.').last()).toBeVisible()
 
   await decisionForm.getByLabel('Decision').selectOption('in_progress')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('in_progress')
+  await expectRequestState(requestId, { status: 'in_progress', dispatchStatus: 'scheduled' })
+  await page.reload()
+  await expect(decisionForm.getByLabel('Decision')).toBeVisible()
 
   await decisionForm.getByLabel('Decision').selectOption('completed')
   await decisionForm.getByRole('button', { name: 'Save decision' }).click()
-  await expect(decisionForm.locator('input[name="fromStatus"]')).toHaveValue('completed')
+  await expectRequestState(requestId, { status: 'completed' })
+  await page.reload()
+  await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
 
   await clickAndWaitForURL(page, page.locator('.requestHero').getByRole('link', { name: propertyName, exact: true }), /\/properties\/[^/]+$/)
   await expect(page).toHaveURL(/\/properties\/[^/]+$/)
