@@ -70,6 +70,7 @@ export interface DashboardData {
 export interface PropertyDetailData {
   property: Property
   units: Unit[]
+  areas: Unit[]
   requests: DashboardRequestRow[]
 }
 
@@ -109,6 +110,8 @@ function mapUnit(u: any): Unit {
     id: u.id,
     propertyId: u.propertyId,
     label: u.label,
+    locationType: u.locationType ?? 'residential',
+    areaType: u.areaType ?? undefined,
     tenantName: u.tenantName ?? undefined,
     tenantEmail: u.tenantEmail ?? undefined,
     sizeSqFt: u.sizeSqFt ?? undefined,
@@ -155,6 +158,7 @@ function mapRequestRow(r: any, claimedByUserName?: string): DashboardRequestRow 
     id: r.id,
     propertyId: r.propertyId,
     unitId: r.unitId,
+    locationType: r.unit?.locationType ?? 'residential',
     submittedByName: r.submittedByName ?? undefined,
     submittedByEmail: r.submittedByEmail ?? undefined,
     preferredCurrency: r.preferredCurrency,
@@ -518,7 +522,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       }),
       prisma.property.findMany({
         where: { ownerId: userId, isActive: true },
-        include: { _count: { select: { units: true } } },
+        include: { _count: { select: { units: { where: { locationType: 'residential' } } } } },
       }),
       prisma.maintenanceRequest.findMany({
         where: { property: { ownerId: userId } },
@@ -551,7 +555,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         select: { id: true, email: true, displayName: true },
       }),
       prisma.unit.findMany({
-        where: { property: { ownerId: userId } },
+        where: { property: { ownerId: userId }, locationType: 'residential' },
         include: {
           property: { select: { id: true, name: true, isActive: true } },
           tenantIdentities: {
@@ -636,7 +640,7 @@ export async function getProperties(userId?: string, orgSlug?: string, includeIn
     else if (orgSlug) where = { owner: { slug: orgSlug }, isActive: true }
     const dbProperties = await prisma.property.findMany({
       where,
-      include: { _count: { select: { units: true } } },
+      include: { _count: { select: { units: { where: { locationType: 'residential' } } } } },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     })
     return dbProperties.map(mapProperty)
@@ -653,7 +657,7 @@ export async function getAllUnits(userId?: string, orgSlug?: string, includeInac
     else if (orgSlug) where = { property: { owner: { slug: orgSlug } }, isActive: true }
     const dbUnits = await prisma.unit.findMany({
       where,
-      orderBy: [{ isActive: 'desc' }, { propertyId: 'asc' }, { label: 'asc' }],
+      orderBy: [{ isActive: 'desc' }, { propertyId: 'asc' }, { locationType: 'asc' }, { label: 'asc' }],
     })
     return dbUnits.map(mapUnit)
   } catch (error) {
@@ -667,7 +671,7 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
     const dbProperty = await prisma.property.findFirst({
       where: { id: propertyId, ownerId: userId },
       include: {
-        _count: { select: { units: true } },
+        _count: { select: { units: { where: { locationType: 'residential' } } } },
         units: { orderBy: [{ isActive: 'desc' }, { label: 'asc' }] },
         requests: {
           include: {
@@ -699,7 +703,8 @@ export async function getPropertyDetailData(propertyId: string, userId: string):
     if (!dbProperty) return null
     return {
       property: mapProperty(dbProperty),
-      units: dbProperty.units.map(mapUnit),
+      units: dbProperty.units.filter((unit) => unit.locationType === 'residential').map(mapUnit),
+      areas: dbProperty.units.filter((unit) => unit.locationType === 'common_area').map(mapUnit),
       requests: mapRequestsWithClaimOwners(dbProperty.requests, await prisma.user.findMany({ where: { id: { in: dbProperty.requests.map((r) => r.claimedByUserId).filter(Boolean) as string[] } }, select: { id: true, email: true, displayName: true } })),
     }
   } catch (error) {
@@ -1127,7 +1132,7 @@ export async function getReportData(userId: string): Promise<ReportData> {
       prisma.property.findMany({
         where: { ownerId: userId },
         include: {
-          _count: { select: { units: true } },
+          _count: { select: { units: { where: { locationType: 'residential' } } } },
           requests: { select: { id: true, status: true } },
         },
         orderBy: { name: 'asc' },
@@ -1352,7 +1357,7 @@ export async function getUnitDetailData(unitId: string, userId: string): Promise
     const dbUnit = await prisma.unit.findFirst({
       where: { id: unitId, property: { ownerId: userId } },
       include: {
-        property: { include: { _count: { select: { units: true } } } },
+        property: { include: { _count: { select: { units: { where: { locationType: 'residential' } } } } } },
         requests: { include: { property: true, unit: true }, orderBy: { createdAt: 'desc' } },
       },
     })

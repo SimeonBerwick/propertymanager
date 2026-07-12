@@ -50,7 +50,7 @@ export default async function PropertiesPage() {
         {activeProperties.length ? (
           <div className="grid cols-2">
             {activeProperties.map((property) => {
-              const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id)
+              const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id && unit.locationType !== 'common_area')
               return (
                 <section key={property.id} className="card stack">
                   <div>
@@ -99,7 +99,7 @@ export default async function PropertiesPage() {
           </div>
           <div className="grid cols-2">
             {archivedProperties.map((property) => {
-              const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id)
+              const propertyUnits = allUnits.filter((unit) => unit.propertyId === property.id && unit.locationType !== 'common_area')
               return (
                 <section key={property.id} className="card stack archivedCard">
                   <div>

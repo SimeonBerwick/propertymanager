@@ -8,6 +8,7 @@ export async function getActiveUnitCount(ownerId: string, db: Db = prisma) {
   return db.unit.count({
     where: {
       isActive: true,
+      locationType: 'residential',
       property: {
         ownerId,
         isActive: true,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildBulkUnitLabels } from './property-setup'
+import { buildBulkUnitLabels, DEFAULT_APARTMENT_AREAS } from './property-setup'
 
 describe('multifamily property setup', () => {
   test('creates sequential apartment labels', () => {
@@ -13,5 +13,10 @@ describe('multifamily property setup', () => {
   test('rejects impractical bulk creation', () => {
     expect(() => buildBulkUnitLabels(0, 1)).toThrow(/between 1 and 500/i)
     expect(() => buildBulkUnitLabels(501, 1)).toThrow(/between 1 and 500/i)
+  })
+
+  test('provides the standard apartment common areas', () => {
+    expect(DEFAULT_APARTMENT_AREAS.map(([name]) => name)).toContain('Parking lot')
+    expect(DEFAULT_APARTMENT_AREAS.map(([name]) => name)).toContain('Building-wide plumbing')
   })
 })

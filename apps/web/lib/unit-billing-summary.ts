@@ -109,7 +109,7 @@ export function summarizeUnitBilling(units: UnitBillingSource[], now = new Date(
 
 export async function getUnitBillingSummary(ownerId: string, now = new Date()) {
   const units = await prisma.unit.findMany({
-    where: { property: { ownerId } },
+    where: { property: { ownerId }, locationType: 'residential' },
     select: {
       id: true,
       label: true,

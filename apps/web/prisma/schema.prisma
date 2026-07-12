@@ -216,6 +216,11 @@ enum PropertyType {
   multifamily
 }
 
+enum PropertyLocationType {
+  residential
+  common_area
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -274,6 +279,8 @@ model Unit {
   id               String   @id @default(cuid())
   propertyId       String
   label            String
+  locationType     PropertyLocationType @default(residential)
+  areaType         String?
   city             String?
   state            String?
   tenantName       String?
@@ -289,6 +296,8 @@ model Unit {
   property         Property             @relation(fields: [propertyId], references: [id])
   requests         MaintenanceRequest[]
   tenantIdentities TenantIdentity[]
+
+  @@index([propertyId, locationType, isActive])
 }
 
 model MaintenanceRequest {

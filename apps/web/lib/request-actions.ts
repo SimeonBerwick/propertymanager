@@ -110,6 +110,7 @@ export async function submitMaintenanceRequest(
 
   let propertyName = 'Unknown property'
   let unitLabel = 'Unknown unit'
+  let isCommonArea = false
   try {
     const unit = await prisma.unit.findFirst({
       where: {
@@ -133,9 +134,10 @@ export async function submitMaintenanceRequest(
       return { error: 'The selected property or unit is no longer available for new requests.' }
     }
     if (managerMode) {
-      tenantName = unit.tenantName?.trim() ?? ''
-      tenantEmail = unit.tenantEmail?.trim().toLowerCase() ?? ''
-      if (!tenantName || !tenantEmail) {
+      isCommonArea = unit.locationType === 'common_area'
+      tenantName = isCommonArea ? 'Property manager' : unit.tenantName?.trim() ?? ''
+      tenantEmail = isCommonArea ? '' : unit.tenantEmail?.trim().toLowerCase() ?? ''
+      if (!isCommonArea && (!tenantName || !tenantEmail)) {
         return { error: 'This unit needs a resident name and email before you can create a manager work order.' }
       }
     }
@@ -180,7 +182,7 @@ export async function submitMaintenanceRequest(
           comments: {
             create: [
               {
-                body: `Submitted by ${tenantName} (${tenantEmail}).`,
+                body: isCommonArea ? 'Created by the property manager for a common area.' : `Submitted by ${tenantName} (${tenantEmail}).`,
                 visibility: 'external',
               },
             ],
@@ -219,7 +221,7 @@ export async function submitMaintenanceRequest(
       landlordActionUrl: `${getAppBaseUrl('landlord new request notification links')}/requests/${createdRequestId}`,
     })
     await Promise.all([
-      sendNotification(tenantMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),
+      ...(tenantEmail ? [sendNotification(tenantMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId })] : []),
       sendNotification(landlordMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),
     ])
   }

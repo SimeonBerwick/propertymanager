@@ -13,7 +13,7 @@ export interface CsvExportFile {
 export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since?: Date): Promise<CsvExportFile> {
   if (kind === 'units') {
     const units = await prisma.unit.findMany({
-      where: { property: { ownerId }, ...(since ? { updatedAt: { gte: since } } : {}) },
+      where: { property: { ownerId }, locationType: 'residential', ...(since ? { updatedAt: { gte: since } } : {}) },
       include: { property: true },
       orderBy: [{ property: { name: 'asc' } }, { label: 'asc' }],
     })
@@ -80,7 +80,7 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
     filename: 'propertymanager-tickets.csv',
     rowCount: requests.length,
     content: toCsv([
-      'id', 'updatedAt', 'propertyId', 'unitId', 'propertyName', 'unitLabel', 'title',
+      'id', 'updatedAt', 'propertyId', 'unitId', 'propertyName', 'unitLabel', 'locationType', 'title',
       'description', 'category', 'urgency', 'status', 'submittedByName', 'submittedByEmail',
       'assignedVendorName', 'assignedVendorEmail', 'assignedVendorPhone', 'createdAt',
     ], requests.map((request) => ({
@@ -90,6 +90,7 @@ export async function buildCsvExport(ownerId: string, kind: CsvExportKind, since
       unitId: request.unitId,
       propertyName: request.property.name,
       unitLabel: request.unit.label,
+      locationType: request.unit.locationType,
       title: request.title,
       description: request.description,
       category: request.category,

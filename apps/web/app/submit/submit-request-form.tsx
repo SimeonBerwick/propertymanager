@@ -39,6 +39,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     () => units.find((unit) => unit.id === selectedUnitId),
     [selectedUnitId, units],
   )
+  const selectedIsCommonArea = selectedUnit?.locationType === 'common_area'
 
   useEffect(() => {
     if (!filteredUnits.length) {
@@ -94,9 +95,9 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
 
   useEffect(() => {
     if (!managerMode) return
-    setTenantName(selectedUnit?.tenantName ?? '')
-    setTenantEmail(selectedUnit?.tenantEmail ?? '')
-  }, [managerMode, selectedUnit])
+    setTenantName(selectedIsCommonArea ? '' : selectedUnit?.tenantName ?? '')
+    setTenantEmail(selectedIsCommonArea ? '' : selectedUnit?.tenantEmail ?? '')
+  }, [managerMode, selectedIsCommonArea, selectedUnit])
 
   if (!properties.length || !units.length) {
     return (
@@ -104,7 +105,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         <div>
           {managerMode
             ? properties.length
-              ? 'Add a unit before creating a work order.'
+              ? 'Add a unit or property area before creating a work order.'
               : 'Add a property and unit before creating a work order.'
             : 'No active properties or units are available for online request submission right now. Contact your property manager directly.'}
         </div>
@@ -150,7 +151,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         </label>
 
         <label className="field">
-          <span className="field-label">Unit</span>
+          <span className="field-label">Unit or property area</span>
           <select
             className="input"
             name="unitId"
@@ -159,10 +160,10 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
             required
             disabled={!filteredUnits.length}
           >
-            {!filteredUnits.length && <option value="">No units available</option>}
+            {!filteredUnits.length && <option value="">No locations available</option>}
             {filteredUnits.map((unit) => (
               <option key={unit.id} value={unit.id}>
-                {unit.label}
+                {unit.locationType === 'common_area' ? 'Property area: ' : ''}{unit.label}
                 {unit.tenantName ? ` — ${unit.tenantName}` : ''}
               </option>
             ))}
@@ -172,8 +173,8 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
 
       {managerMode ? (
         <div className="notice">
-          <strong>Resident from selected unit</strong>
-          <span style={{ display: 'block', marginTop: 4 }}>{tenantName || 'No resident name on this unit'}{tenantEmail ? ` - ${tenantEmail}` : ' - no resident email on this unit'}</span>
+          <strong>{selectedIsCommonArea ? 'Property-area work order' : 'Resident from selected unit'}</strong>
+          <span style={{ display: 'block', marginTop: 4 }}>{selectedIsCommonArea ? 'No resident is required for this location.' : <>{tenantName || 'No resident name on this unit'}{tenantEmail ? ` - ${tenantEmail}` : ' - no resident email on this unit'}</>}</span>
           <input type="hidden" name="tenantName" value={tenantName} />
           <input type="hidden" name="tenantEmail" value={tenantEmail} />
         </div>
