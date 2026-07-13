@@ -7,6 +7,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: [
+      'scripts/ui-catalog-source.test.mjs',
       'lib/property-setup.test.ts',
       'lib/vendor-reminders.test.ts',
       'lib/deployment-config.test.ts',
