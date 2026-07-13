@@ -187,6 +187,11 @@ export default async function HomePage() {
             <h3>In-house teams and smarter assignment</h3>
             <p>Route work by skill and capacity, manage common-area jobs, and give maintenance employees their own portal for updates, time, materials, and photos.</p>
           </article>
+          <article className="featureCard">
+            <span className="featureNumber">12</span>
+            <h3>Multilingual communication</h3>
+            <p>Growth and Pro teams can give managers, tenants, vendors, and staff a translated workspace while every message keeps its original wording.</p>
+          </article>
         </div>
         <p className="featureNote">Payments are intentionally separate from the core maintenance manager. Today, Simeonware tracks approvals, billbacks, vendor payment records, and closeout status; online payment processing is planned as a future add-on.</p>
       </section>
@@ -223,6 +228,7 @@ export default async function HomePage() {
                 <li>Tenant, maintenance staff, and vendor workflows</li>
                 <li>Billing records and reports</li>
                 <li>Email notifications and history</li>
+                <li>{plan === 'starter' ? 'English-only workspace and communication' : 'Multilingual workspace, messages, and notifications'}</li>
               </ul>
               <Link href={`/signup?plan=${plan}`} className={`button ${plan === 'growth' ? 'primary' : ''}`}>Start free trial</Link>
             </article>
