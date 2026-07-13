@@ -20,7 +20,7 @@ export type RequestNextAction = NextAction & {
 }
 
 type NextActionRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'assignedStaffName' | 'staffWorkStatus' | 'staffResponseDueAt' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'autoFlag' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'assignedStaffName' | 'staffWorkStatus' | 'staffResponseDueAt' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   unitId?: string
   title?: string
@@ -123,6 +123,10 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
       return { ...base, id: `${request.id}:payment`, href: `/requests/${request.id}#billing`, primaryLabel: 'Settle billing before closeout', reason: 'Vendor payment or a billing document still has an open balance.', group: 'Payments to finish', priority: 'normal', actionType: 'collect_payment_before_closeout', score: SCORE.paymentIssue }
     }
     return { ...base, id: `${request.id}:monitor`, primaryLabel: 'View details', reason: 'No immediate manager action is required.', group: 'Monitoring', priority: 'low', actionType: 'review_history', score: SCORE.routine }
+  }
+
+  if (request.autoFlag === 'scheduling_replacement_needed' || request.autoFlag === 'scheduling_reschedule_requested') {
+    return { ...base, id: `${request.id}:scheduling-coordination`, href: `/requests/${request.id}#scheduling`, primaryLabel: 'Monitor replacement times', reason: request.autoFlag === 'scheduling_reschedule_requested' ? 'The tenant asked the assigned provider directly for another appointment time.' : 'The assigned provider needs to offer replacement appointment choices.', group: 'Scheduling exceptions', priority: 'low', actionType: 'monitor_scheduling_coordination', score: SCORE.routine }
   }
 
   if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {

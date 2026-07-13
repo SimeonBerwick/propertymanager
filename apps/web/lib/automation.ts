@@ -49,7 +49,9 @@ export async function applyRequestAutomation(requestId: string) {
   const now = new Date()
   let autoFlag: string | null = null
 
-  if (request.reviewState === 'vendor_declined_reassignment_needed' || request.reviewState === 'reassignment_needed') {
+  if (request.autoFlag?.startsWith('scheduling_') && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) {
+    autoFlag = request.autoFlag
+  } else if (request.reviewState === 'vendor_declined_reassignment_needed' || request.reviewState === 'reassignment_needed') {
     autoFlag = 'reassignment_needed'
   } else if (request.vendorScheduledEnd && request.vendorScheduledEnd < now && !['closed', 'declined', 'canceled'].includes(request.status)) {
     autoFlag = 'overdue_scheduled'

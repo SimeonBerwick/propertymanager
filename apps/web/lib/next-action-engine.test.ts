@@ -52,6 +52,10 @@ describe('next action engine', () => {
     }).actionType).toBe('schedule_work')
   })
 
+  it('shows scheduling exceptions as monitoring rather than manager relay work', () => {
+    expect(getRequestNextAction({ ...base, status: 'vendor_selected' as const, assignedVendorId: 'vendor-1', assignedVendorName: 'Mesa Plumbing', dispatchStatus: 'accepted', claimedAt: base.createdAt, autoFlag: 'scheduling_reschedule_requested' })).toMatchObject({ actionType: 'monitor_scheduling_coordination', primaryLabel: 'Monitor replacement times', priority: 'low' })
+  })
+
   it('returns the shared next action shape for a request', () => {
     expect(getRequestNextAction(base)).toMatchObject({
       priority: 'normal',

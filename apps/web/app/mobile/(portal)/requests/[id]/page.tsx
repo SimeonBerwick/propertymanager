@@ -126,7 +126,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
     <div className="stack">
       <WorkOrderStatusPanel summary={tenantWorkOrderSummary} />
       {query.schedulingError ? <div className="notice error">{query.schedulingError}</div> : null}
-      {query.appointment === 'confirmed' ? <div className="notice success">Appointment confirmed.</div> : query.appointment === 'selected' ? <div className="notice success">Time selected. Your property manager will confirm it.</div> : null}
+      {query.appointment === 'confirmed' ? <div className="notice success">Appointment confirmed.</div> : query.appointment === 'selected' ? <div className="notice success">Time selected. Your property manager will confirm it.</div> : query.appointment === 'alternatives-requested' ? <div className="notice success">Different appointment times requested directly from the provider.</div> : query.appointment === 'reschedule-requested' ? <div className="notice success">Rescheduling requested directly from the provider.</div> : null}
       <AppointmentCoordinationPanel requestId={request.id} audience="tenant" />
 
       {request.workResponsibility === 'tenant_personal_work' ? <section className="card stack tenantStatusSummary"><div className="kicker">Tenant-paid personal work</div><strong>{request.personalWorkStatus?.replaceAll('_', ' ') ?? 'Awaiting review'}</strong><div>${((request.personalWorkHourlyRateCents ?? 0) / 100).toFixed(2)} per hour, {request.personalWorkMinimumMinutes ?? 0}-minute minimum, plus materials.</div><div className="muted">Your maximum authorization is ${((request.personalWorkAuthorizedMaxCents ?? 0) / 100).toFixed(2)}. You will not be billed above that amount without a new approval.</div></section> : null}

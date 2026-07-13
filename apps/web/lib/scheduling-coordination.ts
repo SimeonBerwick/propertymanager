@@ -36,3 +36,11 @@ export function validateProposedSlots(slots: Array<{ startAt: Date; endAt: Date 
   const starts = new Set(slots.map((slot) => slot.startAt.getTime()))
   return starts.size === slots.length ? null : 'Appointment times must be different.'
 }
+
+export function schedulingReminderIsDue(lastReminderAt: Date | null | undefined, now = new Date()) {
+  return !lastReminderAt || now.getTime() - lastReminderAt.getTime() >= 24 * 3_600_000
+}
+
+export function appointmentProposalHasExpired(expiresAt: Date, now = new Date()) {
+  return expiresAt.getTime() <= now.getTime()
+}

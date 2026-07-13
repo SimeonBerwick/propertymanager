@@ -32,11 +32,11 @@ export default async function VendorRequestDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ submitted?: string; schedulingError?: string; slots?: string }>
+  searchParams: Promise<{ submitted?: string; schedulingError?: string; slots?: string; appointment?: string }>
 }) {
   const session = await requireVendorSession()
   const { id } = await params
-  const { submitted, schedulingError, slots } = await searchParams
+  const { submitted, schedulingError, slots, appointment } = await searchParams
   const request = await getVendorRequestById(id, session)
 
   if (!request) notFound()
@@ -263,6 +263,7 @@ export default async function VendorRequestDetailPage({
 
       {schedulingError ? <div className="notice error">{schedulingError}</div> : null}
       {slots === 'offered' ? <div className="notice success">Appointment choices sent to the tenant.</div> : null}
+      {appointment === 'canceled' ? <div className="notice success">Appointment canceled. Offer replacement times below.</div> : null}
       <AppointmentCoordinationPanel requestId={request.id} audience="vendor" />
 
       <section className="card stack">
