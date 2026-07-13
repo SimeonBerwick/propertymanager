@@ -17,13 +17,13 @@ export default async function AccountDeletionPage() {
           <h2 className="sectionTitle">Request account deletion</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Property managers, tenants, and vendors may request deletion of their Simeonware: Maintenance Manager account and associated personal data. Public requests are handled by email so we can verify the requester before deleting anything.
+          Property managers, tenants, maintenance staff, and vendors may request deletion of their Simeonware: Maintenance Manager account and associated personal data. Public requests are handled by email so we can verify the requester before deleting anything.
         </p>
         <p className="muted" style={{ margin: 0 }}>
           Include your role and the property or organization connected to your account. We may verify your identity before completing the request. Maintenance, billing, security, or legal records may be retained where required for legitimate business, accounting, fraud-prevention, or legal obligations.
         </p>
         <p className="muted" style={{ margin: 0 }}>
-          Property managers should sign in to use the in-account request form when possible. If there is an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time. Tenants and vendors should email support from the address linked to their portal account. Support will confirm the records that can be deleted and when deletion is complete.
+          Property managers should sign in to use the in-account request form when possible. If there is an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time. Tenants, maintenance staff, and vendors should email support from the address linked to their portal account. Support will confirm the records that can be deleted and when deletion is complete.
         </p>
         {session ? (
           <Link className="button primary" style={{ alignSelf: 'flex-start' }} href="/account/settings/deletion">
