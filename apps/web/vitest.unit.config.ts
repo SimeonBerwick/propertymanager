@@ -35,6 +35,7 @@ export default defineConfig({
       'lib/inspection-templates.test.ts',
       'lib/inspection-report.test.ts',
       'lib/unit-turn-templates.test.ts',
+      'lib/maintenance-calendar.test.ts',
     ],
   },
 })

@@ -9,7 +9,7 @@ const ITEMS: Array<{ href: Route, label: string, icon: string }> = [
   { href: '/dashboard', label: 'Home', icon: '⌂' },
   { href: '/dashboard?queue=open', label: 'Requests', icon: '☷' },
   { href: '/submit?mode=manager', label: 'Add', icon: '+' },
-  { href: '/ops', label: 'Activity', icon: '↻' },
+  { href: '/calendar', label: 'Calendar', icon: '▦' },
   { href: '/account/settings', label: 'More', icon: '•••' },
 ]
 
