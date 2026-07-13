@@ -56,6 +56,12 @@ export default async function AccountSettingsPage({
           </form>
         </div>
         <div className="card stack">
+          <div><div className="kicker">Accounting</div><h3 style={{ margin: '4px 0 0' }}>QuickBooks Online</h3></div>
+          <p className="muted" style={{ margin: 0 }}>Connect your company, map accounts, and send approved maintenance bills, tenant charges, and staff costs.</p>
+          <Link href="/account/quickbooks" className="button primary" style={{ alignSelf: 'flex-start' }}>QuickBooks settings</Link>
+        </div>
+
+        <div className="card stack">
           <div>
             <div className="kicker">Plan</div>
             <h3 style={{ margin: '4px 0 0' }}>Subscription</h3>

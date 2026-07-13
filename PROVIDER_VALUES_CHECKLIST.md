@@ -192,3 +192,9 @@ After env entry and redeploy:
 - [ ] internal automation succeeds with bearer auth
 
 If any one of those fails, production is not green.
+# QuickBooks Online
+
+- Add `QUICKBOOKS_CLIENT_ID` and `QUICKBOOKS_CLIENT_SECRET` from the Intuit developer app.
+- Set `QUICKBOOKS_ENVIRONMENT=production` for live companies or `sandbox` for Intuit test companies.
+- Register `https://YOUR_APP_HOST/api/quickbooks/callback` as the OAuth redirect URI.
+- After deployment, connect the company at `/account/quickbooks` and select the expense, income item, staff expense, and offset mappings before syncing.

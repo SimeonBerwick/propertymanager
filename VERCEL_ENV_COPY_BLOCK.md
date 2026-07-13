@@ -68,3 +68,7 @@ Set these for:
 - Stripe Checkout opens from `/account/subscription`
 - Stripe webhook endpoint `/api/stripe/webhook` updates account subscription status
 - internal automation succeeds with bearer auth
+# QuickBooks Online OAuth (create an app at developer.intuit.com)
+QUICKBOOKS_CLIENT_ID=
+QUICKBOOKS_CLIENT_SECRET=
+QUICKBOOKS_ENVIRONMENT=production

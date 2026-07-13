@@ -4,8 +4,12 @@ import { markBillingDocumentPaidFromDashboardAction } from '@/lib/billing-action
 import { formatMoney } from '@/lib/billing-utils'
 import { getAttentionScore } from '@/lib/request-guidance'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
+import { prisma } from '@/lib/prisma'
+import { getLandlordSession } from '@/lib/landlord-session'
 
-export function NeedsAttentionList({ requests }: { requests: DashboardRequestRow[] }) {
+export async function NeedsAttentionList({ requests }: { requests: DashboardRequestRow[] }) {
+  const session = await getLandlordSession()
+  const quickBooksConnected = session ? Boolean(await prisma.quickBooksConnection.count({ where: { userId: session.userId, status: 'connected' } })) : false
   const priority = requests
     .map((request) => ({ request, score: getAttentionScore(request) }))
     .filter((item) => item.score > 0)
@@ -29,12 +33,12 @@ export function NeedsAttentionList({ requests }: { requests: DashboardRequestRow
             <div className="notice" style={{ marginTop: 8 }}>
               <strong>{formatMoney(request.vendorPayableBalanceCents ?? 0, request.vendorPayableCurrency!)} owed</strong>
               <span> to {request.vendorPayableTo ?? request.assignedVendorName ?? 'vendor'}</span>
-              <form action={markBillingDocumentPaidFromDashboardAction} style={{ display: 'inline-flex', marginLeft: 10 }}>
+              {quickBooksConnected ? <Link href={`/requests/${request.id}#quickbooks`} className="button compactToggle" style={{ marginLeft: 10 }}>Check QuickBooks</Link> : <form action={markBillingDocumentPaidFromDashboardAction} style={{ display: 'inline-flex', marginLeft: 10 }}>
                 <input type="hidden" name="billingDocumentId" value={request.vendorPayableDocumentId} />
                 <input type="hidden" name="requestId" value={request.id} />
                 <input type="hidden" name="paidAmount" value={(request.vendorPayableTotalCents! / 100).toFixed(2)} />
                 <button type="submit" className="button compactToggle" title="Mark vendor paid in full">&#10003; Paid</button>
-              </form>
+              </form>}
             </div>
           ) : null}
         </div>
