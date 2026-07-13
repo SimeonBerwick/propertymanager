@@ -252,6 +252,13 @@ model User {
   personalWorkHourlyRateCents Int @default(0)
   personalWorkMinimumMinutes Int @default(60)
   personalWorkAllowedCategoriesCsv String @default("Appliance,Other")
+  schedulingCoordinationEnabled Boolean @default(true)
+  schedulingAutoConfirmEnabled Boolean @default(true)
+  schedulingWorkingHourStart Int @default(8)
+  schedulingWorkingHourEnd Int @default(18)
+  schedulingMinimumNoticeHours Int @default(24)
+  schedulingDefaultDurationMinutes Int @default(120)
+  schedulingProposalExpiryHours Int @default(48)
   createdAt    DateTime @default(now())
 
   properties              Property[]
@@ -259,6 +266,7 @@ model User {
   mailboxConnections      MailboxConnection[]
   outlookCalendarEvents   OutlookCalendarEvent[]
   maintenanceAssignmentRules MaintenanceAssignmentRule[]
+  appointmentProposals     AppointmentProposal[]
   outboundEmails          OutboundEmail[]
   inboundEmails           InboundEmail[]
   submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
@@ -354,6 +362,7 @@ model MaintenanceRequest {
   personalWorkTenantAuthorizedAt DateTime?
   personalWorkManagerApprovedAt DateTime?
   personalWorkBilledAt          DateTime?
+  schedulingCoordinationOverride Boolean?
   staffScheduledStart           DateTime?
   staffScheduledEnd             DateTime?
   dispatchStatus                DispatchStatus?
@@ -407,9 +416,36 @@ model MaintenanceRequest {
   inspectionFindings      InspectionItem[]
   turnTasks               UnitTurnTask[]
   staffWorkLogs           StaffWorkLog[]
+  appointmentProposals    AppointmentProposal[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model AppointmentProposal {
+  id             String   @id @default(cuid())
+  batchId        String
+  requestId      String
+  orgId          String
+  proposedByType String
+  proposedById   String
+  proposedByName String
+  startAt        DateTime
+  endAt          DateTime
+  status         String   @default("pending")
+  note           String?
+  expiresAt      DateTime
+  respondedAt    DateTime?
+  reminderSentAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  request MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  org     User               @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, status, createdAt])
+  @@index([orgId, status, expiresAt])
+  @@index([batchId])
 }
 
 model StaffMember {

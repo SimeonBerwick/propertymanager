@@ -16,6 +16,7 @@ import { formatDateTime } from '@/lib/ui-utils'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { SectionJumpLink } from '@/components/section-jump-link'
+import { AppointmentCoordinationPanel } from '@/components/appointment-coordination-panel'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -31,11 +32,11 @@ export default async function VendorRequestDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ submitted?: string }>
+  searchParams: Promise<{ submitted?: string; schedulingError?: string; slots?: string }>
 }) {
   const session = await requireVendorSession()
   const { id } = await params
-  const { submitted } = await searchParams
+  const { submitted, schedulingError, slots } = await searchParams
   const request = await getVendorRequestById(id, session)
 
   if (!request) notFound()
@@ -259,6 +260,10 @@ export default async function VendorRequestDetailPage({
           <VendorCommercialItemForm requestId={request.id} defaultItemType={viewState.isPendingBid ? 'bid' : 'overcost'} />
         </section>
       </details> : null}
+
+      {schedulingError ? <div className="notice error">{schedulingError}</div> : null}
+      {slots === 'offered' ? <div className="notice success">Appointment choices sent to the tenant.</div> : null}
+      <AppointmentCoordinationPanel requestId={request.id} audience="vendor" />
 
       <section className="card stack">
         <div>

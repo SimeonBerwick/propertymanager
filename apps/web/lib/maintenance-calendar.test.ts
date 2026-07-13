@@ -20,4 +20,9 @@ describe('maintenance calendar', () => {
     expect(shiftCalendarDate(anchor, 'week', 1).toISOString()).toContain('2026-07-22')
     expect(parseCalendarDate('bad', new Date('2026-01-02T00:00:00Z')).toISOString()).toContain('2026-01-02')
   })
+  it('publishes in-house staff appointments when no vendor appointment exists', () => {
+    const unit = { label: '2A', property: { id: 'p1', name: 'Elm Court' } }
+    const [event] = buildMaintenanceCalendarEvents({ requests: [{ id: 'r2', title: 'Install lock', status: 'scheduled', vendorScheduledStart: null, vendorScheduledEnd: null, staffScheduledStart: new Date('2026-07-06T16:00:00Z'), staffScheduledEnd: new Date('2026-07-06T18:00:00Z'), assignedVendorId: null, assignedVendorName: null, assignedStaffName: 'Alex', unit }], inspections: [], turns: [] })
+    expect(event).toMatchObject({ kind: 'appointment', vendorName: 'Alex' })
+  })
 })

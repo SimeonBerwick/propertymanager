@@ -17,6 +17,7 @@ import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { StaffAssignmentPanel } from '@/components/staff-assignment-panel'
 import { PersonalWorkPanel } from '@/components/personal-work-panel'
+import { AppointmentCoordinationPanel } from '@/components/appointment-coordination-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
@@ -439,6 +440,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </div>
 
       <PersonalWorkPanel requestId={data.request.id} />
+      <AppointmentCoordinationPanel requestId={data.request.id} audience="manager" />
       <StaffAssignmentPanel requestId={data.request.id} />
 
 

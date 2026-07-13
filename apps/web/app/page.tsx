@@ -172,6 +172,21 @@ export default async function HomePage() {
             <h3>Automatic vendor follow-up</h3>
             <p>Send one daily reminder while a vendor action is outstanding, with a portfolio-wide default and an override on each ticket.</p>
           </article>
+          <article className="featureCard">
+            <span className="featureNumber">09</span>
+            <h3>Inspections and unit turns</h3>
+            <p>Run reusable inspection checklists, document findings with photos, create reports, and move every vacant unit through a consistent turn plan.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">10</span>
+            <h3>Maintenance calendar and direct scheduling</h3>
+            <p>Let tenants choose from approved appointment times, keep planned work on one maintenance calendar, and publish confirmed schedules to Outlook.</p>
+          </article>
+          <article className="featureCard">
+            <span className="featureNumber">11</span>
+            <h3>In-house teams and smarter assignment</h3>
+            <p>Route work by skill and capacity, manage common-area jobs, and give maintenance employees their own portal for updates, time, materials, and photos.</p>
+          </article>
         </div>
         <p className="featureNote">Payments are intentionally separate from the core maintenance manager. Today, Simeonware tracks approvals, billbacks, vendor payment records, and closeout status; online payment processing is planned as a future add-on.</p>
       </section>

@@ -72,7 +72,7 @@ export async function listOutlookCalendars(connectionId: string): Promise<Outloo
 
 async function collectSyncEvents(userId: string, start: Date, end: Date) {
   const [requests, inspections, turns] = await Promise.all([
-    prisma.maintenanceRequest.findMany({ where: { property: { ownerId: userId }, vendorScheduledStart: { gte: start, lt: end } }, include: { unit: { include: { property: true } } } }),
+    prisma.maintenanceRequest.findMany({ where: { property: { ownerId: userId }, OR: [{ vendorScheduledStart: { gte: start, lt: end } }, { staffScheduledStart: { gte: start, lt: end } }] }, include: { unit: { include: { property: true } } } }),
     prisma.inspection.findMany({ where: { orgId: userId, dueAt: { gte: start, lt: end } }, include: { unit: { include: { property: true } } } }),
     prisma.unitTurn.findMany({ where: { orgId: userId, OR: [{ targetMoveInAt: { gte: start, lt: end } }, { tasks: { some: { dueAt: { gte: start, lt: end } } } }] }, include: { unit: { include: { property: true } }, tasks: { where: { dueAt: { gte: start, lt: end } }, include: { assignedVendor: true } } } }),
   ])

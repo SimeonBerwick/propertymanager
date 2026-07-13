@@ -17,7 +17,7 @@ export type MaintenanceCalendarEvent = {
 }
 
 type CalendarData = {
-  requests: Array<{ id: string; title: string; status: string; vendorScheduledStart: Date | null; vendorScheduledEnd: Date | null; assignedVendorId: string | null; assignedVendorName: string | null; unit: { label: string; property: { id: string; name: string } } }>
+  requests: Array<{ id: string; title: string; status: string; vendorScheduledStart: Date | null; vendorScheduledEnd: Date | null; staffScheduledStart?: Date | null; staffScheduledEnd?: Date | null; assignedVendorId: string | null; assignedVendorName: string | null; assignedStaffName?: string | null; unit: { label: string; property: { id: string; name: string } } }>
   inspections: Array<{ id: string; title: string; status: string; dueAt: Date | null; unit: { label: string; property: { id: string; name: string } } }>
   turns: Array<{ id: string; title: string; status: string; targetMoveInAt: Date | null; unit: { label: string; property: { id: string; name: string } }; tasks: Array<{ id: string; title: string; status: string; dueAt: Date | null; assignedVendorId: string | null; assignedVendor: { name: string } | null }> }>
 }
@@ -25,8 +25,10 @@ type CalendarData = {
 export function buildMaintenanceCalendarEvents(data: CalendarData, now = new Date()) {
   const events: MaintenanceCalendarEvent[] = []
   for (const request of data.requests) {
-    if (!request.vendorScheduledStart) continue
-    events.push({ id: `request:${request.id}`, kind: 'appointment', title: request.title, start: request.vendorScheduledStart, end: request.vendorScheduledEnd, href: `/requests/${request.id}`, propertyId: request.unit.property.id, propertyName: request.unit.property.name, unitLabel: request.unit.label, vendorId: request.assignedVendorId, vendorName: request.assignedVendorName, status: request.status, overdue: Boolean(request.vendorScheduledEnd && request.vendorScheduledEnd < now && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) })
+    const start = request.vendorScheduledStart ?? request.staffScheduledStart
+    const end = request.vendorScheduledEnd ?? request.staffScheduledEnd ?? null
+    if (!start) continue
+    events.push({ id: `request:${request.id}`, kind: 'appointment', title: request.title, start, end, href: `/requests/${request.id}`, propertyId: request.unit.property.id, propertyName: request.unit.property.name, unitLabel: request.unit.label, vendorId: request.assignedVendorId, vendorName: request.assignedVendorName ?? request.assignedStaffName ?? null, status: request.status, overdue: Boolean(end && end < now && !['completed', 'closed', 'declined', 'canceled'].includes(request.status)) })
   }
   for (const inspection of data.inspections) {
     if (!inspection.dueAt) continue
