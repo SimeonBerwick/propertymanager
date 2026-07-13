@@ -249,6 +249,7 @@ model User {
   properties              Property[]
   comments                RequestComment[]
   mailboxConnections      MailboxConnection[]
+  outlookCalendarEvents   OutlookCalendarEvent[]
   outboundEmails          OutboundEmail[]
   inboundEmails           InboundEmail[]
   submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
@@ -696,6 +697,11 @@ model MailboxConnection {
   syncCursor          String?
   lastSyncedAt        DateTime?
   syncError           String?
+  outlookCalendarSyncEnabled Boolean @default(false)
+  outlookCalendarId          String?
+  outlookCalendarName        String?
+  calendarLastSyncedAt       DateTime?
+  calendarSyncError          String?
   connectedAt         DateTime                @default(now())
   disconnectedAt      DateTime?
   createdAt           DateTime                @default(now())
@@ -704,9 +710,30 @@ model MailboxConnection {
   user           User            @relation(fields: [userId], references: [id])
   outboundEmails OutboundEmail[]
   inboundEmails  InboundEmail[]
+  outlookCalendarEvents OutlookCalendarEvent[]
 
   @@unique([userId, provider])
   @@index([userId, status])
+}
+
+model OutlookCalendarEvent {
+  id                  String   @id @default(cuid())
+  userId              String
+  mailboxConnectionId String
+  sourceType          String
+  sourceId            String
+  outlookEventId      String
+  contentHash         String
+  sourceStartAt       DateTime
+  lastSyncedAt        DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mailboxConnection MailboxConnection @relation(fields: [mailboxConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([mailboxConnectionId, sourceType, sourceId])
+  @@index([userId, sourceStartAt])
 }
 
 model OutboundEmail {

@@ -20,6 +20,7 @@ import { createVendorDispatchLink } from '@/lib/vendor-dispatch-link'
 import { applyRequestAutomation } from '@/lib/automation'
 import { writeAuditLog } from '@/lib/audit-log'
 import { combineAppointmentDateAndTime, parseDateTimeLocalInDisplayTimeZone } from '@/lib/appointment-time'
+import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
 import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
@@ -501,6 +502,7 @@ export async function updateVendorFormAction(
     })
 
     await applyRequestAutomation(requestId)
+    await syncOutlookCalendarForUser(session.userId).catch(() => null)
     revalidatePath(`/requests/${requestId}`)
   } catch (error) {
     await logServerActionError('request.vendor.update', error, { requestId, vendorId, mode })
@@ -1291,6 +1293,7 @@ export async function updateDispatchFormAction(
     })
 
     await applyRequestAutomation(requestId)
+    await syncOutlookCalendarForUser(session.userId).catch(() => null)
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     if (tenantNotification && await areEmailNotificationsEnabled(session.userId)) {

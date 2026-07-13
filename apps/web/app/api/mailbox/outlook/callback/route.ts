@@ -3,10 +3,10 @@ import { exchangeMailboxCode, verifyMailboxState } from '@/lib/mailbox-providers
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
-  const redirectUrl = new URL('/dashboard', request.url)
   const state = url.searchParams.get('state')
   const code = url.searchParams.get('code')
   const verified = state ? verifyMailboxState(state, 'outlook') : null
+  const redirectUrl = new URL(verified?.purpose === 'calendar' ? '/calendar/outlook' : '/dashboard', request.url)
 
   if (!code || !verified) {
     redirectUrl.searchParams.set('mailbox', 'failed')

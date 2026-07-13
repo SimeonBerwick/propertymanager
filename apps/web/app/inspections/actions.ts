@@ -8,6 +8,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { decodeInspectionChecklist, parseInspectionChecklist } from '@/lib/inspection-templates'
 import { savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { writeAuditLog } from '@/lib/audit-log'
+import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
 
 function value(formData: FormData, name: string) {
   return String(formData.get(name) ?? '').trim()
@@ -61,6 +62,7 @@ export async function createInspectionAction(formData: FormData) {
     },
   })
   await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'inspection', entityId: inspection.id, action: 'inspection.created', summary: `Created ${inspection.title}.` })
+  await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath('/inspections')
   redirect(`/inspections/${inspection.id}` as Route)
 }
@@ -103,6 +105,7 @@ export async function saveInspectionAction(formData: FormData) {
     prisma.inspection.update({ where: { id: inspection.id }, data: intent === 'complete' ? { status: 'completed', completedAt: new Date() } : {} }),
   ])
   await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'inspection', entityId: inspection.id, action: intent === 'complete' ? 'inspection.completed' : 'inspection.saved', summary: intent === 'complete' ? 'Completed inspection.' : 'Saved inspection draft.' })
+  await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath(`/inspections/${inspection.id}`)
   revalidatePath('/inspections')
   revalidatePath(`/units/${inspection.unitId}`)
