@@ -119,15 +119,17 @@ test('vendor OTP magic link, persistent session, photo upload, and support link 
 
   await page.goto('/vendor/requests/play-review-request-vendor')
   await expect(page.getByText(/Vendor request|Request detail/)).toBeVisible()
-  await page.getByRole('combobox', { name: 'Response' }).selectOption('completed')
-  await expect(page.locator('input[type="file"][name="photos"]')).toHaveAttribute('accept', 'image/*')
-  await page.locator('input[type="file"][name="photos"]').setInputFiles({
+  const responseForm = page.locator('form').filter({ has: page.getByRole('combobox', { name: 'Response' }) })
+  await expect(responseForm).toBeVisible()
+  await responseForm.getByRole('combobox', { name: 'Response' }).selectOption('completed')
+  await expect(responseForm.locator('input[type="file"][name="photos"]')).toHaveAttribute('accept', 'image/*')
+  await responseForm.locator('input[type="file"][name="photos"]').setInputFiles({
     name: 'webview-vendor-upload.jpg',
     mimeType: 'image/jpeg',
     buffer: JPEG_BYTES,
   })
-  await page.getByLabel('Note').fill('Completed during Android WebView upload verification.')
-  await page.getByRole('button', { name: 'Mark call completed' }).click()
+  await responseForm.getByLabel('Note', { exact: true }).fill('Completed during Android WebView upload verification.')
+  await responseForm.getByRole('button', { name: 'Mark call completed' }).click()
   await expect(page).toHaveURL(/submitted=1/)
   await expect(page.getByText(/Update saved/)).toBeVisible()
 
