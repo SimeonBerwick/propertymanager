@@ -24,6 +24,7 @@ import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { MoneyCloseoutPanel } from '@/components/money-closeout-panel'
+import { QuickBooksSyncPanel } from '@/components/quickbooks-sync-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
 import { canScheduleRequest } from '@/lib/request-scheduling'
@@ -727,6 +728,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           vendorAmountIfPendingApprovedCents={vendorAmountIfPendingApprovedCents}
         />
       ) : null}
+      <QuickBooksSyncPanel requestId={data.request.id} />
     </div>
   )
 }

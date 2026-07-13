@@ -4,11 +4,16 @@ import type { BillingDocumentView } from '@/lib/billing-types'
 import { BillingStatusForm } from '@/components/billing-status-form'
 import { BillingDocumentActions } from '@/components/billing-document-actions'
 import { formatDateTime } from '@/lib/ui-utils'
+import { prisma } from '@/lib/prisma'
+import { getLandlordSession } from '@/lib/landlord-session'
 
-export function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
+export async function BillingDocumentList({ documents, requestId }: { documents: BillingDocumentView[]; requestId: string }) {
   if (!documents.length) {
     return <div className="muted">No tenant charges or vendor payment records have been created yet.</div>
   }
+
+  const session = await getLandlordSession()
+  const quickBooksConnected = session ? Boolean(await prisma.quickBooksConnection.count({ where: { userId: session.userId, status: 'connected' } })) : false
 
   return (
     <div className="stack" style={{ gap: 12 }}>
@@ -34,7 +39,8 @@ export function BillingDocumentList({ documents, requestId }: { documents: Billi
             </div>
             <div className="billingActionsRow">
               <Link href={`/api/billing/${doc.id}`} className="button" target="_blank">Open document</Link>
-              {!isSettled ? <BillingStatusForm document={doc} /> : null}
+              {!isSettled && !(quickBooksConnected && doc.recipientType === 'vendor') ? <BillingStatusForm document={doc} /> : null}
+              {!isSettled && quickBooksConnected && doc.recipientType === 'vendor' ? <span className="muted">Payment status comes from QuickBooks.</span> : null}
               <BillingDocumentActions billingDocumentId={doc.id} requestId={requestId} status={doc.status} />
             </div>
           </div>

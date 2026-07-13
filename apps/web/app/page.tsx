@@ -193,13 +193,13 @@ export default async function HomePage() {
 
       <section className="marketingSection processSection" id="how-it-works">
         <div className="sectionIntro">
-          <div className="eyebrow">A straightforward workflow</div>
-          <h2>From tenant request to closed work order.</h2>
+          <div className="eyebrow">QuickBooks Online compatible</div>
+          <h2>Approved maintenance costs, ready for your books.</h2>
         </div>
         <div className="processGrid">
-          <article><span>1</span><h3>Capture</h3><p>Tenants submit the issue, access notes, and photos through a simple request form.</p></article>
-          <article><span>2</span><h3>Decide</h3><p>Your team sees the recommended next step: assign directly, invite bids, approve, update, bill, or close.</p></article>
-          <article><span>3</span><h3>Close</h3><p>Track scheduling, completion, approvals, costs, and closeout through a clear history.</p></article>
+          <article><span>1</span><h3>Approve</h3><p>Review vendor invoices, tenant chargebacks, staff labor, and materials beside the work order.</p></article>
+          <article><span>2</span><h3>Sync</h3><p>Send approved bills, customer invoices, vendors, and categorized costs to QuickBooks Online without entering them twice.</p></article>
+          <article><span>3</span><h3>Reconcile</h3><p>See whether each transaction is ready, synchronized, or needs attention, and refresh payment status from QuickBooks.</p></article>
         </div>
       </section>
 

@@ -170,6 +170,10 @@ export async function createBillingDocumentAction(
       include: { property: true, unit: true },
     })
     if (!request) return { error: 'Request not found.' }
+    if (recipientType === 'vendor' && (paidCents ?? 0) > 0) {
+      const quickBooksConnected = await prisma.quickBooksConnection.count({ where: { userId: session.userId, status: 'connected' } })
+      if (quickBooksConnected) return { error: 'QuickBooks must confirm vendor payments. Create the bill with no paid amount, then refresh its payment status.' }
+    }
 
     const status = (sendMode === 'draft' ? 'draft' : deriveBillingStatus(totalCents, paidCents ?? 0)) as 'draft' | 'sent' | 'partial' | 'paid'
     const pdfHtml = renderBillingPdfHtml({
@@ -284,6 +288,10 @@ export async function updateBillingDocumentAction(
   try {
     const doc = await getOwnedBillingDocument(session.userId, billingDocumentId, requestId)
     if (!doc) return { error: 'Billing document not found.' }
+    if (doc.recipientType === 'vendor') {
+      const quickBooksConnected = await prisma.quickBooksConnection.count({ where: { userId: session.userId, status: 'connected' } })
+      if (quickBooksConnected) return { error: 'QuickBooks must confirm vendor payments. Use Refresh payment status on the work order.' }
+    }
     if (paidCents > doc.totalCents) return { error: 'Paid amount cannot exceed total.' }
 
     const status = deriveBillingStatus(doc.totalCents, paidCents) as 'sent' | 'partial' | 'paid'
@@ -351,9 +359,11 @@ export async function markAllOutstandingBillingDocumentsPaidAction(): Promise<vo
   if (!session) return
 
   try {
+    const quickBooksConnected = await prisma.quickBooksConnection.count({ where: { userId: session.userId, status: 'connected' } })
     const candidateDocuments = await prisma.billingDocument.findMany({
       where: {
         status: { notIn: ['void', 'paid'] },
+        ...(quickBooksConnected ? { recipientType: 'tenant' as const } : {}),
         request: { property: { ownerId: session.userId } },
       },
       select: { id: true, requestId: true, totalCents: true, paidCents: true },

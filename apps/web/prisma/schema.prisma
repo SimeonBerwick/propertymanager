@@ -267,6 +267,9 @@ model User {
   outlookCalendarEvents   OutlookCalendarEvent[]
   maintenanceAssignmentRules MaintenanceAssignmentRule[]
   appointmentProposals     AppointmentProposal[]
+  quickBooksConnection     QuickBooksConnection?
+  quickBooksSyncRecords    QuickBooksSyncRecord[]
+  quickBooksEntityMappings QuickBooksEntityMapping[]
   outboundEmails          OutboundEmail[]
   inboundEmails           InboundEmail[]
   submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
@@ -417,6 +420,7 @@ model MaintenanceRequest {
   turnTasks               UnitTurnTask[]
   staffWorkLogs           StaffWorkLog[]
   appointmentProposals    AppointmentProposal[]
+  quickBooksSyncRecords   QuickBooksSyncRecord[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
@@ -1160,9 +1164,88 @@ model BillingDocument {
   request       MaintenanceRequest @relation(fields: [requestId], references: [id])
   createdByUser User?              @relation(fields: [createdByUserId], references: [id])
   events        BillingEvent[]
+  quickBooksSyncRecords QuickBooksSyncRecord[]
 
   @@index([requestId])
   @@index([status])
+}
+
+model QuickBooksConnection {
+  id                           String   @id @default(cuid())
+  userId                       String   @unique
+  realmId                      String
+  companyName                  String?
+  environment                  String   @default("production")
+  status                       String   @default("connected")
+  accessTokenCipher            String
+  refreshTokenCipher           String
+  accessTokenExpiresAt         DateTime
+  refreshTokenExpiresAt        DateTime?
+  referenceMode                String   @default("customer")
+  vendorExpenseAccountId       String?
+  vendorExpenseAccountName     String?
+  tenantIncomeItemId           String?
+  tenantIncomeItemName         String?
+  staffLaborExpenseAccountId   String?
+  staffLaborExpenseAccountName String?
+  staffMaterialExpenseAccountId String?
+  staffMaterialExpenseAccountName String?
+  staffOffsetAccountId         String?
+  staffOffsetAccountName       String?
+  lastError                    String?
+  connectedAt                  DateTime @default(now())
+  disconnectedAt               DateTime?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([realmId, status])
+}
+
+model QuickBooksSyncRecord {
+  id                String   @id @default(cuid())
+  userId            String
+  requestId         String
+  billingDocumentId String?
+  sourceType        String
+  sourceId          String
+  contentHash       String
+  entityType        String?
+  entityId          String?
+  entityDocNumber   String?
+  status            String   @default("ready")
+  errorMessage      String?
+  attemptCount      Int      @default(0)
+  lastAttemptAt     DateTime?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request         MaintenanceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  billingDocument BillingDocument?    @relation(fields: [billingDocumentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceType, sourceId])
+  @@index([requestId, status])
+  @@index([billingDocumentId])
+}
+
+model QuickBooksEntityMapping {
+  id             String   @id @default(cuid())
+  userId         String
+  localType      String
+  localId        String
+  quickBooksType String
+  quickBooksId   String
+  displayName    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localType, localId, quickBooksType])
+  @@index([userId, quickBooksType])
 }
 
 model BillingEvent {
