@@ -10,6 +10,7 @@ type RuntimeCheckId =
   | 'internalAutomationSecret'
   | 'notifyTransport'
   | 'smtpUrl'
+  | 'opsAlertEmail'
   | 'r2AccountId'
   | 'r2AccessKeyId'
   | 'r2SecretAccessKey'
@@ -93,6 +94,7 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const internalAutomationSecret = envValue('INTERNAL_AUTOMATION_SECRET')
   const notifyTransport = envValue('NOTIFY_TRANSPORT') || 'log'
   const smtpUrl = envValue('SMTP_URL')
+  const opsAlertEmail = envValue('OPS_ALERT_EMAIL')
   const r2AccountId = envValue('R2_ACCOUNT_ID')
   const r2AccessKeyId = envValue('R2_ACCESS_KEY_ID')
   const r2SecretAccessKey = envValue('R2_SECRET_ACCESS_KEY')
@@ -192,6 +194,17 @@ export function getRuntimeChecks(): RuntimeCheck[] {
           ? 'SMTP connection string looks production-safe.'
           : 'SMTP_URL is missing, malformed, or still looks like a placeholder.'
         : 'Missing SMTP_URL.',
+    },
+    {
+      id: 'opsAlertEmail',
+      label: 'OPS_ALERT_EMAIL',
+      ok: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(opsAlertEmail),
+      blocking,
+      detail: opsAlertEmail
+        ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(opsAlertEmail)
+          ? 'Production error alerts have a valid recipient.'
+          : 'OPS_ALERT_EMAIL must be one valid email address.'
+        : 'Missing OPS_ALERT_EMAIL. Production failures would have no alert recipient.',
     },
     {
       id: 'r2AccountId',
@@ -309,7 +322,7 @@ export function getRuntimeChecks(): RuntimeCheck[] {
 
 const CAPABILITY_CHECKS: Record<RuntimeCapability, RuntimeCheckId[]> = {
   base: ['databaseUrl', 'sessionSecret', 'appUrl', 'publicAppUrl', 'appUrlParity', 'internalAutomationSecret'],
-  notifications: ['notifyTransport', 'smtpUrl'],
+  notifications: ['notifyTransport', 'smtpUrl', 'opsAlertEmail'],
   media: ['r2AccountId', 'r2AccessKeyId', 'r2SecretAccessKey', 'r2Bucket', 'mediaBackend'],
   rateLimit: ['upstashRestUrl', 'upstashRestToken', 'rateLimitBackend'],
   billing: ['stripeSecretKey', 'stripeWebhookSecret'],

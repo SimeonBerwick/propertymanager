@@ -14,7 +14,7 @@ export async function GET() {
     service: 'property-manager-v1-web',
     database,
     capabilities: {
-      notifications: !failures.some((failure) => ['notifyTransport', 'smtpUrl'].includes(failure.id)),
+      notifications: !failures.some((failure) => ['notifyTransport', 'smtpUrl', 'opsAlertEmail'].includes(failure.id)),
       media: !failures.some((failure) => failure.id.startsWith('r2') || failure.id === 'mediaBackend'),
       rateLimit: !failures.some((failure) => failure.id.includes('upstash') || failure.id === 'rateLimitBackend'),
       billing: !failures.some((failure) => failure.id.startsWith('stripe')),

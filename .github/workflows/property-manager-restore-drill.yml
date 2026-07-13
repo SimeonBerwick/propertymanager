@@ -1,0 +1,98 @@
+name: Property Manager Restore Drill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: property-manager-restore-drill
+  cancel-in-progress: false
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRODUCTION_DATABASE_URL: ${{ secrets.PM_PRODUCTION_DATABASE_URL }}
+      RESTORE_TEST_DATABASE_URL: ${{ secrets.PM_RESTORE_TEST_DATABASE_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.PM_BACKUP_R2_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.PM_BACKUP_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.PM_BACKUP_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      BACKUP_BUCKET: ${{ secrets.PM_BACKUP_R2_BUCKET }}
+      BACKUP_PASSPHRASE: ${{ secrets.PM_BACKUP_ENCRYPTION_PASSPHRASE }}
+    steps:
+      - name: Refuse a production target
+        run: |
+          for name in PRODUCTION_DATABASE_URL RESTORE_TEST_DATABASE_URL R2_ACCOUNT_ID AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY BACKUP_BUCKET BACKUP_PASSPHRASE; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not configured."
+              exit 1
+            fi
+          done
+          node -e '
+            const production = new URL(process.env.PRODUCTION_DATABASE_URL);
+            const target = new URL(process.env.RESTORE_TEST_DATABASE_URL);
+            const identity = (url) => `${url.hostname.toLowerCase()}:${url.port || "5432"}${url.pathname}`;
+            const targetDatabase = decodeURIComponent(target.pathname).replace(/^\//, "");
+            if (identity(production) === identity(target)) {
+              console.error("RESTORE_TEST_DATABASE_URL points to the production database. Refusing to continue.");
+              process.exit(1);
+            }
+            if (!/(restore|drill|test)/i.test(targetDatabase)) {
+              console.error("The restore target database name must contain restore, drill, or test. Refusing to continue.");
+              process.exit(1);
+            }
+          '
+
+      - name: Download and decrypt newest backup
+        run: |
+          set -euo pipefail
+          endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          latest="$(aws s3 ls "s3://$BACKUP_BUCKET/database/" --recursive \
+            --endpoint-url "$endpoint" | awk '{print $4}' | sort | tail -n 1)"
+          if [ -z "$latest" ]; then
+            echo "No database backup exists in the backup bucket."
+            exit 1
+          fi
+
+          aws s3 cp "s3://$BACKUP_BUCKET/$latest" "$RUNNER_TEMP/latest.dump.gpg" \
+            --endpoint-url "$endpoint" --only-show-errors
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --decrypt --output "$RUNNER_TEMP/latest.dump" "$RUNNER_TEMP/latest.dump.gpg"
+          docker run --rm -v "$RUNNER_TEMP:/backup:ro" postgres:18-alpine \
+            pg_restore --list /backup/latest.dump >/dev/null
+
+      - name: Restore into disposable database and verify records
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$RUNNER_TEMP:/backup:ro" \
+            postgres:18-alpine pg_restore --clean --if-exists --no-owner --no-acl \
+            --exit-on-error --dbname "$RESTORE_TEST_DATABASE_URL" /backup/latest.dump
+          docker run --rm postgres:18-alpine psql "$RESTORE_TEST_DATABASE_URL" \
+            --set ON_ERROR_STOP=1 --tuples-only \
+            --command 'SELECT COUNT(*) AS users FROM "User"; SELECT COUNT(*) AS requests FROM "MaintenanceRequest";'
+
+      - name: Remove decrypted backup
+        if: always()
+        run: rm -f "$RUNNER_TEMP/latest.dump" "$RUNNER_TEMP/latest.dump.gpg"
+
+      - name: Email the operator when restore drill fails
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.PM_HEALTH_RESEND_API_KEY }}
+          OPS_ALERT_EMAIL: ${{ secrets.PM_OPS_ALERT_EMAIL }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$OPS_ALERT_EMAIL" ]; then
+            echo "Restore alert email secrets are missing; the failed workflow remains visible in GitHub Actions."
+            exit 0
+          fi
+          payload="$(jq -n --arg from 'Simeonware Monitor <noreply@simeonware.com>' --arg to "$OPS_ALERT_EMAIL" \
+            --arg subject '[Simeonware alert] Restore drill failed' \
+            --arg text "The restore drill failed at $(date -u +'%Y-%m-%d %H:%M:%S UTC'). Treat backups as unproven until this workflow passes." \
+            '{from:$from,to:[$to],subject:$subject,text:$text}')"
+          curl --fail --silent --show-error https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" -H 'Content-Type: application/json' --data "$payload"

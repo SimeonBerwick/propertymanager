@@ -1,0 +1,94 @@
+name: Property Manager Production Backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 8 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: property-manager-production-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRODUCTION_DATABASE_URL: ${{ secrets.PM_PRODUCTION_DATABASE_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.PM_BACKUP_R2_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.PM_BACKUP_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.PM_BACKUP_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      MEDIA_BUCKET: ${{ secrets.PM_MEDIA_R2_BUCKET }}
+      BACKUP_BUCKET: ${{ secrets.PM_BACKUP_R2_BUCKET }}
+      BACKUP_PASSPHRASE: ${{ secrets.PM_BACKUP_ENCRYPTION_PASSPHRASE }}
+    steps:
+      - name: Validate backup configuration
+        run: |
+          for name in PRODUCTION_DATABASE_URL R2_ACCOUNT_ID AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MEDIA_BUCKET BACKUP_BUCKET BACKUP_PASSPHRASE; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not configured."
+              exit 1
+            fi
+          done
+          if [ "$MEDIA_BUCKET" = "$BACKUP_BUCKET" ]; then
+            echo "The backup bucket must be separate from the live media bucket."
+            exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 32 ]; then
+            echo "The backup encryption passphrase must be at least 32 characters."
+            exit 1
+          fi
+
+      - name: Create and validate encrypted database backup
+        run: |
+          set -euo pipefail
+          timestamp="$(date -u +'%Y-%m-%dT%H-%M-%SZ')"
+          archive="$RUNNER_TEMP/property-manager-$timestamp.dump"
+          encrypted="$archive.gpg"
+
+          docker run --rm -e DATABASE_URL="$PRODUCTION_DATABASE_URL" postgres:18-alpine \
+            sh -c 'pg_dump "$DATABASE_URL" --format=custom --compress=9 --no-owner --no-acl' > "$archive"
+          docker run --rm -v "$RUNNER_TEMP:/backup:ro" postgres:18-alpine \
+            pg_restore --list "/backup/$(basename "$archive")" >/dev/null
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output "$encrypted" "$archive"
+          rm -f "$archive"
+
+          endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          aws s3 cp "$encrypted" "s3://$BACKUP_BUCKET/database/$timestamp.dump.gpg" \
+            --endpoint-url "$endpoint" --only-show-errors
+          aws s3api head-object --bucket "$BACKUP_BUCKET" \
+            --key "database/$timestamp.dump.gpg" --endpoint-url "$endpoint" >/dev/null
+
+      - name: Preserve private media copies
+        run: |
+          set -euo pipefail
+          endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          aws s3 sync "s3://$MEDIA_BUCKET" "s3://$BACKUP_BUCKET/media-preserved" \
+            --endpoint-url "$endpoint" --only-show-errors
+
+          object_count="$(aws s3 ls "s3://$BACKUP_BUCKET/media-preserved" \
+            --recursive --endpoint-url "$endpoint" | wc -l)"
+          echo "Preserved media objects: $object_count"
+
+      - name: Email the operator when backup fails
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.PM_HEALTH_RESEND_API_KEY }}
+          OPS_ALERT_EMAIL: ${{ secrets.PM_OPS_ALERT_EMAIL }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$OPS_ALERT_EMAIL" ]; then
+            echo "Backup alert email secrets are missing; the failed workflow remains visible in GitHub Actions."
+            exit 0
+          fi
+          payload="$(jq -n --arg from 'Simeonware Monitor <noreply@simeonware.com>' --arg to "$OPS_ALERT_EMAIL" \
+            --arg subject '[Simeonware alert] Production backup failed' \
+            --arg text "The nightly production backup failed at $(date -u +'%Y-%m-%d %H:%M:%S UTC'). Open GitHub Actions and investigate before another production change." \
+            '{from:$from,to:[$to],subject:$subject,text:$text}')"
+          curl --fail --silent --show-error https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" -H 'Content-Type: application/json' --data "$payload"
