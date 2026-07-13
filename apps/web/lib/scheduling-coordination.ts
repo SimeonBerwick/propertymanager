@@ -20,6 +20,13 @@ export function resolveSchedulingPolicy(account: {
   return { enabled: override ?? account.schedulingCoordinationEnabled, autoConfirm: account.schedulingAutoConfirmEnabled, workingHourStart: account.schedulingWorkingHourStart, workingHourEnd: account.schedulingWorkingHourEnd, minimumNoticeHours: account.schedulingMinimumNoticeHours, defaultDurationMinutes: account.schedulingDefaultDurationMinutes, proposalExpiryHours: account.schedulingProposalExpiryHours }
 }
 
+export function appointmentSlotsFromStarts(starts: Array<Date | null>, durationMinutes: number) {
+  const durationMs = durationMinutes * 60_000
+  return starts
+    .filter((start): start is Date => start !== null)
+    .map((startAt) => ({ startAt, endAt: new Date(startAt.getTime() + durationMs) }))
+}
+
 export function validateProposedSlots(slots: Array<{ startAt: Date; endAt: Date }>, policy: SchedulingPolicy, now = new Date()) {
   if (!policy.enabled) return 'Direct scheduling is disabled for this request.'
   if (!slots.length || slots.length > 3) return 'Offer between one and three appointment times.'

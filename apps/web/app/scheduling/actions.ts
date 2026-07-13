@@ -11,7 +11,7 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { buildTenantRequestOwnershipWhere } from '@/lib/tenant-portal-data'
 import { parseDateTimeLocalInDisplayTimeZone, formatAppointmentWindow } from '@/lib/appointment-time'
-import { resolveSchedulingPolicy, validateProposedSlots } from '@/lib/scheduling-coordination'
+import { appointmentSlotsFromStarts, resolveSchedulingPolicy, validateProposedSlots } from '@/lib/scheduling-coordination'
 import { sendNotification } from '@/lib/notify'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
@@ -22,10 +22,9 @@ const fail = (path: string, message: string): never => redirect(`${path}?schedul
 const policySelect = { schedulingCoordinationEnabled: true, schedulingAutoConfirmEnabled: true, schedulingWorkingHourStart: true, schedulingWorkingHourEnd: true, schedulingMinimumNoticeHours: true, schedulingDefaultDurationMinutes: true, schedulingProposalExpiryHours: true } as const
 const CLOSED_REQUEST_STATUSES = ['completed', 'closed', 'declined', 'canceled'] as const
 
-function slotsFromForm(formData: FormData) {
-  const starts = formData.getAll('slotStart').map(String)
-  const ends = formData.getAll('slotEnd').map(String)
-  return starts.map((start, index) => ({ startAt: parseDateTimeLocalInDisplayTimeZone(start), endAt: parseDateTimeLocalInDisplayTimeZone(ends[index] ?? '') })).filter((slot) => slot.startAt || slot.endAt).map((slot) => ({ startAt: slot.startAt ?? new Date(Number.NaN), endAt: slot.endAt ?? new Date(Number.NaN) }))
+function slotsFromForm(formData: FormData, defaultDurationMinutes: number) {
+  const starts = formData.getAll('slotStart').map((start) => parseDateTimeLocalInDisplayTimeZone(String(start)))
+  return appointmentSlotsFromStarts(starts, defaultDurationMinutes)
 }
 
 async function createProposalBatch(input: { requestId: string; orgId: string; proposedByType: 'vendor' | 'staff'; proposedById: string; proposedByName: string; note: string; slots: Array<{ startAt: Date; endAt: Date }>; expiryHours: number }) {
@@ -51,7 +50,7 @@ export async function proposeVendorAppointmentSlotsAction(formData: FormData) {
   const verifiedRequest = request!
   if (!['accepted', 'scheduled'].includes(verifiedRequest.dispatchStatus ?? '')) fail(path, 'Accept the service call before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
-  const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
+  const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
   await createProposalBatch({ requestId, orgId: session.orgId!, proposedByType: 'vendor', proposedById: session.vendorId, proposedByName: session.vendorName, note, slots, expiryHours: policy.proposalExpiryHours })
   await notifyTenant(verifiedRequest, session.vendorName); revalidateScheduling(requestId); redirect(`${path}?slots=offered` as Route)
 }
@@ -63,7 +62,7 @@ export async function proposeStaffAppointmentSlotsAction(formData: FormData) {
   const verifiedRequest = request!
   if (!['accepted', 'in_progress'].includes(verifiedRequest.staffWorkStatus ?? '')) fail(path, 'Accept the work order before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
-  const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
+  const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
   await createProposalBatch({ requestId, orgId: session.orgId, proposedByType: 'staff', proposedById: session.staffMemberId, proposedByName: session.staffName, note, slots, expiryHours: policy.proposalExpiryHours })
   await notifyTenant(verifiedRequest, session.staffName); revalidateScheduling(requestId); redirect(`${path}?slots=offered` as Route)
 }

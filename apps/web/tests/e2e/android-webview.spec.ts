@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import path from 'node:path'
 import { prisma } from '../../lib/prisma'
 import { createOtpChallenge } from '../../lib/tenant-otp-lib'
 import { createVendorOtpChallenge } from '../../lib/vendor-otp-lib'
@@ -102,14 +103,104 @@ test('tenant OTP magic link, persistent session, photo upload, links, and back n
   await page.getByLabel('Issue title').fill(`Android WebView upload ${Date.now()}`)
   await page.getByLabel('Describe the problem').fill('Photo upload smoke test from an Android WebView viewport.')
   await expect(page.locator('input[type="file"][name="photos"]')).toHaveAttribute('accept', 'image/*')
-  await page.locator('input[type="file"][name="photos"]').setInputFiles({
-    name: 'webview-tenant-upload.jpg',
-    mimeType: 'image/jpeg',
-    buffer: JPEG_BYTES,
-  })
+  await page.locator('input[type="file"][name="photos"]').setInputFiles(path.join(process.cwd(), 'tests/e2e/fixtures/leak.png'))
   await page.getByRole('button', { name: /Submit request/ }).click()
   await expect(page).toHaveURL(/\/mobile\/requests\//)
   await expect(page.getByText(/Request detail/)).toBeVisible()
+
+  const photoButton = page.getByRole('button', { name: 'Open Maintenance issue photo' })
+  await expect(photoButton).toHaveCount(1)
+  await photoButton.click()
+  const photoViewer = page.getByRole('dialog', { name: 'Maintenance issue photo' })
+  await expect(photoViewer).toBeVisible()
+  await expect(photoViewer.getByRole('link', { name: 'Download photo' })).toBeVisible()
+  await page.goBack()
+  await expect(photoViewer).toBeHidden()
+  await expect(page).toHaveURL(/\/mobile\/requests\//)
+
+  await photoButton.click()
+  await expect(photoViewer).toBeVisible()
+  await photoViewer.getByRole('button', { name: 'Close' }).click()
+  await expect(photoViewer).toBeHidden()
+})
+
+test('vendor start-time choices are readable and visible to vendor, manager, and tenant', async ({ page }) => {
+  const [landlord, tenant, vendor, unit] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { email: REVIEWER_EMAILS.landlord }, select: { id: true, schedulingDefaultDurationMinutes: true } }),
+    prisma.tenantIdentity.findFirstOrThrow({ where: { email: REVIEWER_EMAILS.tenant }, select: { id: true } }),
+    prisma.vendor.findFirstOrThrow({ where: { email: REVIEWER_EMAILS.vendor }, select: { id: true, name: true, email: true, phone: true } }),
+    prisma.unit.findFirstOrThrow({ where: { tenantEmail: REVIEWER_EMAILS.tenant }, select: { id: true, propertyId: true } }),
+  ])
+  const requestId = `android-scheduling-${Date.now()}`
+  await prisma.maintenanceRequest.create({
+    data: {
+      id: requestId,
+      orgId: landlord.id,
+      propertyId: unit.propertyId,
+      unitId: unit.id,
+      tenantIdentityId: tenant.id,
+      submittedByName: 'Play Review Tenant',
+      submittedByEmail: REVIEWER_EMAILS.tenant,
+      title: 'Android appointment choices',
+      description: 'Verify direct scheduling choices across every portal.',
+      category: 'general',
+      urgency: 'low',
+      status: 'vendor_selected',
+      dispatchStatus: 'accepted',
+      assignedVendorId: vendor.id,
+      assignedVendorName: vendor.name,
+      assignedVendorEmail: vendor.email,
+      assignedVendorPhone: vendor.phone,
+      schedulingCoordinationOverride: true,
+    },
+  })
+
+  try {
+    await signInVendorWithMagicLink(page)
+    await page.goto(`/vendor/requests/${requestId}`)
+    const scheduling = page.locator('#scheduling')
+    await expect(scheduling.locator('input[name="slotStart"]')).toHaveCount(3)
+    await expect(scheduling.locator('input[name="slotEnd"]')).toHaveCount(0)
+    const mobileFieldMetrics = await scheduling.getByLabel('Choice 1 start time (required)').evaluate((element) => ({
+      fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
+      height: element.getBoundingClientRect().height,
+    }))
+    expect(mobileFieldMetrics.fontSize).toBeGreaterThanOrEqual(18)
+    expect(mobileFieldMetrics.height).toBeGreaterThanOrEqual(56)
+    await scheduling.getByLabel('Choice 1 start time (required)').fill('2030-02-05T09:00')
+    await scheduling.getByLabel('Choice 2 start time (optional)').fill('2030-02-06T13:00')
+    await scheduling.getByRole('button', { name: 'Send appointment choices' }).click()
+    await expect(page).toHaveURL(/slots=offered/)
+    await expect(page.getByText('Appointment choices sent to the tenant.')).toBeVisible()
+
+    const proposals = await prisma.appointmentProposal.findMany({ where: { requestId, status: 'pending' }, orderBy: { startAt: 'asc' } })
+    expect(proposals).toHaveLength(2)
+    for (const proposal of proposals) {
+      expect(proposal.endAt.getTime() - proposal.startAt.getTime()).toBe(landlord.schedulingDefaultDurationMinutes * 60_000)
+    }
+    await expect(scheduling.getByText('Offered times')).toBeVisible()
+    await expect(scheduling.locator('.timelineRow')).toHaveCount(2)
+
+    await page.context().clearCookies()
+    await signInManager(page)
+    await page.goto(`/requests/${requestId}`)
+    const managerScheduling = page.locator('#scheduling')
+    await expect(managerScheduling.getByText('Waiting for tenant choice')).toBeVisible()
+    await expect(managerScheduling.locator('.timelineRow')).toHaveCount(2)
+
+    await page.context().clearCookies()
+    await signInTenantWithMagicLink(page)
+    await page.goto(`/mobile/requests/${requestId}`)
+    const tenantScheduling = page.locator('#scheduling')
+    await expect(tenantScheduling.getByText('Choose the appointment time that works for you.')).toBeVisible()
+    await expect(tenantScheduling.getByRole('button', { name: 'Choose this time' })).toHaveCount(2)
+  } finally {
+    await prisma.$transaction([
+      prisma.outboundEmail.deleteMany({ where: { requestId } }),
+      prisma.requestComment.deleteMany({ where: { requestId } }),
+      prisma.maintenanceRequest.deleteMany({ where: { id: requestId } }),
+    ])
+  }
 })
 
 test('vendor OTP magic link, persistent session, photo upload, and support link work in Android WebView', async ({ page }) => {
@@ -165,3 +256,4 @@ test('privacy, support, deletion, email, and back-button links are reachable in 
   await page.goBack()
   await expect(page).toHaveURL(/\/account-deletion/)
 })
+
