@@ -245,12 +245,16 @@ model User {
   dailyCsvExportLastSentAt DateTime?
   turnBoardStatusFilter String @default("active")
   turnBoardPropertyFilter String?
+  maintenanceDispatchDefault String @default("manual")
+  staffFallbackHours Int @default(24)
+  emergencyVendorFirst Boolean @default(true)
   createdAt    DateTime @default(now())
 
   properties              Property[]
   comments                RequestComment[]
   mailboxConnections      MailboxConnection[]
   outlookCalendarEvents   OutlookCalendarEvent[]
+  maintenanceAssignmentRules MaintenanceAssignmentRule[]
   outboundEmails          OutboundEmail[]
   inboundEmails           InboundEmail[]
   submittedRequests       MaintenanceRequest[]  @relation("SubmittedRequests")
@@ -331,6 +335,9 @@ model MaintenanceRequest {
   assignedStaffEmail            String?
   assignedStaffPhone            String?
   staffWorkStatus               String?
+  assignmentPreferenceOverride  String?
+  staffResponseDueAt            DateTime?
+  staffDeclinedAt               DateTime?
   staffScheduledStart           DateTime?
   staffScheduledEnd             DateTime?
   dispatchStatus                DispatchStatus?
@@ -398,6 +405,7 @@ model StaffMember {
   skillsCsv          String?  @default("")
   hourlyRateCents    Int      @default(0)
   availabilityStatus String   @default("available")
+  maxOpenAssignments Int      @default(10)
   isActive           Boolean  @default(true)
   lastLoginAt        DateTime?
   createdAt          DateTime @default(now())
@@ -407,9 +415,30 @@ model StaffMember {
   sessions         StaffSession[]
   otpChallenges    StaffOtpChallenge[]
   workLogs         StaffWorkLog[]
+  preferredRules   MaintenanceAssignmentRule[] @relation("PreferredStaffRules")
 
   @@index([orgId, isActive])
   @@index([email, isActive])
+}
+
+model MaintenanceAssignmentRule {
+  id               String   @id @default(cuid())
+  orgId            String
+  propertyId       String?
+  category         String
+  dispatchMode     String
+  preferredStaffId String?
+  preferredVendorId String?
+  fallbackHours    Int      @default(24)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  org             User         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  preferredStaff  StaffMember? @relation("PreferredStaffRules", fields: [preferredStaffId], references: [id], onDelete: SetNull)
+  preferredVendor Vendor?      @relation("PreferredVendorRules", fields: [preferredVendorId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, propertyId, category, isActive])
 }
 
 model StaffSession {
@@ -675,6 +704,7 @@ model Vendor {
   otpChallenges    VendorOtpChallenge[]
   commercialItems  VendorCommercialItem[]
   turnTasks         UnitTurnTask[]
+  preferredRules    MaintenanceAssignmentRule[] @relation("PreferredVendorRules")
 
   @@index([orgId, isActive])
   @@index([email, isActive])
