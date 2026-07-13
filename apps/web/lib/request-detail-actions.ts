@@ -453,6 +453,7 @@ export async function updateVendorFormAction(
         assignedVendorName: vendorName || null,
         assignedVendorEmail: vendorEmail || null,
         assignedVendorPhone: vendorPhone || null,
+        assignmentPreferenceOverride: vendorName ? 'vendor' : null,
         dispatchStatus: vendorName ? 'assigned' : null,
         status: vendorName ? 'vendor_selected' : 'approved',
       },

@@ -3,7 +3,7 @@ export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
 export type CurrencyOption = 'usd' | 'cad' | 'peso' | 'pound' | 'euro' | 'aud'
 export type LanguageOption = 'english' | 'spanish' | 'french'
 export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'scheduled' | 'in_progress' | 'completed' | 'declined' | 'canceled'
-export type PhotoSource = 'tenant' | 'landlord' | 'vendor'
+export type PhotoSource = 'tenant' | 'landlord' | 'vendor' | 'staff'
 export type ReviewStatus = 'none' | 'needs_follow_up' | 'vendor_update_pending_review' | 'vendor_completed_pending_review' | 'reassignment_needed' | 'vendor_declined_reassignment_needed' | 'approved' | 'reopened_after_review'
 export type TenantBillbackDecision = 'none' | 'bill_tenant' | 'waived'
 export type BidSource = 'vendor_submitted' | 'manager_entered'
@@ -61,6 +61,10 @@ export interface MaintenanceRequest {
   assignedVendorPhone?: string
   assignedVendorIds?: string[]
   assignedVendorNames?: string[]
+  assignedStaffId?: string
+  assignedStaffName?: string
+  staffWorkStatus?: string
+  staffResponseDueAt?: string
   dispatchStatus?: DispatchStatus
   vendorReminderEnabled?: boolean
   lastVendorReminderAt?: string

@@ -20,7 +20,7 @@ export type RequestNextAction = NextAction & {
 }
 
 type NextActionRequest = Pick<MaintenanceRequest,
-  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
+  'id' | 'status' | 'urgency' | 'reviewState' | 'reviewNote' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'assignedStaffName' | 'staffWorkStatus' | 'staffResponseDueAt' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'claimedAt'
 > & {
   unitId?: string
   title?: string
@@ -64,6 +64,10 @@ function isOpen(request: NextActionRequest) {
 function hasVendorChosen(request: NextActionRequest) {
   return Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail)
     || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
+}
+
+function hasStaffAssigned(request: NextActionRequest) {
+  return Boolean(request.assignedStaffId || request.assignedStaffName)
 }
 
 function canReviewVendorCosts(request: NextActionRequest) {
@@ -122,7 +126,7 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
   }
 
   if (request.reviewState === 'reassignment_needed' || request.reviewState === 'vendor_declined_reassignment_needed') {
-    return { ...base, id: `${request.id}:reassign`, primaryLabel: 'Assign replacement', reason: 'The current vendor cannot complete the work.', group: 'Vendor assignment', priority: 'high', actionType: 'assign_replacement_vendor', score: SCORE.vendorAssignment }
+    return { ...base, id: `${request.id}:reassign`, primaryLabel: 'Assign replacement', reason: 'The current worker cannot complete the work.', group: 'Assignment', priority: 'high', actionType: 'assign_replacement', score: SCORE.vendorAssignment }
   }
 
   if (isTenantQuestionFollowUp(request)) {
@@ -135,6 +139,12 @@ export function getRequestNextAction(request: NextActionRequest, now = new Date(
 
   if ((request.activeTenderInviteCount ?? 0) > 0) {
     return { ...base, id: `${request.id}:wait-for-bids`, primaryLabel: 'Wait for bids', reason: `${request.activeTenderInviteCount} bid invitation${request.activeTenderInviteCount === 1 ? ' is' : 's are'} still out with vendors.`, group: 'Vendor bids', priority: 'low', actionType: 'monitor_vendor_bids', score: SCORE.bidWaiting }
+  }
+
+  if (hasStaffAssigned(request)) {
+    if (request.staffWorkStatus === 'completed' || request.staffWorkStatus === 'blocked') return { ...base, id: `${request.id}:staff-review`, primaryLabel: 'Review staff update', reason: request.staffWorkStatus === 'completed' ? 'In-house staff marked the work complete.' : 'In-house staff reported a blocker.', group: 'Staff updates', priority: 'high', actionType: 'review_staff_update', score: SCORE.overdueUpdate }
+    if (request.staffWorkStatus === 'in_progress') return { ...base, id: `${request.id}:staff-progress`, primaryLabel: 'Monitor staff work', reason: 'In-house staff are working on this request.', group: 'Monitoring', priority: 'low', actionType: 'monitor_staff_work', score: SCORE.routine }
+    return { ...base, id: `${request.id}:staff-response`, primaryLabel: 'Wait for staff response', reason: request.staffResponseDueAt ? 'The assignment is waiting for staff acceptance before its fallback deadline.' : 'The assignment is with in-house staff.', group: 'Waiting on staff', priority: 'low', actionType: 'await_staff_response', score: SCORE.routine }
   }
 
   if (!hasVendorChosen(request) && ['approved', 'vendor_selected', 'reopened'].includes(request.status)) {

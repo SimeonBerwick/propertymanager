@@ -7,6 +7,7 @@ import { sendDueDailyCsvExports } from '@/lib/daily-csv-export'
 import { reconcileStripeSubscriptions } from '@/lib/subscription-reconciliation'
 import { resultHasFailures, sendOperatorFailureAlert } from '@/lib/operator-alerts'
 import { syncAllOutlookCalendars } from '@/lib/outlook-calendar-sync'
+import { runStaffAssignmentFallbacks } from '@/lib/staff-assignment'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -28,7 +29,8 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const dailyCsvExports = await sendDueDailyCsvExports()
   const subscriptionReconciliation = await reconcileStripeSubscriptions()
   const outlookCalendarSync = await syncAllOutlookCalendars()
-  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, vendorReminders, outlookCalendarSync }
+  const staffAssignmentFallbacks = await runStaffAssignmentFallbacks()
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
@@ -44,7 +46,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, dailyCsvExports, subscriptionReconciliation, summaryResults })
+  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, dailyCsvExports, subscriptionReconciliation, summaryResults })
 }
 
 export async function GET(request: NextRequest) {
