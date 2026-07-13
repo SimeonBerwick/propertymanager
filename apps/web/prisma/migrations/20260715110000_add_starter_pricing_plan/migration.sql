@@ -1,0 +1,2 @@
+ALTER TYPE "AccountPlan" ADD VALUE IF NOT EXISTS 'starter' BEFORE 'growth';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "additionalUnitAllowance" INTEGER NOT NULL DEFAULT 0;

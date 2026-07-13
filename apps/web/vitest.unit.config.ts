@@ -43,6 +43,7 @@ export default defineConfig({
       'lib/personal-work.test.ts',
       'lib/scheduling-coordination.test.ts',
       'lib/quickbooks.test.ts',
+      'lib/subscription-unit-pricing.test.ts',
     ],
   },
 })

@@ -8,9 +8,9 @@ import { prisma } from '@/lib/prisma'
 import { isDatabaseAvailable } from '@/lib/db-status'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { writeAuditLog } from '@/lib/audit-log'
-import { checkUnitCapacity } from '@/lib/account-limits'
 import { logServerActionError } from '@/lib/observability'
 import { buildBulkUnitLabels, DEFAULT_APARTMENT_AREAS, type PropertyType } from '@/lib/property-setup'
+import { checkUnitCapacity } from '@/lib/account-limits'
 
 export type PropertyActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -85,8 +85,8 @@ export async function createPropertyAction(
       return { error: error instanceof Error ? error.message : 'Check the apartment unit setup.' }
     }
     const capacity = await checkUnitCapacity(ownerId)
-    if (!capacity.ok || (capacity.limit != null && capacity.activeUnits + unitLabels.length > capacity.limit)) {
-      return { error: `Your current plan supports up to ${capacity.limit} active units. Reduce the unit count or upgrade your plan.` }
+    if (capacity.limit != null && capacity.activeUnits + unitLabels.length > capacity.limit) {
+      return { error: `Your subscription has room for ${capacity.limit} active units. Increase the unit allowance in Plan and billing before adding this property.` }
     }
   }
 
@@ -380,9 +380,7 @@ export async function createUnitAction(
     }
 
     const capacity = await checkUnitCapacity(ownerId)
-    if (!capacity.ok) {
-      return { error: `The Growth plan supports up to ${capacity.limit} active units. Upgrade to Pro to add more units.` }
-    }
+    if (!capacity.ok) return { error: `Your subscription has room for ${capacity.limit} active units. Increase the unit allowance in Plan and billing before adding another unit.` }
 
     const unit = await prisma.unit.create({
       data: {
@@ -625,9 +623,7 @@ export async function restoreUnitAction(
     }
 
     const capacity = await checkUnitCapacity(ownerId)
-    if (!capacity.ok) {
-      return { error: `The Growth plan supports up to ${capacity.limit} active units. Upgrade to Pro to restore more units.` }
-    }
+    if (!capacity.ok) return { error: `Your subscription has room for ${capacity.limit} active units. Increase the unit allowance in Plan and billing before restoring another unit.` }
 
     const updated = await prisma.unit.updateMany({
       where: { id: unitId, propertyId, property: { ownerId } },

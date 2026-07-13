@@ -3,6 +3,8 @@ import { Breadcrumbs } from '@/components/breadcrumbs'
 import { getPropertyDetailData } from '@/lib/data'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { NewUnitForm } from './new-unit-form'
+import Link from 'next/link'
+import { checkUnitCapacity } from '@/lib/account-limits'
 
 export default async function NewUnitPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getLandlordSession()
@@ -10,6 +12,7 @@ export default async function NewUnitPage({ params }: { params: Promise<{ id: st
 
   const { id } = await params
   const data = await getPropertyDetailData(id, session.userId)
+  const capacity = await checkUnitCapacity(session.userId)
 
   if (!data) {
     notFound()
@@ -33,6 +36,7 @@ export default async function NewUnitPage({ params }: { params: Promise<{ id: st
         <p className="muted" style={{ margin: 0 }}>
           Add a rentable unit to this property. Tenant info is optional and can be updated later.
         </p>
+        {capacity.freeTrial ? <div className="notice">Free trial: add your real portfolio without purchasing slots. Your first bill will be based on the active units present when you subscribe. <Link href="/account/subscription">See projected pricing</Link></div> : capacity.limit != null ? <div className="notice">You are using {capacity.activeUnits} of {capacity.limit} purchased unit slots. <Link href="/account/subscription">Increase unit capacity</Link></div> : null}
       </section>
 
       <section className="card stack">
