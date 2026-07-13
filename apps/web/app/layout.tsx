@@ -43,7 +43,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const androidApp = isAndroidWebView(headerStore.get('user-agent'))
   const isTenantPortalRoute = pathname.startsWith('/mobile')
   const isVendorPortalRoute = pathname === '/vendor' || pathname.startsWith('/vendor/')
-  const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute
+  const isStaffPortalRoute = pathname === '/maintenance' || pathname.startsWith('/maintenance/')
+  const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && !isStaffPortalRoute
   const dbAvailable = await isDatabaseAvailable()
   const [tenantPortalSession, vendorPortalSession] = dbAvailable
     ? await Promise.all([
@@ -55,6 +56,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     ? '/mobile'
     : isVendorPortalRoute
       ? '/vendor'
+      : isStaffPortalRoute
+        ? '/maintenance'
       : session.isLoggedIn
     ? '/dashboard'
     : tenantPortalSession
@@ -104,6 +107,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     <div className="navMenuPanel">
                       <Link href="/properties">Properties</Link>
                       <Link href="/vendors">Vendors</Link>
+                      <Link href="/staff">Maintenance staff</Link>
                       <Link href="/reports">Reports</Link>
                       <Link href="/inspections">Inspections</Link>
                       <Link href="/turns">Unit turns</Link>
@@ -133,7 +137,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   </form>
                 </>
               )}
-              {!androidApp && !session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && (
+              {!androidApp && !session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && !isStaffPortalRoute && (
                 <PublicMarketingNav />
               )}
             </div>

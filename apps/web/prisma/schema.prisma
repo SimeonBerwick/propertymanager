@@ -140,6 +140,7 @@ enum PhotoSource {
   tenant
   landlord
   vendor
+  staff
 }
 
 enum BillingRecipientType {
@@ -325,6 +326,13 @@ model MaintenanceRequest {
   assignedVendorName            String?
   assignedVendorEmail           String?
   assignedVendorPhone           String?
+  assignedStaffId               String?
+  assignedStaffName             String?
+  assignedStaffEmail            String?
+  assignedStaffPhone            String?
+  staffWorkStatus               String?
+  staffScheduledStart           DateTime?
+  staffScheduledEnd             DateTime?
   dispatchStatus                DispatchStatus?
   vendorScheduledStart          DateTime?
   vendorScheduledEnd            DateTime?
@@ -361,6 +369,7 @@ model MaintenanceRequest {
   submittedByUser         User?                 @relation("SubmittedRequests", fields: [submittedByUserId], references: [id])
   tenantBillbackDecidedBy User?                 @relation("TenantBillbackDecider", fields: [tenantBillbackDecidedByUserId], references: [id])
   assignedVendor          Vendor?               @relation(fields: [assignedVendorId], references: [id])
+  assignedStaff           StaffMember?          @relation(fields: [assignedStaffId], references: [id])
   photos                  MaintenancePhoto[]
   comments                RequestComment[]
   outboundEmails          OutboundEmail[]
@@ -374,9 +383,88 @@ model MaintenanceRequest {
   vendorCommercialItems   VendorCommercialItem[]
   inspectionFindings      InspectionItem[]
   turnTasks               UnitTurnTask[]
+  staffWorkLogs           StaffWorkLog[]
 
   @@index([tenantIdentityId])
   @@index([orgId])
+}
+
+model StaffMember {
+  id                 String   @id @default(cuid())
+  orgId              String
+  name               String
+  email              String
+  phone              String?
+  skillsCsv          String?  @default("")
+  hourlyRateCents    Int      @default(0)
+  availabilityStatus String   @default("available")
+  isActive           Boolean  @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  assignedRequests MaintenanceRequest[]
+  sessions         StaffSession[]
+  otpChallenges    StaffOtpChallenge[]
+  workLogs         StaffWorkLog[]
+
+  @@index([orgId, isActive])
+  @@index([email, isActive])
+}
+
+model StaffSession {
+  id                String    @id @default(cuid())
+  staffMemberId     String
+  orgId             String
+  sessionSecretHash String    @unique
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  lastSeenAt        DateTime?
+  userAgent         String?
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Cascade)
+
+  @@index([staffMemberId, revokedAt])
+  @@index([orgId])
+}
+
+model StaffOtpChallenge {
+  id                String    @id @default(cuid())
+  staffMemberId     String
+  orgId             String
+  destinationMasked String
+  codeHash          String
+  codeSalt          String
+  expiresAt         DateTime
+  attemptCount      Int       @default(0)
+  maxAttempts       Int       @default(5)
+  lockedUntil       DateTime?
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Cascade)
+
+  @@index([staffMemberId, createdAt])
+  @@index([orgId, createdAt])
+}
+
+model StaffWorkLog {
+  id             String   @id @default(cuid())
+  requestId      String
+  staffMemberId  String
+  status         String
+  note           String?
+  laborMinutes   Int      @default(0)
+  materialsCents Int      @default(0)
+  photoUrl       String?
+  createdAt      DateTime @default(now())
+
+  request     MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  staffMember StaffMember        @relation(fields: [staffMemberId], references: [id])
+
+  @@index([requestId, createdAt])
+  @@index([staffMemberId, createdAt])
 }
 
 model InspectionTemplate {

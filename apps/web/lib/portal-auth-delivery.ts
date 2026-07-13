@@ -1,6 +1,6 @@
 import { sendNotification } from '@/lib/notify'
 
-export type PortalRole = 'tenant' | 'vendor'
+export type PortalRole = 'tenant' | 'vendor' | 'staff'
 export type AuthDeliveryChannel = 'email' | 'sms'
 
 export function isSmsDeliveryConfigured() {
@@ -44,7 +44,7 @@ export async function sendPortalAuthChallenge(input: {
   code: string
   magicLink: string
 }) {
-  const portalLabel = input.role === 'tenant' ? 'tenant portal' : 'vendor portal'
+  const portalLabel = input.role === 'tenant' ? 'tenant portal' : input.role === 'staff' ? 'maintenance staff portal' : 'vendor portal'
   const text = [
     `Hi ${input.recipientName},`,
     '',

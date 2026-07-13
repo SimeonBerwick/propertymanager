@@ -19,6 +19,7 @@ export function AccessTypeSelector({ error, mode = 'choose' }: { error?: string;
       <div className="authRoleTabs" aria-label="Access type">
         <a href="/login?role=manager" className="authRoleTab authRoleLink">Property manager</a>
         <a href="/mobile/auth/login" className="authRoleTab authRoleLink">Tenant</a>
+        <a href="/maintenance/auth/login" className="authRoleTab authRoleLink">Maintenance staff</a>
         <a href="/vendor/auth/login" className="authRoleTab authRoleLink">Vendor</a>
       </div>
     </div>

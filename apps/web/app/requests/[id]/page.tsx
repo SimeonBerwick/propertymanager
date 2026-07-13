@@ -15,6 +15,7 @@ import { AddCommentForm } from './add-comment-form'
 import { cleanVendorCommercialDescription, vendorCommercialStatusLabel, vendorCommercialTypeLabel, vendorPaymentTimingLabel } from '@/lib/vendor-commercial-types'
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
+import { StaffAssignmentPanel } from '@/components/staff-assignment-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
@@ -435,6 +436,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         )}
       </SectionCard>
       </div>
+
+      <StaffAssignmentPanel requestId={data.request.id} />
 
 
       {pendingVendorCommercialItems.length ? (

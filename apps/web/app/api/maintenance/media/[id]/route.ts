@@ -1,0 +1,4 @@
+import { getStaffSession } from '@/lib/staff-auth'
+import { prisma } from '@/lib/prisma'
+import { readStoredMedia } from '@/lib/media-storage'
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) { const session = await getStaffSession(); if (!session) return new Response('Unauthorized', { status: 401 }); const { id } = await params; const log = await prisma.staffWorkLog.findFirst({ where: { id, staffMemberId: session.staffMemberId, request: { assignedStaffId: session.staffMemberId, property: { ownerId: session.orgId } } } }); if (!log?.photoUrl) return new Response('Not found', { status: 404 }); const media = await readStoredMedia(log.photoUrl); if (!media) return new Response('Not found', { status: 404 }); return new Response(new Uint8Array(media.bytes), { headers: { 'Content-Type': media.contentType, 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff' } }) }
