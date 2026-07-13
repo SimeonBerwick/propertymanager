@@ -353,6 +353,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </section>
 
       <GuidedRequestWorkflow request={requestWithEffectiveAppointment} />
+      <AppointmentCoordinationPanel requestId={data.request.id} audience="manager" />
 
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
@@ -443,7 +444,6 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </div>
 
       <PersonalWorkPanel requestId={data.request.id} />
-      <AppointmentCoordinationPanel requestId={data.request.id} audience="manager" />
       <StaffAssignmentPanel requestId={data.request.id} />
 
 
