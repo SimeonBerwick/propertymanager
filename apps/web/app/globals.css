@@ -1030,6 +1030,11 @@ body { min-height: 100vh; }
 .popularLabel { position: absolute; top: -13px; right: 20px; border-radius: 999px; background: var(--accent); color: #fff; padding: 6px 10px; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .pricingCard h3 { margin: 0; font-size: 22px; }
 .pricingCard p { min-height: 42px; margin: 0; color: var(--muted); line-height: 1.55; }
+.pricingLanguageFeature { display: grid; align-content: start; gap: 5px; min-height: 94px; padding: 13px 14px; border-left: 4px solid #64748b; border-radius: 6px; background: #f3f6f9; }
+.pricingLanguageFeature strong { color: #172033; font-size: 14px; line-height: 1.35; }
+.pricingLanguageFeature span { color: #526176; font-size: 12px; line-height: 1.5; }
+.pricingLanguageFeatureIncluded { border-left-color: #16834b; background: #edf8f1; }
+.pricingLanguageFeatureIncluded strong { color: #11643a; }
 .price { font-size: 42px; font-weight: 850; letter-spacing: -.05em; }
 .price span { margin-left: 4px; color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: 0; }
 .pricingCard ul { display: grid; gap: 10px; margin: 4px 0 12px; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
@@ -1240,6 +1245,9 @@ body { min-height: 100vh; }
   .pricingNote {
     font-size: 15px;
   }
+  .pricingLanguageFeature { min-height: 0; }
+  .pricingLanguageFeature strong { font-size: 15px; }
+  .pricingLanguageFeature span { font-size: 14px; }
   .popularLabel { font-size: 12px; }
 }
 
