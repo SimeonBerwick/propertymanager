@@ -52,6 +52,7 @@ export default defineConfig({
       'lib/operator-alerts.test.ts',
       'lib/runtime-env.test.ts',
       'lib/production-safety.test.ts',
+      'lib/appointment-date-time-fields-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',
     ],
   },
