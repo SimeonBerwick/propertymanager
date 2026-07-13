@@ -40,6 +40,7 @@ export async function assignStaffToRequestAction(formData: FormData) {
   const session = await manager(); const requestId = value(formData, 'requestId'); const staffId = value(formData, 'staffId')
   const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.userId } }, include: { tenders: { where: { status: 'open' } } } })
   if (!request) fail('/dashboard', 'Request not found.')
+  if (staffId && request.workResponsibility === 'tenant_personal_work' && request.personalWorkStatus !== 'approved') fail(`/requests/${request.id}`, 'Approve the tenant-paid personal work before assigning staff.')
   if (!staffId) {
     await prisma.maintenanceRequest.update({ where: { id: request.id }, data: { assignedStaffId: null, assignedStaffName: null, assignedStaffEmail: null, assignedStaffPhone: null, staffWorkStatus: null, staffResponseDueAt: null, assignmentPreferenceOverride: null } })
     revalidatePath(`/requests/${request.id}`); redirect(`/requests/${request.id}?staff=cleared` as Route)

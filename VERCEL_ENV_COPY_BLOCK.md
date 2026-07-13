@@ -31,6 +31,7 @@ ANDROID_REVIEWER_LANDLORD_EMAIL=play-review-landlord@simeonware.com
 ANDROID_REVIEWER_LANDLORD_PASSWORD=replace-with-stable-reviewer-password
 ANDROID_REVIEWER_TENANT_EMAIL=play-review-tenant@simeonware.com
 ANDROID_REVIEWER_VENDOR_EMAIL=play-review-vendor@simeonware.com
+ANDROID_REVIEWER_STAFF_EMAIL=play-review-staff@simeonware.com
 ANDROID_REVIEWER_OTP_CODE=replace-with-six-digit-reviewer-code
 
 # Cloudflare R2 private media

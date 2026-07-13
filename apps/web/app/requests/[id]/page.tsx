@@ -16,6 +16,7 @@ import { cleanVendorCommercialDescription, vendorCommercialStatusLabel, vendorCo
 import { VendorCommercialApprovalForm } from './vendor-commercial-approval-form'
 import { RequestControlPanel } from './request-control-panel'
 import { StaffAssignmentPanel } from '@/components/staff-assignment-panel'
+import { PersonalWorkPanel } from '@/components/personal-work-panel'
 import { InlineRequestEditor } from './inline-request-editor'
 import { GuidedRequestWorkflow } from '@/components/guided-request-workflow'
 import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
@@ -437,6 +438,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       </SectionCard>
       </div>
 
+      <PersonalWorkPanel requestId={data.request.id} />
       <StaffAssignmentPanel requestId={data.request.id} />
 
 

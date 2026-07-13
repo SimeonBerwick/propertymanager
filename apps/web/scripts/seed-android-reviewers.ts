@@ -29,6 +29,8 @@ const IDS = {
   tenantRequest: 'play-review-request-tenant',
   vendorRequest: 'play-review-request-vendor',
   vendorApprovedCost: 'play-review-vendor-approved-cost',
+  staff: 'play-review-staff',
+  staffRequest: 'play-review-request-staff',
 } as const
 
 async function main() {
@@ -50,6 +52,8 @@ async function main() {
       billingCadence: 'annual',
       trialEndsAt: null,
       subscriptionEndsAt: null,
+      personalWorkEnabled: true,
+      personalWorkHourlyRateCents: 6500,
     },
     create: {
       email: REVIEWER_EMAILS.landlord,
@@ -60,6 +64,8 @@ async function main() {
       subscriptionStatus: 'active',
       subscriptionPlan: 'pro',
       billingCadence: 'annual',
+      personalWorkEnabled: true,
+      personalWorkHourlyRateCents: 6500,
     },
   })
 
@@ -70,12 +76,14 @@ async function main() {
       name: 'Play Review Apartments',
       address: '100 Review Way, Phoenix, AZ 85001',
       isActive: true,
+      personalWorkAllowed: true,
     },
     create: {
       id: IDS.property,
       ownerId: landlord.id,
       name: 'Play Review Apartments',
       address: '100 Review Way, Phoenix, AZ 85001',
+      personalWorkAllowed: true,
     },
   })
 
@@ -258,7 +266,19 @@ async function main() {
     },
   })
 
-  console.log(`Android reviewer fixtures ready for ${REVIEWER_EMAILS.landlord}, ${REVIEWER_EMAILS.tenant}, and ${REVIEWER_EMAILS.vendor}.`)
+  const staff = await prisma.staffMember.upsert({
+    where: { id: IDS.staff },
+    update: { orgId: landlord.id, name: 'Play Review Handyman', email: REVIEWER_EMAILS.staff, phone: '+16025550103', skillsCsv: 'Appliance,Other', availabilityStatus: 'available', isActive: true },
+    create: { id: IDS.staff, orgId: landlord.id, name: 'Play Review Handyman', email: REVIEWER_EMAILS.staff, phone: '+16025550103', skillsCsv: 'Appliance,Other', availabilityStatus: 'available' },
+  })
+
+  await prisma.maintenanceRequest.upsert({
+    where: { id: IDS.staffRequest },
+    update: { propertyId: IDS.property, unitId: IDS.unit, orgId: landlord.id, tenantIdentityId: IDS.tenant, submittedByName: 'Play Review Tenant', submittedByEmail: REVIEWER_EMAILS.tenant, title: 'Install window air conditioner', description: 'Sample tenant-paid personal work for Google Play staff-portal review.', category: 'Appliance', urgency: 'low', status: 'approved', assignedStaffId: staff.id, assignedStaffName: staff.name, assignedStaffEmail: staff.email, assignedStaffPhone: staff.phone, staffWorkStatus: 'assigned', workResponsibility: 'tenant_personal_work', personalWorkStatus: 'approved', personalWorkHourlyRateCents: 6500, personalWorkMinimumMinutes: 60, personalWorkAuthorizedMaxCents: 20000, personalWorkTenantAuthorizedAt: new Date(), personalWorkManagerApprovedAt: new Date() },
+    create: { id: IDS.staffRequest, propertyId: IDS.property, unitId: IDS.unit, orgId: landlord.id, tenantIdentityId: IDS.tenant, submittedByName: 'Play Review Tenant', submittedByEmail: REVIEWER_EMAILS.tenant, title: 'Install window air conditioner', description: 'Sample tenant-paid personal work for Google Play staff-portal review.', category: 'Appliance', urgency: 'low', status: 'approved', assignedStaffId: staff.id, assignedStaffName: staff.name, assignedStaffEmail: staff.email, assignedStaffPhone: staff.phone, staffWorkStatus: 'assigned', workResponsibility: 'tenant_personal_work', personalWorkStatus: 'approved', personalWorkHourlyRateCents: 6500, personalWorkMinimumMinutes: 60, personalWorkAuthorizedMaxCents: 20000, personalWorkTenantAuthorizedAt: new Date(), personalWorkManagerApprovedAt: new Date() },
+  })
+
+  console.log(`Android reviewer fixtures ready for ${REVIEWER_EMAILS.landlord}, ${REVIEWER_EMAILS.tenant}, ${REVIEWER_EMAILS.vendor}, and ${REVIEWER_EMAILS.staff}.`)
 }
 
 main()

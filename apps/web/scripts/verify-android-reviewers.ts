@@ -24,12 +24,13 @@ async function main() {
   assertPostgresUrl()
   const password = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim() || DEFAULT_REVIEWER_PASSWORD
 
-  const [landlord, tenant, vendor, requestCount] = await Promise.all([
+  const [landlord, tenant, vendor, staff, requestCount] = await Promise.all([
     prisma.user.findUnique({ where: { email: REVIEWER_EMAILS.landlord } }),
     prisma.tenantIdentity.findFirst({ where: { email: REVIEWER_EMAILS.tenant } }),
     prisma.vendor.findFirst({ where: { email: REVIEWER_EMAILS.vendor } }),
+    prisma.staffMember.findFirst({ where: { email: REVIEWER_EMAILS.staff } }),
     prisma.maintenanceRequest.count({
-      where: { id: { in: ['play-review-request-tenant', 'play-review-request-vendor'] } },
+      where: { id: { in: ['play-review-request-tenant', 'play-review-request-vendor', 'play-review-request-staff'] } },
     }),
   ])
 
@@ -38,9 +39,11 @@ async function main() {
     landlordActiveWithoutExpiry: landlord?.subscriptionStatus === 'active' && !landlord.subscriptionEndsAt,
     tenantActiveWithoutLeaseEnd: tenant?.status === 'active' && !tenant.leaseEndDate,
     vendorActive: vendor?.isActive === true,
-    sampleRequests: requestCount === 2,
+    staffActive: staff?.isActive === true,
+    sampleRequests: requestCount === 3,
     tenantReviewerCode: Boolean(getReviewerOtpCode('tenant', REVIEWER_EMAILS.tenant)),
     vendorReviewerCode: Boolean(getReviewerOtpCode('vendor', REVIEWER_EMAILS.vendor)),
+    staffReviewerCode: Boolean(getReviewerOtpCode('staff', REVIEWER_EMAILS.staff)),
     normalUserHasNoReviewerCode: !getReviewerOtpCode('tenant', 'someone-else@example.com'),
   }
 

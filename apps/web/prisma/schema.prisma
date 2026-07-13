@@ -248,6 +248,10 @@ model User {
   maintenanceDispatchDefault String @default("manual")
   staffFallbackHours Int @default(24)
   emergencyVendorFirst Boolean @default(true)
+  personalWorkEnabled Boolean @default(false)
+  personalWorkHourlyRateCents Int @default(0)
+  personalWorkMinimumMinutes Int @default(60)
+  personalWorkAllowedCategoriesCsv String @default("Appliance,Other")
   createdAt    DateTime @default(now())
 
   properties              Property[]
@@ -276,6 +280,10 @@ model Property {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  personalWorkAllowed Boolean @default(false)
+  personalWorkHourlyRateCents Int?
+  personalWorkMinimumMinutes Int?
+  personalWorkAllowedCategoriesCsv String? @default("")
 
   owner            User                 @relation(fields: [ownerId], references: [id])
   units            Unit[]
@@ -338,6 +346,14 @@ model MaintenanceRequest {
   assignmentPreferenceOverride  String?
   staffResponseDueAt            DateTime?
   staffDeclinedAt               DateTime?
+  workResponsibility            String @default("owner_maintenance")
+  personalWorkStatus            String?
+  personalWorkHourlyRateCents   Int?
+  personalWorkMinimumMinutes    Int?
+  personalWorkAuthorizedMaxCents Int?
+  personalWorkTenantAuthorizedAt DateTime?
+  personalWorkManagerApprovedAt DateTime?
+  personalWorkBilledAt          DateTime?
   staffScheduledStart           DateTime?
   staffScheduledEnd             DateTime?
   dispatchStatus                DispatchStatus?

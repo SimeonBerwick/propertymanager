@@ -40,6 +40,7 @@ export default defineConfig({
       'lib/mailbox-providers.test.ts',
       'lib/staff-workflow.test.ts',
       'lib/staff-assignment.test.ts',
+      'lib/personal-work.test.ts',
     ],
   },
 })

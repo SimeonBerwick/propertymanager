@@ -13,6 +13,7 @@ import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
+import { resolvePersonalWorkPolicy, validatePersonalWorkRequest, type PersonalWorkPolicy } from '@/lib/personal-work'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -59,6 +60,9 @@ export async function submitMaintenanceRequest(
   const urgency = getString(formData, 'urgency')
   const preferredCurrency = getString(formData, 'preferredCurrency') || 'usd'
   const preferredLanguage = getString(formData, 'preferredLanguage') || 'english'
+  const personalWorkRequested = getString(formData, 'personalWorkRequested') === 'true'
+  const personalWorkTermsAccepted = getString(formData, 'personalWorkTermsAccepted') === 'true'
+  const personalWorkAuthorizedMaxCents = Math.round(Number(getString(formData, 'personalWorkAuthorizedMax') || '0') * 100)
   const photoFiles = formData
     .getAll('photos')
     .filter((value): value is File => value instanceof File && value.size > 0)
@@ -111,6 +115,7 @@ export async function submitMaintenanceRequest(
   let propertyName = 'Unknown property'
   let unitLabel = 'Unknown unit'
   let isCommonArea = false
+  let personalWorkPolicy: PersonalWorkPolicy | null = null
   try {
     const unit = await prisma.unit.findFirst({
       where: {
@@ -125,7 +130,7 @@ export async function submitMaintenanceRequest(
       include: {
         property: {
           include: {
-            owner: { select: { id: true, email: true, emailNotificationsEnabled: true } },
+            owner: { select: { id: true, email: true, emailNotificationsEnabled: true, personalWorkEnabled: true, personalWorkHourlyRateCents: true, personalWorkMinimumMinutes: true, personalWorkAllowedCategoriesCsv: true } },
           },
         },
       },
@@ -144,6 +149,13 @@ export async function submitMaintenanceRequest(
     unitLabel = unit.label
     propertyName = unit.property.name
     notificationOwner = unit.property.owner
+    if (personalWorkRequested) {
+      if (managerMode || unit.locationType === 'common_area') return { error: 'Personal work can only be requested by a resident for their unit.' }
+      const activeStaffCount = await prisma.staffMember.count({ where: { orgId: unit.property.owner.id, isActive: true } })
+      personalWorkPolicy = resolvePersonalWorkPolicy(unit.property.owner, unit.property, activeStaffCount)
+      const personalWorkError = validatePersonalWorkRequest({ requested: true, termsAccepted: personalWorkTermsAccepted, category, urgency, authorizedMaxCents: personalWorkAuthorizedMaxCents, policy: personalWorkPolicy })
+      if (personalWorkError) return { error: personalWorkError }
+    }
   } catch (error) {
     await logServerActionError('request.verifyUnit', error, { propertyId, unitId, orgSlug })
     return { error: 'Could not verify property or unit. Please try again.' }
@@ -176,13 +188,19 @@ export async function submitMaintenanceRequest(
           firstReviewedAt: managerMode ? new Date() : undefined,
           reviewState: managerMode ? 'approved' : undefined,
           reviewNote: managerMode ? 'Created by property manager.' : undefined,
+          workResponsibility: personalWorkRequested ? 'tenant_personal_work' : 'owner_maintenance',
+          personalWorkStatus: personalWorkRequested ? 'requested' : null,
+          personalWorkHourlyRateCents: personalWorkPolicy?.hourlyRateCents,
+          personalWorkMinimumMinutes: personalWorkPolicy?.minimumMinutes,
+          personalWorkAuthorizedMaxCents: personalWorkRequested ? personalWorkAuthorizedMaxCents : null,
+          personalWorkTenantAuthorizedAt: personalWorkRequested ? new Date() : null,
           photos: {
             create: savedPhotoPaths.map((imageUrl) => ({ imageUrl })),
           },
           comments: {
             create: [
               {
-                body: isCommonArea ? 'Created by the property manager for a common area.' : `Submitted by ${tenantName} (${tenantEmail}).`,
+                body: personalWorkRequested ? `Submitted by ${tenantName} (${tenantEmail}) as tenant-paid personal work. Authorization limit: $${(personalWorkAuthorizedMaxCents / 100).toFixed(2)}.` : isCommonArea ? 'Created by the property manager for a common area.' : `Submitted by ${tenantName} (${tenantEmail}).`,
                 visibility: 'external',
               },
             ],

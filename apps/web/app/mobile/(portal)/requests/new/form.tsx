@@ -4,19 +4,22 @@ import { useActionState, useMemo, useState } from 'react'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { suggestRequestDetails } from '@/lib/request-guidance'
 import { submitTenantMobileRequestAction, type MobileRequestState } from './actions'
+import type { PersonalWorkPolicy } from '@/lib/personal-work'
 
 const INITIAL_STATE: MobileRequestState = { error: null }
 
-export function TenantNewRequestForm() {
+export function TenantNewRequestForm({ personalWorkPolicy }: { personalWorkPolicy?: PersonalWorkPolicy }) {
   const [state, formAction, isPending] = useActionState(submitTenantMobileRequestAction, INITIAL_STATE)
   const [problem, setProblem] = useState('')
   const [description, setDescription] = useState('')
   const [categoryOverride, setCategoryOverride] = useState<string | null>(null)
   const [urgencyOverride, setUrgencyOverride] = useState<string | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [personalWorkRequested, setPersonalWorkRequested] = useState(false)
   const suggestion = useMemo(() => suggestRequestDetails(problem, description), [problem, description])
   const category = categoryOverride ?? suggestion.category
   const urgency = urgencyOverride ?? suggestion.urgency
+  const personalWorkAvailable = Boolean(personalWorkPolicy?.enabled && personalWorkPolicy.allowedCategories.includes(category) && !['high', 'urgent'].includes(urgency))
 
   return (
     <form action={formAction} className="stack">
@@ -73,6 +76,10 @@ export function TenantNewRequestForm() {
           </label>
         </div>
       )}
+      {personalWorkAvailable && personalWorkPolicy ? <div className="notice stack">
+        <label className="row"><input type="checkbox" name="personalWorkRequested" value="true" checked={personalWorkRequested} onChange={(event) => setPersonalWorkRequested(event.target.checked)} /><strong>Request optional personal work at my expense</strong></label>
+        {personalWorkRequested ? <><div>${(personalWorkPolicy.hourlyRateCents / 100).toFixed(2)} per hour, {personalWorkPolicy.minimumMinutes}-minute minimum, plus materials.</div><label className="row"><input type="checkbox" name="personalWorkTermsAccepted" value="true" required /> I accept these terms and authorize a tenant charge.</label><label className="field"><span className="field-label">Maximum amount I authorize ($)</span><input className="input" type="number" name="personalWorkAuthorizedMax" min={(personalWorkPolicy.minimumChargeCents / 100).toFixed(2)} max="100000" step="0.01" required /></label></> : null}
+      </div> : null}
       <button type="submit" className="button primary" disabled={isPending}>
         {isPending ? 'Submitting…' : 'Submit request'}
       </button>
