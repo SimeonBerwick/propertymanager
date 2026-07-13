@@ -213,7 +213,7 @@ export default async function HomePage() {
         <div className="sectionIntro">
           <div className="eyebrow">Simple pricing</div>
           <h2>Start free. Choose the capacity that fits.</h2>
-          <p>Every plan includes the complete maintenance workflow. Plans differ only by included active-unit capacity.</p>
+          <p>Every plan includes the complete maintenance workflow. Plans differ by active-unit capacity and multilingual communication.</p>
         </div>
         <div className="pricingGrid">
           {plans.map((plan) => (
@@ -222,19 +222,27 @@ export default async function HomePage() {
               <h3>{BILLING_PLANS[plan].name}</h3>
               <div className="price">{planPriceLabel(plan, 'monthly').replace('/month', '')}<span>/month</span></div>
               <p>{BILLING_PLANS[plan].description}</p>
+              <div className={`pricingLanguageFeature ${plan === 'starter' ? 'pricingLanguageFeatureBasic' : 'pricingLanguageFeatureIncluded'}`}>
+                <strong>{plan === 'starter' ? 'English-only plan' : '14-language communication included'}</strong>
+                <span>
+                  {plan === 'starter'
+                    ? 'Manager, tenant, vendor, and staff workspaces and notifications remain in English.'
+                    : 'Each user can choose their language. Requests, messages, email, and push notifications are translated.'}
+                </span>
+              </div>
               <p className="muted">Purchase additional unit capacity in one block for $1.50 per slot each month. Adding units within that allowance does not change billing.</p>
               <ul>
                 <li>Complete manager request queue</li>
                 <li>Tenant, maintenance staff, and vendor workflows</li>
                 <li>Billing records and reports</li>
                 <li>Email notifications and history</li>
-                <li>{plan === 'starter' ? 'English-only workspace and communication' : 'Multilingual workspace, messages, and notifications'}</li>
+                <li>{plan === 'starter' ? 'English interface and communication' : 'Translated workspace and communication'}</li>
               </ul>
               <Link href={`/signup?plan=${plan}`} className={`button ${plan === 'growth' ? 'primary' : ''}`}>Start free trial</Link>
             </article>
           ))}
         </div>
-        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. No capacity payment is charged during the 30-day trial, and checkout shows the exact first bill based on active units.</p>
+        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. No capacity payment is charged during the 30-day trial, and checkout shows the exact first bill based on active units. Multilingual communication is included with Growth and Pro.</p>
       </section>
 
       <section className={`marketingSection appSubscriptionSection ${androidApp ? 'serverVisible' : ''}`} data-app-subscription>
@@ -268,7 +276,7 @@ export default async function HomePage() {
               <>
                 <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
                 <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 30 days before adding a payment method.</p></details>
-                <details><summary>What changes between plans?</summary><p>The included active-unit capacity. Core maintenance features are included across every plan, and additional capacity can be purchased in bulk.</p></details>
+                <details><summary>What changes between plans?</summary><p>Active-unit capacity and multilingual communication. Starter is English-only. Growth and Pro include 14-language workspaces, translated requests and messages, and localized notifications. Core maintenance features are included across every plan.</p></details>
                 <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
               </>
             )}
