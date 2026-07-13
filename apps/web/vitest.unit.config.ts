@@ -36,6 +36,8 @@ export default defineConfig({
       'lib/inspection-report.test.ts',
       'lib/unit-turn-templates.test.ts',
       'lib/maintenance-calendar.test.ts',
+      'lib/outlook-calendar-sync.test.ts',
+      'lib/mailbox-providers.test.ts',
     ],
   },
 })

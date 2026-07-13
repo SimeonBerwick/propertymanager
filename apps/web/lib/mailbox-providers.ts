@@ -45,7 +45,7 @@ export function providerConfig(provider: MailboxProvider): ProviderConfig {
     authUrl: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
     tokenUrl: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
     redirectPath: `${appUrl}/api/mailbox/outlook/callback`,
-    scopes: ['offline_access', 'User.Read', 'Mail.Send', 'Mail.Read'],
+    scopes: ['offline_access', 'User.Read', 'Mail.Send', 'Mail.Read', 'Calendars.ReadWrite'],
   }
 }
 
@@ -53,26 +53,28 @@ function stateSecret() {
   return process.env.SESSION_SECRET || 'dev-secret-placeholder-change-in-production!!'
 }
 
-export function createMailboxState(userId: string, provider: MailboxProvider) {
+export function createMailboxState(userId: string, provider: MailboxProvider, purpose = 'mailbox') {
   const nonce = randomBytes(16).toString('base64url')
-  const payload = `${userId}:${provider}:${nonce}`
+  const payload = `${userId}:${provider}:${purpose}:${nonce}`
   const sig = createHmac('sha256', stateSecret()).update(payload).digest('base64url')
   return Buffer.from(`${payload}:${sig}`).toString('base64url')
 }
 
 export function verifyMailboxState(state: string, provider: MailboxProvider) {
-  const decoded = Buffer.from(state, 'base64url').toString('utf8')
+  const decodedBytes = Buffer.from(state, 'base64url')
+  if (decodedBytes.toString('base64url') !== state) return null
+  const decoded = decodedBytes.toString('utf8')
   const parts = decoded.split(':')
-  if (parts.length !== 4) return null
-  const [userId, stateProvider, nonce, sig] = parts
+  if (parts.length !== 5) return null
+  const [userId, stateProvider, purpose, nonce, sig] = parts
   if (stateProvider !== provider) return null
-  const payload = `${userId}:${stateProvider}:${nonce}`
+  const payload = `${userId}:${stateProvider}:${purpose}:${nonce}`
   const expected = createHmac('sha256', stateSecret()).update(payload).digest('base64url')
   if (sig !== expected) return null
-  return { userId, provider }
+  return { userId, provider, purpose }
 }
 
-export function mailboxAuthorizationUrl(userId: string, provider: MailboxProvider) {
+export function mailboxAuthorizationUrl(userId: string, provider: MailboxProvider, purpose = 'mailbox') {
   const config = providerConfig(provider)
   if (!config.clientId || !config.clientSecret) throw new Error(`${provider} OAuth is not configured.`)
   const url = new URL(config.authUrl)
@@ -80,7 +82,7 @@ export function mailboxAuthorizationUrl(userId: string, provider: MailboxProvide
   url.searchParams.set('redirect_uri', config.redirectPath)
   url.searchParams.set('response_type', 'code')
   url.searchParams.set('scope', config.scopes.join(' '))
-  url.searchParams.set('state', createMailboxState(userId, provider))
+  url.searchParams.set('state', createMailboxState(userId, provider, purpose))
   if (provider === 'gmail') {
     url.searchParams.set('access_type', 'offline')
     url.searchParams.set('prompt', 'consent')
@@ -156,6 +158,7 @@ export async function refreshMailboxAccessToken(connectionId: string) {
     where: { id: connection.id },
     data: {
       accessTokenCipher: encryptMailboxSecret(tokens.access_token),
+      refreshTokenCipher: tokens.refresh_token ? encryptMailboxSecret(tokens.refresh_token) : connection.refreshTokenCipher,
       tokenExpiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
       status: 'connected',
       syncError: null,

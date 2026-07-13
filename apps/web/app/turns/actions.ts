@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { decodeUnitTurnTasks, parseUnitTurnTasks, turnReadyError, turnTaskCompletionError, type UnitTurnTemplateTask } from '@/lib/unit-turn-templates'
 import { savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { writeAuditLog } from '@/lib/audit-log'
+import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
 
 const value = (data: FormData, name: string) => String(data.get(name) ?? '').trim()
 const parseDate = (raw: string) => raw && !Number.isNaN(new Date(`${raw}T12:00:00`).getTime()) ? new Date(`${raw}T12:00:00`) : null
@@ -37,6 +38,7 @@ export async function createUnitTurnAction(formData: FormData) {
     tasks: { create: tasks.map((task, position) => { elapsed += task.expectedDays; return { ...task, position, dueAt: new Date(moveOutAt.getTime() + elapsed * 86_400_000) } }) },
   } })
   await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'unit_turn', entityId: turn.id, action: 'unit_turn.created', summary: `Created ${turn.title}.` })
+  await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath('/turns'); revalidatePath(`/units/${unit.id}`)
   redirect(`/turns/${turn.id}` as Route)
 }
@@ -63,6 +65,7 @@ export async function saveUnitTurnTaskAction(formData: FormData) {
     prisma.unitTurnTask.update({ where: { id: task.id }, data: { status, assignedType, assignedVendorId, note, photoUrl, completedAt: status === 'completed' ? task.completedAt ?? new Date() : null } }),
     prisma.unitTurn.update({ where: { id: task.turnId }, data: task.turn.status === 'planned' && status !== 'not_started' ? { status: 'in_progress' } : {} }),
   ])
+  await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath(`/turns/${task.turnId}`); revalidatePath('/turns')
   redirect(`/turns/${task.turnId}?saved=1` as Route)
 }
@@ -75,6 +78,7 @@ export async function markUnitTurnReadyAction(formData: FormData) {
   if (readyError) fail(`/turns/${turn.id}`, readyError)
   await prisma.unitTurn.update({ where: { id: turn.id }, data: { status: 'ready', readyAt: new Date() } })
   await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'unit_turn', entityId: turn.id, action: 'unit_turn.ready', summary: 'Marked unit ready for move-in.' })
+  await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath(`/turns/${turn.id}`); revalidatePath('/turns'); revalidatePath(`/units/${turn.unitId}`)
   redirect(`/turns/${turn.id}?ready=1` as Route)
 }
