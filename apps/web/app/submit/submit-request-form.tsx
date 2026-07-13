@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import type { CurrencyOption, Property, Unit } from '@/lib/types'
+import type { CurrencyOption, LanguageOption, Property, Unit } from '@/lib/types'
+import { SUPPORTED_LOCALES } from '@/lib/localization'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { submitMaintenanceRequest, type SubmitRequestState } from '@/lib/request-actions'
 import { trackProductEvent } from '@/components/analytics-tracker'
@@ -16,10 +17,11 @@ interface SubmitRequestFormProps {
   orgSlug?: string
   managerMode?: boolean
   defaultCurrency?: CurrencyOption
+  defaultLanguage?: LanguageOption
   personalWorkPolicies?: PersonalWorkPolicy[]
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd', personalWorkPolicies = [] }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd', defaultLanguage = 'english', personalWorkPolicies = [] }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -249,10 +251,8 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
       <input type="hidden" name="preferredCurrency" value={defaultCurrency} />
       <label className="field">
         <span className="field-label">Preferred language</span>
-        <select className="input" name="preferredLanguage" defaultValue="english" required>
-          <option value="english">English</option>
-          <option value="spanish">Spanish</option>
-          <option value="french">French</option>
+        <select className="input" name="preferredLanguage" defaultValue={defaultLanguage} required>
+          {SUPPORTED_LOCALES.map((locale) => <option key={locale.language} value={locale.language}>{locale.englishLabel}</option>)}
         </select>
       </label>
 

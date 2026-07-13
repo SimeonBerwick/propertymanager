@@ -34,6 +34,13 @@ describe('runtime-env', () => {
     expect(checks.find((check) => check.id === 'rateLimitBackend')?.ok).toBe(false)
   })
 
+  test('reports whether multilingual translation is configured', () => {
+    delete process.env.GOOGLE_TRANSLATE_API_KEY
+    expect(getRuntimeChecks().find((check) => check.id === 'googleTranslateApiKey')?.ok).toBe(false)
+    process.env.GOOGLE_TRANSLATE_API_KEY = 'valid-google-translation-api-key-12345'
+    expect(getRuntimeChecks().find((check) => check.id === 'googleTranslateApiKey')?.ok).toBe(true)
+  })
+
   test('flags placeholder SMTP_URL values as blocking under hosted enforcement', () => {
     process.env.HOSTED_RUNTIME_REQUIRED = 'true'
     process.env.DATABASE_URL = 'postgresql://user:pass@db.example.net/app?sslmode=require'

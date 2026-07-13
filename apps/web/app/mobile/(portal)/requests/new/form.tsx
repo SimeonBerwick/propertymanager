@@ -5,10 +5,12 @@ import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options
 import { suggestRequestDetails } from '@/lib/request-guidance'
 import { submitTenantMobileRequestAction, type MobileRequestState } from './actions'
 import type { PersonalWorkPolicy } from '@/lib/personal-work'
+import { SUPPORTED_LOCALES } from '@/lib/localization'
+import type { LanguageOption } from '@/lib/types'
 
 const INITIAL_STATE: MobileRequestState = { error: null }
 
-export function TenantNewRequestForm({ personalWorkPolicy }: { personalWorkPolicy?: PersonalWorkPolicy }) {
+export function TenantNewRequestForm({ personalWorkPolicy, preferredLanguage }: { personalWorkPolicy?: PersonalWorkPolicy; preferredLanguage: LanguageOption }) {
   const [state, formAction, isPending] = useActionState(submitTenantMobileRequestAction, INITIAL_STATE)
   const [problem, setProblem] = useState('')
   const [description, setDescription] = useState('')
@@ -48,7 +50,7 @@ export function TenantNewRequestForm({ personalWorkPolicy }: { personalWorkPolic
         <>
           <input type="hidden" name="category" value={category} />
           <input type="hidden" name="urgency" value={urgency} />
-          <input type="hidden" name="preferredLanguage" value="english" />
+          <input type="hidden" name="preferredLanguage" value={preferredLanguage} />
         </>
       ) : (
         <div className="stack">
@@ -68,10 +70,8 @@ export function TenantNewRequestForm({ personalWorkPolicy }: { personalWorkPolic
           </div>
           <label className="field">
             <span className="field-label">Preferred language</span>
-            <select className="input" name="preferredLanguage" defaultValue="english" required>
-              <option value="english">English</option>
-              <option value="spanish">Spanish</option>
-              <option value="french">French</option>
+            <select className="input" name="preferredLanguage" defaultValue={preferredLanguage} required>
+              {SUPPORTED_LOCALES.map((locale) => <option key={locale.language} value={locale.language}>{locale.englishLabel}</option>)}
             </select>
           </label>
         </div>

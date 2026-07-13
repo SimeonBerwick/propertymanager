@@ -12,7 +12,7 @@ import { cleanupPhotos, savePhotos, validatePhotoFiles } from '@/lib/photo-uploa
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
+import { isCurrencyOption, isLanguageOption, type CurrencyOption } from '@/lib/types'
 import { resolvePersonalWorkPolicy, validatePersonalWorkRequest, type PersonalWorkPolicy } from '@/lib/personal-work'
 
 export type SubmitRequestState = { error: string | null }
@@ -75,7 +75,7 @@ export async function submitMaintenanceRequest(
     return { error: 'Choose a valid preferred currency.' }
   }
 
-  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) {
+  if (!isLanguageOption(preferredLanguage)) {
     return { error: 'Choose a valid preferred language.' }
   }
 

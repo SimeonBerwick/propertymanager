@@ -17,6 +17,9 @@ import { WorkOrderStatusPanel } from '@/components/work-order-status-panel'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { AppointmentCoordinationPanel } from '@/components/appointment-coordination-panel'
+import { localizeComments } from '@/lib/comment-localization'
+import { TranslatedMessage } from '@/components/translated-message'
+import { localizeRequestText } from '@/lib/request-text-localization'
 
 function tenderInviteLabel(status: string) {
   if (status === 'bid_submitted') return 'Bid submitted'
@@ -37,9 +40,20 @@ export default async function VendorRequestDetailPage({
   const session = await requireVendorSession()
   const { id } = await params
   const { submitted, schedulingError, slots, appointment } = await searchParams
-  const request = await getVendorRequestById(id, session)
+  const rawRequest = await getVendorRequestById(id, session)
 
-  if (!request) notFound()
+  if (!rawRequest) notFound()
+  const localizedRequestText = await localizeRequestText({
+    title: rawRequest.title,
+    description: rawRequest.description,
+    sourceLanguage: rawRequest.preferredLanguage,
+    targetLanguage: session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english',
+  })
+  const request = {
+    ...rawRequest,
+    ...localizedRequestText,
+    comments: await localizeComments(rawRequest.comments, session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english').then((comments) => comments.map((comment) => ({ ...comment, body: comment.displayBody }))),
+  }
 
   const awardedInvite = request.tenderInvites.find((invite) => invite.status === 'awarded' || !!invite.awardedAt)
   const latestInvite = request.tenderInvites[0]
@@ -83,7 +97,7 @@ export default async function VendorRequestDetailPage({
   const awardedFromBid = Boolean(awardedInvite)
   const latestTenantMessage = [...request.comments]
     .reverse()
-    .find((comment) => comment.body.startsWith('Tenant message:'))
+    .find((comment) => comment.originalBody.startsWith('Tenant message:'))
   const vendorOpenBalanceCents = request.billingDocuments
     .filter((document) => document.status !== 'void')
     .reduce((sum, document) => sum + Math.max(document.totalCents - document.paidCents, 0), 0)
@@ -168,6 +182,7 @@ export default async function VendorRequestDetailPage({
         <div>
           <div className="kicker">Vendor request</div>
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
+          {request.isTitleTranslated ? <details className="messageOriginal"><summary>View original title</summary><div data-no-localize>{request.originalTitle}</div></details> : null}
         </div>
         {submitted ? <div className="notice success">Update saved. The property manager can now see your vendor update.</div> : null}
         {showHeroNotice ? (
@@ -183,7 +198,7 @@ export default async function VendorRequestDetailPage({
         <div className="muted">
           Property manager: {request.property.owner.businessName ?? request.property.owner.displayName ?? request.property.owner.email}
         </div>
-        <div>{request.description}</div>
+        <TranslatedMessage body={request.description} originalBody={request.originalDescription} isTranslated={request.isDescriptionTranslated} />
         {latestTenantMessage ? (
           <div id="tenant-message" className={`notice stack${latestTenantAppointmentRequest ? ' tenantMessagePriority' : ''}`} style={{ gap: 4 }}>
             <strong>Tenant message</strong>
@@ -322,7 +337,7 @@ export default async function VendorRequestDetailPage({
         </div>
         {request.comments.length ? request.comments.map((comment) => (
           <div key={comment.id}>
-            <div>{comment.body}</div>
+            <TranslatedMessage body={comment.body} originalBody={comment.originalBody} isTranslated={comment.isTranslated} />
             <div className="muted">{formatDateTime(comment.createdAt)}</div>
           </div>
         )) : <div className="muted">No visible notes yet.</div>}

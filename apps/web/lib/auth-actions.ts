@@ -9,6 +9,7 @@ import { verifyPassword } from '@/lib/password'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { getRateLimitStatus, resetRateLimit, takeRateLimitHit } from '@/lib/rate-limit'
 import { sendNotification } from '@/lib/notify'
+import { savedLanguagePreference } from '@/lib/localization-server'
 
 function logAuthError(stage: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -183,7 +184,8 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   }
 
   try {
-    const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
+    const cookieStore = await cookies()
+    const session = await getIronSession<SessionData>(cookieStore, getSessionOptions())
     session.isLoggedIn = true
     session.userId = result.user.userId
     session.email = result.user.email
@@ -194,6 +196,13 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.trialEndsAt = result.user.trialEndsAt
     session.subscriptionEndsAt = result.user.subscriptionEndsAt
     await session.save()
+    const savedLanguage = await savedLanguagePreference()
+    if (savedLanguage && result.user.userId !== 'dev-landlord') {
+      await prisma.user.updateMany({
+        where: { id: result.user.userId, languagePreferenceExplicit: false },
+        data: { preferredLanguage: savedLanguage, languagePreferenceExplicit: true },
+      })
+    }
     await sendLandlordLoginAlert(result.user)
   } catch (error) {
     logAuthError('session.save', error)

@@ -69,6 +69,7 @@ export async function getTenantOwnedRequestById(requestId: string, session: Tena
               displayName: true,
             },
           },
+          translations: true,
         },
       },
       events: {

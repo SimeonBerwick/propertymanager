@@ -10,6 +10,9 @@ import type {
   VendorDispatchEvent,
   RequestTenderView,
 } from '@/lib/types'
+import { localizeComments } from '@/lib/comment-localization'
+import { localizeRequestText } from '@/lib/request-text-localization'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 import type { BillingDocumentView } from '@/lib/billing-types'
 import type { VendorCommercialItemView } from '@/lib/vendor-commercial-types'
 import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
@@ -628,9 +631,9 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   }
 }
 
-export async function getLandlordBySlug(slug: string): Promise<{ id: string; defaultCurrency: MaintenanceRequest['preferredCurrency'] } | null> {
+export async function getLandlordBySlug(slug: string): Promise<{ id: string; defaultCurrency: MaintenanceRequest['preferredCurrency']; subscriptionPlan: 'starter' | 'growth' | 'pro' | 'portfolio' | null } | null> {
   try {
-    return await prisma.user.findUnique({ where: { slug }, select: { id: true, defaultCurrency: true } })
+    return await prisma.user.findUnique({ where: { slug }, select: { id: true, defaultCurrency: true, subscriptionPlan: true } })
   } catch (error) {
     await logDataError('data.landlord_by_slug.load_failed', error, { slug })
     return null
@@ -725,7 +728,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
         property: { include: { owner: { select: { vendorRemindersEnabled: true } } } },
         unit: true,
         photos: { orderBy: { createdAt: 'asc' } },
-        comments: { include: { author: true }, orderBy: { createdAt: 'asc' } },
+        comments: { include: { author: true, translations: true }, orderBy: { createdAt: 'asc' } },
         events: { include: { actorUser: true }, orderBy: { createdAt: 'asc' } },
         outboundEmails: {
           where: { status: 'sent' },
@@ -777,13 +780,23 @@ export async function getRequestDetailData(requestId: string, userId: string): P
     })
     if (!dbRequest) return null
 
-    const comments: RequestComment[] = dbRequest.comments.map((c) => ({
+    const viewer = await prisma.user.findUnique({ where: { id: userId }, select: { preferredLanguage: true, subscriptionPlan: true } })
+    const viewerLanguage = planIncludesLocalization(viewer?.subscriptionPlan) ? viewer?.preferredLanguage ?? 'english' : 'english'
+    const [localizedComments, localizedRequestText] = await Promise.all([
+      localizeComments(dbRequest.comments, viewerLanguage),
+      localizeRequestText({ title: dbRequest.title, description: dbRequest.description, sourceLanguage: dbRequest.preferredLanguage, targetLanguage: viewerLanguage }),
+    ])
+
+    const comments: RequestComment[] = localizedComments.map((c) => ({
       id: c.id,
       requestId: c.requestId,
       authorName: c.author?.displayName
         ?? c.author?.email
         ?? (c.body.startsWith('Tenant message:') ? dbRequest.submittedByName ?? 'Tenant' : 'System'),
-      body: c.body,
+      body: c.displayBody,
+      originalBody: c.originalBody,
+      sourceLanguage: c.sourceLanguage ?? undefined,
+      isTranslated: c.isTranslated,
       visibility: c.visibility as 'internal' | 'external',
       createdAt: c.createdAt.toISOString(),
     }))
@@ -801,7 +814,7 @@ export async function getRequestDetailData(requestId: string, userId: string): P
       ? await prisma.user.findMany({ where: { id: dbRequest.claimedByUserId }, select: { id: true, email: true, displayName: true } })
       : []
 
-    const request = mapRequestsWithClaimOwners([dbRequest], claimUsers)[0]
+    const request = { ...mapRequestsWithClaimOwners([dbRequest], claimUsers)[0], ...localizedRequestText }
     const latestTenantVisibleStatusEvent = [...dbRequest.events]
       .filter((event) => event.visibility === 'tenant_visible')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]

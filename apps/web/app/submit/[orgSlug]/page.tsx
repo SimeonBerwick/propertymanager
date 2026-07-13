@@ -3,6 +3,8 @@ import { getAllUnits, getLandlordBySlug, getProperties } from '@/lib/data'
 import { SubmitRequestForm } from '../submit-request-form'
 import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
 import { getPersonalWorkPolicies } from '@/lib/personal-work'
+import { savedLanguagePreference } from '@/lib/localization-server'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 export default async function ScopedSubmitPage({
   params,
@@ -42,6 +44,7 @@ export default async function ScopedSubmitPage({
     getAllUnits(undefined, orgSlug),
     getPersonalWorkPolicies(landlord.id),
   ])
+  const defaultLanguage = planIncludesLocalization(landlord.subscriptionPlan) ? await savedLanguagePreference() ?? 'english' : 'english'
 
   return (
     <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
@@ -57,7 +60,7 @@ export default async function ScopedSubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} defaultCurrency={landlord.defaultCurrency} personalWorkPolicies={personalWorkPolicies} />
+        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} defaultCurrency={landlord.defaultCurrency} defaultLanguage={defaultLanguage} personalWorkPolicies={personalWorkPolicies} />
       </section>
     </div>
   )

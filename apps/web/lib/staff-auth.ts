@@ -8,6 +8,8 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { takeRateLimitHit } from '@/lib/rate-limit'
 import { writeAuditLog } from '@/lib/audit-log'
 import { getReviewerOtpCode } from '@/lib/reviewer-access'
+import { savedLanguagePreference } from '@/lib/localization-server'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 const COOKIE = 'pm_staff_session'
 const SESSION_DAYS = 90
@@ -52,7 +54,16 @@ export async function createStaffSession(staffMemberId: string) {
   const secret = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000)
   await prisma.staffSession.create({ data: { staffMemberId: staff.id, orgId: staff.orgId, sessionSecretHash: hash(secret), expiresAt, userAgent: (await headers()).get('user-agent')?.slice(0, 500) ?? null } })
-  await prisma.staffMember.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } })
+  const savedLanguage = await savedLanguagePreference()
+  await prisma.staffMember.update({
+    where: { id: staff.id },
+    data: {
+      lastLoginAt: new Date(),
+      ...(!staff.languagePreferenceExplicit && savedLanguage
+        ? { preferredLanguage: savedLanguage, languagePreferenceExplicit: true }
+        : {}),
+    },
+  })
   ;(await cookies()).set(COOKIE, secret, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', expires: expiresAt })
   await writeAuditLog({ orgId: staff.orgId, entityType: 'staff', entityId: staff.id, action: 'staff.sessionCreated', summary: 'Created maintenance staff portal session.' })
 }
@@ -63,10 +74,10 @@ export async function getStaffSession() {
   const session = await prisma.staffSession.findUnique({ where: { sessionSecretHash: hash(secret) }, include: { staffMember: true } })
   const now = new Date()
   if (!session || session.revokedAt || session.expiresAt <= now || !session.staffMember.isActive) { await clearStaffSession(); return null }
-  const owner = await prisma.user.findUnique({ where: { id: session.orgId }, select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true } })
+  const owner = await prisma.user.findUnique({ where: { id: session.orgId }, select: { subscriptionStatus: true, subscriptionPlan: true, trialEndsAt: true, subscriptionEndsAt: true } })
   if (!evaluatePortalSubscriptionAccess(owner).allowed) { await clearStaffSession(); return null }
   await prisma.staffSession.update({ where: { id: session.id }, data: { lastSeenAt: now } })
-  return { sessionId: session.id, staffMemberId: session.staffMemberId, orgId: session.orgId, staffName: session.staffMember.name, email: session.staffMember.email }
+  return { sessionId: session.id, staffMemberId: session.staffMemberId, orgId: session.orgId, staffName: session.staffMember.name, email: session.staffMember.email, preferredLanguage: session.staffMember.preferredLanguage, localizationEnabled: planIncludesLocalization(owner?.subscriptionPlan) }
 }
 
 export async function requireStaffSession() {

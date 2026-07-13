@@ -10,6 +10,7 @@ import { getSessionOptions, type SessionData } from '@/lib/session'
 import { parseCadence, parsePlan, trialEndsAtFrom } from '@/lib/billing-plans'
 import { isCurrencyOption } from '@/lib/types'
 import { writeAuditLog } from '@/lib/audit-log'
+import { savedLanguagePreference } from '@/lib/localization-server'
 
 export type SignupState = { error: string | null }
 
@@ -82,6 +83,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
 
   const trialEndsAt = trialEndsAtFrom(undefined, promoDays ?? undefined)
   const normalizedPromoCode = promoCode ? normalizePromoCode(promoCode) : null
+  const preferredLanguage = await savedLanguagePreference()
 
   try {
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
@@ -99,6 +101,8 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
         subscriptionPlan: plan,
         billingCadence: cadence,
         defaultCurrency,
+        preferredLanguage: preferredLanguage ?? 'english',
+        languagePreferenceExplicit: Boolean(preferredLanguage),
         trialEndsAt,
       },
     })

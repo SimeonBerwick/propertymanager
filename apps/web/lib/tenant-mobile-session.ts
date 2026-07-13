@@ -7,6 +7,9 @@ import { canTenantIdentityAccessPortal } from '@/lib/tenant-occupancy'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 import { sendNotification } from '@/lib/notify'
 import { trackTenantAccessEvent } from '@/lib/access-friction'
+import type { LanguageOption } from '@/lib/types'
+import { savedLanguagePreference } from '@/lib/localization-server'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 const TENANT_COOKIE = 'pm_tenant_session'
 const SESSION_TTL_DAYS = 365
@@ -33,6 +36,8 @@ export interface TenantMobileScope {
   tenancyEndedAt?: string | null
   propertyName: string
   unitLabel: string
+  preferredLanguage?: LanguageOption
+  localizationEnabled?: boolean
 }
 
 export async function createTenantMobileSession(tenantIdentityId: string, maximumExpiresAt?: Date) {
@@ -63,9 +68,15 @@ export async function createTenantMobileSession(tenantIdentityId: string, maximu
     },
   })
 
+  const savedLanguage = await savedLanguagePreference()
   await prisma.tenantIdentity.update({
     where: { id: tenantIdentity.id },
-    data: { lastLoginAt: new Date() },
+    data: {
+      lastLoginAt: new Date(),
+      ...(!tenantIdentity.languagePreferenceExplicit && savedLanguage
+        ? { preferredLanguage: savedLanguage, languagePreferenceExplicit: true }
+        : {}),
+    },
   })
 
   ;(await cookies()).set(TENANT_COOKIE, rawSecret, {
@@ -129,6 +140,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
               owner: {
                 select: {
                   subscriptionStatus: true,
+                  subscriptionPlan: true,
                   trialEndsAt: true,
                   subscriptionEndsAt: true,
                 },
@@ -196,6 +208,8 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
     tenancyEndedAt: identity.leaseEndDate?.toISOString() ?? null,
     propertyName: identity.property.name,
     unitLabel: identity.unit.label,
+    preferredLanguage: identity.preferredLanguage,
+    localizationEnabled: planIncludesLocalization(identity.property.owner.subscriptionPlan),
   }
 }
 

@@ -40,6 +40,17 @@ enum LanguageOption {
   english
   spanish
   french
+  canadian_french
+  portuguese
+  polish
+  greek
+  simplified_chinese
+  arabic
+  punjabi
+  vietnamese
+  filipino
+  urdu
+  romanian
 }
 
 enum TenantIdentityStatus {
@@ -240,6 +251,8 @@ model User {
   stripeSubscriptionId String? @unique
   additionalUnitAllowance Int @default(0)
   defaultCurrency      CurrencyOption @default(usd)
+  preferredLanguage    LanguageOption @default(english)
+  languagePreferenceExplicit Boolean @default(false)
   emailNotificationsEnabled Boolean @default(true)
   dailyBriefingEnabled Boolean @default(true)
   vendorRemindersEnabled Boolean @default(true)
@@ -464,6 +477,8 @@ model StaffMember {
   hourlyRateCents    Int      @default(0)
   availabilityStatus String   @default("available")
   maxOpenAssignments Int      @default(10)
+  preferredLanguage LanguageOption @default(english)
+  languagePreferenceExplicit Boolean @default(false)
   isActive           Boolean  @default(true)
   lastLoginAt        DateTime?
   createdAt          DateTime @default(now())
@@ -749,6 +764,8 @@ model Vendor {
   categoriesCsv          String?  @default("")
   supportedLanguagesCsv  String?  @default("")
   supportedCurrenciesCsv String?  @default("")
+  preferredLanguage      LanguageOption @default(english)
+  languagePreferenceExplicit Boolean @default(false)
   isActive               Boolean  @default(true)
   lastLoginAt            DateTime?
   createdAt              DateTime @default(now())
@@ -850,12 +867,47 @@ model RequestComment {
   requestId    String
   authorUserId String?
   body         String
+  sourceLanguage LanguageOption?
   visibility   String   @default("external")
   createdAt    DateTime @default(now())
 
   request MaintenanceRequest @relation(fields: [requestId], references: [id])
   author  User?              @relation(fields: [authorUserId], references: [id])
   inboundEmail InboundEmail?
+  translations RequestCommentTranslation[]
+}
+
+model RequestCommentTranslation {
+  id              String         @id @default(cuid())
+  commentId       String
+  language        LanguageOption
+  translatedBody  String
+  provider        String
+  providerVersion String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  comment RequestComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, language])
+  @@index([language, updatedAt])
+}
+
+model TranslationCache {
+  id              String   @id @default(cuid())
+  sourceHash      String
+  sourceLanguage  String
+  targetLanguage  String
+  context         String
+  sourceText      String
+  translatedText  String
+  provider        String
+  providerVersion String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([sourceHash, sourceLanguage, targetLanguage, context])
+  @@index([targetLanguage, context, updatedAt])
 }
 
 model MailboxConnection {
@@ -997,6 +1049,8 @@ model TenantIdentity {
   status      TenantIdentityStatus @default(pending_invite)
   verifiedAt  DateTime?
   lastLoginAt DateTime?
+  preferredLanguage LanguageOption @default(english)
+  languagePreferenceExplicit Boolean @default(false)
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 

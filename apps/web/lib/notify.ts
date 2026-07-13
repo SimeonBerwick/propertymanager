@@ -17,6 +17,9 @@ import { sendPushNotification } from '@/lib/push'
 import { deriveRequestCloseoutLanguage } from '@/lib/request-closeout-language'
 import { currencyLabel, languageLabel, type DispatchStatus, type RequestStatus } from '@/lib/types'
 import { formatAppointmentDateTime, formatAppointmentWindow } from '@/lib/appointment-time'
+import { translateTexts } from '@/lib/translation'
+import type { LanguageOption } from '@/lib/types'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 export interface NotificationMessage {
   to: string
@@ -82,8 +85,43 @@ function withRequestSubject(msg: NotificationMessage, context: NotificationConte
   return { ...msg, subject: `${msg.subject} [PMR:${requestId}]`, requestId }
 }
 
+async function recipientLanguage(email: string, ownerUserId?: string): Promise<LanguageOption> {
+  const normalized = email.trim().toLowerCase()
+  if (!normalized || normalized.includes(',')) return 'english'
+  const [owner, manager, tenant, vendor, staff] = await Promise.all([
+    ownerUserId ? prisma.user.findUnique({ where: { id: ownerUserId }, select: { email: true, preferredLanguage: true, subscriptionPlan: true } }) : null,
+    prisma.user.findUnique({ where: { email: normalized }, select: { preferredLanguage: true, subscriptionPlan: true } }),
+    prisma.tenantIdentity.findFirst({ where: { email: normalized, status: 'active' }, select: { preferredLanguage: true }, orderBy: { updatedAt: 'desc' } }),
+    prisma.vendor.findFirst({ where: { email: normalized, isActive: true }, select: { preferredLanguage: true }, orderBy: { updatedAt: 'desc' } }),
+    prisma.staffMember.findFirst({ where: { email: normalized, isActive: true }, select: { preferredLanguage: true }, orderBy: { updatedAt: 'desc' } }),
+  ]).catch(() => [null, null, null, null, null] as const)
+  if (owner && !planIncludesLocalization(owner.subscriptionPlan)) return 'english'
+  if (owner?.email.toLowerCase() === normalized) return owner.preferredLanguage
+  if (owner) return tenant?.preferredLanguage ?? vendor?.preferredLanguage ?? staff?.preferredLanguage ?? manager?.preferredLanguage ?? 'english'
+  if (manager && planIncludesLocalization(manager.subscriptionPlan)) return manager.preferredLanguage
+  return 'english'
+}
+
+async function localizeNotification(msg: NotificationMessage, context: NotificationContext) {
+  const language = await recipientLanguage(msg.to, context.ownerUserId ?? undefined)
+  if (language === 'english') return msg
+  const translated = await translateTexts([msg.subject, msg.text], language, { context: 'notification' }).catch((error) => {
+    console.error('[LOCALIZATION] Notification translation failed; sending original:', error)
+    return []
+  })
+  if (translated.length !== 2 || translated.some((item) => item.provider === 'unavailable')) return msg
+  return {
+    ...msg,
+    subject: translated[0].translatedText,
+    text: translated[1].translatedText,
+    // HTML templates contain English system copy. Text-only delivery prevents mixed-language emails.
+    html: undefined,
+  }
+}
+
 export async function sendNotification(msg: NotificationMessage, context: NotificationContext = {}): Promise<{ ok: boolean }> {
-  const normalized = withRequestSubject(msg, context)
+  const localized = await localizeNotification(msg, context)
+  const normalized = withRequestSubject(localized, context)
   try {
     if (context.ownerUserId && !context.bypassUserPreference) {
       const preference = await prisma.user.findUnique({

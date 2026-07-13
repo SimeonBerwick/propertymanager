@@ -1,7 +1,21 @@
 export type RequestStatus = 'requested' | 'approved' | 'declined' | 'vendor_selected' | 'scheduled' | 'in_progress' | 'completed' | 'closed' | 'canceled' | 'reopened'
 export type Urgency = 'low' | 'medium' | 'high' | 'urgent'
 export type CurrencyOption = 'usd' | 'cad' | 'peso' | 'pound' | 'euro' | 'aud'
-export type LanguageOption = 'english' | 'spanish' | 'french'
+export type LanguageOption =
+  | 'english'
+  | 'spanish'
+  | 'french'
+  | 'canadian_french'
+  | 'portuguese'
+  | 'polish'
+  | 'greek'
+  | 'simplified_chinese'
+  | 'arabic'
+  | 'punjabi'
+  | 'vietnamese'
+  | 'filipino'
+  | 'urdu'
+  | 'romanian'
 export type DispatchStatus = 'assigned' | 'contacted' | 'accepted' | 'scheduled' | 'in_progress' | 'completed' | 'declined' | 'canceled'
 export type PhotoSource = 'tenant' | 'landlord' | 'vendor' | 'staff'
 export type ReviewStatus = 'none' | 'needs_follow_up' | 'vendor_update_pending_review' | 'vendor_completed_pending_review' | 'reassignment_needed' | 'vendor_declined_reassignment_needed' | 'approved' | 'reopened_after_review'
@@ -52,6 +66,10 @@ export interface MaintenanceRequest {
   preferredLanguage: LanguageOption
   title: string
   description: string
+  originalTitle?: string
+  originalDescription?: string
+  isTitleTranslated?: boolean
+  isDescriptionTranslated?: boolean
   category: string
   urgency: Urgency
   status: RequestStatus
@@ -109,6 +127,9 @@ export interface RequestComment {
   requestId: string
   authorName: string
   body: string
+  originalBody?: string
+  sourceLanguage?: LanguageOption
+  isTranslated?: boolean
   visibility: 'internal' | 'external'
   createdAt: string
 }
@@ -188,6 +209,21 @@ const LANGUAGE_LABELS: Record<LanguageOption, string> = {
   english: 'English',
   spanish: 'Spanish',
   french: 'French',
+  canadian_french: 'Canadian French',
+  portuguese: 'Portuguese',
+  polish: 'Polish',
+  greek: 'Greek',
+  simplified_chinese: 'Simplified Chinese',
+  arabic: 'Arabic',
+  punjabi: 'Punjabi',
+  vietnamese: 'Vietnamese',
+  filipino: 'Filipino',
+  urdu: 'Urdu',
+  romanian: 'Romanian',
+}
+
+export function isLanguageOption(value: string): value is LanguageOption {
+  return Object.prototype.hasOwnProperty.call(LANGUAGE_LABELS, value)
 }
 
 export function currencyLabel(value: CurrencyOption): string {
