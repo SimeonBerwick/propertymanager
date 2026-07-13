@@ -10,10 +10,10 @@ export default function TermsPage() {
         <div>
           <div className="kicker">Legal</div>
           <h2 className="sectionTitle">Terms of Service</h2>
-          <div className="muted sectionSubtitle">Last updated: June 5, 2026</div>
+          <div className="muted sectionSubtitle">Last updated: July 12, 2026</div>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          These terms govern use of Simeonware: Maintenance Manager, a maintenance coordination service operated by Simeonware LLC for landlords, property managers, tenants, and vendors.
+          These terms govern use of Simeonware: Maintenance Manager, a maintenance coordination service operated by Simeonware LLC for landlords, property managers, tenants, maintenance staff, and vendors.
         </p>
       </section>
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
       <section className="card stack">
         <h3 style={{ margin: 0 }}>Accounts and access</h3>
         <p className="muted" style={{ margin: 0 }}>
-          Property manager accounts control property, unit, tenant, vendor, and request records. Tenant and vendor access is limited to the workflows made available to them. You must not use the service to access information you are not authorized to view.
+          Property manager accounts control property, unit, tenant, maintenance-staff, vendor, and request records. Tenant, maintenance-staff, and vendor access is limited to the workflows made available to them. You must not use the service to access information you are not authorized to view.
         </p>
       </section>
 
@@ -42,6 +42,13 @@ export default function TermsPage() {
         <h3 style={{ margin: 0 }}>Maintenance coordination</h3>
         <p className="muted" style={{ margin: 0 }}>
           The service helps coordinate maintenance work but does not itself provide repair services, emergency services, property management services, legal advice, or vendor guarantees. Property managers remain responsible for compliance, tenant communications, vendor selection, payment decisions, and emergency handling.
+        </p>
+      </section>
+
+      <section className="card stack">
+        <h3 style={{ margin: 0 }}>Connected services and accounting records</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Optional mailbox, Outlook calendar, and QuickBooks Online connections are controlled by the property manager and remain subject to the connected provider&apos;s terms. Simeonware may create or update records in those services when synchronization is enabled. Simeonware records an invoice as paid only after a connected accounting provider confirms payment; property managers remain responsible for reviewing accounting entries and paying vendors.
         </p>
       </section>
 

@@ -44,6 +44,7 @@ export default defineConfig({
       'lib/scheduling-coordination.test.ts',
       'lib/quickbooks.test.ts',
       'lib/subscription-unit-pricing.test.ts',
+      'app/maintenance/auth/login/actions.test.ts',
     ],
   },
 })
