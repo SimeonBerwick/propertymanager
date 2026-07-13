@@ -38,6 +38,7 @@ export default defineConfig({
       'lib/maintenance-calendar.test.ts',
       'lib/outlook-calendar-sync.test.ts',
       'lib/mailbox-providers.test.ts',
+      'lib/staff-workflow.test.ts',
     ],
   },
 })
