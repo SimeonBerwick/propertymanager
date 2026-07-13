@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { consumeTenantInvite, validateTenantInviteToken } from '@/lib/tenant-invite-lib'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
@@ -15,6 +16,14 @@ export default async function MobileAcceptInvitePage({ params }: { params: Promi
         <div className="kicker">Invite</div>
         <h2 style={{ marginTop: 4 }}>Invite unavailable</h2>
         <div className="muted">This invite is invalid, expired, revoked, or no longer active.</div>
+        <div className="notice">
+          If you have signed in before, use your email or phone number. Otherwise, ask your property manager for a new invite.
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/mobile/auth/login" className="button primary">Tenant sign in</Link>
+          <Link href="/login?role=choose" className="button">Choose another sign-in</Link>
+          <a href="mailto:support@simeonware.com?subject=Tenant%20invite%20help" className="button">Contact support</a>
+        </div>
       </div>
     )
   }

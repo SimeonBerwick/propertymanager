@@ -76,6 +76,12 @@ test('manager login persists and CSV downloads work in Android WebView', async (
   await expect(page).toHaveURL(/\/dashboard/)
   await expect(page.getByRole('heading', { name: /Next step|No manager decision needed/ })).toBeVisible()
 
+  const managerNavigation = page.getByRole('navigation', { name: 'Manager navigation' })
+  await expect(managerNavigation.getByRole('link')).toHaveCount(5)
+  await expect(managerNavigation.getByRole('button')).toHaveCount(0)
+  await page.goto('/account/settings')
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+
   await page.goto('/ops')
   await page.getByText('Open tools, settings, and audit trail').click()
   const downloadPromise = page.waitForEvent('download')

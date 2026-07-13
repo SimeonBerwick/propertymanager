@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { VendorLoginForm } from './form'
 
 export default async function VendorLoginPage({
@@ -21,6 +22,7 @@ export default async function VendorLoginPage({
       {error === 'magic-link' ? <div className="notice error">That sign-in link is invalid, expired, or already used. Request a new sign-in code below.</div> : null}
       {error === 'rate-limit' ? <div className="notice error">Too many sign-in messages were requested. Wait a few minutes and try again.</div> : null}
       <VendorLoginForm defaultEmail={email} next={next} />
+      <Link href="/login?role=choose" className="button" style={{ alignSelf: 'flex-start' }}>Choose a different sign-in</Link>
     </div>
   )
 }
