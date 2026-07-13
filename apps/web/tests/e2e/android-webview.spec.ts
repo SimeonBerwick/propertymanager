@@ -195,7 +195,11 @@ test('vendor start-time choices are readable and visible to vendor, manager, and
     await expect(tenantScheduling.getByText('Choose the appointment time that works for you.')).toBeVisible()
     await expect(tenantScheduling.getByRole('button', { name: 'Choose this time' })).toHaveCount(2)
   } finally {
-    await prisma.maintenanceRequest.deleteMany({ where: { id: requestId } })
+    await prisma.$transaction([
+      prisma.outboundEmail.deleteMany({ where: { requestId } }),
+      prisma.requestComment.deleteMany({ where: { requestId } }),
+      prisma.maintenanceRequest.deleteMany({ where: { id: requestId } }),
+    ])
   }
 })
 
