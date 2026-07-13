@@ -141,8 +141,9 @@ test('vendor OTP magic link, persistent session, photo upload, and support link 
 test('maintenance staff OTP login persists and assigned work opens in Android WebView', async ({ page }) => {
   await signInStaffWithMagicLink(page)
   await page.reload()
-  await expect(page.getByText('Install window air conditioner')).toBeVisible()
-  await page.getByRole('link', { name: /Install window air conditioner/ }).click()
+  const assignedWork = page.getByRole('link', { name: /Install window air conditioner/ })
+  await expect(assignedWork).toHaveAttribute('href', '/maintenance/requests/play-review-request-staff')
+  await assignedWork.click()
   await expect(page).toHaveURL(/\/maintenance\/requests\/play-review-request-staff/)
   await expect(page.getByRole('heading', { name: 'Install window air conditioner' })).toBeVisible()
 })
