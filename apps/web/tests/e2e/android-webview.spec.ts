@@ -262,3 +262,4 @@ test('privacy, support, deletion, email, and back-button links are reachable in 
   await page.goBack()
   await expect(page).toHaveURL(/\/account-deletion/)
 })
+

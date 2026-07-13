@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { extractUiPhrases } from './ui-catalog-source.mjs'
 
 const root = process.cwd()
 const sourceRoots = ['app', 'components']
@@ -20,7 +21,7 @@ function consider(value) {
   const phrase = normalize(value)
   if (phrase.length < 2 || phrase.length > 500) return
   if (!/[A-Za-z]/.test(phrase)) return
-  if (/^(https?:|mailto:|\/|#)/i.test(phrase)) return
+  if (/^(https?:|mailto:|tel:|\/|#|\.\/|\.\.\/|@\/)/i.test(phrase)) return
   if (/\b(?:const|function|return|reduce|map)\b|=>|\?\./.test(phrase)) return
   if (/^[\w-]+(?:\s+[\w-]+){0,1}$/.test(phrase) && phrase === phrase.toLowerCase()) return
   phrases.add(phrase)
@@ -40,9 +41,7 @@ async function collectFiles(directory) {
 for (const sourceRoot of sourceRoots) {
   for (const file of await collectFiles(path.join(root, sourceRoot))) {
     const source = await fs.readFile(file, 'utf8')
-    for (const match of source.matchAll(/>([^<>{}]+)</g)) consider(match[1])
-    for (const match of source.matchAll(/(?:aria-label|placeholder|title|alt)\s*=\s*["']([^"']+)["']/g)) consider(match[1])
-    for (const match of source.matchAll(/\{\s*["']([^"']+)["']\s*\}/g)) consider(match[1])
+    for (const phrase of extractUiPhrases(source, file)) consider(phrase)
   }
 }
 
