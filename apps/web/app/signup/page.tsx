@@ -10,7 +10,7 @@ export default async function SignupPage({
 }) {
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
   const query = await searchParams
-  const initialPlan = parsePlan(query?.plan ?? null) ?? 'growth'
+  const initialPlan = parsePlan(query?.plan ?? null) ?? 'starter'
   const initialCadence = parseCadence(query?.cadence ?? null) ?? 'monthly'
 
   if (androidApp) {

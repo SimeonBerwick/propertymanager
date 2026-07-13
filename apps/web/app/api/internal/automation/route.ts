@@ -9,6 +9,7 @@ import { resultHasFailures, sendOperatorFailureAlert } from '@/lib/operator-aler
 import { syncAllOutlookCalendars } from '@/lib/outlook-calendar-sync'
 import { runStaffAssignmentFallbacks } from '@/lib/staff-assignment'
 import { runSchedulingCoordinationSweep } from '@/lib/scheduling-automation'
+import { syncAllSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -29,10 +30,11 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const mailboxSync = body.syncMailboxes === false ? null : await syncAllMailboxReplies()
   const dailyCsvExports = await sendDueDailyCsvExports()
   const subscriptionReconciliation = await reconcileStripeSubscriptions()
+  const subscriptionUnitPricing = await syncAllSubscriptionUnitPricing()
   const outlookCalendarSync = await syncAllOutlookCalendars()
   const staffAssignmentFallbacks = await runStaffAssignmentFallbacks()
   const schedulingCoordination = await runSchedulingCoordinationSweep()
-  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination }
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
@@ -48,7 +50,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, dailyCsvExports, subscriptionReconciliation, summaryResults })
+  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, summaryResults })
 }
 
 export async function GET(request: NextRequest) {

@@ -7,11 +7,12 @@ import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getAppBaseUrl } from '@/lib/runtime-env'
-import { BILLING_PLANS, CADENCE_LABELS, parseCadence, parsePlan, planAmountCents, planPriceLabel } from '@/lib/billing-plans'
+import { additionalUnitCount, automaticPlanForUnits, billedAmountForUnits, BILLING_PLANS, parseCadence, parsePlan, purchasedUnitCapacity } from '@/lib/billing-plans'
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { shouldManageExistingSubscription } from '@/lib/subscription-checkout'
+import { syncSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -23,6 +24,27 @@ function billingUrl(message?: string) {
 export type BusinessNameState = {
   error: string | null
   success: string | null
+}
+
+export async function increaseUnitAllowanceAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login?error=session-expired')
+  const raw = String(formData.get('additionalUnits') ?? '').trim()
+  const additionalUnits = Number(raw)
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(additionalUnits) || additionalUnits < 1 || additionalUnits > 5000) {
+    redirect('/account/subscription?error=Choose+between+1+and+5000+additional+units.' as Route)
+  }
+  const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { subscriptionPlan: true, additionalUnitAllowance: true } })
+  if (!user?.subscriptionPlan) redirect('/account/subscription?error=Choose+a+paid+plan+before+increasing+unit+capacity.' as Route)
+  const currentCapacity = purchasedUnitCapacity(user.subscriptionPlan, user.additionalUnitAllowance)
+  try {
+    await syncSubscriptionUnitPricing(session.userId, currentCapacity + additionalUnits, true)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unit capacity could not be updated.'
+    redirect(`/account/subscription?error=${encodeURIComponent(message)}` as Route)
+  }
+  revalidatePath('/account/subscription')
+  redirect('/account/subscription?capacity=updated' as Route)
 }
 
 export async function updateBusinessNameAction(
@@ -88,6 +110,12 @@ export async function startCheckoutAction(formData: FormData) {
     },
   })
   if (!user) redirect('/login?error=session-expired')
+  const activeUnits = await prisma.unit.count({ where: { isActive: true, locationType: 'residential', property: { ownerId: user.id, isActive: true } } })
+  const requestedCapacity = Math.max(BILLING_PLANS[plan].unitLimit ?? 0, activeUnits)
+  const billedPlan = automaticPlanForUnits(plan, requestedCapacity)
+  const purchasedCapacity = Math.max(requestedCapacity, BILLING_PLANS[billedPlan].unitLimit ?? 0)
+  const additionalUnitAllowance = additionalUnitCount(billedPlan, purchasedCapacity)
+  const billedAmountCents = billedAmountForUnits(billedPlan, cadence, purchasedCapacity)
 
   let stripeCustomerId = user.stripeCustomerId
   if (!stripeCustomerId) {
@@ -131,18 +159,18 @@ export async function startCheckoutAction(formData: FormData) {
         quantity: 1,
         price_data: {
           currency: 'usd',
-          unit_amount: planAmountCents(plan, cadence),
+          unit_amount: billedAmountCents,
           recurring: { interval: cadence === 'annual' ? 'year' : 'month' },
           product_data: {
-            name: `Simeonware Maintenance Manager ${BILLING_PLANS[plan].name}`,
-            description: `${BILLING_PLANS[plan].description} ${CADENCE_LABELS[cadence]} billing at ${planPriceLabel(plan, cadence)}.`,
+            name: `Simeonware Maintenance Manager ${BILLING_PLANS[billedPlan].name}`,
+            description: `${BILLING_PLANS[billedPlan].description} Capacity for ${purchasedCapacity} active units.`,
           },
         },
       },
     ],
-    metadata: { userId: user.id, plan, cadence },
+    metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
     subscription_data: {
-      metadata: { userId: user.id, plan, cadence },
+      metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
     },
     allow_promotion_codes: true,
     success_url: `${baseUrl}/account/subscription?checkout=success`,
@@ -155,8 +183,8 @@ export async function startCheckoutAction(formData: FormData) {
     entityType: 'user',
     entityId: user.id,
     action: 'subscription.checkoutStarted',
-    summary: `Started Stripe Checkout for ${plan} ${cadence}.`,
-    metadata: { checkoutSessionId: checkout.id, plan, cadence },
+    summary: `Started Stripe Checkout for ${billedPlan} ${cadence}.`,
+    metadata: { checkoutSessionId: checkout.id, requestedPlan: plan, plan: billedPlan, cadence, activeUnits, purchasedCapacity, additionalUnitAllowance, billedAmountCents },
   })
 
   if (!checkout.url) redirect(billingUrl('Stripe did not return a checkout URL.') as Route)

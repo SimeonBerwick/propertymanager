@@ -31,10 +31,12 @@ async function syncSubscription(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId
   const plan = parseStoredPlan(subscription.metadata?.plan)
   const cadence = parseCadence(subscription.metadata?.cadence ?? null)
+  const additionalUnitAllowance = Math.max(0, Number.parseInt(subscription.metadata?.additionalUnitAllowance ?? '0', 10) || 0)
   const data = {
     subscriptionStatus: accountStatusFromStripe(subscription.status),
     subscriptionPlan: plan ?? undefined,
     billingCadence: cadence ?? undefined,
+    additionalUnitAllowance,
     stripeCustomerId: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id,
     stripeSubscriptionId: subscription.id,
     subscriptionEndsAt: periodEndDate(subscription),
@@ -59,6 +61,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId
   const plan = parseStoredPlan(session.metadata?.plan)
   const cadence = parseCadence(session.metadata?.cadence ?? null)
+  const additionalUnitAllowance = Math.max(0, Number.parseInt(session.metadata?.additionalUnitAllowance ?? '0', 10) || 0)
 
   if (!stripe || !userId) return
 
@@ -75,6 +78,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       subscriptionStatus: 'active',
       subscriptionPlan: plan ?? undefined,
       billingCadence: cadence ?? undefined,
+      additionalUnitAllowance,
       stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
     },
   })

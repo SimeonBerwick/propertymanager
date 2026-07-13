@@ -56,9 +56,13 @@ From `apps/web`:
 
 ## Subscription truth
 - New property manager accounts start with a one-month free trial and no card requirement
-- Growth is $69/month for up to 50 active units
-- Pro is $149/month for up to 200 active units
-- Annual billing applies a 10% discount
+- Starter is $39/month and includes 25 active units
+- Growth is $99/month and includes 75 active units
+- Pro is $249/month and includes 250 active units
+- Annual billing includes two months free
+- Additional active-unit capacity is purchased in bulk for $1.50 per slot each month
+- Adding or restoring units within purchased capacity does not change billing
+- Accounts automatically move up when the next tier becomes less expensive
 - Paid conversion uses Stripe Checkout; hosted deployments need `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
 
 ## Companion-app / packaging prep

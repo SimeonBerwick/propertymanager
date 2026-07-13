@@ -170,6 +170,7 @@ enum AccountSubscriptionStatus {
 }
 
 enum AccountPlan {
+  starter
   growth
   pro
   portfolio
@@ -237,6 +238,7 @@ model User {
   subscriptionEndsAt DateTime?
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
+  additionalUnitAllowance Int @default(0)
   defaultCurrency      CurrencyOption @default(usd)
   emailNotificationsEnabled Boolean @default(true)
   dailyBriefingEnabled Boolean @default(true)

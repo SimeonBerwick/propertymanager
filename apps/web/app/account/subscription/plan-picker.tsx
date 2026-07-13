@@ -6,14 +6,15 @@ const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function PlanPicker({ currentPlan, currentCadence }: { currentPlan?: PlanKey | null; currentCadence?: CadenceKey | null }) {
   return (
-    <div className="grid cols-2">
+    <div className="grid cols-3">
       {PLANS.map((plan) => (
         <section key={plan} className="billingRowCard stack" style={{ gap: 12 }}>
           <div>
-            <div className="kicker">{BILLING_PLANS[plan].unitLimit ? `Up to ${BILLING_PLANS[plan].unitLimit} units` : 'Unlimited units'}</div>
+            <div className="kicker">{BILLING_PLANS[plan].unitLimit ? `${BILLING_PLANS[plan].unitLimit} units included` : 'Unlimited units'}</div>
             <h3 style={{ margin: '4px 0 0' }}>{BILLING_PLANS[plan].name}</h3>
           </div>
           <p className="muted" style={{ margin: 0 }}>{BILLING_PLANS[plan].description}</p>
+          <p className="muted" style={{ margin: 0 }}>Purchase additional unit capacity in bulk for $1.50 per slot each month. The next tier is applied automatically when it becomes less expensive.</p>
           <div className="grid cols-2">
             {CADENCES.map((cadence) => {
               const selected = currentPlan === plan && currentCadence === cadence
@@ -24,7 +25,7 @@ export function PlanPicker({ currentPlan, currentCadence }: { currentPlan?: Plan
                   <div>
                     <div style={{ fontWeight: 700 }}>{CADENCE_LABELS[cadence]}</div>
                     <div className="signalAccent">{planPriceLabel(plan, cadence)}</div>
-                    {cadence === 'annual' ? <div className="muted">10% discount</div> : null}
+                    {cadence === 'annual' ? <div className="muted">Two months free</div> : null}
                   </div>
                   <button type="submit" className={selected ? 'button secondary' : 'button primary'}>
                     {selected ? 'Keep plan' : 'Choose'}

@@ -3,17 +3,18 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { evaluateSubscriptionGate, subscriptionGateMessage } from '@/lib/subscription-gate'
-import { BILLING_PLANS, CADENCE_LABELS } from '@/lib/billing-plans'
+import { automaticPlanForUnits, billedAmountForUnits, BILLING_PLANS, CADENCE_LABELS, purchasedUnitCapacity } from '@/lib/billing-plans'
 import { getActiveUnitCount } from '@/lib/account-limits'
 import { PlanPicker } from './plan-picker'
 import { openBillingPortalAction } from './actions'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { BusinessNameForm } from './business-name-form'
+import { UnitCapacityForm } from './unit-capacity-form'
 
 export default async function SubscriptionPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; checkout?: string }>
+  searchParams?: Promise<{ error?: string; checkout?: string; capacity?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -30,6 +31,8 @@ export default async function SubscriptionPage({
         trialEndsAt: true,
         subscriptionEndsAt: true,
         stripeCustomerId: true,
+        stripeSubscriptionId: true,
+        additionalUnitAllowance: true,
         businessName: true,
       },
     }),
@@ -41,6 +44,12 @@ export default async function SubscriptionPage({
   const gate = evaluateSubscriptionGate(user)
   const plan = user.subscriptionPlan
   const cadence = user.billingCadence
+  const currentCapacity = plan ? purchasedUnitCapacity(plan, user.additionalUnitAllowance) : 0
+  const freeTrial = user.subscriptionStatus === 'trialing' && !user.stripeSubscriptionId
+  const pricingCapacity = plan ? (freeTrial ? Math.max(BILLING_PLANS[plan].unitLimit ?? 0, activeUnits) : currentCapacity) : 0
+  const billedPlan = plan ? automaticPlanForUnits(plan, pricingCapacity) : null
+  const displayedCapacity = billedPlan ? Math.max(pricingCapacity, BILLING_PLANS[billedPlan].unitLimit ?? 0) : 0
+  const additionalUnits = billedPlan ? Math.max(0, displayedCapacity - (BILLING_PLANS[billedPlan].unitLimit ?? 0)) : 0
 
   return (
     <main className="stack">
@@ -63,6 +72,7 @@ export default async function SubscriptionPage({
         {params?.error ? <div className="notice error">{params.error}</div> : null}
         {params?.checkout === 'success' ? <div className="notice success">Checkout complete. Your subscription may take a moment to update.</div> : null}
         {params?.checkout === 'cancelled' ? <div className="notice">Checkout was cancelled.</div> : null}
+        {params?.capacity === 'updated' ? <div className="notice success">Unit capacity updated. You can now add units up to the new allowance without another charge.</div> : null}
 
         {androidApp ? (
           <div className="grid cols-2">
@@ -92,7 +102,8 @@ export default async function SubscriptionPage({
             <div className="billingRowCard stack" style={{ gap: 4 }}>
               <div className="kicker">Active units</div>
               <strong>{activeUnits}</strong>
-              <span className="muted">{plan ? BILLING_PLANS[plan].unitLimit + ' included' : 'Choose a plan'}</span>
+              <span className="muted">{freeTrial ? 'No capacity charge during trial' : plan ? `${currentCapacity} purchased capacity` : 'Choose a plan'}</span>
+              {plan && !freeTrial ? <span className="muted">{Math.max(0, currentCapacity - activeUnits)} slots available</span> : null}
             </div>
             <div className="billingRowCard stack" style={{ gap: 4 }}>
               <div className="kicker">Access through</div>
@@ -102,6 +113,12 @@ export default async function SubscriptionPage({
           </div>
         )}
       </section>
+
+      {!androidApp && billedPlan && cadence ? <section className="card stack" style={{ maxWidth: 720 }}>
+        <div><div className="kicker">{freeTrial ? 'Projected first bill' : 'Current subscription capacity'}</div><h3 style={{ margin: '4px 0 0' }}>{freeTrial ? `$${(billedAmountForUnits(billedPlan, cadence, displayedCapacity) / 100).toLocaleString('en-US')}${cadence === 'annual' ? '/year' : '/month'}` : `${currentCapacity} active units`}</h3></div>
+        <p className="muted" style={{ margin: 0 }}>{freeTrial ? `No additional-unit charge is made during the trial. If you subscribed with ${activeUnits} active units today, ${BILLING_PLANS[billedPlan].name} would establish capacity for ${displayedCapacity} units${additionalUnits ? `, including ${additionalUnits} additional slots` : ''}.` : `Your current subscription is $${(billedAmountForUnits(billedPlan, cadence, currentCapacity) / 100).toLocaleString('en-US')}${cadence === 'annual' ? ' per year' : ' per month'}. It includes ${BILLING_PLANS[billedPlan].unitLimit} plan units${additionalUnits ? ` plus ${additionalUnits} purchased unit slots` : ''}. Adding or restoring units within this capacity does not change billing.`}</p>
+        {user.stripeSubscriptionId ? <UnitCapacityForm currentPlan={billedPlan} cadence={cadence} currentCapacity={currentCapacity} /> : <div className="notice">You can continue adding units during the free trial. When you subscribe, checkout will show the exact first bill before payment.</div>}
+      </section> : null}
 
       <section className="card stack" style={{ maxWidth: 720 }}>
         <div>

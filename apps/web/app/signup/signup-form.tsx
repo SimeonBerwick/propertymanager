@@ -21,7 +21,7 @@ const CADENCES: CadenceKey[] = ['monthly', 'annual']
 
 export function SignupForm({
   androidApp = false,
-  initialPlan = 'growth',
+  initialPlan = 'starter',
   initialCadence = 'monthly',
   initialCurrency = 'usd',
 }: {
@@ -104,7 +104,7 @@ export function SignupForm({
         </>
       ) : (
         <>
-          <div className="grid cols-2">
+          <div className="grid cols-3">
             {PLANS.map((plan) => (
               <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
                 <span className="row" style={{ alignItems: 'center' }}>
@@ -113,6 +113,7 @@ export function SignupForm({
                 </span>
                 <span className="muted">{BILLING_PLANS[plan].description}</span>
                 <span className="signalAccent">{planPriceLabel(plan, 'monthly')}</span>
+                <span className="muted">Purchase additional unit capacity in bulk for $1.50 per slot each month. Adding units within purchased capacity does not trigger another charge.</span>
               </label>
             ))}
           </div>
@@ -125,7 +126,7 @@ export function SignupForm({
                   <input type="radio" name="cadence" value={cadence} defaultChecked={cadence === initialCadence} />
                   <span>
                     <strong>{CADENCE_LABELS[cadence]}</strong>
-                    <span className="muted"> {cadence === 'annual' ? 'billed once a year with 10% off' : 'billed month to month'}</span>
+                    <span className="muted"> {cadence === 'annual' ? 'billed once a year with two months free' : 'billed month to month'}</span>
                   </span>
                 </label>
               ))}
@@ -133,7 +134,7 @@ export function SignupForm({
           </div>
 
           <div className="notice">
-            Your complete 30-day trial starts when you create the account. No credit card required.
+            Your complete 30-day trial starts when you create the account. No credit card or additional-unit payment is required during the trial; your first bill is calculated from active units when you subscribe.
           </div>
         </>
       )}
