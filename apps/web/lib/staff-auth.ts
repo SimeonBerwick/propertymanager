@@ -7,6 +7,7 @@ import { sendPortalAuthChallenge } from '@/lib/portal-auth-delivery'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { takeRateLimitHit } from '@/lib/rate-limit'
 import { writeAuditLog } from '@/lib/audit-log'
+import { getReviewerOtpCode } from '@/lib/reviewer-access'
 
 const COOKIE = 'pm_staff_session'
 const SESSION_DAYS = 90
@@ -18,15 +19,18 @@ export async function createStaffOtpChallenge(email: string) {
   const normalized = email.trim().toLowerCase()
   const staff = await prisma.staffMember.findFirst({ where: { email: normalized, isActive: true } })
   if (!staff) return null
-  const limit = await takeRateLimitHit(`staff-otp:${staff.id}`, { limit: 3, windowMs: 15 * 60_000, blockMs: 15 * 60_000 })
-  if (!limit.ok) throw new Error('Too many sign-in requests. Try again later.')
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  const reviewerCode = getReviewerOtpCode('staff', normalized)
+  if (!reviewerCode) {
+    const limit = await takeRateLimitHit(`staff-otp:${staff.id}`, { limit: 3, windowMs: 15 * 60_000, blockMs: 15 * 60_000 })
+    if (!limit.ok) throw new Error('Too many sign-in requests. Try again later.')
+  }
+  const code = reviewerCode ?? String(Math.floor(100000 + Math.random() * 900000))
   const salt = randomBytes(12).toString('hex')
   const challenge = await prisma.$transaction(async (tx) => {
     await tx.staffOtpChallenge.updateMany({ where: { staffMemberId: staff.id, verifiedAt: null }, data: { expiresAt: new Date() } })
     return tx.staffOtpChallenge.create({ data: { staffMemberId: staff.id, orgId: staff.orgId, destinationMasked: `${normalized.slice(0, 2)}***@${normalized.split('@')[1]}`, codeSalt: salt, codeHash: hash(`${salt}:${code}`), expiresAt: addMinutes(new Date(), OTP_MINUTES) } })
   })
-  await sendPortalAuthChallenge({ role: 'staff', channel: 'email', to: normalized, recipientName: staff.name, code, magicLink: `${getAppBaseUrl('staff sign-in links')}/maintenance/auth/magic?challengeId=${challenge.id}&code=${code}` })
+  if (!reviewerCode) await sendPortalAuthChallenge({ role: 'staff', channel: 'email', to: normalized, recipientName: staff.name, code, magicLink: `${getAppBaseUrl('staff sign-in links')}/maintenance/auth/magic?challengeId=${challenge.id}&code=${code}` })
   return { challengeId: challenge.id, masked: challenge.destinationMasked, code }
 }
 

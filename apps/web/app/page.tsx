@@ -20,7 +20,7 @@ export default async function HomePage() {
           <h1>{androidApp ? 'Open your maintenance dashboard.' : 'Run maintenance without chasing every update.'}</h1>
           <p>
             {androidApp
-              ? 'Sign in as a property manager, tenant, or vendor. New property managers can start a free month in the app.'
+              ? 'Sign in as a property manager, tenant, maintenance staff member, or vendor. New property managers can start a free month in the app.'
               : 'Simeonware gives property managers one place to receive tenant requests, invite vendors, approve bids, track photos and costs, and know the next step on every job.'}
           </p>
           <div className="heroActions">
@@ -38,7 +38,7 @@ export default async function HomePage() {
           ) : (
             <div className="trustLine">
               <span>No credit card required</span>
-              <span>Tenant and vendor portals included</span>
+              <span>Tenant, staff, and vendor portals included</span>
               <span>CSV import and export ready</span>
             </div>
           )}
@@ -204,7 +204,7 @@ export default async function HomePage() {
               <p>{BILLING_PLANS[plan].description}</p>
               <ul>
                 <li>Complete manager request queue</li>
-                <li>Tenant and vendor workflows</li>
+                <li>Tenant, maintenance staff, and vendor workflows</li>
                 <li>Billing records and reports</li>
                 <li>Email notifications and history</li>
               </ul>
@@ -224,6 +224,7 @@ export default async function HomePage() {
         <div className="heroActions">
           <Link href="/signup" className="button primary">Start free month</Link>
           <Link href="/login" className="button">Sign in</Link>
+          <Link href="/maintenance/auth/login" className="button">Staff sign in</Link>
         </div>
       </section>
 

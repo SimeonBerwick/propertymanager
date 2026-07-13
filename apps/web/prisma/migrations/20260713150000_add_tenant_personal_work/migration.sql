@@ -1,0 +1,16 @@
+ALTER TABLE "User" ADD COLUMN "personalWorkEnabled" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "personalWorkHourlyRateCents" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "User" ADD COLUMN "personalWorkMinimumMinutes" INTEGER NOT NULL DEFAULT 60;
+ALTER TABLE "User" ADD COLUMN "personalWorkAllowedCategoriesCsv" TEXT NOT NULL DEFAULT 'Appliance,Other';
+ALTER TABLE "Property" ADD COLUMN "personalWorkAllowed" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Property" ADD COLUMN "personalWorkHourlyRateCents" INTEGER;
+ALTER TABLE "Property" ADD COLUMN "personalWorkMinimumMinutes" INTEGER;
+ALTER TABLE "Property" ADD COLUMN "personalWorkAllowedCategoriesCsv" TEXT DEFAULT '';
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "workResponsibility" TEXT NOT NULL DEFAULT 'owner_maintenance';
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkStatus" TEXT;
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkHourlyRateCents" INTEGER;
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkMinimumMinutes" INTEGER;
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkAuthorizedMaxCents" INTEGER;
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkTenantAuthorizedAt" TIMESTAMP(3);
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkManagerApprovedAt" TIMESTAMP(3);
+ALTER TABLE "MaintenanceRequest" ADD COLUMN "personalWorkBilledAt" TIMESTAMP(3);

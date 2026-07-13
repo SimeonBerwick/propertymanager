@@ -26,9 +26,17 @@ The tenant has an open-ended active lease and sample maintenance requests.
 
 The vendor is active and has a scheduled sample assignment. If the sample has already been completed during testing, it remains visible under recent work.
 
+## Maintenance staff
+
+1. Open sign in and choose maintenance staff, or use the staff sign-in button on the website.
+2. Enter the configured `ANDROID_REVIEWER_STAFF_EMAIL`.
+3. Enter the same six-digit verification code supplied in the Play Console review-access field.
+
+The staff account is active and has an assigned tenant-paid personal-work request with saved rate and authorization details.
+
 ## Operations
 
 - Runtime access is enabled only when `ANDROID_REVIEWER_ACCESS_ENABLED=true`.
-- The fixed OTP applies only to the exact configured tenant and vendor reviewer emails.
+- The fixed OTP applies only to the exact configured tenant, vendor, and maintenance-staff reviewer emails.
 - Run `npm run seed:android-reviewers` from `apps/web` after setting `DATABASE_URL` and `ANDROID_REVIEWER_LANDLORD_PASSWORD`.
 - Do not commit reviewer passwords or OTP codes.

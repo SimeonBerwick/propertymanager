@@ -125,6 +125,8 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
     <div className="stack">
       <WorkOrderStatusPanel summary={tenantWorkOrderSummary} />
 
+      {request.workResponsibility === 'tenant_personal_work' ? <section className="card stack tenantStatusSummary"><div className="kicker">Tenant-paid personal work</div><strong>{request.personalWorkStatus?.replaceAll('_', ' ') ?? 'Awaiting review'}</strong><div>${((request.personalWorkHourlyRateCents ?? 0) / 100).toFixed(2)} per hour, {request.personalWorkMinimumMinutes ?? 0}-minute minimum, plus materials.</div><div className="muted">Your maximum authorization is ${((request.personalWorkAuthorizedMaxCents ?? 0) / 100).toFixed(2)}. You will not be billed above that amount without a new approval.</div></section> : null}
+
       {latestCommunication ? (
         <section className="card stack tenantStatusSummary">
           <div className="kicker">{latestCommunicationSource?.label === 'Tenant' ? 'Latest message sent' : 'Latest reply'}</div>

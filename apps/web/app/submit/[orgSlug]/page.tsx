@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { getAllUnits, getLandlordBySlug, getProperties } from '@/lib/data'
 import { SubmitRequestForm } from '../submit-request-form'
 import { IntakeDraftCleanup } from '@/components/intake-draft-cleanup'
+import { getPersonalWorkPolicies } from '@/lib/personal-work'
 
 export default async function ScopedSubmitPage({
   params,
@@ -36,9 +37,10 @@ export default async function ScopedSubmitPage({
     )
   }
 
-  const [properties, units] = await Promise.all([
+  const [properties, units, personalWorkPolicies] = await Promise.all([
     getProperties(undefined, orgSlug),
     getAllUnits(undefined, orgSlug),
+    getPersonalWorkPolicies(landlord.id),
   ])
 
   return (
@@ -55,7 +57,7 @@ export default async function ScopedSubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} defaultCurrency={landlord.defaultCurrency} />
+        <SubmitRequestForm properties={properties} units={units} orgSlug={orgSlug} defaultCurrency={landlord.defaultCurrency} personalWorkPolicies={personalWorkPolicies} />
       </section>
     </div>
   )

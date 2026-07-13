@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma'
 import { createOtpChallenge } from '../../lib/tenant-otp-lib'
 import { createVendorOtpChallenge } from '../../lib/vendor-otp-lib'
 import { REVIEWER_EMAILS } from '../../lib/reviewer-access'
+import { createStaffOtpChallenge } from '../../lib/staff-auth'
 
 const ANDROID_WEBVIEW_USER_AGENT = [
   'Mozilla/5.0 (Linux; Android 15; Pixel 8 Build/AP3A.240905.015; wv)',
@@ -58,6 +59,14 @@ async function signInVendorWithMagicLink(page: Page) {
   await page.goto(`/vendor/auth/login/magic?challengeId=${otp.challengeId}&code=${otp.code}&next=/vendor`)
   await expect(page).toHaveURL(/\/vendor$/)
   await expect(page.getByRole('heading', { name: 'Open work' })).toBeVisible()
+}
+
+async function signInStaffWithMagicLink(page: Page) {
+  const otp = await createStaffOtpChallenge(REVIEWER_EMAILS.staff)
+  if (!otp) throw new Error('Play reviewer staff fixture is missing.')
+  await page.goto(`/maintenance/auth/magic?challengeId=${otp.challengeId}&code=${otp.code}`)
+  await expect(page).toHaveURL(/\/maintenance$/)
+  await expect(page.getByRole('heading', { name: 'Play Review Handyman' })).toBeVisible()
 }
 
 test('manager login persists and CSV downloads work in Android WebView', async ({ page }) => {
@@ -125,6 +134,15 @@ test('vendor OTP magic link, persistent session, photo upload, and support link 
   await page.getByRole('link', { name: 'Support' }).click()
   await expect(page).toHaveURL(/\/support/)
   await expect(page.locator('a[href^="mailto:support@simeonware.com"]').first()).toBeVisible()
+})
+
+test('maintenance staff OTP login persists and assigned work opens in Android WebView', async ({ page }) => {
+  await signInStaffWithMagicLink(page)
+  await page.reload()
+  await expect(page.getByText('Install window air conditioner')).toBeVisible()
+  await page.getByRole('link', { name: /Install window air conditioner/ }).click()
+  await expect(page).toHaveURL(/\/maintenance\/requests\/play-review-request-staff/)
+  await expect(page.getByRole('heading', { name: 'Install window air conditioner' })).toBeVisible()
 })
 
 test('privacy, support, deletion, email, and back-button links are reachable in Android WebView', async ({ page }) => {

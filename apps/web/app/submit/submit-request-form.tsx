@@ -6,6 +6,7 @@ import type { CurrencyOption, Property, Unit } from '@/lib/types'
 import { REQUEST_CATEGORIES, REQUEST_URGENCIES } from '@/lib/maintenance-options'
 import { submitMaintenanceRequest, type SubmitRequestState } from '@/lib/request-actions'
 import { trackProductEvent } from '@/components/analytics-tracker'
+import type { PersonalWorkPolicy } from '@/lib/personal-work'
 
 const INITIAL_STATE: SubmitRequestState = { error: null }
 
@@ -15,9 +16,10 @@ interface SubmitRequestFormProps {
   orgSlug?: string
   managerMode?: boolean
   defaultCurrency?: CurrencyOption
+  personalWorkPolicies?: PersonalWorkPolicy[]
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd' }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd', personalWorkPolicies = [] }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -27,6 +29,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<(typeof REQUEST_CATEGORIES)[number]>(REQUEST_CATEGORIES[0])
   const [urgency, setUrgency] = useState('medium')
+  const [personalWorkRequested, setPersonalWorkRequested] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const draftEventSent = useRef(false)
   const draftKey = `pm-intake-draft:${orgSlug ?? 'default'}:${managerMode ? 'manager' : 'tenant'}`
@@ -40,6 +43,10 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     [selectedUnitId, units],
   )
   const selectedIsCommonArea = selectedUnit?.locationType === 'common_area'
+  const personalWorkPolicy = personalWorkPolicies.find((policy) => policy.propertyId === selectedPropertyId)
+  const personalWorkAvailable = !managerMode && Boolean(personalWorkPolicy?.enabled && personalWorkPolicy.allowedCategories.includes(category) && !['high', 'urgent'].includes(urgency))
+
+  useEffect(() => { if (!personalWorkAvailable) setPersonalWorkRequested(false) }, [personalWorkAvailable])
 
   useEffect(() => {
     if (!filteredUnits.length) {
@@ -233,6 +240,11 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
           </select>
         </label>
       </div>
+
+      {personalWorkAvailable && personalWorkPolicy ? <div className="notice stack">
+        <label className="row"><input type="checkbox" name="personalWorkRequested" value="true" checked={personalWorkRequested} onChange={(event) => setPersonalWorkRequested(event.target.checked)} /><strong>This is optional personal work that I will pay for</strong></label>
+        {personalWorkRequested ? <><div>The rate is ${(personalWorkPolicy.hourlyRateCents / 100).toFixed(2)} per hour with a {personalWorkPolicy.minimumMinutes}-minute minimum. Materials are extra.</div><label className="row"><input type="checkbox" name="personalWorkTermsAccepted" value="true" required /> I accept the rate and authorize this tenant charge.</label><label className="field"><span className="field-label">Maximum amount I authorize ($)</span><input className="input" type="number" name="personalWorkAuthorizedMax" min={(personalWorkPolicy.minimumChargeCents / 100).toFixed(2)} max="100000" step="0.01" required /></label></> : null}
+      </div> : null}
 
       <input type="hidden" name="preferredCurrency" value={defaultCurrency} />
       <label className="field">

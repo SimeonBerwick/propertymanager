@@ -9,6 +9,7 @@ import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
+import { resolvePersonalWorkPolicy, validatePersonalWorkRequest } from '@/lib/personal-work'
 
 export type MobileRequestState = { error: string | null }
 
@@ -50,6 +51,9 @@ export async function submitTenantMobileRequestAction(
   const urgency = getString(formData, 'urgency')
   const requestedCurrency = getString(formData, 'preferredCurrency')
   const preferredLanguage = getString(formData, 'preferredLanguage') || 'english'
+  const personalWorkRequested = getString(formData, 'personalWorkRequested') === 'true'
+  const personalWorkTermsAccepted = getString(formData, 'personalWorkTermsAccepted') === 'true'
+  const personalWorkAuthorizedMaxCents = Math.round(Number(getString(formData, 'personalWorkAuthorizedMax') || '0') * 100)
   const photoFiles = formData.getAll('photos').filter((value): value is File => value instanceof File && value.size > 0)
 
   if (!title || !description || !category || !urgency) {
@@ -89,8 +93,8 @@ export async function submitTenantMobileRequestAction(
       label: true,
       property: {
         select: {
-          name: true,
-          owner: { select: { id: true, email: true, emailNotificationsEnabled: true, defaultCurrency: true } },
+          name: true, personalWorkAllowed: true, personalWorkHourlyRateCents: true, personalWorkMinimumMinutes: true, personalWorkAllowedCategoriesCsv: true,
+          owner: { select: { id: true, email: true, emailNotificationsEnabled: true, defaultCurrency: true, personalWorkEnabled: true, personalWorkHourlyRateCents: true, personalWorkMinimumMinutes: true, personalWorkAllowedCategoriesCsv: true } },
         },
       },
     },
@@ -98,6 +102,14 @@ export async function submitTenantMobileRequestAction(
 
   if (!activeUnit) {
     return { error: 'This unit is no longer active for new requests. Contact your property manager.' }
+  }
+
+  let personalWorkPolicy = null
+  if (personalWorkRequested) {
+    const activeStaffCount = await prisma.staffMember.count({ where: { orgId: session.orgId, isActive: true } })
+    personalWorkPolicy = resolvePersonalWorkPolicy(activeUnit.property.owner, { id: session.propertyId, ...activeUnit.property }, activeStaffCount)
+    const personalWorkError = validatePersonalWorkRequest({ requested: true, termsAccepted: personalWorkTermsAccepted, category, urgency, authorizedMaxCents: personalWorkAuthorizedMaxCents, policy: personalWorkPolicy })
+    if (personalWorkError) return { error: personalWorkError }
   }
 
   const preferredCurrency = requestedCurrency || activeUnit.property.owner.defaultCurrency
@@ -124,11 +136,17 @@ export async function submitTenantMobileRequestAction(
         category,
         urgency: urgency as 'low' | 'medium' | 'high' | 'urgent',
         status: 'requested',
+        workResponsibility: personalWorkRequested ? 'tenant_personal_work' : 'owner_maintenance',
+        personalWorkStatus: personalWorkRequested ? 'requested' : null,
+        personalWorkHourlyRateCents: personalWorkPolicy?.hourlyRateCents,
+        personalWorkMinimumMinutes: personalWorkPolicy?.minimumMinutes,
+        personalWorkAuthorizedMaxCents: personalWorkRequested ? personalWorkAuthorizedMaxCents : null,
+        personalWorkTenantAuthorizedAt: personalWorkRequested ? new Date() : null,
         photos: {
           create: photoPaths.map((imageUrl) => ({ imageUrl })),
         },
         comments: {
-          create: [{ body: `Submitted from tenant mobile portal by ${session.tenantName}.`, visibility: 'external' }],
+          create: [{ body: personalWorkRequested ? `Submitted as tenant-paid personal work by ${session.tenantName}. Authorization limit: $${(personalWorkAuthorizedMaxCents / 100).toFixed(2)}.` : `Submitted from tenant mobile portal by ${session.tenantName}.`, visibility: 'external' }],
         },
         events: {
           create: [{ toStatus: 'requested', visibility: 'tenant_visible' }],
