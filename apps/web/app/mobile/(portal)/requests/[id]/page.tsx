@@ -12,6 +12,7 @@ import { SectionJumpLink } from '@/components/section-jump-link'
 import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { formatDateTime } from '@/lib/ui-utils'
 import { tenantEffectiveRequestStatus } from '@/lib/tenant-effective-status'
+import { AppointmentCoordinationPanel } from '@/components/appointment-coordination-panel'
 
 function classifyCommentSource(
   comment: {
@@ -72,9 +73,9 @@ function displayCommentBody(body: string) {
     .replace(/^Request update:\s*/i, '')
 }
 
-export default async function TenantMobileRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TenantMobileRequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schedulingError?: string; appointment?: string }> }) {
   const session = await requireTenantMobileSession()
-  const { id } = await params
+  const [{ id }, query] = await Promise.all([params, searchParams])
 
   const request = await getTenantOwnedRequestById(id, session)
 
@@ -124,6 +125,9 @@ export default async function TenantMobileRequestDetailPage({ params }: { params
   return (
     <div className="stack">
       <WorkOrderStatusPanel summary={tenantWorkOrderSummary} />
+      {query.schedulingError ? <div className="notice error">{query.schedulingError}</div> : null}
+      {query.appointment === 'confirmed' ? <div className="notice success">Appointment confirmed.</div> : query.appointment === 'selected' ? <div className="notice success">Time selected. Your property manager will confirm it.</div> : null}
+      <AppointmentCoordinationPanel requestId={request.id} audience="tenant" />
 
       {request.workResponsibility === 'tenant_personal_work' ? <section className="card stack tenantStatusSummary"><div className="kicker">Tenant-paid personal work</div><strong>{request.personalWorkStatus?.replaceAll('_', ' ') ?? 'Awaiting review'}</strong><div>${((request.personalWorkHourlyRateCents ?? 0) / 100).toFixed(2)} per hour, {request.personalWorkMinimumMinutes ?? 0}-minute minimum, plus materials.</div><div className="muted">Your maximum authorization is ${((request.personalWorkAuthorizedMaxCents ?? 0) / 100).toFixed(2)}. You will not be billed above that amount without a new approval.</div></section> : null}
 

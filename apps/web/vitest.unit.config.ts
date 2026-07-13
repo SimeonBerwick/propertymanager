@@ -41,6 +41,7 @@ export default defineConfig({
       'lib/staff-workflow.test.ts',
       'lib/staff-assignment.test.ts',
       'lib/personal-work.test.ts',
+      'lib/scheduling-coordination.test.ts',
     ],
   },
 })
