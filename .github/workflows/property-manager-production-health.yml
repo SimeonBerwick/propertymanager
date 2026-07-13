@@ -1,0 +1,71 @@
+name: Property Manager Production Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: property-manager-production-health
+  cancel-in-progress: true
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check production health
+        env:
+          HOSTED_BASE_URL: ${{ secrets.PM_HOSTED_BASE_URL }}
+        run: |
+          if [ -z "$HOSTED_BASE_URL" ]; then
+            echo "PM_HOSTED_BASE_URL is not configured."
+            exit 1
+          fi
+
+          base_url="${HOSTED_BASE_URL%/}"
+          response_file="$(mktemp)"
+          status="$(curl --silent --show-error --location \
+            --retry 2 --retry-all-errors --max-time 20 \
+            --output "$response_file" --write-out '%{http_code}' \
+            "$base_url/api/health")" || status="000"
+
+          cat "$response_file"
+          node -e '
+            const fs = require("fs");
+            const status = process.argv[1];
+            const body = fs.readFileSync(process.argv[2], "utf8");
+            let payload;
+            try { payload = JSON.parse(body); } catch { payload = null; }
+            if (status !== "200" || payload?.ok !== true || payload?.database !== true) {
+              console.error(`Production health failed with HTTP ${status}.`);
+              process.exit(1);
+            }
+          ' "$status" "$response_file"
+
+      - name: Email the operator when health fails
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.PM_HEALTH_RESEND_API_KEY }}
+          OPS_ALERT_EMAIL: ${{ secrets.PM_OPS_ALERT_EMAIL }}
+          HOSTED_BASE_URL: ${{ secrets.PM_HOSTED_BASE_URL }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$OPS_ALERT_EMAIL" ]; then
+            echo "Health alert email secrets are missing; the failed workflow remains visible in GitHub Actions."
+            exit 0
+          fi
+
+          payload="$(jq -n \
+            --arg from 'Simeonware Monitor <noreply@simeonware.com>' \
+            --arg to "$OPS_ALERT_EMAIL" \
+            --arg subject '[Simeonware alert] Production health check failed' \
+            --arg text "The independent production check failed at $(date -u +'%Y-%m-%d %H:%M:%S UTC'). Check ${HOSTED_BASE_URL%/}/api/health, Vercel logs, and Neon status now." \
+            '{from:$from,to:[$to],subject:$subject,text:$text}')"
+
+          curl --fail --silent --show-error https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H 'Content-Type: application/json' \
+            --data "$payload"

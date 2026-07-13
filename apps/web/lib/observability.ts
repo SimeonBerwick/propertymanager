@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { headers } from 'next/headers'
+import { sendThrottledOperatorErrorAlert } from '@/lib/operator-alerts'
 
 type LogLevel = 'info' | 'warn' | 'error'
 type LogDetails = Record<string, unknown>
@@ -78,6 +79,9 @@ export async function logAppError(event: string, error: unknown, details: LogDet
   await logAppEvent('error', event, {
     ...details,
     error,
+  })
+  await sendThrottledOperatorErrorAlert(event, error, details).catch((alertError) => {
+    console.error('[OPERATOR ALERT] Failed to send error alert:', alertError)
   })
 }
 

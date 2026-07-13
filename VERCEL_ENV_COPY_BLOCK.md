@@ -23,6 +23,7 @@ LANDLORD_SLUG=landlord
 NOTIFY_TRANSPORT=smtp
 SMTP_URL=smtps://user:pass@smtp.example.com:465
 NOTIFY_FROM=Property Manager <noreply@simeonware.com>
+OPS_ALERT_EMAIL=support@simeonware.com
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"replace-me"}
 
 # Google Play reviewer access
@@ -62,6 +63,7 @@ Set these for:
 ## Must verify after deploy
 - landlord login works
 - SMTP notification sends
+- a forced test error reaches `OPS_ALERT_EMAIL` without credentials or personal data
 - Android native push notification sends through Firebase Cloud Messaging
 - private photo upload/read works
 - rate limiting works through Upstash

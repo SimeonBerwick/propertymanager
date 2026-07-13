@@ -12,6 +12,7 @@ Get hosted production to real green, not fake green.
 - real SMTP credentials exist
 - real Cloudflare R2 bucket + credentials exist
 - real Upstash Redis REST instance + token exist
+- the prelaunch checklist in `INCIDENT_RESTORE_SUPPORT_RUNBOOK.md` is complete
 
 ## GitHub/main release path
 1. Start every release or hotfix from current `origin/main`.
@@ -71,6 +72,8 @@ Deployment is **PASS** only if all are true:
 - private media upload/read works through R2
 - rate limiting works through Upstash
 - internal automation runs successfully
+- independent production health monitoring and operator alert email are green
+- the newest encrypted backup exists and the latest restore drill passed
 
 Anything else is **FAIL**.
 

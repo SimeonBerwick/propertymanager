@@ -55,4 +55,15 @@ describe('runtime-env', () => {
     expect(smtpCheck?.ok).toBe(false)
     expect(smtpCheck?.detail).toMatch(/placeholder/i)
   })
+
+  test('requires an operator alert recipient in hosted notification checks', () => {
+    process.env.HOSTED_RUNTIME_REQUIRED = 'true'
+    delete process.env.OPS_ALERT_EMAIL
+    expect(() => assertHostedRuntimeReady('test', ['notifications'])).toThrow(/OPS_ALERT_EMAIL/)
+
+    process.env.OPS_ALERT_EMAIL = 'support@simeonware.com'
+    process.env.NOTIFY_TRANSPORT = 'smtp'
+    process.env.SMTP_URL = 'smtps://resend:real-secret@smtp.resend.com:465'
+    expect(() => assertHostedRuntimeReady('test', ['notifications'])).not.toThrow()
+  })
 })
