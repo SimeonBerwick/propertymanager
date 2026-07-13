@@ -22,8 +22,9 @@ type RuntimeCheckId =
   | 'outlookOAuth'
   | 'stripeSecretKey'
   | 'stripeWebhookSecret'
+  | 'googleTranslateApiKey'
 
-export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit' | 'billing'
+export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit' | 'billing' | 'localization'
 
 export type RuntimeCheck = {
   id: RuntimeCheckId
@@ -102,6 +103,7 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const outlookOAuth = !!envValue('OUTLOOK_OAUTH_CLIENT_ID') && !!envValue('OUTLOOK_OAUTH_CLIENT_SECRET')
   const stripeSecretKey = envValue('STRIPE_SECRET_KEY')
   const stripeWebhookSecret = envValue('STRIPE_WEBHOOK_SECRET')
+  const googleTranslateApiKey = envValue('GOOGLE_TRANSLATE_API_KEY')
   const blocking = isHostedRuntimeEnforced()
 
   return [
@@ -291,6 +293,17 @@ export function getRuntimeChecks(): RuntimeCheck[] {
           : 'Stripe webhook secret is too short or still looks like a placeholder.'
         : 'Missing STRIPE_WEBHOOK_SECRET.',
     },
+    {
+      id: 'googleTranslateApiKey',
+      label: 'GOOGLE_TRANSLATE_API_KEY',
+      ok: googleTranslateApiKey.length >= 20 && !PLACEHOLDER_PATTERN.test(googleTranslateApiKey),
+      blocking,
+      detail: googleTranslateApiKey
+        ? googleTranslateApiKey.length >= 20 && !PLACEHOLDER_PATTERN.test(googleTranslateApiKey)
+          ? 'Multilingual interface and message translation is configured.'
+          : 'Translation API key is too short or still looks like a placeholder.'
+        : 'Missing GOOGLE_TRANSLATE_API_KEY. Non-English users will see original text.',
+    },
   ]
 }
 
@@ -300,6 +313,7 @@ const CAPABILITY_CHECKS: Record<RuntimeCapability, RuntimeCheckId[]> = {
   media: ['r2AccountId', 'r2AccessKeyId', 'r2SecretAccessKey', 'r2Bucket', 'mediaBackend'],
   rateLimit: ['upstashRestUrl', 'upstashRestToken', 'rateLimitBackend'],
   billing: ['stripeSecretKey', 'stripeWebhookSecret'],
+  localization: ['googleTranslateApiKey'],
 }
 
 export function getRuntimeFailures(capabilities: RuntimeCapability[]) {

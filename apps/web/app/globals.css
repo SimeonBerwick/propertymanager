@@ -52,7 +52,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-html, body { margin: 0; padding: 0; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-elevated) 100%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html, body { margin: 0; padding: 0; overflow-x: clip; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-elevated) 100%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 a { color: inherit; text-decoration: none; }
 body { min-height: 100vh; }
 .page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px; }
@@ -128,6 +128,18 @@ body { min-height: 100vh; }
 .brandLogoArrowHead { fill: #0b2f66; }
 .nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .nav a, .nav .button { white-space: nowrap; }
+.languageSelectorWrap { position: relative; display: inline-flex; margin-left: auto; }
+.languageSelector { display: inline-flex; }
+.languageSelector select { min-width: 132px; max-width: 190px; min-height: 40px; padding: 8px 30px 8px 10px; font-size: 14px; font-weight: 600; }
+.languagePlanBadge { align-self: center; margin-left: 6px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.languageSuggestion { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: flex; align-items: center; gap: 8px; width: max-content; max-width: min(320px, 88vw); padding: 8px 10px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); font-size: 13px; }
+.languageSuggestion button { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
+.translatedMessage { display: grid; gap: 6px; }
+.messageOriginal { font-size: 13px; color: var(--muted); }
+.messageOriginal summary { cursor: pointer; font-weight: 600; }
+.messageOriginal div { margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border); white-space: pre-wrap; }
+[dir="rtl"] .languageSelector select { padding: 8px 10px 8px 30px; }
+[dir="rtl"] .navMenuPanel, [dir="rtl"] .actionMenuPanel { text-align: right; }
 .commandTrigger {
   border: 1px solid var(--border);
   background: var(--chip);
@@ -1063,6 +1075,7 @@ body { min-height: 100vh; }
   .guidedWorkflowCompact .recommendedAction { min-width: 0; }
   .onboardingHead, .onboardingSteps { grid-template-columns: 1fr; }
   .header, .sectionHead, .row, .billingRow, .billingActionsRow, .billingStatusForm, .billingStatusStack { flex-direction: column; align-items: flex-start; }
+  .languageSelectorWrap { margin-left: 0; }
   .billingForm { position: static; }
   .page { padding: 18px; }
   .header .nav { width: 100%; }

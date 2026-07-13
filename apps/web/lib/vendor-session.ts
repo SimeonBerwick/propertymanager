@@ -6,6 +6,9 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { sendNotification } from '@/lib/notify'
 import { evaluatePortalSubscriptionAccess } from '@/lib/portal-subscription-access'
 import { trackVendorAccessEvent } from '@/lib/access-friction'
+import type { LanguageOption } from '@/lib/types'
+import { savedLanguagePreference } from '@/lib/localization-server'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 const VENDOR_COOKIE = 'pm_vendor_session'
 const SESSION_TTL_DAYS = 365
@@ -36,12 +39,14 @@ export interface VendorPortalScope {
   vendorName: string
   email?: string | null
   phone?: string | null
+  preferredLanguage?: LanguageOption
+  localizationEnabled?: boolean
 }
 
 export async function createVendorSession(vendorId: string, requestId?: string | null, maximumExpiresAt?: Date, options: { notify?: boolean } = {}) {
   const vendor = await prisma.vendor.findUnique({
     where: { id: vendorId },
-    select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true },
+    select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true, preferredLanguage: true, languagePreferenceExplicit: true },
   })
 
   if (!vendor || !vendor.isActive) {
@@ -65,9 +70,15 @@ export async function createVendorSession(vendorId: string, requestId?: string |
     },
   })
 
+  const savedLanguage = await savedLanguagePreference()
   await prisma.vendor.update({
     where: { id: vendor.id },
-    data: { lastLoginAt: new Date() },
+    data: {
+      lastLoginAt: new Date(),
+      ...(!vendor.languagePreferenceExplicit && savedLanguage
+        ? { preferredLanguage: savedLanguage, languagePreferenceExplicit: true }
+        : {}),
+    },
   })
 
   ;(await cookies()).set(VENDOR_COOKIE, rawSecret, {
@@ -123,7 +134,7 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
     where: { sessionSecretHash: secretHash },
     include: {
       vendor: {
-        select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true },
+        select: { id: true, orgId: true, name: true, email: true, phone: true, isActive: true, preferredLanguage: true },
       },
     },
   })
@@ -154,6 +165,7 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
         where: { id: session.vendor.orgId },
         select: {
           subscriptionStatus: true,
+          subscriptionPlan: true,
           trialEndsAt: true,
           subscriptionEndsAt: true,
         },
@@ -187,6 +199,8 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
     vendorName: session.vendor.name,
     email: session.vendor.email,
     phone: session.vendor.phone,
+    preferredLanguage: session.vendor.preferredLanguage,
+    localizationEnabled: planIncludesLocalization(owner?.subscriptionPlan),
   }
 }
 

@@ -28,6 +28,7 @@ import { QuickBooksSyncPanel } from '@/components/quickbooks-sync-panel'
 import { SectionJumpLink } from '@/components/section-jump-link'
 import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
 import { canScheduleRequest } from '@/lib/request-scheduling'
+import { TranslatedMessage } from '@/components/translated-message'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -102,7 +103,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     .filter((comment) => comment.visibility === 'external')
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
   const tenantTimelineMessages = [...data.comments]
-    .filter((comment) => comment.visibility === 'external' && comment.body.startsWith('Tenant message:'))
+    .filter((comment) => comment.visibility === 'external' && (comment.originalBody ?? comment.body).startsWith('Tenant message:'))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const latestTenantMessage = tenantTimelineMessages[0]
   const latestCommercialReply = [...data.vendorCommercialItems]
@@ -331,6 +332,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           <div>
             <div className="kicker">Request</div>
             <h1 className="pageTitle">{data.request.title}</h1>
+            {data.request.isTitleTranslated ? <details className="messageOriginal"><summary>View original title</summary><div data-no-localize>{data.request.originalTitle}</div></details> : null}
             <div className="muted">
               <Link href={`/properties/${data.request.propertyId}`}>{data.request.propertyName}</Link>
               {' - '}
@@ -605,7 +607,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             <div className="stack" style={{ gap: 14 }}>
               <div>
                 <strong>Description</strong>
-                <p className="muted" style={{ marginBottom: 0 }}>{data.request.description}</p>
+                <TranslatedMessage body={data.request.description} originalBody={data.request.originalDescription} isTranslated={data.request.isDescriptionTranslated} />
               </div>
               <div className="detailFactsGrid">
                 <div><strong>Submitted by</strong><div className="muted">{data.request.submittedByName ?? 'Unknown tenant'}{data.request.submittedByEmail ? ` - ${data.request.submittedByEmail}` : ''}</div></div>
@@ -629,7 +631,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                     {VISIBILITY_LABELS[comment.visibility] ?? comment.visibility}
                   </span>
                 </div>
-                <div>{comment.body}</div>
+                <TranslatedMessage body={comment.body} originalBody={comment.originalBody} isTranslated={comment.isTranslated} />
                 <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{formatDateTime(comment.createdAt)}</div>
               </div>
             )) : <div className="muted">No messages yet.</div>}

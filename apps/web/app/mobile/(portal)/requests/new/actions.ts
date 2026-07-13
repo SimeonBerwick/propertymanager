@@ -8,7 +8,7 @@ import { requireTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { buildNewRequestMessages, sendNotification } from '@/lib/notify'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
-import { isCurrencyOption, type CurrencyOption } from '@/lib/types'
+import { isCurrencyOption, isLanguageOption, type CurrencyOption } from '@/lib/types'
 import { resolvePersonalWorkPolicy, validatePersonalWorkRequest } from '@/lib/personal-work'
 
 export type MobileRequestState = { error: string | null }
@@ -64,7 +64,7 @@ export async function submitTenantMobileRequestAction(
     return { error: 'Choose a valid preferred currency.' }
   }
 
-  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) {
+  if (!isLanguageOption(preferredLanguage)) {
     return { error: 'Choose a valid preferred language.' }
   }
 

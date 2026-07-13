@@ -189,6 +189,7 @@ export async function getVendorRequestsForDashboard(session: VendorPortalScope) 
         where: { visibility: 'external' },
         orderBy: { createdAt: 'desc' },
         take: 3,
+        include: { translations: true },
       },
       vendorCommercialItems: {
         where: { vendorId: session.vendorId },
@@ -222,6 +223,7 @@ export async function getVendorRequestById(requestId: string, session: VendorPor
       comments: {
         where: { visibility: 'external' },
         orderBy: { createdAt: 'asc' },
+        include: { translations: true },
       },
       events: {
         where: { visibility: 'tenant_visible' },

@@ -13,10 +13,14 @@ import { deriveWorkOrderStateSummary } from '@/lib/work-order-state'
 import { formatDateTime } from '@/lib/ui-utils'
 import { tenantEffectiveRequestStatus } from '@/lib/tenant-effective-status'
 import { AppointmentCoordinationPanel } from '@/components/appointment-coordination-panel'
+import { localizeComments } from '@/lib/comment-localization'
+import { TranslatedMessage } from '@/components/translated-message'
+import { localizeRequestText } from '@/lib/request-text-localization'
 
 function classifyCommentSource(
   comment: {
     body: string
+    originalBody?: string
     author?: { displayName: string | null, email: string } | null
   },
   assignedVendorName?: string | null,
@@ -28,7 +32,7 @@ function classifyCommentSource(
     }
   }
 
-  const normalizedBody = comment.body.trim().toLowerCase()
+  const normalizedBody = (comment.originalBody ?? comment.body).trim().toLowerCase()
   const normalizedVendor = assignedVendorName?.trim().toLowerCase()
 
   if (normalizedVendor && normalizedBody.includes(normalizedVendor)) {
@@ -77,10 +81,21 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
   const session = await requireTenantMobileSession()
   const [{ id }, query] = await Promise.all([params, searchParams])
 
-  const request = await getTenantOwnedRequestById(id, session)
+  const rawRequest = await getTenantOwnedRequestById(id, session)
 
-  if (!request) {
+  if (!rawRequest) {
     notFound()
+  }
+  const localizedRequestText = await localizeRequestText({
+    title: rawRequest.title,
+    description: rawRequest.description,
+    sourceLanguage: rawRequest.preferredLanguage,
+    targetLanguage: session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english',
+  })
+  const request = {
+    ...rawRequest,
+    ...localizedRequestText,
+    comments: await localizeComments(rawRequest.comments, session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english').then((comments) => comments.map((comment) => ({ ...comment, body: comment.displayBody }))),
   }
 
   const appointmentLabel = request.vendorScheduledStart
@@ -135,7 +150,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         <section className="card stack tenantStatusSummary">
           <div className="kicker">{latestCommunicationSource?.label === 'Tenant' ? 'Latest message sent' : 'Latest reply'}</div>
           <strong>{latestCommunicationSource?.label === 'Tenant' ? 'Your message was sent.' : `${latestCommunicationSource?.label ?? 'Update'} replied`}</strong>
-          <div>{displayCommentBody(latestCommunication.body)}</div>
+          <TranslatedMessage body={displayCommentBody(latestCommunication.body)} originalBody={latestCommunication.isTranslated ? displayCommentBody(latestCommunication.originalBody) : undefined} isTranslated={latestCommunication.isTranslated} />
           <div className="muted">
             {latestCommunicationSource?.label}{latestCommunicationSource?.byline ? ` - ${latestCommunicationSource.byline}` : ''} - {formatDateTime(latestCommunication.createdAt)}
           </div>
@@ -162,7 +177,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
                 <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                   {source.label}{source.byline ? ` - ${source.byline}` : ''}
                 </div>
-                <div>{displayCommentBody(comment.body)}</div>
+                <TranslatedMessage body={displayCommentBody(comment.body)} originalBody={comment.isTranslated ? displayCommentBody(comment.originalBody) : undefined} isTranslated={comment.isTranslated} />
                 <div className="muted">{formatDateTime(comment.createdAt)}</div>
               </div>
             )
@@ -174,6 +189,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         <div>
           <div className="kicker">Request detail</div>
           <h2 style={{ marginTop: 4 }}>{request.title}</h2>
+          {request.isTitleTranslated ? <details className="messageOriginal"><summary>View original title</summary><div data-no-localize>{request.originalTitle}</div></details> : null}
         </div>
         <div className="tenantStatusSummary">
           <div className="kicker">Current status</div>
@@ -181,7 +197,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
           <div>{tenantRequestNextStep({ ...request, status: effectiveStatus })}</div>
         </div>
         <div className="muted">{request.category}</div>
-        <div>{request.description}</div>
+        <TranslatedMessage body={request.description} originalBody={request.originalDescription} isTranslated={request.isDescriptionTranslated} />
         {!request.assignedVendorName ? <div className="muted">A vendor has not been selected yet. Your property manager will update this request when scheduling is ready.</div> : null}
       </section>
 
@@ -281,7 +297,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
                 </div>
               )
             })()}
-            <div>{displayCommentBody(comment.body)}</div>
+            <TranslatedMessage body={displayCommentBody(comment.body)} originalBody={comment.isTranslated ? displayCommentBody(comment.originalBody) : undefined} isTranslated={comment.isTranslated} />
             <div className="muted">{formatDateTime(comment.createdAt)}</div>
           </div>
         )) : <div className="muted">No comments yet.</div>}

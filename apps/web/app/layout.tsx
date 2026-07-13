@@ -20,6 +20,13 @@ import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
 import { getVendorSession } from '@/lib/vendor-session'
 import { RouteScrollManager } from '@/components/route-scroll-manager'
 import { isAndroidWebView } from '@/lib/android-webview'
+import { getStaffSession } from '@/lib/staff-auth'
+import { prisma } from '@/lib/prisma'
+import { isLanguageOption, localeForLanguage, LOCALE_COOKIE } from '@/lib/localization'
+import { LanguageSelector } from '@/components/language-selector'
+import { LocalizationRuntime } from '@/components/localization-runtime'
+import type { LanguageOption } from '@/lib/types'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -37,7 +44,8 @@ export const metadata = {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
+  const cookieStore = await cookies()
+  const session = await getIronSession<SessionData>(cookieStore, getSessionOptions())
   const headerStore = await headers()
   const pathname = headerStore.get('x-pathname') ?? ''
   const androidApp = isAndroidWebView(headerStore.get('user-agent'))
@@ -46,12 +54,56 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const isStaffPortalRoute = pathname === '/maintenance' || pathname.startsWith('/maintenance/')
   const isManagerRoute = session.isLoggedIn && !isTenantPortalRoute && !isVendorPortalRoute && !isStaffPortalRoute
   const dbAvailable = await isDatabaseAvailable()
-  const [tenantPortalSession, vendorPortalSession] = dbAvailable
+  const [tenantPortalSession, vendorPortalSession, staffPortalSession] = dbAvailable
     ? await Promise.all([
-        getTenantMobileSession().catch(() => null),
-        getVendorSession().catch(() => null),
+        isTenantPortalRoute ? getTenantMobileSession().catch(() => null) : null,
+        isVendorPortalRoute ? getVendorSession().catch(() => null) : null,
+        isStaffPortalRoute ? getStaffSession().catch(() => null) : null,
       ])
-    : [null, null]
+    : [null, null, null]
+  const savedLanguage = headerStore.get('x-app-language') ?? cookieStore.get(LOCALE_COOKIE)?.value
+  let preferredLanguage: LanguageOption = isLanguageOption(savedLanguage ?? '') ? savedLanguage as LanguageOption : 'english'
+  let hasAccountPreference = false
+  let localizationEnabled = true
+  if (dbAvailable) {
+    let accountPreference: { preferredLanguage: LanguageOption; subscriptionPlan?: SessionData['subscriptionPlan'] } | null = null
+    if (isManagerRoute && session.userId) {
+      accountPreference = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { preferredLanguage: true, subscriptionPlan: true },
+      }).catch(() => null)
+    } else if (tenantPortalSession) {
+      const [identity, owner] = await Promise.all([
+        prisma.tenantIdentity.findUnique({ where: { id: tenantPortalSession.tenantIdentityId }, select: { preferredLanguage: true } }),
+        prisma.user.findUnique({ where: { id: tenantPortalSession.orgId }, select: { subscriptionPlan: true } }),
+      ]).catch(() => [null, null] as const)
+      if (identity) accountPreference = { preferredLanguage: identity.preferredLanguage, subscriptionPlan: owner?.subscriptionPlan }
+    } else if (vendorPortalSession?.orgId) {
+      const [vendor, owner] = await Promise.all([
+        prisma.vendor.findUnique({ where: { id: vendorPortalSession.vendorId }, select: { preferredLanguage: true } }),
+        prisma.user.findUnique({ where: { id: vendorPortalSession.orgId }, select: { subscriptionPlan: true } }),
+      ]).catch(() => [null, null] as const)
+      if (vendor) accountPreference = { preferredLanguage: vendor.preferredLanguage, subscriptionPlan: owner?.subscriptionPlan }
+    } else if (staffPortalSession) {
+      const [staff, owner] = await Promise.all([
+        prisma.staffMember.findUnique({ where: { id: staffPortalSession.staffMemberId }, select: { preferredLanguage: true } }),
+        prisma.user.findUnique({ where: { id: staffPortalSession.orgId }, select: { subscriptionPlan: true } }),
+      ]).catch(() => [null, null] as const)
+      if (staff) accountPreference = { preferredLanguage: staff.preferredLanguage, subscriptionPlan: owner?.subscriptionPlan }
+    } else {
+      const scopedSubmitSlug = pathname.match(/^\/submit\/([^/]+)/)?.[1]
+      if (scopedSubmitSlug) {
+        const owner = await prisma.user.findUnique({ where: { slug: scopedSubmitSlug }, select: { subscriptionPlan: true } }).catch(() => null)
+        localizationEnabled = planIncludesLocalization(owner?.subscriptionPlan)
+      }
+    }
+    if (accountPreference) {
+      hasAccountPreference = true
+      localizationEnabled = planIncludesLocalization(accountPreference.subscriptionPlan)
+      preferredLanguage = localizationEnabled ? accountPreference.preferredLanguage : 'english'
+    }
+  }
+  const locale = localeForLanguage(preferredLanguage)
   const logoHref: Route = isTenantPortalRoute
     ? '/mobile'
     : isVendorPortalRoute
@@ -71,12 +123,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             : '/'
 
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning>
+    <html lang={locale.code} dir={locale.direction} data-theme="light" suppressHydrationWarning>
       <body>
         <MenuBehavior />
         <RouteScrollManager />
         <AnalyticsTracker />
         <AndroidRuntimeMarker />
+        <LocalizationRuntime language={preferredLanguage} />
         <div className="page">
           {!dbAvailable && (
             <div
@@ -96,6 +149,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           )}
           <header className={`header ${isManagerRoute ? 'managerHeader' : ''}`}>
             <BrandLogo href={logoHref} />
+            <LanguageSelector initialLanguage={preferredLanguage} hasSavedPreference={hasAccountPreference || isLanguageOption(savedLanguage ?? '')} localizationEnabled={localizationEnabled} />
             <div className="nav">
               {isManagerRoute && (
                 <>

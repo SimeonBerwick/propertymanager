@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
-import { isCurrencyOption, type CurrencyOption, type DispatchStatus, type LanguageOption, type RequestStatus, type ReviewStatus } from '@/lib/types'
+import { isCurrencyOption, isLanguageOption, type CurrencyOption, type DispatchStatus, type LanguageOption, type RequestStatus, type ReviewStatus } from '@/lib/types'
 import {
   sendNotification,
   buildStatusChangedMessage,
@@ -25,6 +25,7 @@ import { areEmailNotificationsEnabled } from '@/lib/notification-preferences'
 import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
 import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
+import { planIncludesLocalization } from '@/lib/localization-entitlement'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -531,7 +532,7 @@ export async function updatePreferencesFormAction(
   const preferredLanguage = ((formData.get('preferredLanguage') as string) ?? '').trim() as LanguageOption
 
   if (!isCurrencyOption(preferredCurrency)) return { error: 'Invalid currency.' }
-  if (!['english', 'spanish', 'french'].includes(preferredLanguage)) return { error: 'Invalid language.' }
+  if (!isLanguageOption(preferredLanguage)) return { error: 'Invalid language.' }
 
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
   const triageTagsCsv = triageTags.join(',')
@@ -1669,10 +1670,11 @@ export async function addCommentFormAction(
     },
   })
   if (!request) return { error: 'Request not found.' }
+  const author = await prisma.user.findUnique({ where: { id: session.userId }, select: { preferredLanguage: true, subscriptionPlan: true } })
 
   try {
     await prisma.requestComment.create({
-      data: { requestId, body, visibility, authorUserId: session.userId },
+      data: { requestId, body, visibility, authorUserId: session.userId, sourceLanguage: planIncludesLocalization(author?.subscriptionPlan) ? author?.preferredLanguage ?? 'english' : 'english' },
     })
     if (visibility === 'external') {
       await prisma.maintenanceRequest.updateMany({
@@ -1809,7 +1811,7 @@ export async function dismissTenantQuestionAction(
         data: { reviewState: 'none', reviewNote: null },
       }),
       prisma.requestComment.create({
-        data: { requestId, authorUserId: session.userId, visibility: 'internal', body: internalNote },
+        data: { requestId, authorUserId: session.userId, visibility: 'internal', body: internalNote, sourceLanguage: 'english' },
       }),
     ])
     await writeAuditLog({

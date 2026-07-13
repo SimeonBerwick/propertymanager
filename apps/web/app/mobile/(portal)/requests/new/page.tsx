@@ -11,7 +11,7 @@ export default async function TenantNewRequestPage() {
         <div className="kicker">New request</div>
         <h2 style={{ marginTop: 4 }}>Report issue</h2>
       </div>
-      <TenantNewRequestForm personalWorkPolicy={policy} />
+      <TenantNewRequestForm personalWorkPolicy={policy} preferredLanguage={session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english'} />
     </div>
   )
 }

@@ -67,6 +67,7 @@ export async function cancelTenantMobileRequestAction(
         requestId,
         body: `Tenant canceled request: ${reason}`,
         visibility: 'external',
+        sourceLanguage: session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english',
       },
     })
 
@@ -150,6 +151,7 @@ export async function sendTenantWorkOrderMessageAction(
         requestId,
         body: `Tenant message: ${body}`,
         visibility: 'external',
+        sourceLanguage: session.localizationEnabled ? session.preferredLanguage ?? 'english' : 'english',
       },
     })
 
