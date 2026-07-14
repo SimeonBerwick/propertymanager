@@ -4,17 +4,17 @@
 
 Production launch is blocked until every item below is complete:
 
-- [ ] Vercel is on Pro and the owner can perform an Instant Rollback.
-- [ ] Neon is on a paid plan and the restore window is set to at least 7 days.
-- [ ] A dedicated private R2 backup bucket exists. It is not the live media bucket.
-- [ ] A lifecycle rule expires only `database/` archives after 90 days. `media-preserved/` has no automatic deletion rule.
-- [ ] All GitHub backup, restore, health, and alert secrets below are configured.
-- [ ] `Property Manager Production Backup` has completed successfully.
-- [ ] The backup bucket contains an encrypted database archive and preserved media objects.
-- [ ] `Property Manager Restore Drill` has restored the newest archive into a disposable Neon database and passed its record checks.
+- [x] Vercel is on Pro and the owner can perform an Instant Rollback.
+- [x] Neon is on a paid plan and the restore window is set to at least 7 days.
+- [x] A dedicated private R2 backup bucket exists. It is not the live media bucket.
+- [x] A lifecycle rule expires only `database/` archives after 90 days. `media-preserved/` has no automatic deletion rule.
+- [x] All GitHub backup, restore, health, and alert secrets below are configured.
+- [x] `Property Manager Production Backup` has completed successfully.
+- [x] The backup bucket contains an encrypted database archive and preserved media objects.
+- [x] `Property Manager Restore Drill` has restored the newest archive into a disposable Neon database and passed its record checks.
 - [ ] `POST /api/internal/operator-alert-test` delivered an email to `OPS_ALERT_EMAIL`.
-- [ ] The scheduled production health workflow is enabled and GitHub Actions failure notifications are enabled.
-- [ ] The date, backup object name, restore target, result, duration, and person performing the drill are recorded in the drill log at the end of this document.
+- [x] The scheduled production health workflow is enabled and GitHub Actions failure notifications are enabled.
+- [x] The date, backup object name, restore target, result, duration, and person performing the drill are recorded in the drill log at the end of this document.
 
 Having a backup is not enough. Launch requires one proven restore.
 
@@ -153,7 +153,7 @@ Do not promise that data is safe until the database and media checks are complet
 
 | Date (UTC) | Backup object | Restore target | Result | Duration | Performed by | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| 2026-07-14 | `database/2026-07-14T16-40-10Z.dump.gpg` | Neon `simeonware-restore-drill` branch | Passed: 5 users and 39 maintenance requests restored | 39 seconds | Codex for Simeon Berwick | AES-256 archive was 272.17 kB. Preserved request and upload media folders were present. Neon history was set to 7 days, and Vercel Instant Rollback was verified against the previous production deployment without changing production. |
 
 ## Provider references
 
