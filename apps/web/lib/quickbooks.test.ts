@@ -1,4 +1,6 @@
 import { createHmac } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createQuickBooksState, quickBooksApprovedLimit, quickBooksAuthorizationUrl, quickBooksContentHash, quickBooksRequestId, quickBooksRetryAt, quickBooksTransactionUrl, quickBooksWebhookRealmIds, verifyQuickBooksState, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
 
@@ -12,10 +14,18 @@ describe('QuickBooks integration helpers', () => {
   it('uses the exact registered callback URL when one is configured', () => {
     process.env.QUICKBOOKS_CLIENT_ID = 'quickbooks-test-client'
     process.env.QUICKBOOKS_CLIENT_SECRET = 'quickbooks-test-secret'
-    process.env.QUICKBOOKS_REDIRECT_URI = 'https://simeonware.com/api/quickbooks/callback'
+    process.env.QUICKBOOKS_REDIRECT_URI = 'https://www.simeonware.com/api/quickbooks/callback'
 
     const authorizationUrl = new URL(quickBooksAuthorizationUrl('manager-1'))
     expect(authorizationUrl.searchParams.get('redirect_uri')).toBe(process.env.QUICKBOOKS_REDIRECT_URI)
+  })
+
+  it('renders QuickBooks timestamps in the configured app timezone', () => {
+    const source = readFileSync(resolve(process.cwd(), 'app', 'account', 'quickbooks', 'page.tsx'), 'utf8')
+    expect(source).toContain('formatDateTime(connection.lastReconciledAt)')
+    expect(source).toContain('formatDateTime(connection.lastWebhookAt)')
+    expect(source).toContain('formatDateTime(record.nextRetryAt)')
+    expect(source).not.toContain('.toLocaleString()')
   })
 
   it('accepts an intact, recent OAuth state only', () => {

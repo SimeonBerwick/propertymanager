@@ -74,5 +74,5 @@ Set these for:
 QUICKBOOKS_CLIENT_ID=
 QUICKBOOKS_CLIENT_SECRET=
 QUICKBOOKS_ENVIRONMENT=production
-QUICKBOOKS_REDIRECT_URI=https://simeonware.com/api/quickbooks/callback
+QUICKBOOKS_REDIRECT_URI=https://www.simeonware.com/api/quickbooks/callback
 QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN=
