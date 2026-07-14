@@ -26,6 +26,7 @@ import { renderBillingPdfHtml } from '@/lib/billing-pdf'
 import { logServerActionError } from '@/lib/observability'
 import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { planIncludesLocalization } from '@/lib/localization-entitlement'
+import { syncApprovedQuickBooksRecordsForRequest } from '@/lib/quickbooks'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
 
@@ -264,6 +265,10 @@ export async function updateStatusFormAction(
     summary: `Changed request status from ${fromStatus} to ${toStatus}.`,
     metadata: { fromStatus, toStatus, reason: reason || null, assessedUrgency: assessedUrgency || null },
   })
+
+  await syncApprovedQuickBooksRecordsForRequest(session.userId, requestId).catch((error) => (
+    logServerActionError('quickbooks.autoSync.statusChange', error, { requestId, toStatus }).catch(() => null)
+  ))
 
   revalidatePath(`/requests/${requestId}`)
   revalidatePath('/dashboard')
@@ -1119,6 +1124,9 @@ export async function approveVendorCommercialItemAction(
 
     await applyRequestAutomation(requestId).catch((error) => (
       logServerActionError('vendorCommercialItem.approve.automation', error, { requestId, itemId }).catch(() => null)
+    ))
+    await syncApprovedQuickBooksRecordsForRequest(session.userId, requestId).catch((error) => (
+      logServerActionError('quickbooks.autoSync.vendorApproval', error, { requestId, itemId }).catch(() => null)
     ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
@@ -2046,6 +2054,9 @@ export async function updateTenantBillbackAction(
     })
 
     await applyRequestAutomation(requestId)
+    await syncApprovedQuickBooksRecordsForRequest(session.userId, requestId).catch((error) => (
+      logServerActionError('quickbooks.autoSync.tenantBillback', error, { requestId }).catch(() => null)
+    ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/reports')
     return { error: null, success: true }
