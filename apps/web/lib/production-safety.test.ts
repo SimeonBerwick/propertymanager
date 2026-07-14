@@ -13,6 +13,9 @@ describe('production recovery workflows', () => {
     expect(source).toContain('$base_url/api/health')
     expect(source).toContain('payload?.database !== true')
     expect(source).toContain('PM_HEALTH_RESEND_API_KEY')
+    expect(source).toContain('sentry_test:')
+    expect(source).toContain('$base_url/api/monitoring/client-error')
+    expect(source).toContain('payload?.accepted !== true')
   })
 
   test('encrypts database archives and preserves media without copying deletions', () => {

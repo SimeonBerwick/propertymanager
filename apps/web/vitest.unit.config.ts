@@ -59,6 +59,7 @@ export default defineConfig({
       'lib/financial-idempotency-source.test.ts',
       'lib/appointment-date-time-fields-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',
+      'app/api/monitoring/client-error/route.test.ts',
     ],
   },
 })
