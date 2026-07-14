@@ -4,6 +4,7 @@ import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
 import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
 import { hasR2StorageConfig } from '@/lib/runtime-env'
+import { assertEmergencyFeatureEnabled, emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 export const MAX_PHOTO_COUNT = 3
 export const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
@@ -16,6 +17,7 @@ function getFileExtension(file: File) {
 }
 
 export async function validatePhotoFiles(files: File[], existingPhotoCount = 0) {
+  if (files.length && isEmergencyFeatureDisabled('uploads')) return emergencyFeatureMessage('uploads')
   if (files.length > 0 && existingPhotoCount + files.length > MAX_PHOTO_COUNT) {
     return `A work order can have up to ${MAX_PHOTO_COUNT} photos.`
   }
@@ -40,6 +42,7 @@ export async function validatePhotoFiles(files: File[], existingPhotoCount = 0) 
 
 export async function savePhotos(files: File[]) {
   if (!files.length) return [] as string[]
+  assertEmergencyFeatureEnabled('uploads')
 
   const shouldWriteLocalDisk = !hasR2StorageConfig()
   const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)

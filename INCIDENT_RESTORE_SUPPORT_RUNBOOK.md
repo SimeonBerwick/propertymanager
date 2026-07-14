@@ -59,6 +59,30 @@ Do not reuse the app's broad R2 credentials. Create a backup-specific token with
 
 Set `OPS_ALERT_EMAIL=support@simeonware.com` for Production. The health endpoint now treats a missing or invalid recipient as a blocking production configuration error.
 
+## Emergency switches
+
+Use Vercel project environment variables to pause a failing integration without taking the application offline. Set only the affected switch to `true`, redeploy, confirm the pause message, and record the incident time. Set it back to `false` and redeploy after the underlying provider or defect is resolved.
+
+| Switch | Effect |
+| --- | --- |
+| `EMERGENCY_DISABLE_STRIPE_WRITES` | Stops checkout and subscription changes. Stripe webhooks continue so payment truth is preserved. |
+| `EMERGENCY_DISABLE_QUICKBOOKS` | Stops connections, sync, retries, and reconciliation. Existing sync records remain queued. |
+| `EMERGENCY_DISABLE_UPLOADS` | Rejects new photos and invoice attachments before storage. Existing media remains readable. |
+| `EMERGENCY_DISABLE_OUTBOUND_NOTIFICATIONS` | Stops email and push delivery. User actions and stored records continue. |
+| `EMERGENCY_DISABLE_TRANSLATION` | Uses the original text without calling Google Translation. |
+| `EMERGENCY_DISABLE_AUTOMATION` | Stops the daily automation endpoint before any sweep runs. |
+
+Never disable Stripe webhook intake during a billing incident. Webhook receipts are duplicate-proof and are required to keep subscription status accurate.
+
+## Support and error loop
+
+1. Ask the user for the `SW-...` support reference or the error reference shown on the crash page.
+2. Search the `SupportRequest.referenceId` record and Sentry issue stream, then correlate the timestamp with Vercel logs.
+3. Update the support record from `open` to `investigating`, then `resolved` after the user confirms recovery.
+4. Preserve the reference in any refund, data correction, or incident note.
+
+Support requests remain stored even when email delivery is paused. `SUPPORT_EMAIL` receives new-ticket alerts; `OPS_ALERT_EMAIL` remains the destination for automated operational failures.
+
 After redeploying, send a delivery test without placing the secret directly in shell history:
 
 ```bash

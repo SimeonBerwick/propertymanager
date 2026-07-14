@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { getStripeClient, getStripeWebhookSecret } from '@/lib/stripe'
 import { parseCadence, parseStoredPlan } from '@/lib/billing-plans'
+import { beginExternalOperation, completeExternalOperation, failExternalOperation } from '@/lib/external-operations'
 
 function accountStatusFromStripe(status?: string | null) {
   switch (status) {
@@ -106,6 +107,16 @@ export async function POST(request: Request) {
   }
 
   try {
+    const receipt = await beginExternalOperation({
+      provider: 'stripe',
+      operationType: 'webhook',
+      operationKey: event.id,
+      orgId: typeof event.data.object === 'object' && event.data.object && 'metadata' in event.data.object
+        ? String((event.data.object as { metadata?: { userId?: string } }).metadata?.userId ?? '') || null
+        : null,
+    })
+    if (!receipt.shouldProcess) return NextResponse.json({ received: true, duplicate: true })
+
     if (event.type === 'checkout.session.completed') {
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
     }
@@ -124,7 +135,18 @@ export async function POST(request: Request) {
         },
       })
     }
+
+    await completeExternalOperation(receipt.operation.id, {
+      providerObjectId: typeof event.data.object === 'object' && event.data.object && 'id' in event.data.object
+        ? String(event.data.object.id)
+        : null,
+    })
   } catch (error) {
+    const receipt = await prisma.externalOperation.findUnique({
+      where: { provider_operationType_operationKey: { provider: 'stripe', operationType: 'webhook', operationKey: event.id } },
+      select: { id: true },
+    }).catch(() => null)
+    if (receipt) await failExternalOperation(receipt.id, error).catch(() => null)
     console.error('[stripe:webhook] handler failed', error)
     return NextResponse.json({ error: 'Webhook handler failed.' }, { status: 500 })
   }

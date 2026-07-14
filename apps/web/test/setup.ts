@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 // Wipe all tables between tests so each test starts with a clean state.
 // Delete in FK-safe order (children before parents).
 afterEach(async () => {
+  await prisma.externalOperation.deleteMany()
+  await prisma.supportRequest.deleteMany()
+  await prisma.nativePushToken.deleteMany()
   await prisma.pushSubscription.deleteMany()
   await prisma.tenantSession.deleteMany()
   await prisma.tenantOtpChallenge.deleteMany()
@@ -17,6 +20,13 @@ afterEach(async () => {
   await prisma.inspectionItem.deleteMany()
   await prisma.inspection.deleteMany()
   await prisma.inspectionTemplate.deleteMany()
+  await prisma.unitTurnTask.deleteMany()
+  await prisma.unitTurn.deleteMany()
+  await prisma.unitTurnTemplate.deleteMany()
+  await prisma.staffWorkLog.deleteMany()
+  await prisma.staffSession.deleteMany()
+  await prisma.staffOtpChallenge.deleteMany()
+  await prisma.maintenanceAssignmentRule.deleteMany()
   await prisma.maintenancePhoto.deleteMany()
   await prisma.statusEvent.deleteMany()
   await prisma.requestComment.deleteMany()
@@ -26,6 +36,7 @@ afterEach(async () => {
   await prisma.tenderInvite.deleteMany()
   await prisma.requestTender.deleteMany()
   await prisma.maintenanceRequest.deleteMany()
+  await prisma.staffMember.deleteMany()
   await prisma.vendor.deleteMany()
   await prisma.tenantIdentity.deleteMany()
   await prisma.unit.deleteMany()

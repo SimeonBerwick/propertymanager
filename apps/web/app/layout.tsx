@@ -13,6 +13,7 @@ import { BrandLogo } from '@/components/brand-logo'
 import { MenuBehavior } from '@/components/menu-behavior'
 import { CommandPalette } from '@/components/command-palette'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
+import { ClientErrorMonitor } from '@/components/client-error-monitor'
 import { ManagerMobileNav } from '@/components/manager-mobile-nav'
 import { AndroidRuntimeMarker } from './android-runtime-marker'
 import { PublicMarketingNav } from '@/components/public-marketing-nav'
@@ -128,6 +129,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <MenuBehavior />
         <RouteScrollManager />
         <AnalyticsTracker />
+        <ClientErrorMonitor />
         <AndroidRuntimeMarker />
         <LocalizationRuntime language={preferredLanguage} />
         <div className="page">

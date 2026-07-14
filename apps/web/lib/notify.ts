@@ -20,6 +20,7 @@ import { formatAppointmentDateTime, formatAppointmentWindow } from '@/lib/appoin
 import { translateTexts } from '@/lib/translation'
 import type { LanguageOption } from '@/lib/types'
 import { planIncludesLocalization } from '@/lib/localization-entitlement'
+import { isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 export interface NotificationMessage {
   to: string
@@ -120,6 +121,10 @@ async function localizeNotification(msg: NotificationMessage, context: Notificat
 }
 
 export async function sendNotification(msg: NotificationMessage, context: NotificationContext = {}): Promise<{ ok: boolean }> {
+  if (isEmergencyFeatureDisabled('notifications')) {
+    console.warn('[NOTIFY] Outbound delivery is paused by the emergency switch.')
+    return { ok: false }
+  }
   const localized = await localizeNotification(msg, context)
   const normalized = withRequestSubject(localized, context)
   try {

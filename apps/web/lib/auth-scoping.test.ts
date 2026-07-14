@@ -25,6 +25,8 @@ import { prisma } from '@/lib/prisma'
 import { getRequestDetailData, getPropertyDetailData, getDashboardData } from '@/lib/data'
 import { getTenantOwnedRequestById, getTenantOwnedPhotoById } from '@/lib/tenant-portal-data'
 import type { TenantMobileScope } from '@/lib/tenant-mobile-session'
+import { getVendorCommercialSummary, getVendorPhotoById, getVendorRequestById } from '@/lib/vendor-portal-data'
+import type { VendorPortalScope } from '@/lib/vendor-session'
 import {
   scaffoldLandlord,
   scaffoldTenant,
@@ -292,5 +294,78 @@ describe('tenant data scoping', () => {
       const result = await findReturningTenantIdentityByIdentifier(identity.email!)
       expect(result.ok).toBe(false)
     })
+  })
+})
+
+describe('adversarial multi-customer isolation', () => {
+  test('customer B cannot read customer A vendor, staff, inspection, turn, accounting, media, or device records', async () => {
+    const a = await scaffoldLandlord()
+    const b = await scaffoldLandlord()
+    const vendorA = await prisma.vendor.create({ data: { orgId: a.user.id, name: 'A Vendor', email: 'vendor-a@example.com' } })
+    const vendorB = await prisma.vendor.create({ data: { orgId: b.user.id, name: 'B Vendor', email: 'vendor-b@example.com' } })
+    const staffA = await prisma.staffMember.create({ data: { orgId: a.user.id, name: 'A Staff', email: 'staff-a@example.com' } })
+    const staffB = await prisma.staffMember.create({ data: { orgId: b.user.id, name: 'B Staff', email: 'staff-b@example.com' } })
+    const requestA = await createMaintenanceRequest(a.property.id, a.unit.id, {
+      orgId: a.user.id,
+      assignedVendorId: vendorA.id,
+      assignedVendorName: vendorA.name,
+      assignedVendorEmail: vendorA.email,
+      assignedStaffId: staffA.id,
+      assignedStaffName: staffA.name,
+      assignedStaffEmail: staffA.email,
+    })
+    const photoA = await prisma.maintenancePhoto.create({ data: { requestId: requestA.id, imageUrl: 'uploads/customer-a.jpg' } })
+    await prisma.vendorCommercialItem.create({
+      data: { requestId: requestA.id, vendorId: vendorA.id, orgId: a.user.id, itemType: 'service_fee', status: 'submitted', amountCents: 12500, title: 'Customer A invoice' },
+    })
+    const billingA = await prisma.billingDocument.create({
+      data: { requestId: requestA.id, recipientType: 'vendor', documentType: 'vendor_remittance', status: 'sent', totalCents: 12500, title: 'Customer A remittance', createdByUserId: a.user.id },
+    })
+    await prisma.quickBooksSyncRecord.create({
+      data: { userId: a.user.id, requestId: requestA.id, billingDocumentId: billingA.id, sourceType: 'billing_document', sourceId: billingA.id, contentHash: 'customer-a-hash' },
+    })
+    const inspectionA = await prisma.inspection.create({
+      data: { orgId: a.user.id, unitId: a.unit.id, title: 'A inspection', inspectionType: 'routine', templateName: 'Routine' },
+    })
+    const turnA = await prisma.unitTurn.create({
+      data: { orgId: a.user.id, unitId: a.unit.id, title: 'A turn', templateName: 'Standard', moveOutAt: new Date() },
+    })
+    await prisma.nativePushToken.create({ data: { principalType: 'manager', principalId: a.user.id, token: `token-${a.user.id}`, platform: 'android' } })
+    await prisma.externalOperation.create({ data: { provider: 'stripe', operationType: 'checkout', operationKey: `checkout-${a.user.id}`, orgId: a.user.id } })
+    const supportA = await prisma.supportRequest.create({
+      data: { referenceId: `SW-ATTACK-${a.user.id}`, orgId: a.user.id, principalType: 'manager', principalId: a.user.id, email: a.user.email, category: 'technical_problem', message: 'Customer A private support details' },
+    })
+
+    const vendorScopeB: VendorPortalScope = {
+      sessionId: 'vendor-b-session', vendorId: vendorB.id, orgId: b.user.id, vendorName: vendorB.name, email: vendorB.email,
+    }
+    expect(await getVendorRequestById(requestA.id, vendorScopeB)).toBeNull()
+    expect(await getVendorPhotoById(photoA.id, vendorScopeB)).toBeNull()
+    expect((await getVendorCommercialSummary(vendorScopeB)).map((item) => item.requestId)).not.toContain(requestA.id)
+
+    const staffRead = await prisma.maintenanceRequest.findFirst({
+      where: { id: requestA.id, assignedStaffId: staffB.id, property: { ownerId: b.user.id } },
+    })
+    expect(staffRead).toBeNull()
+    expect(await prisma.inspection.findFirst({ where: { id: inspectionA.id, orgId: b.user.id, unit: { property: { ownerId: b.user.id } } } })).toBeNull()
+    expect(await prisma.unitTurn.findFirst({ where: { id: turnA.id, orgId: b.user.id, unit: { property: { ownerId: b.user.id } } } })).toBeNull()
+    expect(await prisma.billingDocument.findFirst({ where: { id: billingA.id, request: { property: { ownerId: b.user.id } } } })).toBeNull()
+    expect(await prisma.quickBooksSyncRecord.findFirst({ where: { billingDocumentId: billingA.id, userId: b.user.id } })).toBeNull()
+    expect(await prisma.nativePushToken.findFirst({ where: { token: `token-${a.user.id}`, principalType: 'manager', principalId: b.user.id } })).toBeNull()
+    expect(await prisma.externalOperation.findFirst({ where: { operationKey: `checkout-${a.user.id}`, orgId: b.user.id } })).toBeNull()
+    expect(await prisma.supportRequest.findFirst({ where: { id: supportA.id, principalType: 'manager', principalId: b.user.id } })).toBeNull()
+  })
+
+  test('customer B cannot mutate customer A request through scoped update guards', async () => {
+    const a = await scaffoldLandlord()
+    const b = await scaffoldLandlord()
+    const requestA = await createMaintenanceRequest(a.property.id, a.unit.id, { orgId: a.user.id, title: 'Customer A private request' })
+
+    const result = await prisma.maintenanceRequest.updateMany({
+      where: { id: requestA.id, property: { ownerId: b.user.id } },
+      data: { title: 'Cross-customer overwrite' },
+    })
+    expect(result.count).toBe(0)
+    expect((await prisma.maintenanceRequest.findUniqueOrThrow({ where: { id: requestA.id } })).title).toBe('Customer A private request')
   })
 })

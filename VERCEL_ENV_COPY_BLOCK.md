@@ -24,6 +24,16 @@ NOTIFY_TRANSPORT=smtp
 SMTP_URL=smtps://user:pass@smtp.example.com:465
 NOTIFY_FROM=Property Manager <noreply@simeonware.com>
 OPS_ALERT_EMAIL=support@simeonware.com
+SUPPORT_EMAIL=support@simeonware.com
+# NEXT_PUBLIC_SENTRY_DSN is supplied by the Vercel Sentry integration.
+
+# Incident-only controls. Leave false during normal operation.
+EMERGENCY_DISABLE_AUTOMATION=false
+EMERGENCY_DISABLE_OUTBOUND_NOTIFICATIONS=false
+EMERGENCY_DISABLE_QUICKBOOKS=false
+EMERGENCY_DISABLE_STRIPE_WRITES=false
+EMERGENCY_DISABLE_TRANSLATION=false
+EMERGENCY_DISABLE_UPLOADS=false
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"replace-me"}
 
 # Google Play reviewer access

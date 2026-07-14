@@ -40,7 +40,7 @@ describe('subscription unit capacity synchronization', () => {
       proration_behavior: 'always_invoice',
       items: [expect.objectContaining({ price_data: expect.objectContaining({ unit_amount: 9900 }) })],
       metadata: expect.objectContaining({ plan: 'growth', purchasedCapacity: '75', additionalUnitAllowance: '0' }),
-    }))
+    }), expect.objectContaining({ idempotencyKey: expect.stringMatching(/^subscription-price-/) }))
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'user_1' }, data: { subscriptionPlan: 'growth', additionalUnitAllowance: 0 } })
   })
 

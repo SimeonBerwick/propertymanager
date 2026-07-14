@@ -1324,6 +1324,48 @@ model BillingEvent {
   @@index([billingDocumentId, createdAt])
 }
 
+model ExternalOperation {
+  id               String   @id @default(cuid())
+  provider         String
+  operationType    String
+  operationKey     String
+  orgId            String?
+  status           String   @default("pending")
+  providerObjectId String?
+  resultUrl        String?
+  expiresAt        DateTime?
+  attemptCount     Int      @default(1)
+  lastError        String?
+  processedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([provider, operationType, operationKey])
+  @@index([provider, status, updatedAt])
+  @@index([orgId, createdAt])
+}
+
+model SupportRequest {
+  id             String   @id @default(cuid())
+  referenceId    String   @unique
+  orgId          String?
+  principalType  String?
+  principalId    String?
+  name           String?
+  email          String
+  organization   String?
+  category       String
+  message        String
+  pagePath       String?
+  status         String   @default("open")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([orgId, createdAt])
+  @@index([email, createdAt])
+}
+
 model PushSubscription {
   id            String   @id @default(cuid())
   principalType String
