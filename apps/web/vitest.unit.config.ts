@@ -34,6 +34,7 @@ export default defineConfig({
       'lib/appointment-time.test.ts',
       'lib/notify.test.ts',
       'lib/inspection-templates.test.ts',
+      'lib/inspection-completion.test.ts',
       'lib/inspection-report.test.ts',
       'lib/unit-turn-templates.test.ts',
       'lib/maintenance-calendar.test.ts',
