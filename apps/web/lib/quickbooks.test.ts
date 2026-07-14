@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createQuickBooksState, quickBooksApprovedLimit, quickBooksContentHash, quickBooksRequestId, quickBooksRetryAt, quickBooksTransactionUrl, verifyQuickBooksState, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
+import { createQuickBooksState, quickBooksApprovedLimit, quickBooksContentHash, quickBooksRequestId, quickBooksRetryAt, quickBooksTransactionUrl, quickBooksWebhookRealmIds, verifyQuickBooksState, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
 
 describe('QuickBooks integration helpers', () => {
   beforeEach(() => {
@@ -39,6 +39,15 @@ describe('QuickBooks integration helpers', () => {
     expect(verifyQuickBooksWebhookSignature(payload, signature)).toBe(true)
     expect(verifyQuickBooksWebhookSignature(`${payload} `, signature)).toBe(false)
     expect(verifyQuickBooksWebhookSignature(payload, null)).toBe(false)
+  })
+
+  it('recognizes current and legacy QuickBooks webhook company IDs', () => {
+    expect(quickBooksWebhookRealmIds([
+      { intuitaccountid: '310687', type: 'qbo.bill.updated.v1' },
+      { intuitaccountid: '310687', type: 'qbo.payment.created.v1' },
+    ])).toEqual(['310687'])
+    expect(quickBooksWebhookRealmIds({ eventNotifications: [{ realmId: '123' }, { realmId: '456' }] })).toEqual(['123', '456'])
+    expect(quickBooksWebhookRealmIds({ unexpected: true })).toEqual([])
   })
 
   it('only exposes amounts covered by manager financial approval', () => {

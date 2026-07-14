@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { reconcileQuickBooksConnection, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
-
-type WebhookPayload = { eventNotifications?: Array<{ realmId?: string }> }
+import { quickBooksWebhookRealmIds, reconcileQuickBooksConnection, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
 
 export async function POST(request: NextRequest) {
   const payload = await request.text()
@@ -10,14 +8,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid QuickBooks webhook signature.' }, { status: 401 })
   }
 
-  const body = JSON.parse(payload || '{}') as WebhookPayload
-  const realmIds = [...new Set((body.eventNotifications ?? []).map((event) => event.realmId?.trim()).filter((value): value is string => Boolean(value)))]
+  const realmIds = quickBooksWebhookRealmIds(JSON.parse(payload || '{}'))
+  const userIds: string[] = []
   for (const realmId of realmIds) {
     const connections = await prisma.quickBooksConnection.findMany({ where: { realmId, status: 'connected' }, select: { id: true, userId: true } })
     for (const connection of connections) {
       await prisma.quickBooksConnection.update({ where: { id: connection.id }, data: { lastWebhookAt: new Date() } })
-      await reconcileQuickBooksConnection(connection.userId, { force: true }).catch(() => null)
+      userIds.push(connection.userId)
     }
   }
+  after(async () => {
+    for (const userId of [...new Set(userIds)]) await reconcileQuickBooksConnection(userId, { force: true }).catch(() => null)
+  })
   return NextResponse.json({ ok: true })
 }

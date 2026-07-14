@@ -29,6 +29,20 @@ export function verifyQuickBooksWebhookSignature(payload: string, signature: str
   return actual.length === expected.length && timingSafeEqual(actual, expected)
 }
 
+export function quickBooksWebhookRealmIds(payload: unknown) {
+  const ids: string[] = []
+  if (Array.isArray(payload)) {
+    for (const event of payload) {
+      if (event && typeof event === 'object' && 'intuitaccountid' in event) ids.push(String(event.intuitaccountid ?? '').trim())
+    }
+  } else if (payload && typeof payload === 'object' && 'eventNotifications' in payload && Array.isArray(payload.eventNotifications)) {
+    for (const event of payload.eventNotifications) {
+      if (event && typeof event === 'object' && 'realmId' in event) ids.push(String(event.realmId ?? '').trim())
+    }
+  }
+  return [...new Set(ids.filter(Boolean))]
+}
+
 export function quickBooksRequestId(recordId: string) {
   return `sw-${createHash('sha256').update(recordId).digest('hex').slice(0, 40)}`
 }
