@@ -20,10 +20,10 @@ export async function QuickBooksSyncPanel({ requestId }: { requestId: string }) 
   if (!connection) return null
   if (!request.billingDocuments.length && !hasStaffCosts) return null
   const bySource = new Map(records.map((record) => [`${record.sourceType}:${record.sourceId}`, record]))
-  const statusLabel = (status?: string) => status === 'synced' ? 'Synced successfully' : status === 'needs_attention' ? 'Needs attention' : 'Ready to sync'
+  const statusLabel = (status?: string) => status === 'synced' ? 'Synced successfully' : status === 'retry_scheduled' ? 'Retry scheduled' : status === 'needs_attention' ? 'Needs attention' : 'Ready to sync'
 
   return <section className="card stack" id="quickbooks">
-    <div className="sectionHead"><div><div className="kicker">Accounting</div><h2 style={{ margin: '4px 0' }}>QuickBooks Online</h2><div className="muted">Send approved records once, then refresh payment balances from QuickBooks.</div></div><Link href="/account/quickbooks" className="button">Settings</Link></div>
+    <div className="sectionHead"><div><div className="kicker">Accounting</div><h2 style={{ margin: '4px 0' }}>QuickBooks Online</h2><div className="muted">{connection.autoSyncEnabled ? 'Approved records sync automatically. Payment status comes back from QuickBooks.' : 'Send approved records once, then refresh payment balances from QuickBooks.'}</div></div><Link href="/account/quickbooks" className="button">Settings</Link></div>
     {connection.status !== 'connected' ? <div className="notice error">QuickBooks needs to be reconnected before syncing.</div> : null}
     <div className="stack" style={{ gap: 12 }}>
       {request.billingDocuments.map((document) => {
@@ -31,7 +31,7 @@ export async function QuickBooksSyncPanel({ requestId }: { requestId: string }) 
         const approvedLimit = quickBooksApprovedLimit({ recipientType: document.recipientType, tenantBillbackDecision: request.tenantBillbackDecision, tenantBillbackAmountCents: request.tenantBillbackAmountCents, personalWorkBilledAt: request.personalWorkBilledAt, documentTotalCents: document.totalCents, vendorCommercialItems: request.vendorCommercialItems })
         const financiallyApproved = approvedLimit > 0 && document.totalCents <= approvedLimit
         return <div className="billingRowCard" key={document.id}>
-          <div className="billingRow"><div><strong>{document.title}</strong><div className="muted">{document.recipientType === 'vendor' ? 'QuickBooks bill' : 'QuickBooks customer invoice'} - {formatMoney(document.totalCents, document.currency)}</div></div><span className={`badge ${record?.status === 'synced' ? 'billing-paid' : record?.status === 'needs_attention' ? 'billing-partial' : ''}`}>{financiallyApproved ? statusLabel(record?.status) : 'Waiting for financial approval'}</span></div>
+          <div className="billingRow"><div><strong>{document.title}</strong><div className="muted">{document.recipientType === 'vendor' ? 'QuickBooks bill' : 'QuickBooks customer invoice'} - {formatMoney(document.totalCents, document.currency)}</div></div><span className={`badge ${record?.status === 'synced' ? 'billing-paid' : record?.status === 'needs_attention' || record?.status === 'retry_scheduled' ? 'billing-partial' : ''}`}>{financiallyApproved ? statusLabel(record?.status) : 'Waiting for financial approval'}</span></div>
           {record?.errorMessage ? <div className="notice error">{record.errorMessage}</div> : null}
           <div className="billingActionsRow">{connection.status === 'connected' && financiallyApproved ? <QuickBooksSyncButton requestId={requestId} sourceType="billing_document" sourceId={document.id} previouslySynced={Boolean(record?.entityId)} /> : null}{record?.entityType && record.entityId ? <a className="button" href={quickBooksTransactionUrl(connection.environment, record.entityType, record.entityId)} target="_blank" rel="noreferrer">Open in QuickBooks</a> : null}</div>
         </div>

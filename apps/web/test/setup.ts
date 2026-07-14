@@ -11,6 +11,7 @@ afterEach(async () => {
   await prisma.vendorSession.deleteMany()
   await prisma.vendorOtpChallenge.deleteMany()
   await prisma.billingEvent.deleteMany()
+  await prisma.quickBooksSyncRecord.deleteMany()
   await prisma.billingDocument.deleteMany()
   await prisma.auditLog.deleteMany()
   await prisma.inspectionItem.deleteMany()
@@ -29,6 +30,8 @@ afterEach(async () => {
   await prisma.tenantIdentity.deleteMany()
   await prisma.unit.deleteMany()
   await prisma.property.deleteMany()
+  await prisma.quickBooksEntityMapping.deleteMany()
+  await prisma.quickBooksConnection.deleteMany()
   await prisma.user.deleteMany()
 })
 

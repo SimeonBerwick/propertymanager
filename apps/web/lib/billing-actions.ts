@@ -12,6 +12,7 @@ import type { CurrencyOption } from '@/lib/types'
 import { writeAuditLog } from '@/lib/audit-log'
 import { logServerActionError } from '@/lib/observability'
 import { getAppBaseUrl } from '@/lib/runtime-env'
+import { syncApprovedQuickBooksRecordsForRequest } from '@/lib/quickbooks'
 
 export type BillingActionState = { error: string | null; success?: boolean }
 
@@ -263,6 +264,9 @@ export async function createBillingDocumentAction(
     }
 
     await closeCompletedRequestIfFullySettled(requestId, session.userId)
+    await syncApprovedQuickBooksRecordsForRequest(session.userId, requestId).catch((error) => (
+      logServerActionError('quickbooks.autoSync.billingCreated', error, { requestId, billingDocumentId: billingDocument.id }).catch(() => null)
+    ))
     revalidatePath(`/requests/${requestId}`)
     revalidatePath('/dashboard')
     return { error: null, success: true }

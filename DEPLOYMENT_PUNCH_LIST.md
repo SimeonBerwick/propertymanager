@@ -97,6 +97,14 @@ Must be green:
 - call internal automation with bearer auth
 - verify hosted automation sweep completes successfully
 
+### QuickBooks Online
+- add `QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN` to Vercel for Production, Preview, and Development
+- register `https://<production-domain>/api/quickbooks/webhook` in the Intuit developer app
+- connect a QuickBooks sandbox company and enable automatic synchronization
+- approve a test financial record and verify exactly one QuickBooks transaction is created
+- record a sandbox payment and verify the Simeonware payment status updates
+- call `/api/internal/quickbooks-automation` with bearer auth and verify reconciliation succeeds
+
 ## 7. Release gate
 Do not call hosted production ready unless all are true:
 - Playwright browser gate passed

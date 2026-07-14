@@ -5,6 +5,10 @@
     {
       "path": "/api/internal/automation",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/internal/quickbooks-automation",
+      "schedule": "17 * * * *"
     }
   ]
 }
