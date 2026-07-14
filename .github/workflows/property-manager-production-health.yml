@@ -2,6 +2,12 @@ name: Property Manager Production Health
 
 on:
   workflow_dispatch:
+    inputs:
+      sentry_test:
+        description: Send one production Sentry smoke event
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: '7,22,37,52 * * * *'
 
@@ -42,6 +48,32 @@ jobs:
             try { payload = JSON.parse(body); } catch { payload = null; }
             if (status !== "200" || payload?.ok !== true || payload?.database !== true) {
               console.error(`Production health failed with HTTP ${status}.`);
+              process.exit(1);
+            }
+          ' "$status" "$response_file"
+
+      - name: Send Sentry smoke event
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.sentry_test }}
+        env:
+          HOSTED_BASE_URL: ${{ secrets.PM_HOSTED_BASE_URL }}
+        run: |
+          base_url="${HOSTED_BASE_URL%/}"
+          response_file="$(mktemp)"
+          status="$(curl --silent --show-error --location \
+            --output "$response_file" --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data '{"message":"Simeonware production Sentry smoke test","digest":"github-production-health","path":"/api/monitoring/client-error"}' \
+            "$base_url/api/monitoring/client-error")" || status="000"
+
+          cat "$response_file"
+          node -e '
+            const fs = require("fs");
+            const status = process.argv[1];
+            const body = fs.readFileSync(process.argv[2], "utf8");
+            let payload;
+            try { payload = JSON.parse(body); } catch { payload = null; }
+            if (status !== "202" || payload?.accepted !== true || !/^[a-f0-9]{32}$/.test(payload?.eventId ?? "")) {
+              console.error(`Sentry smoke event failed with HTTP ${status}.`);
               process.exit(1);
             }
           ' "$status" "$response_file"

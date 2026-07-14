@@ -18,5 +18,8 @@ export async function POST(request: NextRequest) {
     path,
     tags: { digest },
   })
-  return NextResponse.json({ accepted: true, eventId: result.eventId })
+  return NextResponse.json(
+    { accepted: result.ok, eventId: result.eventId },
+    { status: result.ok ? 202 : 503 },
+  )
 }
