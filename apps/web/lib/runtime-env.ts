@@ -24,6 +24,7 @@ type RuntimeCheckId =
   | 'stripeSecretKey'
   | 'stripeWebhookSecret'
   | 'googleTranslateApiKey'
+  | 'assistedTrialInviteSecret'
 
 export type RuntimeCapability = 'base' | 'notifications' | 'media' | 'rateLimit' | 'billing' | 'localization'
 
@@ -106,6 +107,7 @@ export function getRuntimeChecks(): RuntimeCheck[] {
   const stripeSecretKey = envValue('STRIPE_SECRET_KEY')
   const stripeWebhookSecret = envValue('STRIPE_WEBHOOK_SECRET')
   const googleTranslateApiKey = envValue('GOOGLE_TRANSLATE_API_KEY')
+  const assistedTrialInviteSecret = envValue('ASSISTED_TRIAL_INVITE_SECRET')
   const blocking = isHostedRuntimeEnforced()
 
   return [
@@ -305,6 +307,15 @@ export function getRuntimeChecks(): RuntimeCheck[] {
           ? 'Stripe webhook secret is configured.'
           : 'Stripe webhook secret is too short or still looks like a placeholder.'
         : 'Missing STRIPE_WEBHOOK_SECRET.',
+    },
+    {
+      id: 'assistedTrialInviteSecret',
+      label: 'ASSISTED_TRIAL_INVITE_SECRET',
+      ok: hasNonPlaceholderSecret(assistedTrialInviteSecret),
+      blocking: false,
+      detail: hasNonPlaceholderSecret(assistedTrialInviteSecret)
+        ? 'Signed assisted-trial invitations are enabled.'
+        : 'Add a unique random secret of at least 32 characters before issuing assisted-trial invitations.',
     },
     {
       id: 'googleTranslateApiKey',

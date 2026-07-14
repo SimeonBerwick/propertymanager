@@ -29,6 +29,10 @@ export default async function SubscriptionPage({
         subscriptionPlan: true,
         billingCadence: true,
         trialEndsAt: true,
+        trialProgram: true,
+        trialStartedAt: true,
+        consultationStatus: true,
+        assistedImportStatus: true,
         subscriptionEndsAt: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
@@ -73,6 +77,14 @@ export default async function SubscriptionPage({
         {params?.checkout === 'success' ? <div className="notice success">Checkout complete. Your subscription may take a moment to update.</div> : null}
         {params?.checkout === 'cancelled' ? <div className="notice">Checkout was cancelled.</div> : null}
         {params?.capacity === 'updated' ? <div className="notice success">Unit capacity updated. You can now add units up to the new allowance without another charge.</div> : null}
+
+        {freeTrial ? (
+          <div className="notice">
+            <strong>{user.trialProgram === 'assisted_us_30' ? '30-Day Assisted Trial' : '30-Day Self-Service Trial'}</strong>
+            <div>Started {user.trialStartedAt?.toLocaleString() ?? 'when the account was created'} and ends {user.trialEndsAt?.toLocaleString() ?? 'after 30 days'}. No card is on file and no automatic charge will occur.</div>
+            {user.trialProgram === 'assisted_us_30' ? <div>Consultation: {user.consultationStatus.replaceAll('_', ' ')}. Assisted import: {user.assistedImportStatus.replaceAll('_', ' ')}.</div> : null}
+          </div>
+        ) : null}
 
         {androidApp ? (
           <div className="grid cols-2">

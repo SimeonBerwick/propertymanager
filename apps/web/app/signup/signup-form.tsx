@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { BILLING_PLANS, CADENCE_LABELS, OFFERED_PLANS, planPriceLabel, type CadenceKey, type OfferedPlanKey } from '@/lib/billing-plans'
 import { CURRENCY_OPTIONS, type CurrencyOption } from '@/lib/types'
 import { signupAction, type SignupState } from './actions'
+import { US_STATE_OPTIONS } from '@/lib/us-states'
+import { LegalReviewDialog } from '@/components/legal-review-dialog'
 
 declare global {
   interface Window {
@@ -24,14 +26,19 @@ export function SignupForm({
   initialPlan = 'starter',
   initialCadence = 'monthly',
   initialCurrency = 'usd',
+  assistedInviteToken,
+  assistedInviteEmail,
 }: {
   androidApp?: boolean
   initialPlan?: OfferedPlanKey
   initialCadence?: CadenceKey
   initialCurrency?: CurrencyOption
+  assistedInviteToken?: string
+  assistedInviteEmail?: string
 }) {
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
   const [runtimeAndroidApp, setRuntimeAndroidApp] = useState(androidApp)
+  const [legalReviewed, setLegalReviewed] = useState(false)
 
   useEffect(() => {
     const detectApp = () => {
@@ -62,7 +69,7 @@ export function SignupForm({
         </label>
         <label className="field">
           <span className="field-label">Email</span>
-          <input className="input" name="email" type="email" required autoComplete="email" />
+          <input className="input" name="email" type="email" required autoComplete="email" defaultValue={assistedInviteEmail} readOnly={Boolean(assistedInviteEmail)} />
         </label>
       </div>
 
@@ -77,6 +84,15 @@ export function SignupForm({
           placeholder="Optional"
         />
         <span className="muted">Shown to vendors so they know which property management business is contacting them.</span>
+      </label>
+
+      <label className="field">
+        <span className="field-label">Primary U.S. operating state</span>
+        <select className="input" name="businessStateCode" defaultValue="" required>
+          <option value="" disabled>Choose a state</option>
+          {US_STATE_OPTIONS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
+        <span className="muted">The launch trial is available to businesses managing property in the 50 states and District of Columbia.</span>
       </label>
 
       <label className="field">
@@ -99,7 +115,7 @@ export function SignupForm({
           <input type="hidden" name="plan" value={initialPlan} />
           <input type="hidden" name="cadence" value={initialCadence} />
           <div className="notice">
-            Your free month starts when you create the account. Check simeonware.com in a web browser for subscription details and plan information.
+            Your 30-day trial starts when you create the account. No payment method is required and the trial does not automatically become paid service. Check simeonware.com in a web browser for subscription details and plan information.
           </div>
         </>
       ) : (
@@ -139,18 +155,28 @@ export function SignupForm({
         </>
       )}
 
-      <label className="field">
-        <span className="field-label">Promo code</span>
-        <input
-          className="input"
-          name="promoCode"
-          type="text"
-          autoComplete="off"
-          maxLength={40}
-          placeholder="Optional"
-        />
-        <span className="muted">Have an invite code? Enter it here to extend the trial.</span>
-      </label>
+      {assistedInviteToken ? <input type="hidden" name="inviteToken" value={assistedInviteToken} /> : null}
+      {assistedInviteToken ? (
+        <div className="notice success">
+          <strong>30-Day Assisted Trial</strong>
+          <div>Your invitation includes one onboarding consultation and assistance importing supported records. Scheduling does not delay or extend the trial.</div>
+        </div>
+      ) : null}
+
+      <div className="stack" style={{ gap: 10 }}>
+        <LegalReviewDialog assistedTrial={Boolean(assistedInviteToken)} onReviewed={() => setLegalReviewed(true)} />
+        <label className="row" style={{ alignItems: 'flex-start' }}>
+          <input type="checkbox" name="confirmUsEligibility" value="yes" required />
+          <span>I confirm that this business manages property in the United States and that I am authorized to create this account.</span>
+        </label>
+        <label className="row" style={{ alignItems: 'flex-start' }}>
+          <input type="checkbox" name="acceptLegal" value="yes" required disabled={!legalReviewed} />
+          <span>
+            I agree to the <Link href="/terms" target="_blank">Terms of Service</Link>{assistedInviteToken ? <> and <Link href="/terms#assisted-trial" target="_blank">30-Day Assisted Trial Agreement</Link></> : null}, and acknowledge the <Link href="/privacy" target="_blank">Privacy Policy</Link>. I understand that the trial starts when this account is created, lasts 30 days, requires no payment method, and will not automatically charge me or convert into a paid subscription.
+          </span>
+        </label>
+        {!legalReviewed ? <span className="muted">Open the legal documents before accepting them.</span> : null}
+      </div>
 
       <div className="row">
         <Link href="/login" className="button">Back to sign in</Link>

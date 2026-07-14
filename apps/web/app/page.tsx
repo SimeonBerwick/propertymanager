@@ -38,6 +38,7 @@ export default async function HomePage() {
           ) : (
             <div className="trustLine">
               <span>No credit card required</span>
+              <span>30-day trial for U.S. property businesses</span>
               <span>Tenant, staff, and vendor portals included</span>
               <span>CSV import and export ready</span>
             </div>
@@ -242,7 +243,7 @@ export default async function HomePage() {
             </article>
           ))}
         </div>
-        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. No capacity payment is charged during the 30-day trial, and checkout shows the exact first bill based on active units. Multilingual communication is included with Growth and Pro.</p>
+        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. The card-free 30-day trial is currently available to U.S. property-management businesses. Checkout shows the exact first bill based on active units. Multilingual communication is included with Growth and Pro.</p>
       </section>
 
       <section className={`marketingSection appSubscriptionSection ${androidApp ? 'serverVisible' : ''}`} data-app-subscription>
@@ -275,7 +276,7 @@ export default async function HomePage() {
             ) : (
               <>
                 <details><summary>Do tenants and vendors need paid accounts?</summary><p>No. Property managers control the account and invite tenants and vendors into the workflows they need.</p></details>
-                <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. You can use the complete product for 30 days before adding a payment method.</p></details>
+                <details><summary>Do I need a credit card to try Simeonware?</summary><p>No. Eligible U.S. property-management businesses can use the complete product for 30 days before separately choosing and paying for a subscription.</p></details>
                 <details><summary>What changes between plans?</summary><p>Active-unit capacity and multilingual communication. Starter is English-only. Growth and Pro include 14-language workspaces, translated requests and messages, and localized notifications. Core maintenance features are included across every plan.</p></details>
                 <details><summary>Can I cancel or change plans?</summary><p>Yes. Plans are available month to month, with an optional annual discount.</p></details>
               </>
@@ -291,7 +292,7 @@ export default async function HomePage() {
           {androidApp ? (
             <p>Start your free month in the app. For subscription details and plan information, visit simeonware.com in a web browser.</p>
           ) : (
-            <p>Start your 30-day free trial and see tenant requests, vendor bids, approvals, photos, costs, CSV exports, and closeout in one workspace.</p>
+            <p>U.S. property-management businesses can start a card-free 30-day trial and see tenant requests, vendor bids, approvals, photos, costs, CSV exports, and closeout in one workspace.</p>
           )}
         </div>
         {androidApp ? (

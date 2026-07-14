@@ -15,6 +15,7 @@ import { shouldManageExistingSubscription } from '@/lib/subscription-checkout'
 import { syncSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
 import { assertEmergencyFeatureEnabled } from '@/lib/feature-switches'
 import { completeExternalOperation, failExternalOperation, stableOperationKey } from '@/lib/external-operations'
+import { checkoutAcceptanceKey, checkoutConsentRecord, checkoutConsentText, requestLegalMetadata } from '@/lib/legal-consent'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -97,6 +98,9 @@ export async function startCheckoutAction(formData: FormData) {
   const plan = parsePlan(formData.get('plan'))
   const cadence = parseCadence(formData.get('cadence'))
   if (!plan || !cadence) redirect(billingUrl('Choose a valid plan.') as Route)
+  if (String(formData.get('acceptRecurring') ?? '') !== 'yes') {
+    redirect(`/account/subscription/confirm?plan=${plan}&cadence=${cadence}&error=${encodeURIComponent('Review and accept the recurring subscription terms before continuing.')}` as Route)
+  }
 
   try {
     assertEmergencyFeatureEnabled('stripeWrites')
@@ -125,6 +129,10 @@ export async function startCheckoutAction(formData: FormData) {
   const purchasedCapacity = Math.max(requestedCapacity, BILLING_PLANS[billedPlan].unitLimit ?? 0)
   const additionalUnitAllowance = additionalUnitCount(billedPlan, purchasedCapacity)
   const billedAmountCents = billedAmountForUnits(billedPlan, cadence, purchasedCapacity)
+  const expectedAmountCents = Number(String(formData.get('expectedAmountCents') ?? ''))
+  if (!Number.isSafeInteger(expectedAmountCents) || expectedAmountCents !== billedAmountCents) {
+    redirect(`/account/subscription/confirm?plan=${plan}&cadence=${cadence}&error=${encodeURIComponent('The price changed before checkout. Review the current amount and confirm again.')}` as Route)
+  }
 
   let stripeCustomerId = user.stripeCustomerId
   if (!stripeCustomerId) {
@@ -161,6 +169,13 @@ export async function startCheckoutAction(formData: FormData) {
   }
 
   const operationKey = stableOperationKey(user.id, billedPlan, cadence, purchasedCapacity, billedAmountCents)
+  const consentText = checkoutConsentText({ planName: BILLING_PLANS[billedPlan].name, cadence, amountCents: billedAmountCents, currencyCode: 'USD' })
+  const legalMetadata = await requestLegalMetadata()
+  await prisma.legalConsent.upsert({
+    where: { acceptanceKey: checkoutAcceptanceKey(operationKey) },
+    create: checkoutConsentRecord({ operationKey, orgId: user.id, plan: billedPlan, cadence, amountCents: billedAmountCents, consentText, ...legalMetadata }),
+    update: {},
+  })
   const operation = await prisma.externalOperation.upsert({
     where: { provider_operationType_operationKey: { provider: 'stripe', operationType: 'checkout', operationKey } },
     create: { provider: 'stripe', operationType: 'checkout', operationKey, orgId: user.id },
@@ -212,7 +227,7 @@ export async function startCheckoutAction(formData: FormData) {
     entityId: user.id,
     action: 'subscription.checkoutStarted',
     summary: `Started Stripe Checkout for ${billedPlan} ${cadence}.`,
-    metadata: { checkoutSessionId: checkout.id, requestedPlan: plan, plan: billedPlan, cadence, activeUnits, purchasedCapacity, additionalUnitAllowance, billedAmountCents },
+    metadata: { checkoutSessionId: checkout.id, requestedPlan: plan, plan: billedPlan, cadence, activeUnits, purchasedCapacity, additionalUnitAllowance, billedAmountCents, recurringConsentText: consentText },
   })
 
   if (!checkout.url) redirect(billingUrl('Stripe did not return a checkout URL.') as Route)

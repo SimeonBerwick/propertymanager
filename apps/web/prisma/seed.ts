@@ -16,6 +16,7 @@ import {
 import { getLandlordEmail, getLandlordSlug, getDevFallbackPassword, assertProductionAuthEnv } from '../lib/auth-config'
 import { DEFAULT_APARTMENT_AREAS } from '../lib/property-setup'
 import { hashPassword } from '../lib/password'
+import { currentTermsAcceptanceKey, PRIVACY_VERSION, standardUseConsentText, TERMS_VERSION } from '../lib/legal-consent'
 
 const prisma = new PrismaClient()
 const defaultLeaseStart = new Date('2026-01-01T00:00:00Z')
@@ -42,6 +43,21 @@ async function main() {
       passwordHash: landlordPasswordHash,
       slug: landlordSlug,
     },
+  })
+
+  await prisma.legalConsent.upsert({
+    where: { acceptanceKey: currentTermsAcceptanceKey('manager', landlord.id) },
+    create: {
+      acceptanceKey: currentTermsAcceptanceKey('manager', landlord.id),
+      orgId: landlord.id,
+      principalType: 'manager',
+      principalId: landlord.id,
+      context: 'development_seed',
+      termsVersion: TERMS_VERSION,
+      privacyVersion: PRIVACY_VERSION,
+      consentText: standardUseConsentText('property manager'),
+    },
+    update: {},
   })
 
   for (const prop of seedProperties) {

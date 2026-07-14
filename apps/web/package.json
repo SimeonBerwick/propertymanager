@@ -20,6 +20,7 @@
     "ops:sync-landlord-password": "node ./scripts/sync-landlord-password.mjs",
     "seed:android-reviewers": "tsx ./scripts/seed-android-reviewers.ts",
     "verify:android-reviewers": "tsx ./scripts/verify-android-reviewers.ts",
+    "trial:invite": "tsx ./scripts/create-assisted-trial-invite.ts",
     "hosted:db:reconcile": "bash ./scripts/apply-hosted-postgres-reconciliation.sh",
     "setup:local": "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed",
     "test": "vitest run",

@@ -12,6 +12,7 @@ APP_URL=https://simeonware.com
 NEXT_PUBLIC_APP_URL=https://simeonware.com
 INTERNAL_AUTOMATION_SECRET=replace-with-long-random-secret
 CRON_SECRET=replace-with-separate-long-random-secret
+ASSISTED_TRIAL_INVITE_SECRET=replace-with-separate-32+-char-random-secret
 HOSTED_RUNTIME_REQUIRED=true
 
 # Auth bootstrap / seed-time landlord values
@@ -80,6 +81,7 @@ Set these for:
 - Stripe Checkout opens from `/account/subscription`
 - Stripe webhook endpoint `/api/stripe/webhook` updates account subscription status
 - internal automation succeeds with bearer auth
+- signed assisted-trial links can be generated with `npm run trial:invite -- manager@example.com`
 # QuickBooks Online OAuth (create an app at developer.intuit.com)
 QUICKBOOKS_CLIENT_ID=
 QUICKBOOKS_CLIENT_SECRET=

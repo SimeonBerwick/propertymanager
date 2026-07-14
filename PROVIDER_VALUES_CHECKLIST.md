@@ -23,6 +23,8 @@ These are not provider-issued, but they must be decided before deploy.
   - generate 32+ bytes minimum
 - [ ] `INTERNAL_AUTOMATION_SECRET`
   - strong random bearer secret for internal automation
+- [ ] `ASSISTED_TRIAL_INVITE_SECRET`
+  - separate random secret of at least 32 characters used to sign email-specific assisted-trial links
 - [ ] `HOSTED_RUNTIME_REQUIRED`
   - set to exactly: `true`
 - [ ] `NOTIFY_TRANSPORT`
@@ -157,6 +159,7 @@ Do not deploy until all of this is true.
 - [ ] `APP_URL`
 - [ ] `NEXT_PUBLIC_APP_URL`
 - [ ] `INTERNAL_AUTOMATION_SECRET`
+- [ ] `ASSISTED_TRIAL_INVITE_SECRET`
 - [ ] `HOSTED_RUNTIME_REQUIRED=true`
 - [ ] `LANDLORD_EMAIL`
 - [ ] `LANDLORD_PASSWORD`
