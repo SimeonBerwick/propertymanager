@@ -10,6 +10,7 @@ import { syncAllOutlookCalendars } from '@/lib/outlook-calendar-sync'
 import { runStaffAssignmentFallbacks } from '@/lib/staff-assignment'
 import { runSchedulingCoordinationSweep } from '@/lib/scheduling-automation'
 import { syncAllSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
+import { emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -19,11 +20,15 @@ function isAuthorized(request: NextRequest) {
 }
 
 async function runAutomation(request: NextRequest, body: { sendSummaries?: boolean; syncMailboxes?: boolean }) {
-  assertHostedRuntimeReady('internal automation route', ['base', 'notifications'])
-
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  if (isEmergencyFeatureDisabled('automation')) {
+    return NextResponse.json({ ok: false, paused: true, error: emergencyFeatureMessage('automation') }, { status: 503 })
+  }
+
+  assertHostedRuntimeReady('internal automation route', ['base', 'notifications'])
 
   const sweep = await runAutomationSweep()
   const vendorReminders = await sendDailyVendorReminders()

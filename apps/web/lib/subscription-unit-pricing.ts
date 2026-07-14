@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { automaticPlanForUnits, billedAmountForUnits, BILLING_PLANS, purchasedUnitCapacity, type CadenceKey } from '@/lib/billing-plans'
 import { getStripeClient } from '@/lib/stripe'
 import { writeAuditLog } from '@/lib/audit-log'
+import { assertEmergencyFeatureEnabled } from '@/lib/feature-switches'
+import { stableOperationKey } from '@/lib/external-operations'
 
 export type UnitPricingSyncResult = {
   userId: string
@@ -33,6 +35,7 @@ export async function syncSubscriptionUnitPricing(userId: string, requestedCapac
   const canUpdateStripe = Boolean(stripe && user.stripeSubscriptionId && ['active', 'trialing', 'past_due'].includes(user.subscriptionStatus))
   if (requirePayment && targetCapacity > currentCapacity && !canUpdateStripe) throw new Error('Start a paid subscription before purchasing additional unit capacity.')
   if (stripe && user.stripeSubscriptionId && ['active', 'trialing', 'past_due'].includes(user.subscriptionStatus)) {
+    assertEmergencyFeatureEnabled('stripeWrites')
     const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId)
     const item = subscription.items.data[0]
     if (!item) throw new Error('The Stripe subscription has no recurring plan item.')
@@ -41,6 +44,7 @@ export async function syncSubscriptionUnitPricing(userId: string, requestedCapac
     const priceAlreadyMatches = item.price.unit_amount === amountCents && item.price.recurring?.interval === interval
     const metadataAlreadyMatches = subscription.metadata.plan === plan && subscription.metadata.purchasedCapacity === String(purchasedCapacity)
     if (!priceAlreadyMatches || !metadataAlreadyMatches) {
+      const operationKey = stableOperationKey(userId, subscription.id, item.price.id, plan, cadence, purchasedCapacity, amountCents)
       await stripe.subscriptions.update(subscription.id, {
         items: [{
           id: item.id,
@@ -50,7 +54,7 @@ export async function syncSubscriptionUnitPricing(userId: string, requestedCapac
         metadata: { ...subscription.metadata, userId, plan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
         proration_behavior: 'always_invoice',
         payment_behavior: 'error_if_incomplete',
-      })
+      }, { idempotencyKey: `subscription-price-${operationKey}` })
       stripeUpdated = true
     }
   }

@@ -13,6 +13,8 @@ import { writeAuditLog } from '@/lib/audit-log'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { shouldManageExistingSubscription } from '@/lib/subscription-checkout'
 import { syncSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
+import { assertEmergencyFeatureEnabled } from '@/lib/feature-switches'
+import { completeExternalOperation, failExternalOperation, stableOperationKey } from '@/lib/external-operations'
 
 function billingUrl(message?: string) {
   const params = new URLSearchParams()
@@ -38,6 +40,7 @@ export async function increaseUnitAllowanceAction(formData: FormData) {
   if (!user?.subscriptionPlan) redirect('/account/subscription?error=Choose+a+paid+plan+before+increasing+unit+capacity.' as Route)
   const currentCapacity = purchasedUnitCapacity(user.subscriptionPlan, user.additionalUnitAllowance)
   try {
+    assertEmergencyFeatureEnabled('stripeWrites')
     await syncSubscriptionUnitPricing(session.userId, currentCapacity + additionalUnits, true)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unit capacity could not be updated.'
@@ -95,6 +98,12 @@ export async function startCheckoutAction(formData: FormData) {
   const cadence = parseCadence(formData.get('cadence'))
   if (!plan || !cadence) redirect(billingUrl('Choose a valid plan.') as Route)
 
+  try {
+    assertEmergencyFeatureEnabled('stripeWrites')
+  } catch (error) {
+    redirect(billingUrl(error instanceof Error ? error.message : 'Subscription changes are temporarily paused.') as Route)
+  }
+
   const stripe = getStripeClient()
   if (!stripe) redirect(billingUrl('Stripe is not configured yet. Set STRIPE_SECRET_KEY to enable checkout.') as Route)
 
@@ -123,7 +132,7 @@ export async function startCheckoutAction(formData: FormData) {
       email: user.email,
       name: user.displayName ?? undefined,
       metadata: { userId: user.id },
-    })
+    }, { idempotencyKey: `customer-${stableOperationKey(user.id)}` })
     stripeCustomerId = customer.id
     await prisma.user.update({
       where: { id: user.id },
@@ -151,31 +160,50 @@ export async function startCheckoutAction(formData: FormData) {
     redirect(portal.url as Route)
   }
 
-  const checkout = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: stripeCustomerId,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'usd',
-          unit_amount: billedAmountCents,
-          recurring: { interval: cadence === 'annual' ? 'year' : 'month' },
-          product_data: {
-            name: `Simeonware Maintenance Manager ${BILLING_PLANS[billedPlan].name}`,
-            description: `${BILLING_PLANS[billedPlan].description} Capacity for ${purchasedCapacity} active units.`,
+  const operationKey = stableOperationKey(user.id, billedPlan, cadence, purchasedCapacity, billedAmountCents)
+  const operation = await prisma.externalOperation.upsert({
+    where: { provider_operationType_operationKey: { provider: 'stripe', operationType: 'checkout', operationKey } },
+    create: { provider: 'stripe', operationType: 'checkout', operationKey, orgId: user.id },
+    update: { attemptCount: { increment: 1 } },
+  })
+  if (operation.resultUrl && operation.expiresAt && operation.expiresAt > new Date()) redirect(operation.resultUrl as Route)
+
+  let checkout
+  try {
+    checkout = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: stripeCustomerId,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: billedAmountCents,
+            recurring: { interval: cadence === 'annual' ? 'year' : 'month' },
+            product_data: {
+              name: `Simeonware Maintenance Manager ${BILLING_PLANS[billedPlan].name}`,
+              description: `${BILLING_PLANS[billedPlan].description} Capacity for ${purchasedCapacity} active units.`,
+            },
           },
         },
+      ],
+      metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance), operationId: operation.id },
+      subscription_data: {
+        metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
       },
-    ],
-    metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
-    subscription_data: {
-      metadata: { userId: user.id, plan: billedPlan, cadence, purchasedCapacity: String(purchasedCapacity), additionalUnitAllowance: String(additionalUnitAllowance) },
-    },
-    allow_promotion_codes: true,
-    success_url: `${baseUrl}/account/subscription?checkout=success`,
-    cancel_url: `${baseUrl}/account/subscription?checkout=cancelled`,
-  })
+      allow_promotion_codes: true,
+      success_url: `${baseUrl}/account/subscription?checkout=success`,
+      cancel_url: `${baseUrl}/account/subscription?checkout=cancelled`,
+    }, { idempotencyKey: `checkout-${operationKey}` })
+    await completeExternalOperation(operation.id, {
+      providerObjectId: checkout.id,
+      resultUrl: checkout.url,
+      expiresAt: new Date(checkout.expires_at * 1000),
+    })
+  } catch (error) {
+    await failExternalOperation(operation.id, error).catch(() => null)
+    throw error
+  }
 
   await writeAuditLog({
     orgId: user.id,
@@ -198,6 +226,12 @@ export async function openBillingPortalAction() {
 
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
+
+  try {
+    assertEmergencyFeatureEnabled('stripeWrites')
+  } catch (error) {
+    redirect(billingUrl(error instanceof Error ? error.message : 'Subscription changes are temporarily paused.') as Route)
+  }
 
   const stripe = getStripeClient()
   if (!stripe) redirect(billingUrl('Stripe is not configured yet. Set STRIPE_SECRET_KEY to enable the billing portal.') as Route)

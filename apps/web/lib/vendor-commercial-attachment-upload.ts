@@ -4,6 +4,7 @@ import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
 import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
 import { hasR2StorageConfig } from '@/lib/runtime-env'
+import { assertEmergencyFeatureEnabled, emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 export const MAX_VENDOR_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024
 export const VENDOR_ATTACHMENT_SUBDIRECTORY = path.join('uploads', 'requests', 'vendor-invoices')
@@ -32,6 +33,7 @@ async function isPdf(file: File) {
 
 export async function validateVendorAttachment(file: File | null) {
   if (!file || file.size === 0) return null
+  if (isEmergencyFeatureDisabled('uploads')) return emergencyFeatureMessage('uploads')
   if (file.size > MAX_VENDOR_ATTACHMENT_SIZE_BYTES) return 'Invoice attachment must be 10 MB or smaller.'
 
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
@@ -48,6 +50,7 @@ export async function validateVendorAttachment(file: File | null) {
 
 export async function saveVendorAttachment(file: File | null): Promise<SavedVendorAttachment | null> {
   if (!file || file.size === 0) return null
+  assertEmergencyFeatureEnabled('uploads')
 
   const shouldWriteLocalDisk = !hasR2StorageConfig()
   const diskDirectory = path.join(process.cwd(), VENDOR_ATTACHMENT_SUBDIRECTORY)

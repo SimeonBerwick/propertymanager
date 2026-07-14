@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { localeForLanguage } from '@/lib/localization'
 import type { LanguageOption } from '@/lib/types'
+import { isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 export const TRANSLATION_PROVIDER = 'google-cloud-translation'
 export const TRANSLATION_PROVIDER_VERSION = 'nmt-v2'
@@ -73,6 +74,15 @@ export async function translateTexts(
   const source = options.sourceLanguage ? localeForLanguage(options.sourceLanguage).googleCode : 'auto'
   const normalized = texts.map((text) => text.trim()).filter(Boolean)
   if (!normalized.length) return []
+
+  if (isEmergencyFeatureDisabled('translation')) {
+    return normalized.map((text) => ({
+      sourceText: text,
+      translatedText: text,
+      provider: 'unavailable',
+      providerVersion: 'emergency-pause',
+    }))
+  }
 
   if (options.sourceLanguage === targetLanguage) {
     return normalized.map((text) => ({

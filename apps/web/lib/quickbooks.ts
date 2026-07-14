@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypt
 import { prisma } from '@/lib/prisma'
 import { decryptMailboxSecret, encryptMailboxSecret } from '@/lib/mailbox-crypto'
 import { getAppBaseUrl } from '@/lib/runtime-env'
+import { assertEmergencyFeatureEnabled, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
 type QboObject = Record<string, unknown>
 type ReferenceMode = 'customer' | 'class' | 'location'
@@ -90,6 +91,7 @@ export function verifyQuickBooksState(state: string, now = Date.now()) {
 }
 
 export function quickBooksAuthorizationUrl(userId: string) {
+  assertEmergencyFeatureEnabled('quickbooks')
   if (!quickBooksConfigured()) throw new Error('QuickBooks is not configured for this deployment.')
   const url = new URL('https://appcenter.intuit.com/connect/oauth2')
   url.searchParams.set('client_id', env('QUICKBOOKS_CLIENT_ID'))
@@ -131,6 +133,7 @@ async function rawRequest(accessToken: string, realmId: string, targetEnvironmen
 }
 
 export async function connectQuickBooks(userId: string, realmId: string, code: string) {
+  assertEmergencyFeatureEnabled('quickbooks')
   const tokens = await tokenRequest({ grant_type: 'authorization_code', code, redirect_uri: redirectUri() })
   const targetEnvironment = environment()
   const companyBody = await rawRequest(tokens.access_token, realmId, targetEnvironment, `/companyinfo/${encodeURIComponent(realmId)}`)
@@ -291,6 +294,7 @@ async function updatePaymentFromEntity(documentId: string, entity: QboObject) {
 }
 
 export async function syncBillingDocumentToQuickBooks(userId: string, billingDocumentId: string) {
+  assertEmergencyFeatureEnabled('quickbooks')
   const document = await prisma.billingDocument.findFirst({ where: { id: billingDocumentId, status: { not: 'void' }, request: { property: { ownerId: userId } } }, include: { request: { include: { property: true, unit: true, assignedVendor: true, vendorCommercialItems: { orderBy: { submittedAt: 'desc' } } } } } })
   if (!document) throw new Error('That approved financial record is no longer available.')
   const connection = await prisma.quickBooksConnection.findUnique({ where: { userId } })
@@ -337,6 +341,7 @@ export async function syncBillingDocumentToQuickBooks(userId: string, billingDoc
 }
 
 export async function syncStaffCostsToQuickBooks(userId: string, requestId: string) {
+  assertEmergencyFeatureEnabled('quickbooks')
   const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: userId }, status: 'closed' }, include: { property: true, unit: true, staffWorkLogs: { include: { staffMember: true } } } })
   if (!request) throw new Error('Staff costs can be synced after the completed work order is approved and closed.')
   const laborCents = request.staffWorkLogs.reduce((sum, log) => sum + Math.round(log.laborMinutes * log.staffMember.hourlyRateCents / 60), 0)
@@ -406,6 +411,7 @@ export async function syncApprovedQuickBooksRecordsForRequest(userId: string, re
 }
 
 export async function reconcileQuickBooksConnection(userId: string, options: { force?: boolean; limit?: number } = {}) {
+  if (isEmergencyFeatureDisabled('quickbooks')) return { attempted: 0, synchronized: 0, errors: ['QuickBooks synchronization is temporarily paused.'] }
   const connection = await prisma.quickBooksConnection.findUnique({ where: { userId } })
   if (!connection || connection.status !== 'connected') return { attempted: 0, synchronized: 0, errors: ['QuickBooks is not connected.'] }
   const records = await prisma.quickBooksSyncRecord.findMany({
@@ -429,6 +435,7 @@ export async function reconcileQuickBooksConnection(userId: string, options: { f
 }
 
 export async function runQuickBooksAutomation(now = new Date()) {
+  if (isEmergencyFeatureDisabled('quickbooks')) return { ok: false, paused: true, connections: 0, attempted: 0, synchronized: 0 }
   const connections = await prisma.quickBooksConnection.findMany({ where: { status: 'connected' }, select: { id: true, userId: true, autoSyncEnabled: true } })
   let attempted = 0
   let synchronized = 0
