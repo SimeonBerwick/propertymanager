@@ -28,6 +28,13 @@ async function expectRequestState(requestId: string, expected: { status?: string
   }, { timeout: 15_000 }).toMatchObject(expected)
 }
 
+async function acceptTermsIfRequired(page: Page) {
+  const accept = page.getByRole('button', { name: 'Accept and continue' })
+  if (!await accept.isVisible().catch(() => false)) return
+  await page.getByLabel(/I agree to the Terms of Service/).check()
+  await accept.click()
+}
+
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
   const photoPath = path.join(process.cwd(), 'tests/e2e/fixtures/leak.png')
 
@@ -36,6 +43,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.getByLabel('Password').fill('changeme')
   await clickAndWaitForURL(page, page.getByRole('button', { name: 'Sign in' }), /\/dashboard$/)
   await expect(page).toHaveURL(/\/dashboard$/)
+  await acceptTermsIfRequired(page)
 
   await page.getByText('Portfolio', { exact: true }).click()
   await clickAndWaitForURL(page, page.getByRole('link', { name: 'Properties' }), /\/properties$/)
@@ -117,6 +125,7 @@ test('landlord can complete the core maintenance workflow in the browser', async
   const vendorOtp = await createVendorOtpChallenge(vendor.id, 'returning_login', 'email', { next: `/vendor/requests/${requestId}` })
   await page.goto(`/vendor/auth/login/magic?challengeId=${vendorOtp.challengeId}&code=${vendorOtp.code}&next=/vendor/requests/${requestId}`)
   await expect(page).toHaveURL(new RegExp(`/vendor/requests/${requestId}$`))
+  await acceptTermsIfRequired(page)
   const vendorResponseForm = page.locator('form').filter({ has: page.getByRole('combobox', { name: 'Response' }) })
   await vendorResponseForm.getByRole('combobox', { name: 'Response' }).selectOption('accepted')
   await vendorResponseForm.getByLabel('Note').fill('ACME accepts this service call.')

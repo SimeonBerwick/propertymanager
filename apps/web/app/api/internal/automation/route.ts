@@ -11,6 +11,7 @@ import { runStaffAssignmentFallbacks } from '@/lib/staff-assignment'
 import { runSchedulingCoordinationSweep } from '@/lib/scheduling-automation'
 import { syncAllSubscriptionUnitPricing } from '@/lib/subscription-unit-pricing'
 import { emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
+import { sendDueTrialEndingReminders } from '@/lib/trial-reminders'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -39,7 +40,8 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const outlookCalendarSync = await syncAllOutlookCalendars()
   const staffAssignmentFallbacks = await runStaffAssignmentFallbacks()
   const schedulingCoordination = await runSchedulingCoordinationSweep()
-  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination }
+  const trialEndingReminders = await sendDueTrialEndingReminders()
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
@@ -55,7 +57,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, summaryResults })
+  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, summaryResults })
 }
 
 export async function GET(request: NextRequest) {

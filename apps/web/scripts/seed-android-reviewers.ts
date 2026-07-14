@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { hashPassword } from '../lib/password'
 import { REVIEWER_EMAILS } from '../lib/reviewer-access'
+import { currentTermsAcceptanceKey, PRIVACY_VERSION, standardUseConsentText, TERMS_VERSION, type LegalPrincipalType } from '../lib/legal-consent'
 
 const prisma = new PrismaClient()
 const DEFAULT_REVIEWER_PASSWORD = 'play-review-password-2026'
@@ -50,7 +51,11 @@ async function main() {
       subscriptionStatus: 'active',
       subscriptionPlan: 'pro',
       billingCadence: 'annual',
+      trialProgram: 'none',
+      trialStartedAt: null,
       trialEndsAt: null,
+      businessCountryCode: 'US',
+      businessStateCode: 'AZ',
       subscriptionEndsAt: null,
       personalWorkEnabled: true,
       personalWorkHourlyRateCents: 6500,
@@ -64,6 +69,9 @@ async function main() {
       subscriptionStatus: 'active',
       subscriptionPlan: 'pro',
       billingCadence: 'annual',
+      trialProgram: 'none',
+      businessCountryCode: 'US',
+      businessStateCode: 'AZ',
       personalWorkEnabled: true,
       personalWorkHourlyRateCents: 6500,
     },
@@ -277,6 +285,29 @@ async function main() {
     update: { propertyId: IDS.property, unitId: IDS.unit, orgId: landlord.id, tenantIdentityId: IDS.tenant, submittedByName: 'Play Review Tenant', submittedByEmail: REVIEWER_EMAILS.tenant, title: 'Install window air conditioner', description: 'Sample tenant-paid personal work for Google Play staff-portal review.', category: 'Appliance', urgency: 'low', status: 'approved', assignedStaffId: staff.id, assignedStaffName: staff.name, assignedStaffEmail: staff.email, assignedStaffPhone: staff.phone, staffWorkStatus: 'assigned', workResponsibility: 'tenant_personal_work', personalWorkStatus: 'approved', personalWorkHourlyRateCents: 6500, personalWorkMinimumMinutes: 60, personalWorkAuthorizedMaxCents: 20000, personalWorkTenantAuthorizedAt: new Date(), personalWorkManagerApprovedAt: new Date() },
     create: { id: IDS.staffRequest, propertyId: IDS.property, unitId: IDS.unit, orgId: landlord.id, tenantIdentityId: IDS.tenant, submittedByName: 'Play Review Tenant', submittedByEmail: REVIEWER_EMAILS.tenant, title: 'Install window air conditioner', description: 'Sample tenant-paid personal work for Google Play staff-portal review.', category: 'Appliance', urgency: 'low', status: 'approved', assignedStaffId: staff.id, assignedStaffName: staff.name, assignedStaffEmail: staff.email, assignedStaffPhone: staff.phone, staffWorkStatus: 'assigned', workResponsibility: 'tenant_personal_work', personalWorkStatus: 'approved', personalWorkHourlyRateCents: 6500, personalWorkMinimumMinutes: 60, personalWorkAuthorizedMaxCents: 20000, personalWorkTenantAuthorizedAt: new Date(), personalWorkManagerApprovedAt: new Date() },
   })
+
+  const reviewerPrincipals: Array<{ type: LegalPrincipalType; id: string; roleLabel: string }> = [
+    { type: 'manager', id: landlord.id, roleLabel: 'property manager' },
+    { type: 'tenant', id: IDS.tenant, roleLabel: 'tenant' },
+    { type: 'vendor', id: IDS.vendor, roleLabel: 'vendor' },
+    { type: 'staff', id: IDS.staff, roleLabel: 'maintenance staff member' },
+  ]
+  for (const principal of reviewerPrincipals) {
+    await prisma.legalConsent.upsert({
+      where: { acceptanceKey: currentTermsAcceptanceKey(principal.type, principal.id) },
+      create: {
+        acceptanceKey: currentTermsAcceptanceKey(principal.type, principal.id),
+        orgId: landlord.id,
+        principalType: principal.type,
+        principalId: principal.id,
+        context: 'reviewer_seed',
+        termsVersion: TERMS_VERSION,
+        privacyVersion: PRIVACY_VERSION,
+        consentText: standardUseConsentText(principal.roleLabel),
+      },
+      update: {},
+    })
+  }
 
   console.log(`Android reviewer fixtures ready for ${REVIEWER_EMAILS.landlord}, ${REVIEWER_EMAILS.tenant}, ${REVIEWER_EMAILS.vendor}, and ${REVIEWER_EMAILS.staff}.`)
 }

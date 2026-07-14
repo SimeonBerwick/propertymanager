@@ -28,6 +28,8 @@ import { LanguageSelector } from '@/components/language-selector'
 import { LocalizationRuntime } from '@/components/localization-runtime'
 import type { LanguageOption } from '@/lib/types'
 import { planIncludesLocalization } from '@/lib/localization-entitlement'
+import { hasCurrentTermsAcceptance, type LegalPrincipalType } from '@/lib/legal-consent'
+import { RequiredLegalConsent } from '@/components/required-legal-consent'
 
 export const metadata = {
   title: 'Simeonware | Property Maintenance Coordination',
@@ -62,6 +64,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         isStaffPortalRoute ? getStaffSession().catch(() => null) : null,
       ])
     : [null, null, null]
+  let legalPrincipal: { type: LegalPrincipalType; id: string } | null = null
+  if (isTenantPortalRoute && tenantPortalSession) legalPrincipal = { type: 'tenant', id: tenantPortalSession.tenantIdentityId }
+  else if (isVendorPortalRoute && vendorPortalSession) legalPrincipal = { type: 'vendor', id: vendorPortalSession.vendorId }
+  else if (isStaffPortalRoute && staffPortalSession) legalPrincipal = { type: 'staff', id: staffPortalSession.staffMemberId }
+  else if (isManagerRoute && session.userId) legalPrincipal = { type: 'manager', id: session.userId }
+  const currentLegalAccepted = legalPrincipal
+    ? await hasCurrentTermsAcceptance(legalPrincipal.type, legalPrincipal.id)
+    : true
   const savedLanguage = headerStore.get('x-app-language') ?? cookieStore.get(LOCALE_COOKIE)?.value
   let preferredLanguage: LanguageOption = isLanguageOption(savedLanguage ?? '') ? savedLanguage as LanguageOption : 'english'
   let hasAccountPreference = false
@@ -209,6 +219,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <Link href="/account-deletion">Account deletion</Link>
           </footer>
           {isManagerRoute ? <ManagerMobileNav /> : null}
+          {legalPrincipal && !currentLegalAccepted ? <RequiredLegalConsent principalType={legalPrincipal.type} returnPath={pathname || '/'} /> : null}
         </div>
       </body>
     </html>

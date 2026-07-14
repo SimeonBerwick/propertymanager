@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 // Wipe all tables between tests so each test starts with a clean state.
 // Delete in FK-safe order (children before parents).
 afterEach(async () => {
+  await prisma.legalConsent.deleteMany()
   await prisma.externalOperation.deleteMany()
   await prisma.supportRequest.deleteMany()
   await prisma.nativePushToken.deleteMany()
@@ -14,6 +15,8 @@ afterEach(async () => {
   await prisma.vendorSession.deleteMany()
   await prisma.vendorOtpChallenge.deleteMany()
   await prisma.billingEvent.deleteMany()
+  await prisma.inboundEmail.deleteMany()
+  await prisma.outboundEmail.deleteMany()
   await prisma.quickBooksSyncRecord.deleteMany()
   await prisma.billingDocument.deleteMany()
   await prisma.auditLog.deleteMany()
@@ -43,6 +46,7 @@ afterEach(async () => {
   await prisma.property.deleteMany()
   await prisma.quickBooksEntityMapping.deleteMany()
   await prisma.quickBooksConnection.deleteMany()
+  await prisma.mailboxConnection.deleteMany()
   await prisma.user.deleteMany()
 })
 

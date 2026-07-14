@@ -192,6 +192,21 @@ enum BillingCadence {
   annual
 }
 
+enum TrialProgram {
+  none
+  self_service_30
+  assisted_us_30
+  legacy_promo
+}
+
+enum AssistedServiceStatus {
+  not_included
+  pending
+  scheduled
+  completed
+  declined
+}
+
 enum VendorCommercialType {
   bid
   service_fee
@@ -245,7 +260,16 @@ model User {
   subscriptionStatus AccountSubscriptionStatus @default(trialing)
   subscriptionPlan   AccountPlan?
   billingCadence     BillingCadence?
+  trialProgram       TrialProgram @default(none)
+  trialStartedAt     DateTime?
   trialEndsAt        DateTime?
+  trialSource        String?
+  trialReminder7SentAt DateTime?
+  trialReminder2SentAt DateTime?
+  consultationStatus AssistedServiceStatus @default(not_included)
+  assistedImportStatus AssistedServiceStatus @default(not_included)
+  businessCountryCode String?
+  businessStateCode String?
   subscriptionEndsAt DateTime?
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
@@ -295,6 +319,33 @@ model User {
   billingEvents           BillingEvent[]
   auditLogs               AuditLog[]
   accountDeletionRequests AccountDeletionRequest[]
+}
+
+model LegalConsent {
+  id                    String   @id @default(cuid())
+  acceptanceKey         String   @unique
+  orgId                 String?
+  principalType         String
+  principalId           String
+  context               String
+  termsVersion          String
+  privacyVersion        String
+  trialAgreementVersion String?
+  consentText           String
+  trialProgram          TrialProgram?
+  subscriptionPlan      AccountPlan?
+  billingCadence        BillingCadence?
+  amountCents           Int?
+  currencyCode          String?
+  trialStartedAt        DateTime?
+  trialEndsAt           DateTime?
+  ipAddress             String?
+  userAgent             String?
+  acceptedAt            DateTime @default(now())
+
+  @@index([principalType, principalId, acceptedAt])
+  @@index([orgId, acceptedAt])
+  @@index([context, acceptedAt])
 }
 
 model Property {
