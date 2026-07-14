@@ -1,11 +1,21 @@
 import { createHmac } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createQuickBooksState, quickBooksApprovedLimit, quickBooksContentHash, quickBooksRequestId, quickBooksRetryAt, quickBooksTransactionUrl, quickBooksWebhookRealmIds, verifyQuickBooksState, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
+import { createQuickBooksState, quickBooksApprovedLimit, quickBooksAuthorizationUrl, quickBooksContentHash, quickBooksRequestId, quickBooksRetryAt, quickBooksTransactionUrl, quickBooksWebhookRealmIds, verifyQuickBooksState, verifyQuickBooksWebhookSignature } from '@/lib/quickbooks'
 
 describe('QuickBooks integration helpers', () => {
   beforeEach(() => {
     process.env.SESSION_SECRET = 'quickbooks-test-session-secret-at-least-32-characters'
     process.env.QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN = 'quickbooks-webhook-test-token'
+    delete process.env.QUICKBOOKS_REDIRECT_URI
+  })
+
+  it('uses the exact registered callback URL when one is configured', () => {
+    process.env.QUICKBOOKS_CLIENT_ID = 'quickbooks-test-client'
+    process.env.QUICKBOOKS_CLIENT_SECRET = 'quickbooks-test-secret'
+    process.env.QUICKBOOKS_REDIRECT_URI = 'https://simeonware.com/api/quickbooks/callback'
+
+    const authorizationUrl = new URL(quickBooksAuthorizationUrl('manager-1'))
+    expect(authorizationUrl.searchParams.get('redirect_uri')).toBe(process.env.QUICKBOOKS_REDIRECT_URI)
   })
 
   it('accepts an intact, recent OAuth state only', () => {

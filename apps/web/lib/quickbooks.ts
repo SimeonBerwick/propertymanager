@@ -54,7 +54,18 @@ export function quickBooksRetryAt(attemptCount: number, now = new Date()) {
 
 function environment() { return env('QUICKBOOKS_ENVIRONMENT') === 'sandbox' ? 'sandbox' : 'production' }
 function apiBase(target = environment()) { return target === 'sandbox' ? 'https://sandbox-quickbooks.api.intuit.com' : 'https://quickbooks.api.intuit.com' }
-function redirectUri() { return `${getAppBaseUrl('QuickBooks OAuth')}/api/quickbooks/callback` }
+function redirectUri() {
+  const configured = env('QUICKBOOKS_REDIRECT_URI')
+  if (!configured) return `${getAppBaseUrl('QuickBooks OAuth')}/api/quickbooks/callback`
+
+  let url: URL
+  try { url = new URL(configured) }
+  catch { throw new Error('QUICKBOOKS_REDIRECT_URI must be an absolute URL.') }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new Error('QUICKBOOKS_REDIRECT_URI must be an HTTP(S) URL without credentials, a query, or a fragment.')
+  }
+  return configured
+}
 
 export function createQuickBooksState(userId: string, now = Date.now()) {
   const payload = `${userId}:${now}:${randomBytes(16).toString('base64url')}`
