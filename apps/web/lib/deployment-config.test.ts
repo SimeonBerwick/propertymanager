@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import packageJson from '../package.json'
 import vercelConfig from '../vercel.json'
 

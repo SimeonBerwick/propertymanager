@@ -271,7 +271,7 @@ model User {
   schedulingAutoConfirmEnabled Boolean @default(true)
   schedulingWorkingHourStart Int @default(8)
   schedulingWorkingHourEnd Int @default(18)
-  schedulingMinimumNoticeHours Int @default(24)
+  schedulingMinimumNoticeHours Int @default(12)
   schedulingDefaultDurationMinutes Int @default(120)
   schedulingProposalExpiryHours Int @default(48)
   createdAt    DateTime @default(now())

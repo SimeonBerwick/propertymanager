@@ -9,6 +9,7 @@ import { decodeInspectionChecklist, parseInspectionChecklist } from '@/lib/inspe
 import { savePhotos, validatePhotoFiles } from '@/lib/photo-upload'
 import { writeAuditLog } from '@/lib/audit-log'
 import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
+import { getInspectionCompletionIssues, inspectionCompletionError } from '@/lib/inspection-completion'
 
 function value(formData: FormData, name: string) {
   return String(formData.get(name) ?? '').trim()
@@ -75,7 +76,7 @@ export async function saveInspectionAction(formData: FormData) {
   if (!inspection) fail('/inspections', 'Inspection not found.')
   if (inspection.status === 'completed') fail(`/inspections/${inspection.id}`, 'Completed inspections are read-only.')
 
-  const updates: Array<{ id: string; result: string; note: string | null; photoUrl: string | null; upload: File | null }> = []
+  const updates: Array<{ id: string; label: string; result: string; note: string | null; photoUrl: string | null; upload: File | null }> = []
   for (const item of inspection.items) {
     const result = value(formData, `result:${item.id}`)
     if (!['pending', 'pass', 'needs_attention', 'not_applicable'].includes(result)) fail(`/inspections/${inspection.id}`, 'Choose a valid result for every item.')
@@ -86,30 +87,45 @@ export async function saveInspectionAction(formData: FormData) {
       const error = await validatePhotoFiles([upload])
       if (error) fail(`/inspections/${inspection.id}`, error)
     }
-    updates.push({ id: item.id, result, note, photoUrl: item.photoUrl, upload })
-  }
-
-  if (intent === 'complete') {
-    const pending = updates.find((item) => item.result === 'pending')
-    if (pending) fail(`/inspections/${inspection.id}`, 'Complete or mark every checklist item before finishing the inspection.')
-    const missingEvidence = updates.find((item) => item.result === 'needs_attention' && ((inspection.requireNoteForIssues && !item.note) || (inspection.requirePhotoForIssues && !item.photoUrl && !item.upload)))
-    if (missingEvidence) fail(`/inspections/${inspection.id}`, 'Items needing attention must include the evidence required by this inspection template.')
+    updates.push({ id: item.id, label: item.label, result, note, photoUrl: item.photoUrl, upload })
   }
 
   for (const item of updates) {
     if (item.upload) item.photoUrl = (await savePhotos([item.upload]))[0]
   }
 
+  const completionIssues = intent === 'complete' ? getInspectionCompletionIssues(
+    updates.map((item) => ({
+      id: item.id,
+      label: item.label,
+      result: item.result,
+      note: item.note,
+      hasPhoto: Boolean(item.photoUrl),
+    })),
+    inspection,
+  ) : []
+  const completed = intent === 'complete' && completionIssues.length === 0
+
   await prisma.$transaction([
     ...updates.map((item) => prisma.inspectionItem.update({ where: { id: item.id }, data: { result: item.result, note: item.note, photoUrl: item.photoUrl } })),
-    prisma.inspection.update({ where: { id: inspection.id }, data: intent === 'complete' ? { status: 'completed', completedAt: new Date() } : {} }),
+    prisma.inspection.update({ where: { id: inspection.id }, data: completed ? { status: 'completed', completedAt: new Date() } : {} }),
   ])
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'inspection', entityId: inspection.id, action: intent === 'complete' ? 'inspection.completed' : 'inspection.saved', summary: intent === 'complete' ? 'Completed inspection.' : 'Saved inspection draft.' })
+  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'inspection', entityId: inspection.id, action: completed ? 'inspection.completed' : 'inspection.saved', summary: completed ? 'Completed inspection.' : 'Saved inspection draft.' })
   await syncOutlookCalendarForUser(session.userId).catch(() => null)
   revalidatePath(`/inspections/${inspection.id}`)
   revalidatePath('/inspections')
   revalidatePath(`/units/${inspection.unitId}`)
-  redirect(`/inspections/${inspection.id}?${intent === 'complete' ? 'completed' : 'saved'}=1` as Route)
+  if (completionIssues.length) {
+    const query = new URLSearchParams({
+      error: inspectionCompletionError(completionIssues),
+      errorItems: completionIssues.map((issue) => issue.id).join(','),
+      missingResults: completionIssues.filter((issue) => issue.missing.includes('result')).map((issue) => issue.id).join(','),
+      missingNotes: completionIssues.filter((issue) => issue.missing.includes('note')).map((issue) => issue.id).join(','),
+      missingPhotos: completionIssues.filter((issue) => issue.missing.includes('photo')).map((issue) => issue.id).join(','),
+    })
+    redirect(`/inspections/${inspection.id}?${query.toString()}#inspection-item-${completionIssues[0].id}` as Route)
+  }
+  redirect(`/inspections/${inspection.id}?${completed ? 'completed' : 'saved'}=1` as Route)
 }
 
 export async function createRequestFromInspectionFindingAction(formData: FormData) {

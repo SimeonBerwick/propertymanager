@@ -378,6 +378,27 @@ body { min-height: 100vh; }
 .notice { border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; background: rgba(96, 165, 250, 0.08); color: var(--text); }
 .notice.success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
 .notice.error { background: var(--error-bg); border-color: var(--error-border); color: var(--error-text); }
+.inspectionChecklistItem {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  scroll-margin-top: 18px;
+}
+.inspectionChecklistItemError {
+  border: 2px solid var(--error-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--error-bg);
+}
+.inspectionChecklistItemError [aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.inspectionIssueBadge {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+.inspectionItemError { color: var(--error-text); }
 .dangerZone {
   border: 1px solid var(--error-border);
   border-radius: 16px;
