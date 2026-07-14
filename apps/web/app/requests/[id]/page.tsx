@@ -166,6 +166,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     && !(item.itemType === 'bill_to_property_manager' && item.amountCents <= approvedVendorCeilingCents)
   ))
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
+  const vendorBillingAttachments = data.vendorCommercialItems.filter((item) => Boolean(item.attachmentUrl))
   const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
   const reviewNoteLower = (data.request.reviewNote ?? '').toLowerCase()
   const hasTenantQuestionReviewNote = reviewNoteLower.includes('tenant asked') || reviewNoteLower.includes('tenant requested')
@@ -417,7 +418,13 @@ export default async function RequestDetailPage({ params, searchParams }: { para
                   </div>
                 ) : null}
               </div>
-              {pendingVendorCommercialItems.length ? <SectionJumpLink href="#vendor-approvals" className="button primary">Review vendor charge</SectionJumpLink> : <SectionJumpLink href="#timeline" className="button">View timeline</SectionJumpLink>}
+              {pendingVendorCommercialItems.length ? (
+                <SectionJumpLink href="#vendor-approvals" className="button primary">Review vendor charge</SectionJumpLink>
+              ) : vendorBillingAttachments.length ? (
+                <SectionJumpLink href="#vendor-bill-attachments" className="button">View bill attachment</SectionJumpLink>
+              ) : (
+                <SectionJumpLink href="#timeline" className="button">View timeline</SectionJumpLink>
+              )}
             </div>
           </div>
         ) : null}
@@ -479,6 +486,43 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             ))}
           </div>
         </SectionCard>
+        </div>
+      ) : null}
+
+      {vendorBillingAttachments.length ? (
+        <div id="vendor-bill-attachments">
+          <SectionCard
+            kicker="Billing evidence"
+            title="Vendor bill attachments"
+            subtitle="Invoice files and billing photos submitted by the vendor."
+          >
+            <div className="grid cols-3">
+              {vendorBillingAttachments.map((item) => {
+                const attachmentHref = `/api/vendor-commercial-items/${item.id}/attachment`
+                const isImage = item.attachmentContentType?.startsWith('image/')
+                return (
+                  <div key={item.id} className="timelineRow stack" style={{ gap: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{item.title}</div>
+                    <div className="muted">
+                      {(item.vendorName ?? 'Vendor')} - {vendorCommercialTypeLabel(item.itemType)} - {formatMoney(item.amountCents, item.currency)}
+                    </div>
+                    {isImage ? (
+                      <div className="photo-grid">
+                        <MediaPhotoCard
+                          href={attachmentHref}
+                          src={attachmentHref}
+                          alt={`Vendor billing photo${item.attachmentName ? ` ${item.attachmentName}` : ''}`}
+                        />
+                      </div>
+                    ) : null}
+                    <a href={attachmentHref} target="_blank" rel="noreferrer" className="button">
+                      {isImage ? 'Open original' : 'Open bill attachment'}
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+          </SectionCard>
         </div>
       ) : null}
 

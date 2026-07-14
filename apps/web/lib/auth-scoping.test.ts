@@ -93,6 +93,38 @@ describe('landlord data scoping', () => {
       const data = await getRequestDetailData(request.id, user.id)
       expect(data?.comments[0]?.authorName).toBe('Taylor Tenant')
     })
+
+    test('includes vendor billing attachment metadata for the property manager', async () => {
+      const { user, property, unit } = await scaffoldLandlord()
+      const request = await createMaintenanceRequest(property.id, unit.id, { orgId: user.id })
+      const vendor = await prisma.vendor.create({
+        data: { orgId: user.id, name: 'Attachment Test Vendor', email: 'attachment-vendor@example.com' },
+      })
+      await prisma.vendorCommercialItem.create({
+        data: {
+          requestId: request.id,
+          vendorId: vendor.id,
+          orgId: user.id,
+          itemType: 'bill_to_property_manager',
+          status: 'submitted',
+          paymentTiming: 'on_completion',
+          currency: 'usd',
+          amountCents: 12500,
+          title: 'Final invoice',
+          attachmentUrl: 'blob:test/vendor-bill-photo',
+          attachmentName: 'vendor-bill.jpg',
+          attachmentContentType: 'image/jpeg',
+        },
+      })
+
+      const data = await getRequestDetailData(request.id, user.id)
+
+      expect(data?.vendorCommercialItems[0]).toMatchObject({
+        attachmentUrl: 'blob:test/vendor-bill-photo',
+        attachmentName: 'vendor-bill.jpg',
+        attachmentContentType: 'image/jpeg',
+      })
+    })
   })
 
   describe('getPropertyDetailData', () => {
