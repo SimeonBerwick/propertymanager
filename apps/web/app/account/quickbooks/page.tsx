@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { getQuickBooksSetupOptions, quickBooksConfigured } from '@/lib/quickbooks'
+import { formatDateTime } from '@/lib/ui-utils'
 import { disconnectQuickBooksAction, reconcileQuickBooksAction, retryQuickBooksRecordAction, saveQuickBooksSettingsAction } from './actions'
 
 export default async function QuickBooksSettingsPage({ searchParams }: { searchParams?: Promise<Record<string, string | undefined>> }) {
@@ -47,7 +48,7 @@ export default async function QuickBooksSettingsPage({ searchParams }: { searchP
         <div><div className="kicker">Connected company</div><h3 style={{ margin: '4px 0 0' }}>{connection.companyName || 'QuickBooks company'}</h3></div>
         <div className={`badge ${connection.status === 'connected' ? 'billing-paid' : 'billing-partial'}`} style={{ alignSelf: 'flex-start' }}>{connection.status === 'connected' ? 'Connected' : 'Reconnect required'}</div>
         {connection.lastError ? <div className="notice error">{connection.lastError}</div> : null}
-        <div className="muted">{connection.lastReconciledAt ? `Last reconciled ${connection.lastReconciledAt.toLocaleString()}.` : 'Payment reconciliation has not run yet.'}{connection.lastWebhookAt ? ` Last QuickBooks update received ${connection.lastWebhookAt.toLocaleString()}.` : ''}</div>
+        <div className="muted">{connection.lastReconciledAt ? `Last reconciled ${formatDateTime(connection.lastReconciledAt)}.` : 'Payment reconciliation has not run yet.'}{connection.lastWebhookAt ? ` Last QuickBooks update received ${formatDateTime(connection.lastWebhookAt)}.` : ''}</div>
         <div className="row" style={{ justifyContent: 'flex-start' }}><form action={reconcileQuickBooksAction}><button className="button primary" type="submit">Reconcile now</button></form><a href="/api/quickbooks/connect" className="button">Reconnect</a><form action={disconnectQuickBooksAction}><button className="button" type="submit">Disconnect</button></form></div>
       </section>
 
@@ -56,7 +57,7 @@ export default async function QuickBooksSettingsPage({ searchParams }: { searchP
         {attentionRecords.length ? attentionRecords.map((record) => <div className="billingRowCard" key={record.id}>
           <div className="billingRow"><div><strong>{record.billingDocument?.title || record.request.title}</strong><div className="muted">{record.sourceType === 'staff_cost' ? 'In-house staff costs' : 'Financial record'} - attempt {record.attemptCount}</div></div><span className="badge billing-partial">{record.status === 'retry_scheduled' ? 'Retry scheduled' : 'Needs attention'}</span></div>
           {record.errorMessage ? <div className="notice error">{record.errorMessage}</div> : null}
-          {record.nextRetryAt ? <div className="muted">Automatic retry after {record.nextRetryAt.toLocaleString()}.</div> : null}
+          {record.nextRetryAt ? <div className="muted">Automatic retry after {formatDateTime(record.nextRetryAt)}.</div> : null}
           <div className="billingActionsRow"><form action={retryQuickBooksRecordAction}><input type="hidden" name="recordId" value={record.id}/><button className="button primary" type="submit">Retry now</button></form><Link className="button" href={`/requests/${record.requestId}#quickbooks`}>Open work order</Link></div>
         </div>) : <div className="notice success">No QuickBooks synchronization problems need attention.</div>}
       </section>
