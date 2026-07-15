@@ -59,6 +59,7 @@ export default defineConfig({
       'lib/trial-reminders.test.ts',
       'lib/legal-consent.test.ts',
       'lib/sentry-reporting.test.ts',
+      'lib/campaign-attribution.test.ts',
       'lib/financial-idempotency-source.test.ts',
       'lib/appointment-date-time-fields-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',

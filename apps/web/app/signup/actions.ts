@@ -17,6 +17,7 @@ import { ASSISTED_TRIAL_AGREEMENT_VERSION, currentTermsAcceptanceKey, PRIVACY_VE
 import { isUsStateCode } from '@/lib/us-states'
 import { sendNotification } from '@/lib/notify'
 import { getAppBaseUrl } from '@/lib/runtime-env'
+import { augustTrialSource, CAMPAIGN_COOKIE_NAME } from '@/lib/campaign-attribution'
 
 export type SignupState = { error: string | null }
 
@@ -73,6 +74,8 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   const requestMetadata = await requestLegalMetadata()
   const consentText = signupConsentText({ trialProgram, trialStartedAt, trialEndsAt })
   const assistedOnboardingReference = assistedInvite ? onboardingReference() : null
+  const campaignSource = (await cookies()).get(CAMPAIGN_COOKIE_NAME)?.value
+  const trialSource = assistedInvite?.source ?? augustTrialSource(campaignSource)
 
   try {
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
@@ -96,7 +99,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
           trialProgram,
           trialStartedAt,
           trialEndsAt,
-          trialSource: assistedInvite?.source ?? 'public_signup',
+          trialSource,
           consultationStatus: assistedInvite ? 'pending' : 'not_included',
           assistedImportStatus: assistedInvite ? 'pending' : 'not_included',
           businessCountryCode: 'US',
@@ -141,6 +144,14 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       return created
     })
 
+    await prisma.productEvent.create({
+      data: {
+        orgId: user.id,
+        eventName: 'trial_started',
+        metadataJson: JSON.stringify({ source: trialSource, plan, cadence, trialProgram }),
+      },
+    }).catch(() => null)
+
     await writeAuditLog({
       orgId: user.id,
       actorUserId: user.id,
@@ -148,7 +159,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       entityId: user.id,
       action: 'account.trialStarted',
       summary: `Started ${assistedInvite ? 'assisted' : 'self-service'} 30-day trial on ${plan} ${cadence}.`,
-      metadata: { plan, cadence, defaultCurrency, trialProgram, trialStartedAt: trialStartedAt.toISOString(), trialEndsAt: trialEndsAt.toISOString(), trialSource: assistedInvite?.source ?? 'public_signup', businessStateCode, legalVersions: { terms: TERMS_VERSION, privacy: PRIVACY_VERSION, trial: assistedInvite ? ASSISTED_TRIAL_AGREEMENT_VERSION : null } },
+      metadata: { plan, cadence, defaultCurrency, trialProgram, trialStartedAt: trialStartedAt.toISOString(), trialEndsAt: trialEndsAt.toISOString(), trialSource, businessStateCode, legalVersions: { terms: TERMS_VERSION, privacy: PRIVACY_VERSION, trial: assistedInvite ? ASSISTED_TRIAL_AGREEMENT_VERSION : null } },
     })
 
     const baseUrl = (() => {
