@@ -10,6 +10,7 @@ const ALLOWED_EVENTS = [
   'search_opened',
   'campaign_page_view',
   'campaign_consultation_click',
+  'campaign_consultation_submitted',
   'campaign_trial_click',
 ]
 

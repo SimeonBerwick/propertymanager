@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { CampaignLink, CampaignTracker } from '@/components/campaign-tracker'
 import { parseAugustCampaignSource } from '@/lib/campaign-attribution'
+import { ConsultationForm } from './consultation-form'
 
 export const metadata = {
   title: '30-Day Assisted Trial | Simeonware',
@@ -16,7 +17,7 @@ export default async function AugustCampaignPage({
   const source = parseAugustCampaignSource(query?.utm_source) ?? 'direct'
   const medium = source === 'email' ? 'outreach' : source === 'direct' ? 'direct' : 'social'
   const signupHref = `/signup?utm_source=${source}&utm_medium=${medium}&utm_campaign=august_founders`
-  const consultationHref = `mailto:sales@simeonware.com?subject=${encodeURIComponent('August founding-manager trial')}&body=${encodeURIComponent(`I would like to discuss the 30-day assisted Simeonware trial.\n\nLead source: ${source}\nCampaign: AUGUSTFOUNDERS`)}`
+  const consultationHref = '#conversation'
 
   return (
     <main className="marketingPage augustCampaignPage">
@@ -62,6 +63,17 @@ export default async function AugustCampaignPage({
           <article><span>3</span><h3>Decide without pressure</h3><p>No payment method is collected. The trial ends after 30 days unless you separately choose a paid plan.</p></article>
         </div>
         <div className="notice">Assisted places are limited and may be refused when a business is outside the U.S. target market or cannot be supported responsibly. No operational or financial result is guaranteed.</div>
+      </section>
+
+      <section className="marketingSection" id="conversation" aria-labelledby="conversation-heading">
+        <div className="sectionIntro">
+          <div className="eyebrow">20-minute conversation</div>
+          <h2 id="conversation-heading">Tell us where maintenance gets stuck.</h2>
+          <p>Send a short request here. We will reply by email to arrange a time that works for you.</p>
+        </div>
+        <div className="card" style={{ maxWidth: 760 }}>
+          <ConsultationForm source={source} />
+        </div>
       </section>
 
       <section className="finalCta">
