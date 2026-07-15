@@ -80,7 +80,7 @@ export default async function AccountSettingsPage({
           <p className="muted" style={{ margin: 0 }}>Get login help, report a problem, or send product feedback.</p>
           <div className="row" style={{ justifyContent: 'flex-start' }}>
             <Link href="/support" className="button primary">Support</Link>
-            <a className="button" href="mailto:support@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Send feedback</a>
+            <a className="button" href="mailto:feedback@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Send feedback</a>
           </div>
         </div>
 

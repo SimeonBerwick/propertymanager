@@ -1013,6 +1013,13 @@ body { min-height: 100vh; }
 
 /* Public marketing site */
 .marketingPage { display: grid; gap: 108px; padding: 32px 0 72px; }
+.augustCampaignPage { gap: 64px; padding-top: 16px; }
+.augustCampaignHero { min-height: 560px; }
+.augustCampaignHero h1 { font-size: 56px; line-height: 1.02; letter-spacing: 0; }
+.campaignProductFigure { margin: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--card-strong); box-shadow: var(--shadow); }
+.campaignProductFigure img { display: block; width: 100%; height: auto; }
+.campaignProductFigure figcaption { padding: 10px 14px; color: var(--muted); font-size: 12px; }
+.augustOffer .notice { max-width: 900px; }
 .marketingHero {
   min-height: 680px;
   display: grid;
@@ -1207,6 +1214,7 @@ body { min-height: 100vh; }
   .marketingPage { gap: 72px; padding-top: 8px; }
   .marketingHero { min-height: auto; grid-template-columns: 1fr; gap: 42px; }
   .marketingHero h1 { font-size: clamp(44px, 13vw, 66px); }
+  .augustCampaignHero h1 { font-size: 46px; letter-spacing: 0; }
   .productWindow { transform: none; }
   .proofStrip, .productScreenshotGrid, .featureGrid, .processGrid, .trustPanel, .pricingGrid, .faqLayout { grid-template-columns: 1fr; }
   .featureCardLarge { grid-column: auto; }

@@ -14,6 +14,8 @@ describe('duplicate-proof financial integration wiring', () => {
     expect(route).toContain('if (!receipt.shouldProcess)')
     expect(route).toContain('completeExternalOperation(receipt.operation.id')
     expect(route).toContain('failExternalOperation(receipt.id, error)')
+    expect(route).toContain('id: `stripe_checkout_${session.id}`')
+    expect(route).toContain('checkoutSessionId: session.id')
   })
 
   it('gives customer, checkout, and subscription writes stable Stripe keys', () => {

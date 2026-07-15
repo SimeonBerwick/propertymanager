@@ -64,12 +64,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const cadence = parseCadence(session.metadata?.cadence ?? null)
   const additionalUnitAllowance = Math.max(0, Number.parseInt(session.metadata?.additionalUnitAllowance ?? '0', 10) || 0)
 
+  const recordSubscriptionStarted = async () => {
+    await prisma.productEvent.create({
+      data: {
+        id: `stripe_checkout_${session.id}`,
+        orgId: userId,
+        eventName: 'subscription_started',
+        metadataJson: JSON.stringify({ plan, cadence, checkoutSessionId: session.id }),
+      },
+    }).catch(() => null)
+  }
+
   if (!stripe || !userId) return
 
   const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
   if (subscriptionId) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     await syncSubscription(subscription)
+    await recordSubscriptionStarted()
     return
   }
 
@@ -83,6 +95,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
     },
   })
+  await recordSubscriptionStarted()
 }
 
 export async function POST(request: Request) {
