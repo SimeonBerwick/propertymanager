@@ -18,7 +18,9 @@ export default async function SupportPage({ searchParams }: { searchParams?: Pro
         </div>
         <p className="muted" style={{ margin: 0 }}>Send the details here. Simeonware saves the request, alerts support, and gives you a reference that can be followed through resolution.</p>
         <SupportForm errorReference={params?.errorReference} />
-        <p className="muted" style={{ margin: 0 }}>You can also email support@simeonware.com. Include your support reference when following up.</p>
+        <p className="muted" style={{ margin: 0 }}>
+          You can also email <a href="mailto:support@simeonware.com?subject=Simeonware%20support%20request">support@simeonware.com</a>. Include your support reference when following up.
+        </p>
       </section>
       {recent.length ? (
         <section className="stack">
