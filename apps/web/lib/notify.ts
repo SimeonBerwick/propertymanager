@@ -4,7 +4,7 @@
  * Transports (controlled by NOTIFY_TRANSPORT env var):
  *   unset / "log" - writes to stdout; safe dev default, zero config required.
  *   "smtp"        - sends email via nodemailer using SMTP_URL.
- *                   Requires: SMTP_URL, optionally NOTIFY_FROM.
+ *                   Requires: SMTP_URL, optionally NOTIFY_FROM and NOTIFY_REPLY_TO.
  *
  * Notifications are best-effort: transport errors are logged but never
  * propagate back to the caller so a failed email never breaks a user action.
@@ -28,6 +28,7 @@ export interface NotificationMessage {
   text: string
   requestId?: string
   actionUrl?: string
+  replyTo?: string
   /** Optional HTML body. When present, email clients that support HTML will
    *  render it; clients that don't fall back to `text`. */
   html?: string
@@ -36,6 +37,10 @@ export interface NotificationMessage {
     content: string
     contentType?: string
   }>
+}
+
+export function notificationReplyTo(messageReplyTo?: string, configuredReplyTo = process.env.NOTIFY_REPLY_TO) {
+  return messageReplyTo?.trim() || configuredReplyTo?.trim() || 'support@simeonware.com'
 }
 
 // Transports
@@ -59,6 +64,7 @@ async function sendViaSmtp(msg: NotificationMessage): Promise<void> {
   const transport = nodemailer.createTransport(smtpUrl)
   await transport.sendMail({
     from: process.env.NOTIFY_FROM ?? 'Simeonware Maintenance Manager <noreply@propertymanager.local>',
+    replyTo: notificationReplyTo(msg.replyTo),
     to: msg.to,
     subject: msg.subject,
     text: msg.text,
@@ -215,7 +221,7 @@ function htmlEmail(body: string): string {
             </tr>
             <tr>
               <td bgcolor="#f9fafb" style="background-color:#f9fafb;padding:12px 20px;font-size:12px;line-height:18px;color:#6b7280;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif">
-                This is an automated message - please do not reply directly to this email.
+                Need help? Reply to this email and the Simeonware support team will receive it.
               </td>
             </tr>
           </table>
