@@ -1,4 +1,7 @@
+import { loadEnvConfig } from '@next/env'
 import { createAssistedTrialInvite } from '../lib/assisted-trial-invite'
+
+loadEnvConfig(process.cwd())
 
 const email = process.argv[2]?.trim()
 const validDays = process.argv[3] ? Number(process.argv[3]) : undefined
