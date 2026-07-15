@@ -1,5 +1,18 @@
 import { expect, test } from '@playwright/test'
 
+test('August conversation request stays inside Simeonware', async ({ page }) => {
+  await page.goto('/august?utm_source=facebook')
+
+  const conversationLink = page.getByRole('link', { name: 'Request a 20-minute conversation' })
+  await expect(conversationLink).toHaveAttribute('href', '#conversation')
+  await conversationLink.click()
+
+  await expect(page).toHaveURL(/\/august\?utm_source=facebook#conversation$/)
+  await expect(page.getByRole('heading', { name: 'Tell us where maintenance gets stuck.' })).toBeVisible()
+  await expect(page.getByLabel('Work email')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Request my conversation' })).toBeVisible()
+})
+
 test('tenant and vendor entry points remain clear and recoverable', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('link', { name: 'Tenant' })).toHaveAttribute('href', '/mobile/auth/login')

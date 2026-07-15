@@ -15,7 +15,8 @@ Use campaign code `AUGUSTFOUNDERS` in personal outreach and consultation notes.
 | Stage | Evidence |
 | --- | --- |
 | Lead source | `campaign_page_view`, stored with the allowlisted source |
-| Interested lead | `campaign_consultation_click` |
+| Opened conversation form | `campaign_consultation_click` |
+| Submitted conversation request | `campaign_consultation_submitted` |
 | Trial intent | `campaign_trial_click` |
 | Trial | `trial_started`, linked to the new organization and campaign source |
 | Activation | First `property_created` and first `request_submitted` events |
