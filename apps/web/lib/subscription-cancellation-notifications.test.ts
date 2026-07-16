@@ -34,6 +34,19 @@ describe('subscription cancellation notifications', () => {
     expect(subscriptionCancellationTransition({ ...subscription, cancel_at_period_end: false }, { cancel_at_period_end: false })).toBe(false)
   })
 
+  test('detects Stripe flexible billing cancellation without cancel_at_period_end', () => {
+    const subscription = cancellationSubscription({ cancel_at_period_end: false })
+
+    expect(subscriptionCancellationTransition(subscription, {
+      cancel_at: null,
+      canceled_at: null,
+      cancellation_details: { feedback: null, comment: null, reason: null },
+    })).toBe(true)
+    expect(subscriptionCancellationTransition(subscription, {
+      cancellation_details: { feedback: null, comment: null, reason: 'cancellation_requested' },
+    })).toBe(false)
+  })
+
   test('does not describe a failed-payment cancellation as customer requested', () => {
     const subscription = cancellationSubscription({
       status: 'canceled',

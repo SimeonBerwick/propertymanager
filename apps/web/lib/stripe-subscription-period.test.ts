@@ -35,8 +35,23 @@ describe('stripeSubscriptionPeriodEnd', () => {
     expect(stripeSubscriptionPeriodEnd(subscriptionWithPeriods([]))).toBeNull()
   })
 
+  test('uses Stripe flexible billing scheduled cancellation as the access end', () => {
+    const subscription = {
+      ...subscriptionWithPeriods([1_790_101_200]),
+      cancel_at: 1_786_909_200,
+    } as Stripe.Subscription
+
+    expect(stripeSubscriptionPeriodEnd(subscription))
+      .toEqual(new Date('2026-08-16T19:40:00.000Z'))
+  })
+
   test('treats a scheduled cancellation as canceled while access remains open', () => {
     expect(stripeSubscriptionAccountStatus(subscriptionStatus('active', true))).toBe('canceled')
+    expect(stripeSubscriptionAccountStatus({
+      status: 'active',
+      cancel_at_period_end: false,
+      cancel_at: 1_786_909_200,
+    } as Stripe.Subscription)).toBe('canceled')
     expect(stripeSubscriptionAccountStatus(subscriptionStatus('active'))).toBe('active')
   })
 })
