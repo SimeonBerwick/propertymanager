@@ -14,6 +14,15 @@ const FEEDBACK_LABELS: Record<string, string> = {
   unused: 'No longer needed',
 }
 
+export function subscriptionCancellationReasonLabel(subscription: Stripe.Subscription) {
+  const feedback = subscription.cancellation_details?.feedback
+  if (feedback) return FEEDBACK_LABELS[feedback] ?? feedback.replaceAll('_', ' ')
+  if (subscription.cancellation_details?.reason === 'cancellation_requested') {
+    return 'Customer requested cancellation (no survey reason supplied)'
+  }
+  return 'No reason supplied'
+}
+
 function dateLabel(date: Date | null) {
   return date?.toLocaleDateString('en-US', {
     month: 'long',
@@ -59,9 +68,8 @@ export function buildSubscriptionCancellationMessages(input: {
   const planLabel = plan ? BILLING_PLANS[plan].name : 'Simeonware'
   const cadenceLabel = cadence ? CADENCE_LABELS[cadence].toLowerCase() : 'subscription'
   const accessEnd = dateLabel(stripeSubscriptionPeriodEnd(subscription))
-  const feedback = subscription.cancellation_details?.feedback
   const comment = subscription.cancellation_details?.comment?.trim()
-  const reason = feedback ? FEEDBACK_LABELS[feedback] ?? feedback.replaceAll('_', ' ') : 'No reason supplied'
+  const reason = subscriptionCancellationReasonLabel(subscription)
   const greeting = input.displayName?.trim() ? `Hi ${input.displayName.trim()},` : 'Hello,'
   const accessSentence = accessEnd
     ? `You can continue using Simeonware through ${accessEnd}.`

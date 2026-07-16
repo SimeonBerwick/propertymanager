@@ -71,6 +71,24 @@ async function sendCancellationNotification(input: {
 }
 
 async function notifySubscriptionCancellation(subscription: Stripe.Subscription) {
+  const stripe = getStripeClient()
+  let notificationSubscription = subscription
+  if (
+    stripe
+    && subscription.cancellation_details?.reason === 'cancellation_requested'
+    && !subscription.cancellation_details.feedback
+    && !subscription.cancellation_details.comment
+  ) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, attempt * 250))
+      notificationSubscription = await stripe.subscriptions.retrieve(subscription.id)
+      if (
+        notificationSubscription.cancellation_details?.feedback
+        || notificationSubscription.cancellation_details?.comment
+      ) break
+    }
+  }
+
   const metadataUserId = subscription.metadata?.userId
   const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
   const user = metadataUserId
@@ -88,12 +106,12 @@ async function notifySubscriptionCancellation(subscription: Stripe.Subscription)
   const messages = buildSubscriptionCancellationMessages({
     email: user.email,
     displayName: user.displayName,
-    subscription,
+    subscription: notificationSubscription,
     fallbackPlan: user.subscriptionPlan,
     fallbackCadence: user.billingCadence,
     accountUrl,
   })
-  const key = subscriptionCancellationDeliveryKey(subscription)
+  const key = subscriptionCancellationDeliveryKey(notificationSubscription)
 
   await sendCancellationNotification({ key, kind: 'customer', orgId: user.id, subscriptionId: subscription.id, message: messages.customer })
   await sendCancellationNotification({ key, kind: 'support', orgId: user.id, subscriptionId: subscription.id, message: messages.support })

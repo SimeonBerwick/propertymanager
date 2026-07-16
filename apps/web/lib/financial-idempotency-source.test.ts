@@ -17,7 +17,7 @@ describe('duplicate-proof financial integration wiring', () => {
     expect(route).toContain('id: `stripe_checkout_${session.id}`')
     expect(route).toContain('checkoutSessionId: session.id')
     expect(route).toContain("operationType: `subscription-cancellation-${input.kind}-email`")
-    expect(route).toContain('subscriptionCancellationDeliveryKey(subscription)')
+    expect(route).toContain('subscriptionCancellationDeliveryKey(notificationSubscription)')
   })
 
   it('gives customer, checkout, and subscription writes stable Stripe keys', () => {
