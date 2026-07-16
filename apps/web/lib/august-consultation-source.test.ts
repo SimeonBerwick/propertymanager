@@ -25,6 +25,7 @@ describe('August conversation request', () => {
     expect(notifyPosition).toBeGreaterThan(savePosition)
     expect(action).toContain("category: 'sales_consultation'")
     expect(action).toContain('takeRateLimitHit')
+    expect(action).toContain('replyTo: email')
     expect(analytics).toContain("'campaign_consultation_submitted'")
   })
 })

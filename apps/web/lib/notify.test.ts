@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import { buildNewRequestMessages, buildTenantVendorUpdateMessage } from '@/lib/notify'
+import { buildNewRequestMessages, buildTenantVendorUpdateMessage, notificationReplyTo } from '@/lib/notify'
 
 describe('notification email markup', () => {
+  test('routes replies to support unless a message or environment override is provided', () => {
+    expect(notificationReplyTo(undefined, undefined)).toBe('support@simeonware.com')
+    expect(notificationReplyTo(undefined, ' feedback@simeonware.com ')).toBe('feedback@simeonware.com')
+    expect(notificationReplyTo(' manager@example.com ', 'support@simeonware.com')).toBe('manager@example.com')
+  })
+
   test('renders Outlook and Gmail Android friendly table markup with a plain text fallback', () => {
     const [tenantMessage] = buildNewRequestMessages({
       requestId: 'req-123',
@@ -25,6 +31,7 @@ describe('notification email markup', () => {
     expect(tenantMessage.html).toContain('width="100%"')
     expect(tenantMessage.html).toContain('max-width:600px')
     expect(tenantMessage.html).toContain('overflow-wrap:break-word')
+    expect(tenantMessage.html).toContain('Reply to this email')
     expect(tenantMessage.html).not.toMatch(/border-radius|white-space:pre-wrap/)
   })
 

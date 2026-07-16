@@ -86,6 +86,7 @@ export async function submitSupportRequest(_state: SupportState, formData: FormD
   const destination = process.env.SUPPORT_EMAIL?.trim() || process.env.OPS_ALERT_EMAIL?.trim() || 'support@simeonware.com'
   await sendNotification({
     to: destination,
+    replyTo: email,
     subject: `[Support ${referenceId}] ${category.replaceAll('_', ' ')}`,
     text: [
       `Reference: ${referenceId}`,

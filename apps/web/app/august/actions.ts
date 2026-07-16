@@ -107,6 +107,7 @@ export async function submitConsultationRequest(
   const destination = process.env.SALES_EMAIL?.trim() || 'sales@simeonware.com'
   await sendNotification({
     to: destination,
+    replyTo: email,
     subject: `[Founding manager ${referenceId}] ${organization}`,
     text: [
       'A visitor requested a 20-minute founding-manager conversation.',
