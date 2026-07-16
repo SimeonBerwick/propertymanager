@@ -6,6 +6,23 @@ import { writeAuditLog } from '@/lib/audit-log'
 
 export const RECONCILED_STRIPE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid'])
 
+type StripeResourceError = Error & {
+  code?: string
+  raw?: { code?: string; param?: string }
+}
+
+export function isMissingStripeCustomerError(error: unknown) {
+  if (!(error instanceof Error)) return false
+  const stripeError = error as StripeResourceError
+  const code = stripeError.code ?? stripeError.raw?.code
+  return code === 'resource_missing'
+    && (stripeError.raw?.param === 'customer' || error.message.includes('No such customer'))
+}
+
+export function statusAfterMissingStripeCustomer(trialEndsAt: Date | null, now = new Date()) {
+  return trialEndsAt && trialEndsAt.getTime() > now.getTime() ? 'trialing' as const : 'expired' as const
+}
+
 export function selectAuthoritativeSubscription(subscriptions: Stripe.Subscription[]) {
   const ordered = [...subscriptions].sort((a, b) => b.created - a.created)
   const tracked = ordered.filter((subscription) => RECONCILED_STRIPE_STATUSES.has(subscription.status))
@@ -45,6 +62,7 @@ export async function reconcileStripeSubscriptions(): Promise<SubscriptionReconc
       subscriptionStatus: true,
       subscriptionPlan: true,
       billingCadence: true,
+      trialEndsAt: true,
       subscriptionEndsAt: true,
     },
   })
@@ -92,6 +110,29 @@ export async function reconcileStripeSubscriptions(): Promise<SubscriptionReconc
         result.repaired += 1
       }
     } catch (error) {
+      if (isMissingStripeCustomerError(error)) {
+        const status = statusAfterMissingStripeCustomer(user.trialEndsAt)
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+            subscriptionStatus: status,
+            subscriptionEndsAt: null,
+          },
+        })
+        await writeAuditLog({
+          orgId: user.id,
+          actorUserId: user.id,
+          entityType: 'user',
+          entityId: user.id,
+          action: 'subscription.staleStripeReferenceCleared',
+          summary: 'Cleared a Stripe customer reference that does not exist in the active Stripe account.',
+          metadata: { previousCustomerId: user.stripeCustomerId, previousSubscriptionId: user.stripeSubscriptionId, status },
+        })
+        result.repaired += 1
+        continue
+      }
       result.errors.push({ userId: user.id, message: error instanceof Error ? error.message : 'Unknown Stripe reconciliation error.' })
     }
   }
