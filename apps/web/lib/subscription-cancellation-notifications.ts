@@ -29,11 +29,11 @@ export function subscriptionCancellationTransition(
 ) {
   if (subscription.cancellation_details?.reason !== 'cancellation_requested') return false
   if (subscription.status === 'canceled') return true
-  if (!subscription.cancel_at_period_end) return false
-  return previousAttributes?.cancel_at_period_end === false
-    || (previousAttributes != null
-      && Object.prototype.hasOwnProperty.call(previousAttributes, 'cancel_at')
-      && previousAttributes.cancel_at !== subscription.cancel_at)
+  if (subscription.cancel_at_period_end && previousAttributes?.cancel_at_period_end === false) return true
+  if (!subscription.cancel_at) return false
+  return previousAttributes != null
+    && Object.prototype.hasOwnProperty.call(previousAttributes, 'cancel_at')
+    && previousAttributes.cancel_at !== subscription.cancel_at
 }
 
 export function subscriptionCancellationDeliveryKey(subscription: Stripe.Subscription) {
