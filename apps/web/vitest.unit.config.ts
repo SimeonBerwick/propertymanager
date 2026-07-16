@@ -16,6 +16,8 @@ export default defineConfig({
       'lib/billing-plans.test.ts',
       'lib/subscription-checkout.test.ts',
       'lib/subscription-reconciliation.test.ts',
+      'lib/stripe-subscription-period.test.ts',
+      'lib/subscription-cancellation-notifications.test.ts',
       'lib/csv-tools.test.ts',
       'lib/work-order-state.test.ts',
       'lib/workflow-rules.test.ts',

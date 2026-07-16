@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getStripeClient } from '@/lib/stripe'
 import { parseCadence, parsePlan } from '@/lib/billing-plans'
 import { writeAuditLog } from '@/lib/audit-log'
+import { stripeSubscriptionAccountStatus, stripeSubscriptionPeriodEnd } from '@/lib/stripe-subscription-period'
 
 export const RECONCILED_STRIPE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid'])
 
@@ -27,19 +28,6 @@ export function selectAuthoritativeSubscription(subscriptions: Stripe.Subscripti
   const ordered = [...subscriptions].sort((a, b) => b.created - a.created)
   const tracked = ordered.filter((subscription) => RECONCILED_STRIPE_STATUSES.has(subscription.status))
   return { authoritative: tracked[0] ?? ordered[0] ?? null, simultaneous: tracked }
-}
-
-function accountStatus(status: Stripe.Subscription.Status) {
-  if (status === 'active') return 'active' as const
-  if (status === 'trialing') return 'trialing' as const
-  if (status === 'past_due' || status === 'unpaid') return 'past_due' as const
-  if (status === 'canceled') return 'canceled' as const
-  return 'expired' as const
-}
-
-function periodEnd(subscription: Stripe.Subscription) {
-  const seconds = (subscription as unknown as { current_period_end?: number }).current_period_end
-  return seconds ? new Date(seconds * 1000) : null
 }
 
 export interface SubscriptionReconciliationResult {
@@ -88,12 +76,13 @@ export async function reconcileStripeSubscriptions(): Promise<SubscriptionReconc
       if (!subscription) continue
       const plan = parsePlan(subscription.metadata?.plan) ?? user.subscriptionPlan
       const cadence = parseCadence(subscription.metadata?.cadence) ?? user.billingCadence
-      const status = accountStatus(subscription.status)
-      const endsAt = periodEnd(subscription)
+      const status = stripeSubscriptionAccountStatus(subscription)
+      const endsAt = stripeSubscriptionPeriodEnd(subscription)
       const needsRepair = user.stripeSubscriptionId !== subscription.id
         || user.subscriptionStatus !== status
         || user.subscriptionPlan !== plan
         || user.billingCadence !== cadence
+        || ((status === 'active' || status === 'canceled') && user.trialEndsAt !== null)
         || user.subscriptionEndsAt?.getTime() !== endsAt?.getTime()
 
       if (needsRepair) {
@@ -105,6 +94,7 @@ export async function reconcileStripeSubscriptions(): Promise<SubscriptionReconc
             subscriptionPlan: plan,
             billingCadence: cadence,
             subscriptionEndsAt: endsAt,
+            trialEndsAt: status === 'active' || status === 'canceled' ? null : user.trialEndsAt,
           },
         })
         result.repaired += 1

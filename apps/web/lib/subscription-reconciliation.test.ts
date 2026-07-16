@@ -57,6 +57,47 @@ describe('missing Stripe customer recovery', () => {
     expect(isMissingStripeCustomerError(new Error('Stripe is temporarily unavailable'))).toBe(false)
   })
 
+  test('reconciles a scheduled cancellation while preserving paid access through the period end', async () => {
+    const periodEnd = 1_786_909_200
+    vi.mocked(prisma.user.findMany).mockResolvedValue([{
+      id: 'user_canceling',
+      stripeCustomerId: 'cus_canceling',
+      stripeSubscriptionId: 'sub_canceling',
+      subscriptionStatus: 'active',
+      subscriptionPlan: 'starter',
+      billingCadence: 'monthly',
+      trialEndsAt: new Date('2026-08-01T00:00:00.000Z'),
+      subscriptionEndsAt: null,
+    }] as never)
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never)
+    vi.mocked(getStripeClient).mockReturnValue({
+      subscriptions: {
+        list: vi.fn().mockResolvedValue({
+          data: [{
+            id: 'sub_canceling',
+            status: 'active',
+            created: 1_784_229_600,
+            cancel_at_period_end: true,
+            metadata: { plan: 'starter', cadence: 'monthly' },
+            items: { data: [{ current_period_end: periodEnd }] },
+          }],
+        }),
+      },
+    } as never)
+
+    const result = await reconcileStripeSubscriptions()
+
+    expect(result).toMatchObject({ checked: 1, repaired: 1, errors: [] })
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user_canceling' },
+      data: expect.objectContaining({
+        subscriptionStatus: 'canceled',
+        subscriptionEndsAt: new Date('2026-08-16T19:40:00.000Z'),
+        trialEndsAt: null,
+      }),
+    })
+  })
+
   test('preserves a valid trial and expires an account with no valid trial', () => {
     const now = new Date('2026-07-16T12:00:00.000Z')
 

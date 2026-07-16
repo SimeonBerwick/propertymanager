@@ -4,29 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { getStripeClient, getStripeWebhookSecret } from '@/lib/stripe'
 import { parseCadence, parseStoredPlan } from '@/lib/billing-plans'
 import { beginExternalOperation, completeExternalOperation, failExternalOperation } from '@/lib/external-operations'
-
-function accountStatusFromStripe(status?: string | null) {
-  switch (status) {
-    case 'trialing':
-      return 'trialing' as const
-    case 'active':
-      return 'active' as const
-    case 'past_due':
-    case 'unpaid':
-    case 'incomplete':
-    case 'incomplete_expired':
-      return 'past_due' as const
-    case 'canceled':
-      return 'canceled' as const
-    default:
-      return 'expired' as const
-  }
-}
-
-function periodEndDate(subscription: Stripe.Subscription) {
-  const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
-  return periodEnd ? new Date(periodEnd * 1000) : null
-}
+import { stripeSubscriptionAccountStatus, stripeSubscriptionPeriodEnd } from '@/lib/stripe-subscription-period'
+import {
+  buildSubscriptionCancellationMessages,
+  subscriptionCancellationDeliveryKey,
+  subscriptionCancellationTransition,
+} from '@/lib/subscription-cancellation-notifications'
+import { sendNotification, type NotificationMessage } from '@/lib/notify'
+import { getAppBaseUrl } from '@/lib/runtime-env'
 
 async function syncSubscription(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId
@@ -34,13 +19,14 @@ async function syncSubscription(subscription: Stripe.Subscription) {
   const cadence = parseCadence(subscription.metadata?.cadence ?? null)
   const additionalUnitAllowance = Math.max(0, Number.parseInt(subscription.metadata?.additionalUnitAllowance ?? '0', 10) || 0)
   const data = {
-    subscriptionStatus: accountStatusFromStripe(subscription.status),
+    subscriptionStatus: stripeSubscriptionAccountStatus(subscription),
     subscriptionPlan: plan ?? undefined,
     billingCadence: cadence ?? undefined,
     additionalUnitAllowance,
     stripeCustomerId: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id,
     stripeSubscriptionId: subscription.id,
-    subscriptionEndsAt: periodEndDate(subscription),
+    subscriptionEndsAt: stripeSubscriptionPeriodEnd(subscription),
+    trialEndsAt: ['active', 'canceled'].includes(subscription.status) ? null : undefined,
   }
 
   if (userId) {
@@ -55,6 +41,62 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     where: { stripeSubscriptionId: subscription.id },
     data,
   })
+}
+
+async function sendCancellationNotification(input: {
+  key: string
+  kind: 'customer' | 'support'
+  orgId: string
+  subscriptionId: string
+  message: NotificationMessage
+}) {
+  const operation = await beginExternalOperation({
+    provider: 'stripe',
+    operationType: `subscription-cancellation-${input.kind}-email`,
+    operationKey: input.key,
+    orgId: input.orgId,
+  })
+  if (!operation.shouldProcess) return
+
+  const result = await sendNotification(input.message, {
+    ownerUserId: input.orgId,
+    bypassUserPreference: true,
+  })
+  if (!result.ok) {
+    const error = new Error(`The ${input.kind} subscription cancellation email was not delivered.`)
+    await failExternalOperation(operation.operation.id, error)
+    throw error
+  }
+  await completeExternalOperation(operation.operation.id, { providerObjectId: input.subscriptionId })
+}
+
+async function notifySubscriptionCancellation(subscription: Stripe.Subscription) {
+  const metadataUserId = subscription.metadata?.userId
+  const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
+  const user = metadataUserId
+    ? await prisma.user.findUnique({
+      where: { id: metadataUserId },
+      select: { id: true, email: true, displayName: true, subscriptionPlan: true, billingCadence: true },
+    })
+    : await prisma.user.findFirst({
+      where: { OR: [{ stripeSubscriptionId: subscription.id }, { stripeCustomerId: customerId }] },
+      select: { id: true, email: true, displayName: true, subscriptionPlan: true, billingCadence: true },
+    })
+  if (!user) throw new Error(`No Simeonware account matches canceled Stripe subscription ${subscription.id}.`)
+
+  const accountUrl = `${getAppBaseUrl('subscription cancellation emails')}/account/subscription`
+  const messages = buildSubscriptionCancellationMessages({
+    email: user.email,
+    displayName: user.displayName,
+    subscription,
+    fallbackPlan: user.subscriptionPlan,
+    fallbackCadence: user.billingCadence,
+    accountUrl,
+  })
+  const key = subscriptionCancellationDeliveryKey(subscription)
+
+  await sendCancellationNotification({ key, kind: 'customer', orgId: user.id, subscriptionId: subscription.id, message: messages.customer })
+  await sendCancellationNotification({ key, kind: 'support', orgId: user.id, subscriptionId: subscription.id, message: messages.support })
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
@@ -93,6 +135,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       billingCadence: cadence ?? undefined,
       additionalUnitAllowance,
       stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+      trialEndsAt: null,
     },
   })
   await recordSubscriptionStarted()
@@ -135,7 +178,14 @@ export async function POST(request: Request) {
     }
 
     if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
-      await syncSubscription(event.data.object as Stripe.Subscription)
+      const subscription = event.data.object as Stripe.Subscription
+      await syncSubscription(subscription)
+      const previousAttributes = event.type === 'customer.subscription.updated'
+        ? event.data.previous_attributes as Partial<Stripe.Subscription>
+        : null
+      if (event.type === 'customer.subscription.updated' && subscriptionCancellationTransition(subscription, previousAttributes)) {
+        await notifySubscriptionCancellation(subscription)
+      }
     }
 
     if (event.type === 'customer.subscription.deleted') {
@@ -144,9 +194,12 @@ export async function POST(request: Request) {
         where: { stripeSubscriptionId: subscription.id },
         data: {
           subscriptionStatus: 'canceled',
-          subscriptionEndsAt: periodEndDate(subscription) ?? new Date(),
+          subscriptionEndsAt: stripeSubscriptionPeriodEnd(subscription) ?? new Date(),
         },
       })
+      if (subscriptionCancellationTransition(subscription)) {
+        await notifySubscriptionCancellation(subscription)
+      }
     }
 
     await completeExternalOperation(receipt.operation.id, {
