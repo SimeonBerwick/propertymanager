@@ -54,6 +54,12 @@ export default async function SubscriptionPage({
   const billedPlan = plan ? automaticPlanForUnits(plan, pricingCapacity) : null
   const displayedCapacity = billedPlan ? Math.max(pricingCapacity, BILLING_PLANS[billedPlan].unitLimit ?? 0) : 0
   const additionalUnits = billedPlan ? Math.max(0, displayedCapacity - (BILLING_PLANS[billedPlan].unitLimit ?? 0)) : 0
+  const accessDate = freeTrial ? user.trialEndsAt : user.subscriptionEndsAt
+  const dateLabel = freeTrial
+    ? 'Trial ends'
+    : user.subscriptionStatus === 'canceled'
+      ? 'Access through'
+      : 'Next billing date'
 
   return (
     <main className="stack">
@@ -94,8 +100,8 @@ export default async function SubscriptionPage({
               {!gate.allowed ? <span className="muted">{subscriptionGateMessage(gate)}</span> : null}
             </div>
             <div className="billingRowCard stack" style={{ gap: 4 }}>
-              <div className="kicker">Access through</div>
-              <strong>{(user.subscriptionEndsAt ?? user.trialEndsAt)?.toLocaleDateString() ?? 'Open'}</strong>
+              <div className="kicker">{dateLabel}</div>
+              <strong>{accessDate?.toLocaleDateString() ?? 'Open'}</strong>
               <span className="muted">Check subscription details online.</span>
             </div>
           </div>
@@ -118,9 +124,9 @@ export default async function SubscriptionPage({
               {plan && !freeTrial ? <span className="muted">{Math.max(0, currentCapacity - activeUnits)} slots available</span> : null}
             </div>
             <div className="billingRowCard stack" style={{ gap: 4 }}>
-              <div className="kicker">Access through</div>
-              <strong>{(user.subscriptionEndsAt ?? user.trialEndsAt)?.toLocaleDateString() ?? 'Open'}</strong>
-              <span className="muted">{user.subscriptionStatus === 'trialing' ? 'Trial end' : 'Billing period end'}</span>
+              <div className="kicker">{dateLabel}</div>
+              <strong>{accessDate?.toLocaleDateString() ?? 'Open'}</strong>
+              <span className="muted">{freeTrial ? 'Trial access ends' : user.subscriptionStatus === 'canceled' ? 'Paid access ends' : 'Stripe billing period end'}</span>
             </div>
           </div>
         )}
