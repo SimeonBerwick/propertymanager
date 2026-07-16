@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import {
   buildSubscriptionCancellationMessages,
   subscriptionCancellationDeliveryKey,
+  subscriptionCancellationReasonLabel,
   subscriptionCancellationTransition,
 } from '@/lib/subscription-cancellation-notifications'
 
@@ -88,5 +89,19 @@ describe('subscription cancellation notifications', () => {
     })
     expect(messages.support.text).toContain('Reason: Other reason')
     expect(messages.support.text).toContain('Customer comment: Live checkout verification only.')
+  })
+
+  test('describes a customer cancellation truthfully when Stripe omits portal feedback', () => {
+    const subscription = cancellationSubscription({
+      cancellation_details: {
+        feedback: null,
+        comment: null,
+        reason: 'cancellation_requested',
+      },
+    })
+
+    expect(subscriptionCancellationReasonLabel(subscription)).toBe(
+      'Customer requested cancellation (no survey reason supplied)',
+    )
   })
 })
