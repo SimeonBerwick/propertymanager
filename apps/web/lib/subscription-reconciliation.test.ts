@@ -1,6 +1,16 @@
-import { describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type Stripe from 'stripe'
-import { selectAuthoritativeSubscription } from '@/lib/subscription-reconciliation'
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: { user: { findMany: vi.fn(), update: vi.fn() } },
+}))
+vi.mock('@/lib/stripe', () => ({ getStripeClient: vi.fn() }))
+vi.mock('@/lib/audit-log', () => ({ writeAuditLog: vi.fn() }))
+
+import { prisma } from '@/lib/prisma'
+import { getStripeClient } from '@/lib/stripe'
+import { writeAuditLog } from '@/lib/audit-log'
+import { isMissingStripeCustomerError, reconcileStripeSubscriptions, selectAuthoritativeSubscription, statusAfterMissingStripeCustomer } from '@/lib/subscription-reconciliation'
 
 function subscription(id: string, status: Stripe.Subscription.Status, created: number) {
   return { id, status, created } as Stripe.Subscription
@@ -26,5 +36,71 @@ describe('selectAuthoritativeSubscription', () => {
 
     expect(result.authoritative?.id).toBe('sub_latest')
     expect(result.simultaneous).toEqual([])
+  })
+})
+
+describe('missing Stripe customer recovery', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  test('recognizes a missing customer without treating every missing Stripe resource as a customer failure', () => {
+    const missingCustomer = Object.assign(new Error("No such customer: 'cus_test'"), {
+      code: 'resource_missing',
+      raw: { code: 'resource_missing', param: 'customer' },
+    })
+    const missingPrice = Object.assign(new Error("No such price: 'price_test'"), {
+      code: 'resource_missing',
+      raw: { code: 'resource_missing', param: 'price' },
+    })
+
+    expect(isMissingStripeCustomerError(missingCustomer)).toBe(true)
+    expect(isMissingStripeCustomerError(missingPrice)).toBe(false)
+    expect(isMissingStripeCustomerError(new Error('Stripe is temporarily unavailable'))).toBe(false)
+  })
+
+  test('preserves a valid trial and expires an account with no valid trial', () => {
+    const now = new Date('2026-07-16T12:00:00.000Z')
+
+    expect(statusAfterMissingStripeCustomer(new Date('2026-08-10T00:00:00.000Z'), now)).toBe('trialing')
+    expect(statusAfterMissingStripeCustomer(new Date('2026-07-01T00:00:00.000Z'), now)).toBe('expired')
+    expect(statusAfterMissingStripeCustomer(null, now)).toBe('expired')
+  })
+
+  test('clears stale references, preserves a valid trial, and records the repair', async () => {
+    const missingCustomer = Object.assign(new Error("No such customer: 'cus_test'"), {
+      code: 'resource_missing',
+      raw: { code: 'resource_missing', param: 'customer' },
+    })
+    vi.mocked(prisma.user.findMany).mockResolvedValue([{
+      id: 'user_1',
+      stripeCustomerId: 'cus_test',
+      stripeSubscriptionId: 'sub_test',
+      subscriptionStatus: 'active',
+      subscriptionPlan: 'growth',
+      billingCadence: 'monthly',
+      trialEndsAt: new Date(Date.now() + 86_400_000),
+      subscriptionEndsAt: null,
+    }] as never)
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never)
+    vi.mocked(getStripeClient).mockReturnValue({
+      subscriptions: { list: vi.fn().mockRejectedValue(missingCustomer) },
+    } as never)
+
+    const result = await reconcileStripeSubscriptions()
+
+    expect(result).toMatchObject({ checked: 1, repaired: 1, errors: [] })
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user_1' },
+      data: {
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: 'trialing',
+        subscriptionEndsAt: null,
+      },
+    })
+    expect(writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      orgId: 'user_1',
+      action: 'subscription.staleStripeReferenceCleared',
+      metadata: expect.objectContaining({ previousCustomerId: 'cus_test', previousSubscriptionId: 'sub_test', status: 'trialing' }),
+    }))
   })
 })
