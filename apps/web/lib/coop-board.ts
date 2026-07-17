@@ -93,11 +93,14 @@ export async function respondToBoardApproval(input: { token: string; response: '
   if (approval.expiresAt <= new Date()) return { error: 'This board approval link has expired. Ask the property manager to resend it.' }
 
   const state = input.response === 'approved' ? 'approved' : input.response === 'declined' ? 'declined' : 'returned'
+  let accepted = false
   await prisma.$transaction(async (tx) => {
-    await tx.boardApproval.update({
-      where: { id: approval.id },
+    const claimed = await tx.boardApproval.updateMany({
+      where: { id: approval.id, status: 'pending' },
       data: { status: input.response, responseNote: input.note || null, respondedAt: new Date() },
     })
+    if (!claimed.count) return
+    accepted = true
     await tx.maintenanceRequest.update({
       where: { id: approval.requestId },
       data: { boardApprovalState: state },
@@ -107,6 +110,7 @@ export async function respondToBoardApproval(input: { token: string; response: '
       data: { status: 'overridden', responseNote: `Decision recorded by ${approval.approver.name}.`, respondedAt: new Date() },
     })
   })
+  if (!accepted) return { error: 'This board approval has already been answered.' }
   await writeAuditLog({
     orgId: approval.request.property.ownerId,
     entityType: 'request',
