@@ -24,6 +24,9 @@ Call to action: Request a 20-minute founding-manager conversation.
 - Facebook: `https://www.simeonware.com/august?utm_source=facebook&utm_medium=social&utm_campaign=august_founders`
 - Instagram: `https://www.simeonware.com/august?utm_source=instagram&utm_medium=social&utm_campaign=august_founders`
 - TikTok: `https://www.simeonware.com/august?utm_source=tiktok&utm_medium=social&utm_campaign=august_founders`
+- LinkedIn: `https://www.simeonware.com/august?utm_source=linkedin&utm_medium=social&utm_campaign=august_founders`
+- YouTube: `https://www.simeonware.com/august?utm_source=youtube&utm_medium=social&utm_campaign=august_founders`
+- Direct outreach: `https://www.simeonware.com/august?utm_source=direct-outreach&utm_medium=outreach&utm_campaign=august_founders`
 
 ## Live profiles
 

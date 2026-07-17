@@ -1,6 +1,15 @@
 export const CAMPAIGN_COOKIE_NAME = 'sw_campaign_source'
 
-const AUGUST_SOURCES = ['facebook', 'instagram', 'tiktok', 'linkedin', 'email', 'direct'] as const
+const AUGUST_SOURCES = [
+  'facebook',
+  'instagram',
+  'tiktok',
+  'linkedin',
+  'youtube',
+  'email',
+  'direct-outreach',
+  'direct',
+] as const
 
 export type AugustCampaignSource = typeof AUGUST_SOURCES[number]
 
@@ -15,4 +24,10 @@ export function parseAugustCampaignSource(value: unknown): AugustCampaignSource 
 export function augustTrialSource(value: unknown) {
   const source = parseAugustCampaignSource(value)
   return source ? `august_${source}` : 'public_signup'
+}
+
+export function augustCampaignMedium(source: AugustCampaignSource) {
+  if (source === 'email' || source === 'direct-outreach') return 'outreach'
+  if (source === 'direct') return 'direct'
+  return 'social'
 }
