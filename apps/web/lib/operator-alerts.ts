@@ -55,8 +55,26 @@ export async function sendThrottledOperatorErrorAlert(event: string, error: unkn
   return sendOperatorFailureAlert(event, { error, details })
 }
 
-export function resultHasFailures(value: unknown) {
-  if (!value) return false
-  const serialized = JSON.stringify(value).toLowerCase()
-  return serialized.includes('"error"') || serialized.includes('"failed"') || serialized.includes('"ok":false')
+function hasFailureValue(value: unknown) {
+  if (value == null) return false
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value > 0
+  if (typeof value === 'string') return value.trim().length > 0
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return false
+}
+
+export function resultHasFailures(value: unknown): boolean {
+  if (value == null || typeof value !== 'object') return false
+  if (Array.isArray(value)) return value.some(resultHasFailures)
+
+  return Object.entries(value as Record<string, unknown>).some(([key, entry]) => {
+    const normalizedKey = key.toLowerCase()
+    if (normalizedKey === 'ok' && entry === false) return true
+    if (/^(error|errors|failed|failure|failures|failurecount|deliveryfailurecount)$/.test(normalizedKey)) {
+      return hasFailureValue(entry)
+    }
+    return resultHasFailures(entry)
+  })
 }

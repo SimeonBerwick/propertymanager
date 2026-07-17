@@ -5,7 +5,28 @@ describe('resultHasFailures', () => {
   test('recognizes nested operational failures', () => {
     expect(resultHasFailures({ exports: { ok: false } })).toBe(true)
     expect(resultHasFailures({ sync: { failed: 2 } })).toBe(true)
+    expect(resultHasFailures({ reconciliation: { errors: [{ message: 'Stripe unavailable' }] } })).toBe(true)
     expect(resultHasFailures({ sync: { ok: true, processed: 3 } })).toBe(false)
+  })
+
+  test('does not alert for zero failures or successful repairs', () => {
+    expect(resultHasFailures({
+      subscriptionReconciliation: {
+        checked: 3,
+        repaired: 1,
+        duplicateCustomers: [],
+        errors: [],
+      },
+      subscriptionUnitPricing: {
+        processed: 5,
+        updated: 0,
+        failed: 0,
+      },
+      vendorReminders: {
+        ok: true,
+        deliveryFailureCount: 0,
+      },
+    })).toBe(false)
   })
 })
 
