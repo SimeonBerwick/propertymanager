@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { CampaignLink, CampaignTracker } from '@/components/campaign-tracker'
-import { parseAugustCampaignSource } from '@/lib/campaign-attribution'
+import { augustCampaignMedium, parseAugustCampaignSource } from '@/lib/campaign-attribution'
 import { ConsultationForm } from './consultation-form'
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function AugustCampaignPage({
 }) {
   const query = await searchParams
   const source = parseAugustCampaignSource(query?.utm_source) ?? 'direct'
-  const medium = source === 'email' ? 'outreach' : source === 'direct' ? 'direct' : 'social'
+  const medium = augustCampaignMedium(source)
   const signupHref = `/signup?utm_source=${source}&utm_medium=${medium}&utm_campaign=august_founders`
   const consultationHref = '#conversation'
 
