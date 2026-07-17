@@ -186,6 +186,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                       <Link href="/access">Tenant and vendor access</Link>
                       <Link href="/ops">Data &amp; activity</Link>
                       <Link href="/workflows">Rules</Link>
+                      <Link href={'/co-op' as Route}>Co-op operations</Link>
                       <Link href={'/account/settings' as Route}>Account settings</Link>
                       <Link href="/support">Support</Link>
                       <a href="mailto:feedback@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>

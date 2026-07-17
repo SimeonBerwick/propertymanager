@@ -75,10 +75,14 @@ export async function createPropertyAction(
   if (!address) return { error: 'Address is required.' }
   if (name.length > 200) return { error: 'Property name must be 200 characters or fewer.' }
   if (address.length > 400) return { error: 'Address must be 400 characters or fewer.' }
-  if (!['single_family', 'multifamily'].includes(propertyType)) return { error: 'Choose a valid property type.' }
+  if (!['single_family', 'multifamily', 'cooperative'].includes(propertyType)) return { error: 'Choose a valid property type.' }
+  if (propertyType === 'cooperative') {
+    const user = await prisma.user.findUnique({ where: { id: ownerId }, select: { subscriptionPlan: true } })
+    if (user?.subscriptionPlan !== 'pro') return { error: 'Co-op Mode is included with the Pro plan. Choose Pro before adding a cooperative building.' }
+  }
 
   let unitLabels: string[] = []
-  if (propertyType === 'multifamily') {
+  if (propertyType === 'multifamily' || propertyType === 'cooperative') {
     try {
       unitLabels = buildBulkUnitLabels(Number(unitCountRaw), Number(firstUnitNumberRaw), unitLabelPrefix)
     } catch (error) {
@@ -113,7 +117,7 @@ export async function createPropertyAction(
       entityId: property.id,
       action: 'property.created',
       summary: `Created property ${name}.`,
-      metadata: { address, propertyType, unitsCreated: unitLabels.length, areasCreated: propertyType === 'multifamily' ? DEFAULT_APARTMENT_AREAS.length : 0 },
+      metadata: { address, propertyType, unitsCreated: unitLabels.length, areasCreated: ['multifamily', 'cooperative'].includes(propertyType) ? DEFAULT_APARTMENT_AREAS.length : 0 },
     })
   } catch (error) {
     await logServerActionError('property.create', error, { ownerId })

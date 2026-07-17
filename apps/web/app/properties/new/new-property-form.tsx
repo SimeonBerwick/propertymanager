@@ -8,7 +8,7 @@ const INITIAL_STATE: PropertyActionState = { error: null }
 
 export function NewPropertyForm() {
   const [state, formAction, isPending] = useActionState(createPropertyAction, INITIAL_STATE)
-  const [propertyType, setPropertyType] = useState<'single_family' | 'multifamily'>('single_family')
+  const [propertyType, setPropertyType] = useState<'single_family' | 'multifamily' | 'cooperative'>('single_family')
 
   return (
     <form action={formAction} className="stack">
@@ -25,22 +25,26 @@ export function NewPropertyForm() {
             <input type="radio" name="propertyType" value="multifamily" checked={propertyType === 'multifamily'} onChange={() => setPropertyType('multifamily')} />
             Apartment community
           </label>
+          <label className="row" style={{ justifyContent: 'flex-start' }}>
+            <input type="radio" name="propertyType" value="cooperative" checked={propertyType === 'cooperative'} onChange={() => setPropertyType('cooperative')} />
+            Cooperative building
+          </label>
         </div>
       </fieldset>
 
       <label className="field">
-        <span className="field-label">{propertyType === 'multifamily' ? 'Apartment or community name' : 'Property name'}</span>
+        <span className="field-label">{propertyType === 'single_family' ? 'Property name' : propertyType === 'cooperative' ? 'Cooperative building name' : 'Apartment or community name'}</span>
         <input
           className="input"
           type="text"
           name="name"
-          placeholder={propertyType === 'multifamily' ? 'Canyon View Apartments' : 'Canyon View Duplex'}
+          placeholder={propertyType === 'multifamily' ? 'Canyon View Apartments' : propertyType === 'cooperative' ? 'Canyon View Cooperative' : 'Canyon View Duplex'}
           maxLength={200}
           required
         />
       </label>
 
-      {propertyType === 'multifamily' ? (
+      {propertyType !== 'single_family' ? (
         <div className="stack" style={{ gap: 12 }}>
           <div className="grid cols-2">
             <label className="field">

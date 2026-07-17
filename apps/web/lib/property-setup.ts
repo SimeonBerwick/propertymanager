@@ -1,4 +1,4 @@
-export type PropertyType = 'single_family' | 'multifamily'
+export type PropertyType = 'single_family' | 'multifamily' | 'cooperative'
 
 export const DEFAULT_APARTMENT_AREAS = [
   ['Building exterior', 'building_exterior'],
