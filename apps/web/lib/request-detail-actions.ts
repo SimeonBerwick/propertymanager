@@ -334,6 +334,15 @@ export async function updateVendorFormAction(
   const tenderVendorIds = Array.from(new Set([singleVendorId, ...selectedVendorIds].filter(Boolean)))
   const shouldTender = mode === 'tender'
 
+  const boardGate = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: session.userId } },
+    select: { boardApprovalRequired: true, boardApprovalState: true },
+  })
+  if (!boardGate) return { error: 'Request not found.' }
+  if (boardGate.boardApprovalRequired && !['approved', 'overridden'].includes(boardGate.boardApprovalState)) {
+    return { error: 'This work order is waiting for board approval. Vendor selection can begin after the board approves or an emergency override is recorded.' }
+  }
+
   if (shouldTender && tenderVendorIds.length === 0) return { error: 'Select at least one vendor to ask for a bid.' }
 
   if (shouldTender) {
