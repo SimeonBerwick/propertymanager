@@ -193,6 +193,11 @@ export default async function HomePage() {
             <h3>Multilingual communication</h3>
             <p>Growth and Pro teams can give managers, tenants, vendors, and staff a translated workspace while every message keeps its original wording.</p>
           </article>
+          <article className="featureCard">
+            <span className="featureNumber">13</span>
+            <h3>Co-op operations</h3>
+            <p>Pro cooperative teams can route selected work to the board, schedule recurring building work, and track vendor certificate expiry.</p>
+          </article>
         </div>
         <p className="featureNote">Payments are intentionally separate from the core maintenance manager. Today, Simeonware tracks approvals, billbacks, vendor payment records, and closeout status; online payment processing is planned as a future add-on.</p>
       </section>
@@ -238,12 +243,13 @@ export default async function HomePage() {
                 <li>Billing records and reports</li>
                 <li>Email notifications and history</li>
                 <li>{plan === 'starter' ? 'English interface and communication' : 'Translated workspace and communication'}</li>
+                {plan === 'pro' ? <li>Co-op Mode: board approvals, recurring building work, and vendor certificate tracking</li> : null}
               </ul>
               <Link href={`/signup?plan=${plan}`} className={`button ${plan === 'growth' ? 'primary' : ''}`}>Start free trial</Link>
             </article>
           ))}
         </div>
-        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. The card-free 30-day trial is currently available to U.S. property-management businesses. Checkout shows the exact first bill based on active units. Multilingual communication is included with Growth and Pro.</p>
+        <p className="pricingNote">Annual billing includes two months free. Purchase additional capacity in bulk for $1.50 per unit slot each month; the next tier is applied automatically when it becomes less expensive. The card-free 30-day trial is currently available to U.S. property-management businesses. Checkout shows the exact first bill based on active units. Multilingual communication is included with Growth and Pro; Co-op Mode is included with Pro.</p>
       </section>
 
       <section className={`marketingSection appSubscriptionSection ${androidApp ? 'serverVisible' : ''}`} data-app-subscription>

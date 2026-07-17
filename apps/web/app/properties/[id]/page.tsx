@@ -134,7 +134,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         </div>
       </section>
 
-      {data.property.propertyType === 'multifamily' ? (
+      {['multifamily', 'cooperative'].includes(data.property.propertyType) ? (
         <section className="card stack">
           <div>
             <div className="kicker">Property areas</div>

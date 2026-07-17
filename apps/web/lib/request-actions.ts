@@ -14,6 +14,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { getLandlordSession } from '@/lib/landlord-session'
 import { isCurrencyOption, isLanguageOption, type CurrencyOption } from '@/lib/types'
 import { resolvePersonalWorkPolicy, validatePersonalWorkRequest, type PersonalWorkPolicy } from '@/lib/personal-work'
+import { boardApproversForRequest, createBoardApprovalRecords, notifyBoardApprovers } from '@/lib/coop-board'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -116,6 +117,7 @@ export async function submitMaintenanceRequest(
   let unitLabel = 'Unknown unit'
   let isCommonArea = false
   let personalWorkPolicy: PersonalWorkPolicy | null = null
+  let boardApprovers: Array<{ id: string; name: string; email: string }> = []
   try {
     const unit = await prisma.unit.findFirst({
       where: {
@@ -149,6 +151,10 @@ export async function submitMaintenanceRequest(
     unitLabel = unit.label
     propertyName = unit.property.name
     notificationOwner = unit.property.owner
+    boardApprovers = await boardApproversForRequest(unit.property.owner.id, propertyId, category).catch((error) => {
+      logServerActionError('request.boardApproval.lookup', error, { propertyId, category }).catch(() => null)
+      return []
+    })
     if (personalWorkRequested) {
       if (managerMode || unit.locationType === 'common_area') return { error: 'Personal work can only be requested by a resident for their unit.' }
       const activeStaffCount = await prisma.staffMember.count({ where: { orgId: unit.property.owner.id, isActive: true } })
@@ -166,11 +172,13 @@ export async function submitMaintenanceRequest(
   let createdRequestId: string
   const { triageTags, slaBucket } = deriveTriageMeta(preferredCurrency, preferredLanguage)
   const triageTagsCsv = triageTags.join(',')
-  const initialStatus = managerMode ? 'approved' : 'requested'
+  const boardApprovalRequired = boardApprovers.length > 0
+  const initialStatus = boardApprovalRequired ? 'requested' : managerMode ? 'approved' : 'requested'
+  let boardApprovalRecipients: Array<{ approver: { id: string; name: string; email: string }; token: string; expiresAt: Date }> = []
 
   try {
     const request = await prisma.$transaction(async (tx) => {
-      return tx.maintenanceRequest.create({
+      const created = await tx.maintenanceRequest.create({
         data: {
           propertyId,
           unitId,
@@ -185,9 +193,11 @@ export async function submitMaintenanceRequest(
           category,
           urgency,
           status: initialStatus,
+          boardApprovalRequired,
+          boardApprovalState: boardApprovalRequired ? 'pending' : 'not_required',
           firstReviewedAt: managerMode ? new Date() : undefined,
-          reviewState: managerMode ? 'approved' : undefined,
-          reviewNote: managerMode ? 'Created by property manager.' : undefined,
+          reviewState: boardApprovalRequired ? 'needs_follow_up' : managerMode ? 'approved' : undefined,
+          reviewNote: boardApprovalRequired ? 'Waiting for board approval.' : managerMode ? 'Created by property manager.' : undefined,
           workResponsibility: personalWorkRequested ? 'tenant_personal_work' : 'owner_maintenance',
           personalWorkStatus: personalWorkRequested ? 'requested' : null,
           personalWorkHourlyRateCents: personalWorkPolicy?.hourlyRateCents,
@@ -210,6 +220,8 @@ export async function submitMaintenanceRequest(
           },
         },
       })
+      if (boardApprovalRequired) boardApprovalRecipients = await createBoardApprovalRecords(tx, created.id, boardApprovers)
+      return created
     })
 
     createdRequestId = request.id
@@ -242,6 +254,17 @@ export async function submitMaintenanceRequest(
       ...(tenantEmail ? [sendNotification(tenantMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId })] : []),
       sendNotification(landlordMsg, { ownerUserId: notificationOwner?.id, requestId: createdRequestId }),
     ])
+  }
+  if (boardApprovalRecipients.length && notificationOwner) {
+    await notifyBoardApprovers({
+      requestId: createdRequestId,
+      title,
+      propertyName,
+      unitLabel,
+      category,
+      recipients: boardApprovalRecipients,
+      ownerUserId: notificationOwner.id,
+    }).catch((error) => logServerActionError('request.boardApproval.notify', error, { requestId: createdRequestId }).catch(() => null))
   }
 
   const successUrl = orgSlug

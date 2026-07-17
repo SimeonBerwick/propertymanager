@@ -117,7 +117,7 @@ async function getCloseoutBlocker(requestId: string, userId: string) {
       id: true,
       vendorCommercialItems: {
         where: { status: { in: ['submitted', 'approved'] } },
-        select: { id: true, status: true, itemType: true, amountCents: true, vendorId: true },
+        select: { id: true, status: true, itemType: true, amountCents: true, vendorId: true, attachmentUrl: true },
       },
       tenderInvites: {
         where: { status: 'awarded' },
@@ -129,10 +129,25 @@ async function getCloseoutBlocker(requestId: string, userId: string) {
         where: { status: { not: 'void' } },
         select: { recipientType: true, documentType: true, totalCents: true, paidCents: true },
       },
+      recurringWorkPlan: {
+        select: { requiredEvidenceCsv: true },
+      },
+      photos: { select: { id: true } },
     },
   })
 
   if (!request) return 'Request not found.'
+  const requiredEvidence = request.recurringWorkPlan?.requiredEvidenceCsv
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean) ?? []
+  if (requiredEvidence.length) {
+    const needsPhoto = requiredEvidence.some((item) => item.includes('photo'))
+    const needsAttachment = requiredEvidence.some((item) => !item.includes('photo'))
+    const hasAttachment = request.vendorCommercialItems.some((item) => Boolean(item.attachmentUrl))
+    if (needsPhoto && !request.photos.length) return 'Add the required completion photo before closing this recurring work order.'
+    if (needsAttachment && !hasAttachment) return 'Attach the required report, certificate, or other evidence before closing this recurring work order.'
+  }
   const approvedVendorTotalByVendor = new Map<string, number>()
   for (const invite of request.tenderInvites) {
     if (!invite.vendorId || !invite.bidAmountCents) continue
@@ -198,9 +213,12 @@ export async function updateStatusFormAction(
   try {
     const ownedRequest = await prisma.maintenanceRequest.findFirst({
       where: { id: requestId, property: { ownerId: session.userId } },
-      select: { id: true, urgency: true },
+      select: { id: true, urgency: true, boardApprovalRequired: true, boardApprovalState: true },
     })
     if (!ownedRequest) return { error: 'Request not found.' }
+    if (fromStatus === 'requested' && toStatus === 'approved' && ownedRequest.boardApprovalRequired && !['approved', 'overridden'].includes(ownedRequest.boardApprovalState)) {
+      return { error: 'This work order is waiting for board approval. Open Co-op operations to review it or record an emergency override.' }
+    }
     const effectiveAssessedUrgency = assessedUrgency || ownedRequest.urgency
 
     await prisma.$transaction(async (tx) => {

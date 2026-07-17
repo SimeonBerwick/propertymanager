@@ -60,6 +60,7 @@ export default defineConfig({
       'lib/assisted-trial-invite.test.ts',
       'lib/trial-reminders.test.ts',
       'lib/legal-consent.test.ts',
+      'lib/recurring-work.test.ts',
       'lib/sentry-reporting.test.ts',
       'lib/campaign-attribution.test.ts',
       'lib/august-consultation-source.test.ts',
