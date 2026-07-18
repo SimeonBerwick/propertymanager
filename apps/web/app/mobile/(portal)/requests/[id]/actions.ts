@@ -138,6 +138,7 @@ export async function sendTenantWorkOrderMessageAction(
       submittedByEmail: true,
       submittedByName: true,
       assignedVendorEmail: true,
+      assignedStaffEmail: true,
       property: { select: { name: true, owner: { select: { id: true, email: true } } } },
       unit: { select: { label: true } },
     },
@@ -198,6 +199,17 @@ export async function sendTenantWorkOrderMessageAction(
       text: text.replace(managerActionUrl, vendorActionUrl),
       requestId,
       actionUrl: vendorActionUrl,
+    }, { ownerUserId: request.property.owner.id, requestId })
+  }
+
+  if (request.assignedStaffEmail) {
+    const staffActionUrl = `${appUrl}/maintenance/requests/${requestId}`
+    await sendNotification({
+      to: request.assignedStaffEmail,
+      subject: `Tenant message on ${request.title}`,
+      text: text.replace(managerActionUrl, staffActionUrl),
+      requestId,
+      actionUrl: staffActionUrl,
     }, { ownerUserId: request.property.owner.id, requestId })
   }
 

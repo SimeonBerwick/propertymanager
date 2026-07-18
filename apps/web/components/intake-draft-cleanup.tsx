@@ -4,7 +4,10 @@ import { useEffect } from 'react'
 
 export function IntakeDraftCleanup({ orgSlug }: { orgSlug?: string }) {
   useEffect(() => {
-    window.localStorage.removeItem(`pm-intake-draft:${orgSlug ?? 'default'}`)
+    const prefix = `pm-intake-draft:${orgSlug ?? 'default'}`
+    window.localStorage.removeItem(prefix)
+    window.localStorage.removeItem(`${prefix}:manager`)
+    window.localStorage.removeItem(`${prefix}:tenant`)
   }, [orgSlug])
   return null
 }

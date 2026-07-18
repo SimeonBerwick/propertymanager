@@ -30,7 +30,22 @@ function slotsFromForm(formData: FormData, defaultDurationMinutes: number) {
 async function createProposalBatch(input: { requestId: string; orgId: string; proposedByType: 'vendor' | 'staff'; proposedById: string; proposedByName: string; note: string; slots: Array<{ startAt: Date; endAt: Date }>; expiryHours: number }) {
   const batchId = randomUUID(); const expiresAt = new Date(Date.now() + input.expiryHours * 3_600_000)
   await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${input.proposedByType}:${input.proposedById}`}, 0))`
     await tx.appointmentProposal.updateMany({ where: { requestId: input.requestId, status: 'pending' }, data: { status: 'replaced', respondedAt: new Date() } })
+    const conflictingProposal = await tx.appointmentProposal.findFirst({
+      where: {
+        proposedByType: input.proposedByType,
+        proposedById: input.proposedById,
+        status: { in: ['pending', 'selected', 'processing', 'accepted'] },
+        request: { status: { notIn: [...CLOSED_REQUEST_STATUSES] } },
+        AND: [
+          { OR: input.slots.map((slot) => ({ startAt: { lt: slot.endAt }, endAt: { gt: slot.startAt } })) },
+          { OR: [{ status: 'accepted' }, { expiresAt: { gt: new Date() } }] },
+        ],
+      },
+      select: { id: true },
+    })
+    if (conflictingProposal) throw new Error('PROVIDER_APPOINTMENT_CONFLICT')
     await tx.appointmentProposal.createMany({ data: input.slots.map((slot) => ({ batchId, requestId: input.requestId, orgId: input.orgId, proposedByType: input.proposedByType, proposedById: input.proposedById, proposedByName: input.proposedByName, startAt: slot.startAt, endAt: slot.endAt, note: input.note || null, expiresAt })) })
     await tx.maintenanceRequest.updateMany({ where: { id: input.requestId, autoFlag: { in: ['scheduling_replacement_needed', 'scheduling_reschedule_requested'] } }, data: { autoFlag: null, autoFlaggedAt: null, reviewState: 'none', reviewNote: null } })
     await tx.requestComment.create({ data: { requestId: input.requestId, body: `${input.proposedByName} offered ${input.slots.length} appointment ${input.slots.length === 1 ? 'time' : 'times'} for the tenant to choose.`, visibility: 'external' } })
@@ -45,25 +60,35 @@ async function notifyTenant(request: { id: string; title: string; submittedByEma
 
 export async function proposeVendorAppointmentSlotsAction(formData: FormData) {
   const session = await requireVendorSession(); const requestId = value(formData, 'requestId'); const path = `/vendor/requests/${requestId}`
-  const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, orgId: session.orgId, assignedVendorId: session.vendorId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
+  const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.orgId! }, assignedVendorId: session.vendorId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
   if (!request) { fail(path, 'Assigned request not found.') }
   const verifiedRequest = request!
   if (!['accepted', 'scheduled'].includes(verifiedRequest.dispatchStatus ?? '')) fail(path, 'Accept the service call before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
   const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
-  await createProposalBatch({ requestId, orgId: session.orgId!, proposedByType: 'vendor', proposedById: session.vendorId, proposedByName: session.vendorName, note, slots, expiryHours: policy.proposalExpiryHours })
+  try {
+    await createProposalBatch({ requestId, orgId: session.orgId!, proposedByType: 'vendor', proposedById: session.vendorId, proposedByName: session.vendorName, note, slots, expiryHours: policy.proposalExpiryHours })
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('PROVIDER_APPOINTMENT_CONFLICT') || error.message.includes('appointment_provider_no_overlap'))) fail(path, 'One of those times overlaps another active appointment. Choose a different time.')
+    throw error
+  }
   await notifyTenant(verifiedRequest, session.vendorName); revalidateScheduling(requestId); redirect(`${path}?slots=offered` as Route)
 }
 
 export async function proposeStaffAppointmentSlotsAction(formData: FormData) {
   const session = await requireStaffSession(); const requestId = value(formData, 'requestId'); const path = `/maintenance/requests/${requestId}`
-  const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, orgId: session.orgId, assignedStaffId: session.staffMemberId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
+  const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.orgId }, assignedStaffId: session.staffMemberId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
   if (!request) { fail(path, 'Assigned request not found.') }
   const verifiedRequest = request!
   if (!['accepted', 'in_progress'].includes(verifiedRequest.staffWorkStatus ?? '')) fail(path, 'Accept the work order before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
   const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
-  await createProposalBatch({ requestId, orgId: session.orgId, proposedByType: 'staff', proposedById: session.staffMemberId, proposedByName: session.staffName, note, slots, expiryHours: policy.proposalExpiryHours })
+  try {
+    await createProposalBatch({ requestId, orgId: session.orgId, proposedByType: 'staff', proposedById: session.staffMemberId, proposedByName: session.staffName, note, slots, expiryHours: policy.proposalExpiryHours })
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('PROVIDER_APPOINTMENT_CONFLICT') || error.message.includes('appointment_provider_no_overlap'))) fail(path, 'One of those times overlaps another active appointment. Choose a different time.')
+    throw error
+  }
   await notifyTenant(verifiedRequest, session.staffName); revalidateScheduling(requestId); redirect(`${path}?slots=offered` as Route)
 }
 
@@ -148,7 +173,7 @@ export async function requestTenantAppointmentRescheduleAction(formData: FormDat
 async function cancelProviderAppointment(input: { requestId: string; reason: string; orgId: string; actorType: 'vendor' | 'staff'; actorId: string; actorName: string; path: string }) {
   if (!input.reason) fail(input.path, 'Enter a cancellation reason.')
   if (input.reason.length > 1000) fail(input.path, 'Cancellation reasons must be 1,000 characters or fewer.')
-  const request = await prisma.maintenanceRequest.findFirst({ where: { id: input.requestId, orgId: input.orgId, status: { notIn: [...CLOSED_REQUEST_STATUSES] }, ...(input.actorType === 'staff' ? { assignedStaffId: input.actorId } : { assignedVendorId: input.actorId }) }, include: { appointmentProposals: { where: { status: 'accepted', proposedByType: input.actorType }, orderBy: { respondedAt: 'desc' }, take: 1 }, property: { include: { owner: { select: { email: true } } } } } })
+  const request = await prisma.maintenanceRequest.findFirst({ where: { id: input.requestId, property: { ownerId: input.orgId }, status: { notIn: [...CLOSED_REQUEST_STATUSES] }, ...(input.actorType === 'staff' ? { assignedStaffId: input.actorId } : { assignedVendorId: input.actorId }) }, include: { appointmentProposals: { where: { status: 'accepted', proposedByType: input.actorType }, orderBy: { respondedAt: 'desc' }, take: 1 }, property: { include: { owner: { select: { email: true } } } } } })
   if (!request?.appointmentProposals.length) fail(input.path, 'No confirmed coordinated appointment was found.')
   const verified = request!; const proposal = verified.appointmentProposals[0]; const now = new Date()
   await prisma.$transaction([prisma.appointmentProposal.update({ where: { id: proposal.id }, data: { status: 'provider_canceled', respondedAt: now } }), prisma.maintenanceRequest.update({ where: { id: input.requestId }, data: input.actorType === 'staff' ? { staffScheduledStart: null, staffScheduledEnd: null, status: 'approved', autoFlag: 'scheduling_replacement_needed', autoFlaggedAt: now, reviewState: 'none', reviewNote: `${input.actorName} canceled the appointment: ${input.reason}` } : { vendorScheduledStart: null, vendorScheduledEnd: null, dispatchStatus: 'accepted', status: 'vendor_selected', autoFlag: 'scheduling_replacement_needed', autoFlaggedAt: now, reviewState: 'none', reviewNote: `${input.actorName} canceled the appointment: ${input.reason}` } }), prisma.requestComment.create({ data: { requestId: input.requestId, body: `${input.actorName} canceled the appointment: ${input.reason}`, visibility: 'external' } })])

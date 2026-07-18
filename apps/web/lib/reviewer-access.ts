@@ -6,6 +6,13 @@ export const REVIEWER_EMAILS = {
 } as const
 
 const DEFAULT_REVIEWER_OTP_CODE = '424242'
+const DEFAULT_REVIEWER_LANDLORD_PASSWORD = 'play-review-password-2026'
+
+export function isReviewerLandlordPassword(email: string, password: string) {
+  if (process.env.ANDROID_REVIEWER_ACCESS_ENABLED === 'false') return false
+  const expectedPassword = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim() || DEFAULT_REVIEWER_LANDLORD_PASSWORD
+  return email.trim().toLowerCase() === REVIEWER_EMAILS.landlord && password === expectedPassword
+}
 
 export function getReviewerOtpCode(role: 'tenant' | 'vendor' | 'staff', email: string) {
   if (process.env.ANDROID_REVIEWER_ACCESS_ENABLED === 'false') return null

@@ -5,7 +5,7 @@ const DISPLAY_TIME_ZONE = process.env.NEXT_PUBLIC_DISPLAY_TIME_ZONE || 'America/
 
 export function formatDateOnly(value: Date | string) {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: DISPLAY_TIME_ZONE,
+    timeZone: 'UTC',
   }).format(new Date(value))
 }
 

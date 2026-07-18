@@ -16,7 +16,7 @@ export async function StaffAssignmentPanel({ requestId }: { requestId: string })
   ])
   if (!request || !staff.length) return null
   const defaultStaffId = request.assignedStaffId ?? recommendation?.staff?.id ?? ''
-  return <section className="card stack">
+  return <section id="staff-work" className="card stack">
     <div className="row"><div><div className="kicker">In-house maintenance</div><h3>{request.assignedStaffName ?? 'Assign staff'}</h3>{request.staffWorkStatus ? <div className="muted">Current status: {request.staffWorkStatus.replaceAll('_', ' ')}</div> : null}</div><a className="button" href="/staff/preferences">Assignment preferences</a></div>
     {recommendation ? <div className="notice"><strong>Recommended path: {recommendation.mode.replaceAll('_', ' ')}</strong><div className="muted">{recommendation.reason}{recommendation.mode === 'staff_first' ? ` Staff have ${recommendation.fallbackHours} hours to respond before fallback.` : ''}</div></div> : null}
     <form action={assignStaffToRequestAction} className="row"><input type="hidden" name="requestId" value={requestId} /><label style={{ flex: 1 }}>Staff member<select name="staffId" defaultValue={defaultStaffId}><option value="">No staff assignment</option>{staff.map((member) => <option key={member.id} value={member.id}>{member.name} - {member.availabilityStatus}</option>)}</select></label><button className="button primary">Save staff assignment</button></form>

@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
   assertHostedRuntimeReady('account deletion automation', ['base', 'notifications', 'media'])
 
   const result = await processDueAccountDeletionRequests()
+  if (result.notificationWarnings.length) {
+    await sendOperatorFailureAlert('Account deletion completion email', result.notificationWarnings)
+  }
   if (resultHasFailures(result)) await sendOperatorFailureAlert('Account deletion automation', result)
   return NextResponse.json({ ok: true, ...result })
 }

@@ -28,7 +28,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
       <input type="hidden" name={role === 'tenant' ? 'tenantIdentityId' : 'vendorId'} value={recipientId} />
       <input type="hidden" name="validFrom" value={validFromLocal ? new Date(validFromLocal).toISOString() : ''} />
       <div className="muted">
-        Send a one-time sign-in code for {recipientName}. It opens the {role === 'tenant' ? 'tenant role' : 'vendor role'} for this person and can be used once.
+        Create a one-time access code for {recipientName}. It opens the {role === 'tenant' ? 'tenant role' : 'vendor role'} for this person and can be used once.
       </div>
       {role === 'vendor' && requests.length === 0 ? (
         <div className="notice" style={{ background: '#fffbeb', borderColor: '#fcd34d' }}>
@@ -81,7 +81,7 @@ export function ManagerAccessCodeForm({ role, recipientId, recipientName, reques
         </div>
       ) : null}
       <button className="button primary" type="submit" disabled={pending || disabled || (role === 'vendor' && requests.length === 0)}>
-        {pending ? 'Sending new code...' : 'Send new sign-in code'}
+        {pending ? 'Creating code...' : 'Create one-time access code'}
       </button>
     </form>
   )

@@ -275,7 +275,9 @@ export default async function VendorDashboardPage({
                   <div className="muted" style={{ marginTop: 6 }}>
                     {request.billingDocuments.map((document) => {
                       const balanceCents = Math.max(0, document.totalCents - document.paidCents)
-                      return `${billingStatusLabel(document.status)} payment: ${formatMoney(balanceCents, document.currency)}`
+                      return document.status === 'paid'
+                        ? `Paid: ${formatMoney(document.paidCents, document.currency)}`
+                        : `${billingStatusLabel(document.status)}: ${formatMoney(balanceCents, document.currency)} due`
                     }).join(' - ')}
                     {request.status === 'closed' ? <span> - {deriveRequestCloseoutLanguage({ status: request.status, billingDocuments: request.billingDocuments }).vendorLabel}</span> : null}
                   </div>

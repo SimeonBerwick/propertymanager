@@ -108,11 +108,27 @@ describe('updateStatusFormAction', () => {
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
     expect(updated?.status).toBe('approved')
     expect(updated?.firstReviewedAt).toBeInstanceOf(Date)
+    expect(updated?.reviewState).toBe('approved')
+    expect(updated?.reviewNote).toBeNull()
 
     const events = await prisma.statusEvent.findMany({ where: { requestId: request.id } })
     expect(events).toHaveLength(1)
     expect(events[0].fromStatus).toBe('requested')
     expect(events[0].toStatus).toBe('approved')
+  })
+
+  test('does not create a duplicate event when a stale approval form is submitted twice', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
+    const request = await createMaintenanceRequest(property.id, unit.id)
+    const approval = formData({ requestId: request.id, fromStatus: 'requested', toStatus: 'approved' })
+
+    const first = await updateStatusFormAction(PREV, approval)
+    const second = await updateStatusFormAction(PREV, approval)
+
+    expect(first.error).toBeNull()
+    expect(second.error).toMatch(/already updated/i)
+    expect(await prisma.statusEvent.count({ where: { requestId: request.id, toStatus: 'approved' } })).toBe(1)
   })
 
   test('keeps status-only scheduled changes internal', async () => {
