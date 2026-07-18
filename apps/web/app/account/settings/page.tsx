@@ -6,12 +6,12 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { logout } from '@/lib/auth-actions'
 import { CURRENCY_OPTIONS, currencyLabel } from '@/lib/types'
-import { updateDailyBriefingAction, updateDefaultCurrencyAction, updateVendorRemindersAction } from './actions'
+import { updateCoOpModeAction, updateDailyBriefingAction, updateDefaultCurrencyAction, updateVendorRemindersAction } from './actions'
 
 export default async function AccountSettingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; briefing?: string; vendorReminders?: string }>
+  searchParams?: Promise<{ currency?: string; briefing?: string; vendorReminders?: string; coOpMode?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -19,7 +19,7 @@ export default async function AccountSettingsPage({
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
   const account = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { defaultCurrency: true, dailyBriefingEnabled: true, vendorRemindersEnabled: true },
+    select: { defaultCurrency: true, dailyBriefingEnabled: true, vendorRemindersEnabled: true, subscriptionPlan: true, coOpModeEnabled: true },
   })
   const defaultCurrency = account?.defaultCurrency ?? 'usd'
 
@@ -46,6 +46,16 @@ export default async function AccountSettingsPage({
             <button type="submit" className="button primary">Save</button>
           </form>
         </div>
+
+        {account?.subscriptionPlan === 'pro' ? <div className="card stack">
+          <div><div className="kicker">Portfolio setup</div><h3 style={{ margin: '4px 0 0' }}>Co-op Mode</h3></div>
+          <p className="muted" style={{ margin: 0 }}>Use co-op setup guidance and take advantage of board approvals, recurring building work, evidence reminders, and vendor certificate tracking.</p>
+          {query.coOpMode === 'updated' ? <div className="notice success">Co-op Mode setup preference updated.</div> : null}
+          <form action={updateCoOpModeAction} className="row" style={{ justifyContent: 'flex-start' }}>
+            <label className="row" style={{ alignItems: 'flex-start' }}><input type="checkbox" name="coOpModeEnabled" defaultChecked={account.coOpModeEnabled} /><span><strong>This is primarily a cooperative portfolio</strong><span className="muted" style={{ display: 'block' }}>You can switch this at any time. It does not convert or remove existing properties.</span></span></label>
+            <button type="submit" className="button primary">Save</button>
+          </form>
+        </div> : null}
         <div className="card stack">
           <div><div className="kicker">Vendor follow-up</div><h3 style={{ margin: '4px 0 0' }}>Daily vendor reminders</h3></div>
           <p className="muted" style={{ margin: 0 }}>Email vendors once daily only while a bid, acceptance, appointment, charge, completion, invoice, or work update is waiting on them. Individual tickets can override this default.</p>
@@ -80,7 +90,7 @@ export default async function AccountSettingsPage({
           <p className="muted" style={{ margin: 0 }}>Get login help, report a problem, or send product feedback.</p>
           <div className="row" style={{ justifyContent: 'flex-start' }}>
             <Link href="/support" className="button primary">Support</Link>
-            <a className="button" href="mailto:feedback@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Send feedback</a>
+            <Link href="/support?category=feedback" className="button">Send feedback</Link>
           </div>
         </div>
 

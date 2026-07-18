@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { REQUEST_CATEGORIES } from '@/lib/maintenance-options'
 import { RECURRING_WORK_TEMPLATES } from '@/lib/recurring-work'
 import { writeAuditLog } from '@/lib/audit-log'
+import { applyEmergencyBoardOverride } from '@/lib/coop-board'
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim()
@@ -173,14 +174,9 @@ export async function overrideBoardApprovalAction(formData: FormData) {
   const note = value(formData, 'note')
   if (!note) fail('Explain the emergency override for the audit trail.')
   if (note.length > 500) fail('Keep the emergency override note to 500 characters or fewer.')
-  const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.userId }, boardApprovalRequired: true }, select: { id: true, title: true } })
-  if (!request) fail('Board-controlled request not found.')
-  await prisma.$transaction([
-    prisma.maintenanceRequest.update({ where: { id: requestId }, data: { boardApprovalState: 'overridden', boardApprovalOverrideNote: note } }),
-    prisma.boardApproval.updateMany({ where: { requestId, status: 'pending' }, data: { status: 'overridden', responseNote: `Manager emergency override: ${note}`, respondedAt: new Date() } }),
-  ])
-  await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'request', entityId: requestId, action: 'boardApproval.emergencyOverride', summary: `Emergency board override used for ${request.title}.`, metadata: { note } })
+  const result = await applyEmergencyBoardOverride({ orgId: session.userId, actorUserId: session.userId, requestId, note })
+  if (result.error) fail(result.error)
   revalidatePath('/co-op')
   revalidatePath(`/requests/${requestId}`)
-  success('Emergency override recorded. The work order can now proceed.')
+  success('Emergency override recorded. The board was notified and the work order can now proceed.')
 }

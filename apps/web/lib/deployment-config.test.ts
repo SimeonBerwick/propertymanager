@@ -7,4 +7,8 @@ describe('hosted deployment configuration', () => {
     expect(packageJson.scripts['vercel-build']).toBe('prisma migrate deploy && next build')
     expect(vercelConfig.buildCommand).toBe(packageJson.scripts['vercel-build'])
   })
+
+  it('processes due account deletions every hour rather than waiting for the daily sweep', () => {
+    expect(vercelConfig.crons).toContainEqual({ path: '/api/internal/account-deletions', schedule: '0 * * * *' })
+  })
 })

@@ -49,3 +49,24 @@ export async function updateVendorRemindersAction(formData: FormData) {
   })
   redirect('/account/settings?vendorReminders=updated' as Route)
 }
+
+export async function updateCoOpModeAction(formData: FormData) {
+  const session = await getLandlordSession()
+  if (!session) redirect('/login?error=session-expired')
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { subscriptionPlan: true } })
+  if (user?.subscriptionPlan !== 'pro') redirect('/account/settings?coOpMode=pro-required' as Route)
+
+  const coOpModeEnabled = formData.get('coOpModeEnabled') === 'on'
+  await prisma.user.update({ where: { id: session.userId }, data: { coOpModeEnabled } })
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'user',
+    entityId: session.userId,
+    action: 'account.coOpModePreferenceUpdated',
+    summary: `${coOpModeEnabled ? 'Enabled' : 'Disabled'} Co-op Mode setup preference.`,
+    metadata: { coOpModeEnabled },
+  })
+  redirect('/account/settings?coOpMode=updated' as Route)
+}

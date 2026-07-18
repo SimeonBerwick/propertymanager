@@ -277,6 +277,7 @@ model User {
   subscriptionStatus AccountSubscriptionStatus @default(trialing)
   subscriptionPlan   AccountPlan?
   billingCadence     BillingCadence?
+  coOpModeEnabled    Boolean  @default(false)
   trialProgram       TrialProgram @default(none)
   trialStartedAt     DateTime?
   trialEndsAt        DateTime?
@@ -1572,6 +1573,8 @@ model AccountDeletionRequest {
   reason      String?
   status      String   @default("pending")
   requestedAt DateTime @default(now())
+  scheduledFor DateTime
+  canceledAt   DateTime?
   completedAt DateTime?
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)

@@ -54,6 +54,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   const businessStateCode = read(formData, 'businessStateCode').toUpperCase()
   const inviteToken = read(formData, 'inviteToken')
   const assistedInvite = inviteToken ? verifyAssistedTrialInvite(inviteToken, email) : null
+  const coOpModeEnabled = read(formData, 'coOpMode') === 'yes'
 
   if (!displayName) return { error: 'Name is required.' }
   if (displayName.length > 120) return { error: 'Name must be 120 characters or fewer.' }
@@ -61,6 +62,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
   if (!plan || !cadence) return { error: 'Choose a subscription plan.' }
+  if (coOpModeEnabled && plan !== 'pro') return { error: 'Co-op Mode is included with the Pro plan. Choose Pro to create a cooperative portfolio.' }
   if (!isCurrencyOption(defaultCurrency)) return { error: 'Choose a valid default billing currency.' }
   if (!isUsStateCode(businessStateCode)) return { error: 'Choose the primary U.S. state where you manage property.' }
   if (read(formData, 'confirmUsEligibility') !== 'yes') return { error: 'Confirm that your business manages property in the United States.' }
@@ -93,6 +95,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
           subscriptionStatus: 'trialing',
           subscriptionPlan: plan,
           billingCadence: cadence,
+          coOpModeEnabled,
           defaultCurrency,
           preferredLanguage: preferredLanguage ?? 'english',
           languagePreferenceExplicit: Boolean(preferredLanguage),
@@ -148,7 +151,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       data: {
         orgId: user.id,
         eventName: 'trial_started',
-        metadataJson: JSON.stringify({ source: trialSource, plan, cadence, trialProgram }),
+        metadataJson: JSON.stringify({ source: trialSource, plan, cadence, trialProgram, coOpModeEnabled }),
       },
     }).catch(() => null)
 
@@ -159,7 +162,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
       entityId: user.id,
       action: 'account.trialStarted',
       summary: `Started ${assistedInvite ? 'assisted' : 'self-service'} 30-day trial on ${plan} ${cadence}.`,
-      metadata: { plan, cadence, defaultCurrency, trialProgram, trialStartedAt: trialStartedAt.toISOString(), trialEndsAt: trialEndsAt.toISOString(), trialSource, businessStateCode, legalVersions: { terms: TERMS_VERSION, privacy: PRIVACY_VERSION, trial: assistedInvite ? ASSISTED_TRIAL_AGREEMENT_VERSION : null } },
+      metadata: { plan, cadence, defaultCurrency, trialProgram, coOpModeEnabled, trialStartedAt: trialStartedAt.toISOString(), trialEndsAt: trialEndsAt.toISOString(), trialSource, businessStateCode, legalVersions: { terms: TERMS_VERSION, privacy: PRIVACY_VERSION, trial: assistedInvite ? ASSISTED_TRIAL_AGREEMENT_VERSION : null } },
     })
 
     const baseUrl = (() => {
@@ -217,5 +220,5 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
     return { error: 'Could not create account. Please try again.' }
   }
 
-  redirect('/dashboard')
+  redirect(coOpModeEnabled ? '/properties/new?propertyType=cooperative' : '/dashboard')
 }

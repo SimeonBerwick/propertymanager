@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "coOpModeEnabled" BOOLEAN NOT NULL DEFAULT false;

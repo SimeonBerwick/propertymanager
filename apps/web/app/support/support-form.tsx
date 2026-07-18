@@ -5,7 +5,7 @@ import { submitSupportRequest, type SupportState } from './actions'
 
 const initialState: SupportState = { error: null, referenceId: null }
 
-export function SupportForm({ errorReference }: { errorReference?: string }) {
+export function SupportForm({ errorReference, initialCategory }: { errorReference?: string; initialCategory?: 'feedback' }) {
   const [state, action, pending] = useActionState(submitSupportRequest, initialState)
 
   if (state.referenceId) {
@@ -27,7 +27,7 @@ export function SupportForm({ errorReference }: { errorReference?: string }) {
       <label className="field"><span className="field-label">Organization</span><input className="input" name="organization" autoComplete="organization" /></label>
       <label className="field">
         <span className="field-label">What do you need help with?</span>
-        <select className="input" name="category" defaultValue="technical_problem" required>
+        <select className="input" name="category" defaultValue={initialCategory ?? 'technical_problem'} required>
           <option value="technical_problem">A technical problem</option>
           <option value="account_access">Account access</option>
           <option value="maintenance_workflow">A maintenance workflow</option>

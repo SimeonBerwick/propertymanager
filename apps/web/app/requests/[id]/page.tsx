@@ -29,6 +29,9 @@ import { SectionJumpLink } from '@/components/section-jump-link'
 import { WorkOrderActivityFeed } from '@/components/work-order-activity-feed'
 import { canScheduleRequest } from '@/lib/request-scheduling'
 import { TranslatedMessage } from '@/components/translated-message'
+import { prisma } from '@/lib/prisma'
+import { BoardDecisionPanel } from './board-decision-panel'
+import { EmergencyBoardOverride } from './emergency-board-override'
 
 const VISIBILITY_LABELS: Record<string, string> = {
   internal: 'Internal note',
@@ -83,6 +86,16 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   if (!data) {
     notFound()
   }
+  const boardApprovals = await prisma.boardApproval.findMany({
+    where: { requestId: id, request: { property: { ownerId: session.userId } } },
+    include: { approver: true },
+    orderBy: { respondedAt: 'desc' },
+  })
+  const boardApprovalPending = boardApprovals.some((approval) => approval.status === 'pending')
+  const boardDecision = boardApprovalPending ? undefined : boardApprovals.find((approval) => ['approved', 'returned', 'declined'].includes(approval.status))
+  const boardApprovalAwaitingManager = data.request.status === 'requested' && boardDecision?.status === 'approved'
+  const canUseEmergencyBoardOverride = data.request.status === 'requested'
+    && (boardApprovalPending || ['returned', 'declined'].includes(boardDecision?.status ?? ''))
   const defaultCommentVisibility = query.comment === 'tenant' || data.tenantStatusUpdatePending ? 'external' : 'internal'
 
   const issuePhotos = data.photos.filter((photo) => photo.source !== 'vendor')
@@ -238,6 +251,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     : null
   const actionSectionTitle = pendingVendorCommercialItems.length
     ? 'Approve vendor cost'
+    : boardApprovalAwaitingManager
+      ? 'Continue after board approval'
     : data.request.status === 'requested'
       ? 'Review request'
     : hasTenantMessageReview
@@ -259,6 +274,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           : 'Request actions'
   const actionSectionSubtitle = pendingVendorCommercialItems.length
     ? 'Review the vendor charge before billing, payment, or closeout.'
+    : boardApprovalAwaitingManager
+      ? 'The board approved this work. Confirm it, then choose a vendor path.'
     : data.request.status === 'requested'
       ? 'Decide whether this work order should move forward before vendor scheduling or costs.'
     : hasTenantMessageReview
@@ -359,7 +376,16 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
         <WorkOrderContext request={data.request} />
-        {hasTenantMessageReview ? (
+        {boardDecision ? (
+          <BoardDecisionPanel
+            requestId={data.request.id}
+            decision={boardDecision.status as 'approved' | 'returned' | 'declined'}
+            approverName={boardDecision.approver.name}
+            note={boardDecision.responseNote}
+          />
+        ) : boardApprovalPending ? (
+          <div className="notice"><strong>Waiting for board approval.</strong> The work order will stay paused until a board member responds.</div>
+        ) : hasTenantMessageReview ? (
           <div id="tenant-message-review" className="timelineRow spotlightSuccess stack tenantReplyAction" style={{ gap: 12 }}>
             <div className="stack" style={{ gap: 8 }}>
               <div>
@@ -428,7 +454,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             </div>
           </div>
         ) : null}
-        {hasTenantMessageReview ? null : moneyAction ? (
+        {canUseEmergencyBoardOverride ? <EmergencyBoardOverride requestId={data.request.id} /> : null}
+        {boardDecision ? null : boardApprovalPending ? null : hasTenantMessageReview ? null : moneyAction ? (
           <div className="notice stack" style={{ gap: 10 }}>
             <div>
               <strong>{moneyAction.title}</strong>

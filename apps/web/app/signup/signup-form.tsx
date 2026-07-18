@@ -39,6 +39,7 @@ export function SignupForm({
   const [state, formAction, pending] = useActionState(signupAction, INITIAL_STATE)
   const [runtimeAndroidApp, setRuntimeAndroidApp] = useState(androidApp)
   const [legalReviewed, setLegalReviewed] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<OfferedPlanKey>(initialPlan)
 
   useEffect(() => {
     const detectApp = () => {
@@ -124,8 +125,8 @@ export function SignupForm({
             {PLANS.map((plan) => (
               <label key={plan} className="billingRowCard stack" style={{ gap: 10 }}>
                 <span className="row" style={{ alignItems: 'center' }}>
-                  <input type="radio" name="plan" value={plan} defaultChecked={plan === initialPlan} />
-                  <strong>{BILLING_PLANS[plan].name}</strong>
+                  <input type="radio" name="plan" value={plan} checked={plan === selectedPlan} onChange={() => setSelectedPlan(plan)} />
+                  <strong>{BILLING_PLANS[plan].name}{plan === 'pro' ? ' - includes Co-op Mode' : ''}</strong>
                 </span>
                 <span className="muted">{BILLING_PLANS[plan].description}</span>
                 <span className="signalAccent">{planPriceLabel(plan, 'monthly')}</span>
@@ -133,6 +134,16 @@ export function SignupForm({
               </label>
             ))}
           </div>
+
+          {selectedPlan === 'pro' ? (
+            <label className="notice row" style={{ alignItems: 'flex-start', justifyContent: 'flex-start', gap: 12 }}>
+              <input type="checkbox" name="coOpMode" value="yes" style={{ marginTop: 4 }} />
+              <span>
+                <strong>This is a cooperative portfolio</strong>
+                <span className="muted" style={{ display: 'block', marginTop: 4 }}>Set up board approvals, recurring building maintenance, evidence reminders, and vendor certificate tracking. After signup, we will take you directly to add your cooperative building.</span>
+              </span>
+            </label>
+          ) : null}
 
           <div className="stack" style={{ gap: 8 }}>
             <div className="field-label">Billing schedule after the free trial</div>

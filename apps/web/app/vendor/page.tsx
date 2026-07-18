@@ -134,7 +134,7 @@ export default async function VendorDashboardPage({
           <PushNotificationControl />
           {siblingAccountCount > 1 ? <Link href={`/vendor/auth/accounts?identifier=${encodeURIComponent(session.email ?? session.phone ?? '')}` as Route} className="button">Switch account</Link> : null}
           <Link href={'/support' as Route} className="button">Support</Link>
-          <a className="button" href="mailto:feedback@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
+          <Link href={'/support?category=feedback' as Route} className="button">Feedback</Link>
           <form action={vendorSignoutAction}>
             <button type="submit" className="button">Sign out</button>
           </form>

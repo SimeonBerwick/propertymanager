@@ -6,9 +6,9 @@ import { createPropertyAction, type PropertyActionState } from '@/lib/property-a
 
 const INITIAL_STATE: PropertyActionState = { error: null }
 
-export function NewPropertyForm() {
+export function NewPropertyForm({ initialPropertyType = 'single_family' }: { initialPropertyType?: 'single_family' | 'multifamily' | 'cooperative' }) {
   const [state, formAction, isPending] = useActionState(createPropertyAction, INITIAL_STATE)
-  const [propertyType, setPropertyType] = useState<'single_family' | 'multifamily' | 'cooperative'>('single_family')
+  const [propertyType, setPropertyType] = useState<'single_family' | 'multifamily' | 'cooperative'>(initialPropertyType)
 
   return (
     <form action={formAction} className="stack">
