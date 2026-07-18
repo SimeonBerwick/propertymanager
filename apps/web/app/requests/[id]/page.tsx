@@ -93,6 +93,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   })
   const boardApprovalPending = boardApprovals.some((approval) => approval.status === 'pending')
   const boardDecision = boardApprovalPending ? undefined : boardApprovals.find((approval) => ['approved', 'returned', 'declined'].includes(approval.status))
+  const actionableBoardApprovalPending = data.request.status === 'requested' && boardApprovalPending
+  const actionableBoardDecision = data.request.status === 'requested' ? boardDecision : undefined
   const boardApprovalAwaitingManager = data.request.status === 'requested' && boardDecision?.status === 'approved'
   const canUseEmergencyBoardOverride = data.request.status === 'requested'
     && (boardApprovalPending || ['returned', 'declined'].includes(boardDecision?.status ?? ''))
@@ -180,7 +182,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
   ))
   const resolvedVendorCommercialItems = data.vendorCommercialItems.filter((item) => item.status !== 'submitted')
   const vendorBillingAttachments = data.vendorCommercialItems.filter((item) => Boolean(item.attachmentUrl))
-  const canChooseVendor = !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
+  const canChooseVendor = !data.request.assignedStaffId && !hasVendorChosen && ['approved', 'reopened'].includes(data.request.status) && !data.tenders.some((tender) => tender.status !== 'canceled')
   const reviewNoteLower = (data.request.reviewNote ?? '').toLowerCase()
   const hasTenantQuestionReviewNote = reviewNoteLower.includes('tenant asked') || reviewNoteLower.includes('tenant requested')
   const hasTenantMessageReview = data.request.reviewState === 'needs_follow_up'
@@ -188,8 +190,12 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     && hasTenantQuestionReviewNote
     && Boolean(latestTenantMessage)
   const paymentActionIsNext = billingOpenBalanceCents > 0 || vendorOutstandingCents > 0 || (data.request.upfrontVendorPaymentDueCents ?? 0) > 0
+  const hasStaffUpdateReview = Boolean(data.request.assignedStaffId)
+    && ['completed', 'blocked'].includes(data.request.staffWorkStatus ?? '')
+    && data.request.reviewState === 'needs_follow_up'
   const hasVendorUpdateReview = data.request.status !== 'requested'
     && !hasTenantQuestionReviewNote
+    && !hasStaffUpdateReview
     && !paymentActionIsNext
     && (
       data.request.reviewState === 'needs_follow_up'
@@ -257,6 +263,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Review request'
     : hasTenantMessageReview
       ? 'Review tenant question'
+    : hasStaffUpdateReview
+      ? 'Review in-house staff update'
     : hasVendorUpdateReview
       ? 'Review vendor update'
     : moneyAction
@@ -280,6 +288,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       ? 'Decide whether this work order should move forward before vendor scheduling or costs.'
     : hasTenantMessageReview
       ? 'The tenant sent a question on this work order. Reply or decide whether the request needs a status change.'
+    : hasStaffUpdateReview
+      ? 'In-house maintenance reported an update. Review the work record before deciding the next step.'
     : hasVendorUpdateReview
       ? 'The latest vendor update is shown here so you can decide what to do next.'
     : moneyAction
@@ -376,14 +386,20 @@ export default async function RequestDetailPage({ params, searchParams }: { para
       <div id="actions">
       <SectionCard kicker="Actions" title={actionSectionTitle} subtitle={actionSectionSubtitle}>
         <WorkOrderContext request={data.request} />
-        {boardDecision ? (
+        {!actionableBoardDecision && boardDecision ? (
+          <div className="notice">
+            <strong>Board decision: {boardDecision.status}.</strong>
+            {boardDecision.responseNote ? <span style={{ display: 'block', marginTop: 4 }}>Manager-only note: {boardDecision.responseNote}</span> : null}
+          </div>
+        ) : null}
+        {actionableBoardDecision ? (
           <BoardDecisionPanel
             requestId={data.request.id}
-            decision={boardDecision.status as 'approved' | 'returned' | 'declined'}
-            approverName={boardDecision.approver.name}
-            note={boardDecision.responseNote}
+            decision={actionableBoardDecision.status as 'approved' | 'returned' | 'declined'}
+            approverName={actionableBoardDecision.approver.name}
+            note={actionableBoardDecision.responseNote}
           />
-        ) : boardApprovalPending ? (
+        ) : actionableBoardApprovalPending ? (
           <div className="notice"><strong>Waiting for board approval.</strong> The work order will stay paused until a board member responds.</div>
         ) : hasTenantMessageReview ? (
           <div id="tenant-message-review" className="timelineRow spotlightSuccess stack tenantReplyAction" style={{ gap: 12 }}>
@@ -412,6 +428,16 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               requestId={data.request.id}
               isTimeSensitive={/appointment|different time|reschedule|schedule|urgent|emergency|today|tomorrow/i.test(latestTenantMessage?.body ?? '')}
             />
+          </div>
+        ) : hasStaffUpdateReview ? (
+          <div id="staff-update-review" className="timelineRow spotlightSuccess stack" style={{ gap: 12 }}>
+            <div>
+              <div className="kicker">In-house maintenance update</div>
+              <h3 style={{ margin: '4px 0 0' }}>{data.request.assignedStaffName ?? 'Maintenance staff'}</h3>
+            </div>
+            <div><strong>Status:</strong> {(data.request.staffWorkStatus ?? 'updated').replaceAll('_', ' ')}</div>
+            {data.request.reviewNote ? <div className="muted">{data.request.reviewNote}</div> : null}
+            <SectionJumpLink href="#staff-work" className="button primary" style={{ alignSelf: 'flex-start' }}>Review staff work</SectionJumpLink>
           </div>
         ) : hasVendorUpdateReview ? (
           <div id="vendor-update-review" className="timelineRow spotlightSuccess">
@@ -455,7 +481,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
           </div>
         ) : null}
         {canUseEmergencyBoardOverride ? <EmergencyBoardOverride requestId={data.request.id} /> : null}
-        {boardDecision ? null : boardApprovalPending ? null : hasTenantMessageReview ? null : moneyAction ? (
+        {actionableBoardDecision ? null : actionableBoardApprovalPending ? null : hasTenantMessageReview ? null : moneyAction ? (
           <div className="notice stack" style={{ gap: 10 }}>
             <div>
               <strong>{moneyAction.title}</strong>
@@ -468,7 +494,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             request={requestWithEffectiveAppointment}
             vendors={data.availableVendors}
             tenders={data.tenders}
-            statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
+            statusControlPriority={canChooseVendor || hasSubmittedBid || pendingVendorCommercialItems.length > 0 || hasTenantMessageReview || hasStaffUpdateReview || hasVendorUpdateReview ? 'secondary' : 'primary'}
             canCloseRequest={billingIsSettled}
             upfrontVendorPaymentDueCents={upfrontVendorPaymentDueCents}
             vendorRemindersEnabledByDefault={data.vendorRemindersEnabledByDefault}

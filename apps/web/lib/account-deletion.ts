@@ -219,7 +219,13 @@ export async function processDueAccountDeletionRequests(now = new Date()) {
     orderBy: { scheduledFor: 'asc' },
     take: 20,
   })
-  const result = { processed: dueRequests.length, completed: 0, failed: 0, errors: [] as Array<{ requestId: string; message: string }> }
+  const result = {
+    processed: dueRequests.length,
+    completed: 0,
+    failed: 0,
+    errors: [] as Array<{ requestId: string; message: string }>,
+    notificationWarnings: [] as Array<{ requestId: string; message: string }>,
+  }
 
   for (const request of dueRequests) {
     if (!request.userId || !request.user) continue
@@ -227,13 +233,21 @@ export async function processDueAccountDeletionRequests(now = new Date()) {
     const displayName = request.user.displayName
     try {
       await purgeLandlordAccount({ requestId: request.id, userId: request.userId, email })
-      const messages = deletionCompletedMessages({ email, displayName, requestId: request.id })
-      const deliveries = await Promise.all([sendNotification(messages.customer, { bypassUserPreference: true }), sendNotification(messages.support, { bypassUserPreference: true })])
-      if (deliveries.some((delivery) => !delivery.ok)) throw new Error('Deletion completed, but one or more completion emails could not be delivered.')
-      result.completed += 1
     } catch (error) {
       result.failed += 1
       result.errors.push({ requestId: request.id, message: error instanceof Error ? error.message : String(error) })
+      continue
+    }
+
+    result.completed += 1
+    const messages = deletionCompletedMessages({ email, displayName, requestId: request.id })
+    try {
+      const deliveries = await Promise.all([sendNotification(messages.customer, { bypassUserPreference: true }), sendNotification(messages.support, { bypassUserPreference: true })])
+      if (deliveries.some((delivery) => !delivery.ok)) {
+        result.notificationWarnings.push({ requestId: request.id, message: 'Deletion completed, but one or more completion emails could not be delivered.' })
+      }
+    } catch {
+      result.notificationWarnings.push({ requestId: request.id, message: 'Deletion completed, but completion email delivery failed unexpectedly.' })
     }
   }
   return result

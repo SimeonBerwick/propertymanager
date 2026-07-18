@@ -317,7 +317,7 @@ export async function updateStatusFormAction(
     }
     const effectiveAssessedUrgency = assessedUrgency || ownedRequest.urgency
 
-    await prisma.$transaction(async (tx) => {
+    const transitionApplied = await prisma.$transaction(async (tx) => {
       const tenantQuestion = toStatus === 'approved'
         ? await tx.requestComment.findFirst({
             where: {
@@ -329,8 +329,8 @@ export async function updateStatusFormAction(
           })
         : null
       const shouldReviewTenantQuestion = Boolean(tenantQuestion)
-      const updated = await tx.maintenanceRequest.update({
-        where: { id: requestId },
+      const claimed = await tx.maintenanceRequest.updateMany({
+        where: { id: requestId, status: fromStatus },
         data: {
           status: toStatus,
           firstReviewedAt: fromStatus === 'requested' ? new Date() : undefined,
@@ -350,9 +350,19 @@ export async function updateStatusFormAction(
                 ? 'reopened_after_review'
                 : shouldReviewTenantQuestion
                   ? 'needs_follow_up'
-                  : undefined,
-          reviewNote: shouldReviewTenantQuestion ? 'Tenant asked a question about this work order.' : reason || undefined,
+                  : toStatus === 'approved'
+                    ? 'approved'
+                    : undefined,
+          reviewNote: shouldReviewTenantQuestion
+            ? 'Tenant asked a question about this work order.'
+            : toStatus === 'approved'
+              ? null
+              : reason || undefined,
         },
+      })
+      if (!claimed.count) return false
+      const updated = await tx.maintenanceRequest.findUniqueOrThrow({
+        where: { id: requestId },
         include: { property: true, unit: true },
       })
       await tx.statusEvent.create({
@@ -364,7 +374,9 @@ export async function updateStatusFormAction(
       title = updated.title
       propertyName = updated.property.name
       unitLabel = updated.unit.label
+      return true
     })
+    if (!transitionApplied) return { error: 'This request was already updated. Refresh the page to see its current status.' }
   } catch (error) {
     await logServerActionError('request.status.update', error, { requestId, fromStatus, toStatus })
     return { error: 'Could not update status. Database may not be connected.' }

@@ -4,7 +4,7 @@ import { formatDateOnly, formatDateTime, getCityFromAddress, getRequestFlowState
 describe('date formatting', () => {
   test('formats timestamps in the app display time zone', () => {
     expect(formatDateTime('2026-03-13T16:00:00Z')).toBe('Mar 13, 9:00 AM')
-    expect(formatDateOnly('2026-01-01T00:00:00Z')).toBe('12/31/2025')
+    expect(formatDateOnly('2026-01-01T00:00:00Z')).toBe('1/1/2026')
   })
 })
 

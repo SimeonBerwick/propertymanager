@@ -77,6 +77,22 @@ function displayCommentBody(body: string) {
     .replace(/^Request update:\s*/i, '')
 }
 
+function isTenantMessage(comment: { body: string; originalBody?: string }) {
+  const normalizedBody = (comment.originalBody ?? comment.body).trim().toLowerCase()
+  return !normalizedBody.startsWith('submitted by ')
+    && !normalizedBody.startsWith('submitted from tenant mobile portal')
+    && (
+      normalizedBody.startsWith('tenant message:')
+      || normalizedBody.startsWith('tenant asked:')
+      || normalizedBody.startsWith('tenant requested:')
+      || normalizedBody.startsWith('appointment request:')
+      || normalizedBody.startsWith('different appointment time:')
+      || normalizedBody.startsWith('reschedule request:')
+      || normalizedBody.startsWith('request update:')
+      || normalizedBody.startsWith('tenant canceled request:')
+    )
+}
+
 export default async function TenantMobileRequestDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schedulingError?: string; appointment?: string }> }) {
   const session = await requireTenantMobileSession()
   const [{ id }, query] = await Promise.all([params, searchParams])
@@ -100,13 +116,15 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
 
   const appointmentLabel = request.vendorScheduledStart
     ? formatAppointmentWindow(request.vendorScheduledStart, request.vendorScheduledEnd)
-    : null
+    : request.staffScheduledStart
+      ? formatAppointmentWindow(request.staffScheduledStart, request.staffScheduledEnd)
+      : null
   const effectiveStatus = tenantEffectiveRequestStatus(request)
   const newestComments = [...request.comments]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const tenantMessages = newestComments.filter((comment) => {
     const source = classifyCommentSource(comment, request.assignedVendorName)
-    return source.label === 'Tenant'
+    return source.label === 'Tenant' && isTenantMessage(comment)
   })
   const visibleReplies = newestComments.filter((comment) => {
     const source = classifyCommentSource(comment, request.assignedVendorName)
@@ -129,8 +147,8 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
     id: request.id,
     status: effectiveStatus,
     reviewState: request.reviewState,
-    assignedVendorName: request.assignedVendorName,
-    vendorScheduledStart: request.vendorScheduledStart,
+    assignedVendorName: request.assignedVendorName ?? request.assignedStaffName,
+    vendorScheduledStart: request.vendorScheduledStart ?? request.staffScheduledStart,
     billingOpenBalanceCents: tenantOpenBalanceCents,
     latestSignal: latestVisibleSignal,
     moneyLabel: tenantOpenBalanceCents > 0 ? `Balance ${formatMoney(tenantOpenBalanceCents, request.preferredCurrency)}` : null,
@@ -161,7 +179,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         <section className="card stack tenantStatusSummary">
           <div className="kicker">Appointment</div>
           <strong>{appointmentLabel}</strong>
-          <div>{request.assignedVendorName ? `${request.assignedVendorName} is scheduled for this repair.` : 'The repair appointment is scheduled.'}</div>
+          <div>{request.assignedVendorName ? `${request.assignedVendorName} is scheduled for this repair.` : request.assignedStaffName ? `${request.assignedStaffName} is scheduled for this repair.` : 'The repair appointment is scheduled.'}</div>
           <SectionJumpLink href="#message-manager-vendor" className="button primary" style={{ alignSelf: 'flex-start' }}>Request a different time</SectionJumpLink>
         </section>
       ) : null}
@@ -198,7 +216,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         </div>
         <div className="muted">{request.category}</div>
         <TranslatedMessage body={request.description} originalBody={request.originalDescription} isTranslated={request.isDescriptionTranslated} />
-        {!request.assignedVendorName ? <div className="muted">A vendor has not been selected yet. Your property manager will update this request when scheduling is ready.</div> : null}
+        {!request.assignedVendorName && !request.assignedStaffName ? <div className="muted">A service provider has not been selected yet. Your property manager will update this request when scheduling is ready.</div> : null}
       </section>
 
       {request.assignedVendorName ? <section className="card stack">
@@ -220,6 +238,18 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         </div>
       </section> : null}
 
+      {request.assignedStaffName ? <section className="card stack">
+        <div>
+          <div className="kicker">Who is handling this?</div>
+          <h3 style={{ marginTop: 4 }}>In-house maintenance</h3>
+        </div>
+        <div className="stack" style={{ gap: 6 }}>
+          <div><strong>{request.assignedStaffName}</strong></div>
+          <div className="muted">Work status: {(request.staffWorkStatus ?? 'assigned').replaceAll('_', ' ')}</div>
+          {request.staffScheduledStart ? <div className="muted">Appointment: {formatAppointmentWindow(request.staffScheduledStart, request.staffScheduledEnd)}</div> : <div className="muted">No appointment time has been confirmed yet.</div>}
+        </div>
+      </section> : null}
+
       <section className="card stack" id="message-manager-vendor">
         <div className="tenantMessageContext">
           <strong>{request.title}</strong>
@@ -227,7 +257,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
         </div>
         <div>
           <div className="kicker">Message</div>
-          <h3 style={{ marginTop: 4 }}>Message property manager and vendor</h3>
+          <h3 style={{ marginTop: 4 }}>Message property manager{request.assignedStaffName ? ' and maintenance staff' : request.assignedVendorName ? ' and vendor' : ''}</h3>
         </div>
         <div className="muted">Use this to ask for a different appointment time or report an issue with this repair.</div>
         <TenantWorkOrderMessageForm requestId={request.id} />
@@ -249,10 +279,15 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
 
       <section className="card stack">
         <div>
-          <div className="kicker">Vendor updates</div>
+          <div className="kicker">Work updates</div>
           <h3 style={{ marginTop: 4 }}>Work updates</h3>
         </div>
-        {request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
+        {request.assignedStaffName ? (
+          <div className="timelineRow">
+            <div style={{ fontWeight: 600 }}>{request.assignedStaffName} - {(request.staffWorkStatus ?? 'assigned').replaceAll('_', ' ')}</div>
+            {request.staffScheduledStart ? <div className="muted">{formatAppointmentWindow(request.staffScheduledStart, request.staffScheduledEnd)}</div> : null}
+          </div>
+        ) : request.dispatchHistory?.length ? request.dispatchHistory.map((entry: any) => (
           <div key={entry.id}>
             <div style={{ fontWeight: 600 }}>
               {entry.vendor?.name ? `${entry.vendor.name} - ` : ''}{entry.status}
@@ -264,7 +299,7 @@ export default async function TenantMobileRequestDetailPage({ params, searchPara
             ) : null}
             <div className="muted">{formatDateTime(entry.createdAt)}</div>
           </div>
-        )) : <div className="muted">No vendor updates yet.</div>}
+        )) : <div className="muted">No work updates yet.</div>}
       </section>
 
       <section className="card stack">

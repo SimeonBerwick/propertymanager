@@ -41,7 +41,12 @@ export function validateProposedSlots(slots: Array<{ startAt: Date; endAt: Date 
     if (startHour < policy.workingHourStart || endHour > policy.workingHourEnd) return `Appointment times must stay between ${policy.workingHourStart}:00 and ${policy.workingHourEnd}:00.`
   }
   const starts = new Set(slots.map((slot) => slot.startAt.getTime()))
-  return starts.size === slots.length ? null : 'Appointment times must be different.'
+  if (starts.size !== slots.length) return 'Appointment times must be different.'
+  const ordered = [...slots].sort((a, b) => a.startAt.getTime() - b.startAt.getTime())
+  for (let index = 1; index < ordered.length; index += 1) {
+    if (ordered[index].startAt < ordered[index - 1].endAt) return 'Appointment choices cannot overlap each other.'
+  }
+  return null
 }
 
 export function schedulingReminderIsDue(lastReminderAt: Date | null | undefined, now = new Date()) {

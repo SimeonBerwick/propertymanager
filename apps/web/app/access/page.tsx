@@ -18,7 +18,7 @@ function recentFrictionKey(metadataJson: string | null) {
 }
 
 function tenantAccessStateLabel(status?: string | null) {
-  if (status === 'pending_invite') return 'Sign-in code sent'
+  if (status === 'pending_invite') return 'Access not yet activated'
   if (status === 'active') return 'Signed in'
   if (status === 'inactive') return 'Inactive'
   if (status === 'moved_out') return 'Moved out'
@@ -110,8 +110,8 @@ export default async function AccessPage() {
         id: `tenant-invite:${identity.id}`,
         priority: 'normal',
         title: `${identity.tenantName} - ${unit.property.name} / ${unit.label}`,
-        reason: 'The tenant has not used their sign-in code yet.',
-        primaryLabel: 'Send tenant sign-in code',
+        reason: 'The tenant has not activated portal access yet.',
+        primaryLabel: 'Email tenant sign-in link',
         href: `/units/${unit.id}/edit`,
         actionType: 'resend_tenant_invite',
         group: 'Codes waiting',

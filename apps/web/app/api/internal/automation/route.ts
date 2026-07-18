@@ -47,6 +47,9 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const recurringWorkReminders = await sendRecurringWorkReminders()
   const vendorCertificateAlerts = await sendVendorCertificateExpiryAlerts()
   const accountDeletions = await processDueAccountDeletionRequests()
+  if (accountDeletions.notificationWarnings.length) {
+    await sendOperatorFailureAlert('Account deletion completion email', accountDeletions.notificationWarnings)
+  }
   const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, recurringWork, recurringWorkReminders, vendorCertificateAlerts, accountDeletions }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 

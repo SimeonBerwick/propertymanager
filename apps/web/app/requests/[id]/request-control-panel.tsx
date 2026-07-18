@@ -66,7 +66,7 @@ export function RequestControlPanel({
   upfrontVendorPaymentDueCents = 0,
   vendorRemindersEnabledByDefault,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState' | 'vendorReminderEnabled'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState' | 'vendorReminderEnabled'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
@@ -110,7 +110,7 @@ export function RequestControlPanel({
   const hasAssignedVendor = Boolean(request.assignedVendorId || request.assignedVendorName || request.assignedVendorEmail) || ['vendor_selected', 'scheduled', 'in_progress', 'completed', 'closed'].includes(request.status)
   const hasBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length || tenders.some((tender) => tender.status !== 'canceled'))
   const hasOpenBidActivity = Boolean(bidDecisionInvites.length || openTenderInvites.length)
-  const canChooseVendorPath = !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
+  const canChooseVendorPath = !request.assignedStaffId && !hasAssignedVendor && !hasBidActivity && ['approved', 'reopened'].includes(request.status)
   const upfrontPaymentBlocksWork = upfrontVendorPaymentDueCents > 0 && !['completed', 'closed'].includes(request.status)
   const canSetAppointment = canScheduleRequest({
     status: request.status,

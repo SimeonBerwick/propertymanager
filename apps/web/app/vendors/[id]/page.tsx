@@ -64,7 +64,7 @@ export default async function VendorDetailPage({
           </div>
           {query?.sessions === 'revoked' ? <div className="notice success">Vendor signed out on all devices.</div> : null}
           <p className="muted" style={{ margin: 0 }}>
-            Vendor sessions last up to 90 days. Use this if a device is lost, shared, or should no longer have access.
+            Vendor sessions last up to one year. Use this if a device is lost, shared, or should no longer have access.
           </p>
           <form action={revokeAllVendorSessionsAction}>
             <input type="hidden" name="vendorId" value={vendor.id} />

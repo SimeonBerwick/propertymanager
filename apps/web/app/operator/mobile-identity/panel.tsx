@@ -14,7 +14,7 @@ import { formatDateOnly, formatDateTime } from '@/lib/ui-utils'
 const INITIAL_STATE: MobileIdentityState = { error: null }
 
 function tenantSignInStatus(status: string) {
-  if (status === 'pending_invite') return 'Sign-in code sent'
+  if (status === 'pending_invite') return 'Access not yet activated'
   if (status === 'active') return 'Signed in'
   if (status === 'inactive') return 'Inactive'
   if (status === 'moved_out') return 'Moved out'
@@ -103,6 +103,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
       )}
 
       {setupState.error && <div className="notice error">{setupState.error}</div>}
+      {setupState.success && <div className="notice success">Tenant details saved.</div>}
       {inviteState.error && <div className="notice error">{inviteState.error}</div>}
       {deactivateState.error && <div className="notice error">{deactivateState.error}</div>}
       {inviteState.inviteLink && (
@@ -174,7 +175,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           />
           <span>Month to month</span>
         </label>
-        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save current tenant'}</button>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving...' : 'Save current tenant'}</button>
       </form>
 
       <form action={setupAction} className="stack">
@@ -224,7 +225,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           />
           <span>Month to month</span>
         </label>
-        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving…' : 'Save next tenant'}</button>
+        <button type="submit" className="button" disabled={setupPending || isArchived}>{setupPending ? 'Saving...' : 'Save next tenant'}</button>
       </form>
 
       {currentIdentity && (
@@ -248,7 +249,7 @@ export function MobileIdentityPanel({ unitId, unitIsActive = true, propertyIsAct
           <form action={inviteAction}>
             <input type="hidden" name="tenantIdentityId" value={currentIdentity.id} />
             <button type="submit" className="button primary" disabled={invitePending || isArchived}>
-              {invitePending ? 'Sending code...' : 'Send tenant sign-in code'}
+              {invitePending ? 'Emailing link...' : 'Email tenant sign-in link'}
             </button>
           </form>
           <form action={deactivateAction}>

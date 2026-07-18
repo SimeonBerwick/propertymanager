@@ -262,7 +262,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
         <span className="muted">Up to 3 images, 5 MB each.</span>
       </label>
 
-      <button type="submit" className="button primary" disabled={isPending || !selectedUnitId || (managerMode && (!tenantName || !tenantEmail))}>
+      <button type="submit" className="button primary" disabled={isPending || !selectedUnitId || (managerMode && !selectedIsCommonArea && (!tenantName || !tenantEmail))}>
         {isPending ? 'Submitting...' : managerMode ? 'Create work order' : 'Submit maintenance request'}
       </button>
     </form>
