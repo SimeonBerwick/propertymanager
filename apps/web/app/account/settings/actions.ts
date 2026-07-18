@@ -55,7 +55,7 @@ export async function updateCoOpModeAction(formData: FormData) {
   if (!session) redirect('/login?error=session-expired')
 
   const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { subscriptionPlan: true } })
-  if (user?.subscriptionPlan !== 'pro') redirect('/account/settings?coOpMode=pro-required' as Route)
+  if (!user?.subscriptionPlan || !['pro', 'portfolio'].includes(user.subscriptionPlan)) redirect('/account/settings?coOpMode=pro-required' as Route)
 
   const coOpModeEnabled = formData.get('coOpModeEnabled') === 'on'
   await prisma.user.update({ where: { id: session.userId }, data: { coOpModeEnabled } })

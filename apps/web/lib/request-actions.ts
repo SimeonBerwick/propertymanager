@@ -111,6 +111,8 @@ export async function submitMaintenanceRequest(
       return { error: 'Invalid submission link. Please use the link provided by your property manager.' }
     }
     verifiedLandlordId = landlord.id
+  } else {
+    return { error: 'Invalid submission link. Please use the property-specific link provided by your property manager.' }
   }
 
   let propertyName = 'Unknown property'

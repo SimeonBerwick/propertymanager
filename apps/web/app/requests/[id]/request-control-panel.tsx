@@ -66,7 +66,7 @@ export function RequestControlPanel({
   upfrontVendorPaymentDueCents = 0,
   vendorRemindersEnabledByDefault,
 }: {
-  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState' | 'vendorReminderEnabled'>
+  request: Pick<MaintenanceRequest, 'id' | 'status' | 'urgency' | 'submittedByEmail' | 'assignedVendorId' | 'assignedVendorName' | 'assignedVendorEmail' | 'assignedStaffId' | 'vendorScheduledStart' | 'vendorScheduledEnd' | 'dispatchStatus' | 'claimedAt' | 'claimedByUserId' | 'reviewState' | 'vendorReminderEnabled'>
   vendors: Vendor[]
   tenders: RequestTenderView[]
   statusControlPriority?: 'primary' | 'secondary'
@@ -135,8 +135,8 @@ export function RequestControlPanel({
         <span className="field-label">Note, optional</span>
         <textarea className="input textarea" name="note" rows={3} placeholder="Example: Vendor will call when they arrive." />
       </label>
-      <ActionFeedback error={dispatchState.error} success={dispatchState.success ? 'Appointment saved. Next: send the tenant update so they know the confirmed appointment time.' : null} />
-      {dispatchState.success ? <SectionJumpLink href="#communication" className="button primary" style={{ alignSelf: 'flex-start' }}>Next: send tenant update</SectionJumpLink> : null}
+      <ActionFeedback error={dispatchState.error} success={dispatchState.success ? request.submittedByEmail ? 'Appointment saved. Next: send the tenant update so they know the confirmed appointment time.' : 'Appointment saved on this common-area work order.' : null} />
+      {dispatchState.success && request.submittedByEmail ? <SectionJumpLink href="#communication" className="button primary" style={{ alignSelf: 'flex-start' }}>Next: send tenant update</SectionJumpLink> : null}
       <button type="submit" className="button primary" disabled={dispatchPending}>
         {dispatchPending ? 'Saving...' : 'Save appointment'}
       </button>

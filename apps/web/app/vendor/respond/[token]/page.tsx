@@ -5,10 +5,13 @@ import { VendorResponseForm } from './form'
 
 export default async function VendorRespondPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>
+  searchParams: Promise<{ submitted?: string }>
 }) {
   const { token } = await params
+  const query = await searchParams
   const result = await validateVendorDispatchToken(token)
 
   if (!result.ok) {
@@ -30,7 +33,10 @@ export default async function VendorRespondPage({
         <div className="muted">{result.propertyName} - {result.unitLabel}</div>
       </div>
       <div className="notice success">This link gives access only to this work order. No sign-in is required.</div>
-      <VendorResponseForm token={token} />
+      {query.submitted ? <div className="stack">
+        <div className="notice success"><strong>{result.tenderInviteId ? 'Bid response recorded.' : 'Service-call response recorded.'}</strong><span style={{ display: 'block', marginTop: 4 }}>The property manager can now review your response.</span></div>
+        <a className="button primary" href="/vendor/auth/login" style={{ alignSelf: 'flex-start' }}>Open vendor sign in</a>
+      </div> : <VendorResponseForm token={token} mode={result.tenderInviteId ? 'bid' : 'service_call'} />}
     </div>
   )
 }

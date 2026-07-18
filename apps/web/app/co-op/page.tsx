@@ -34,7 +34,7 @@ export default async function CooperativeOperationsPage({ searchParams }: { sear
   ])
   const cooperativeProperties = properties.filter((property) => property.propertyType === 'cooperative')
   const cooperativeUnits = cooperativeProperties.flatMap((property) => property.units.map((unit) => ({ ...unit, propertyName: property.name })))
-  const hasPro = user?.subscriptionPlan === 'pro'
+  const hasPro = Boolean(user?.subscriptionPlan && ['pro', 'portfolio'].includes(user.subscriptionPlan))
 
   if (!hasPro) {
     return <main className="stack"><section className="card stack"><div className="kicker">Pro feature</div><h1 className="pageTitle">Co-op operations</h1><p className="muted">Board-controlled approvals, recurring building work, evidence reminders, and vendor certificate tracking are included with Pro.</p><Link className="button primary" href="/account/subscription">View Pro plan</Link></section></main>
@@ -88,7 +88,7 @@ export default async function CooperativeOperationsPage({ searchParams }: { sear
           <label>Location<select name="unitId" required defaultValue=""><option value="" disabled>Choose location</option>{cooperativeUnits.map((unit) => <option key={unit.id} value={unit.id}>{unit.propertyName} - {unit.label}</option>)}</select></label>
           <label>Category<select name="category" defaultValue="Safety">{REQUEST_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
           <label>Frequency<select name="frequency" defaultValue="annual"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="semiannual">Every six months</option><option value="annual">Annual</option><option value="custom_days">Custom days</option></select></label>
-          <label>Custom days<input name="customIntervalDays" type="number" min="1" max="730" /></label>
+          <label>Custom days<input name="customIntervalDays" type="number" min="1" max="730" defaultValue="30" /></label>
           <label>First due date<input name="nextDueAt" type="date" defaultValue={dateInputValue(new Date())} required /></label>
           <label>Days before due<input name="daysBeforeDue" type="number" min="0" max="90" defaultValue="14" required /></label>
           <label>Preferred vendor<select name="preferredVendorId" defaultValue=""><option value="">No preference</option>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>

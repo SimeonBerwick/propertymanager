@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type { Route } from 'next'
 import { useEffect, useMemo, useState } from 'react'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestOpsSignals } from '@/components/request-ops-signals'
@@ -21,9 +22,11 @@ function isDismissable(status: string) {
 export function RequestQueueList({
   requests,
   selectedSort,
+  requestFormPath,
 }: {
   requests: DashboardQueueRequest[]
   selectedSort: 'priority' | 'newest' | 'oldest'
+  requestFormPath: string
 }) {
   const [dismissedIds, setDismissedIds] = useState<string[]>([])
   const [lastDismissedId, setLastDismissedId] = useState<string | null>(null)
@@ -79,7 +82,7 @@ export function RequestQueueList({
           <span>No active work orders match these filters. Clear filters or share the request form when you are ready for new tenant requests.</span>
           <div className="row" style={{ justifyContent: 'center' }}>
             <Link href="/dashboard?queue=open" className="button">Open queue</Link>
-            <Link href="/submit" className="button primary">Share request form</Link>
+            <Link href={requestFormPath as Route} className="button primary">Share request form</Link>
           </div>
         </div>
         {lastDismissedId ? (

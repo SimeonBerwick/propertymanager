@@ -42,6 +42,7 @@ export interface DashboardRequestRow extends MaintenanceRequest {
 }
 
 export interface DashboardData {
+  requestFormPath: string
   properties: Property[]
   requestRows: DashboardRequestRow[]
   masterQueueActions: RecommendedAction[]
@@ -520,7 +521,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     const [user, mailboxConnections, dbProperties, dbRequests, claimUsers, accessUnits, accessVendors, recentAccessEvents, failedEmails] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { emailNotificationsEnabled: true, dailyCsvExportEnabled: true, dailyCsvExportLastSentAt: true },
+        select: { slug: true, emailNotificationsEnabled: true, dailyCsvExportEnabled: true, dailyCsvExportLastSentAt: true },
       }),
       prisma.mailboxConnection.findMany({
         where: { userId },
@@ -610,6 +611,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       ...buildSystemHealthQueueActions(),
     ])
     return {
+      requestFormPath: user?.slug ? `/submit/${user.slug}` : '/submit',
       properties: dbProperties.map(mapProperty),
       requestRows,
       masterQueueActions,
@@ -627,7 +629,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }
   } catch (error) {
     await logDataError('data.dashboard.load_failed', error, { userId })
-    return { properties: [], requestRows: [], masterQueueActions: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
+    return { requestFormPath: '/submit', properties: [], requestRows: [], masterQueueActions: [], statusCounts: countStatuses([]), emailNotificationsEnabled: true, mailboxConnections: [], queueCounts: queueCounts([], userId) }
   }
 }
 
@@ -641,6 +643,7 @@ export async function getLandlordBySlug(slug: string): Promise<{ id: string; def
 }
 
 export async function getProperties(userId?: string, orgSlug?: string, includeInactive = false): Promise<Property[]> {
+  if (!userId && !orgSlug) return []
   try {
     let where: Record<string, unknown> | undefined
     if (userId) where = { ownerId: userId, ...(includeInactive ? {} : { isActive: true }) }
@@ -658,6 +661,7 @@ export async function getProperties(userId?: string, orgSlug?: string, includeIn
 }
 
 export async function getAllUnits(userId?: string, orgSlug?: string, includeInactive = false): Promise<Unit[]> {
+  if (!userId && !orgSlug) return []
   try {
     let where: Record<string, unknown> | undefined
     if (userId) where = { property: { ownerId: userId }, ...(includeInactive ? {} : { isActive: true }) }

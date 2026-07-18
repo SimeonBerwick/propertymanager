@@ -8,6 +8,7 @@ export type OnboardingCounts = {
   automationRuleCount: number
   firstPropertyId?: string
   accountCreatedAt?: Date | string | null
+  publicRequestPath?: string
 }
 
 const AUTOMATION_ONBOARDING_DAYS = 7
@@ -21,7 +22,7 @@ export function buildOnboardingChecklist(counts: OnboardingCounts, now = new Dat
     { label: 'Add your first property', detail: 'Create the building or home you manage.', done: counts.propertyCount > 0, href: '/properties/new' },
     { label: 'Add a unit', detail: 'Add the apartment, suite, or rental space.', done: counts.unitCount > 0, href: counts.firstPropertyId ? '/properties/' + counts.firstPropertyId + '/units/new' : '/properties/new' },
     { label: 'Add a vendor', detail: 'Save a trusted service provider for dispatch.', done: counts.vendorCount > 0, href: '/vendors/new' },
-    { label: 'Share your request link', detail: 'Receive the first maintenance request from a tenant.', done: counts.requestCount > 0, href: '/submit' },
+    { label: 'Share your request link', detail: 'Receive the first maintenance request from a tenant.', done: counts.requestCount > 0, href: counts.publicRequestPath ?? '/submit' },
   ]
 
   if (counts.automationRuleCount > 0 || automationStillIntroductory) {
@@ -33,7 +34,7 @@ export function buildOnboardingChecklist(counts: OnboardingCounts, now = new Dat
 
 export async function getOnboardingChecklist(userId: string) {
   const [user, properties, unitCount, vendorCount, requestCount, automationRuleCount] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, slug: true } }),
     prisma.property.findMany({ where: { ownerId: userId, isActive: true }, select: { id: true }, take: 1 }),
     prisma.unit.count({ where: { property: { ownerId: userId }, locationType: 'residential', isActive: true } }),
     prisma.vendor.count({ where: { orgId: userId, isActive: true } }),
@@ -49,5 +50,6 @@ export async function getOnboardingChecklist(userId: string) {
     automationRuleCount,
     firstPropertyId: properties[0]?.id,
     accountCreatedAt: user?.createdAt ?? null,
+    publicRequestPath: user?.slug ? `/submit/${user.slug}` : '/submit',
   })
 }

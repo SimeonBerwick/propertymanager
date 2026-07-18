@@ -17,7 +17,7 @@ const shortcuts: SearchResult[] = [
   { href: '/vendors', label: 'Vendors', meta: 'Manage vendors and assignments', type: 'Go to' },
   { href: '/ops', label: 'Activity center', meta: 'Review changes and exports', type: 'Go to' },
   { href: '/reports', label: 'Reports', meta: 'View portfolio performance', type: 'Go to' },
-  { href: '/submit', label: 'Share request form', meta: 'Open the maintenance intake link', type: 'Action' },
+  { href: '/submit?mode=manager', label: 'Create work order', meta: 'Log a maintenance request', type: 'Action' },
 ]
 
 export function CommandPalette() {

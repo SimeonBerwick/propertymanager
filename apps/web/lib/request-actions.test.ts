@@ -53,8 +53,9 @@ function formData(fields: Record<string, string | File | File[]>) {
 }
 
 async function validBaseFields() {
-  const { property, unit } = await scaffoldLandlord()
+  const { user, property, unit } = await scaffoldLandlord()
   return {
+    orgSlug: user.slug!,
     propertyId: property.id,
     unitId: unit.id,
     tenantName: 'Alice',
@@ -135,6 +136,22 @@ describe('submitMaintenanceRequest — magic-byte validation', () => {
       formData({ propertyId: 'x', unitId: 'y', tenantName: '', tenantEmail: '', title: '', description: '', category: '', urgency: '' }),
     )
     expect(result.error).toMatch(/required/i)
+  })
+
+  test('rejects a public submission that is not scoped to a property manager', async () => {
+    const { property, unit } = await scaffoldLandlord()
+    const result = await submitMaintenanceRequest(PREV, formData({
+      propertyId: property.id,
+      unitId: unit.id,
+      tenantName: 'Alice',
+      tenantEmail: 'alice@example.com',
+      title: 'Unscoped request',
+      description: 'This request should never cross account boundaries.',
+      category: 'Plumbing',
+      urgency: 'medium',
+    }))
+
+    expect(result.error).toMatch(/property-specific link/i)
   })
 
   test('manager can create a common-area work order without a resident', async () => {
