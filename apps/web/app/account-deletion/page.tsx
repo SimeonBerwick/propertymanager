@@ -23,7 +23,7 @@ export default async function AccountDeletionPage() {
           Include your role and the property or organization connected to your account. We may verify your identity before completing the request. Maintenance, billing, security, or legal records may be retained where required for legitimate business, accounting, fraud-prevention, or legal obligations.
         </p>
         <p className="muted" style={{ margin: 0 }}>
-          Property managers should sign in to use the in-account request form when possible. If there is an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time. Tenants, maintenance staff, and vendors should email support from the address linked to their portal account. Support will confirm the records that can be deleted and when deletion is complete.
+          Property managers should sign in to use the in-account request form when possible. Trial accounts are deleted the next day. Paid accounts are deleted within 30 days, or on the active subscription renewal date when that is sooner. If there is an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time. Tenants, maintenance staff, and vendors should email support from the address linked to their portal account. Support will confirm the records that can be deleted and when deletion is complete.
         </p>
         {session ? (
           <Link className="button primary" style={{ alignSelf: 'flex-start' }} href="/account/settings/deletion">

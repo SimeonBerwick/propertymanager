@@ -65,6 +65,7 @@ export default defineConfig({
       'lib/campaign-attribution.test.ts',
       'lib/august-consultation-source.test.ts',
       'lib/financial-idempotency-source.test.ts',
+      'lib/account-deletion.test.ts',
       'lib/appointment-date-time-fields-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',
       'app/api/monitoring/client-error/route.test.ts',

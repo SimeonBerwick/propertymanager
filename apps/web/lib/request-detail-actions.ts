@@ -27,8 +27,104 @@ import { logServerActionError } from '@/lib/observability'
 import { normalizeVendorPaymentTiming, upfrontPaymentCents, vendorPaymentTimingLabel, vendorPaymentTimingRequiresUpfront } from '@/lib/vendor-commercial-types'
 import { planIncludesLocalization } from '@/lib/localization-entitlement'
 import { syncApprovedQuickBooksRecordsForRequest } from '@/lib/quickbooks'
+import { applyEmergencyBoardOverride, boardApproversForRequest, notifyBoardApprovers, refreshBoardApprovalRecords } from '@/lib/coop-board'
 
 export type RequestActionState = { error: string | null; success?: boolean; message?: string }
+
+export async function continueAfterBoardApprovalAction(
+  previous: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const requestId = String(formData.get('requestId') ?? '')
+  const forwarded = new FormData()
+  forwarded.set('requestId', requestId)
+  forwarded.set('fromStatus', 'requested')
+  forwarded.set('toStatus', 'approved')
+  return updateStatusFormAction(previous, forwarded)
+}
+
+export async function resendBoardApprovalAction(
+  _previous: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+  const requestId = String(formData.get('requestId') ?? '')
+  const note = String(formData.get('note') ?? '').trim()
+  if (!note) return { error: 'Briefly explain what changed before resending the board request.' }
+  if (note.length > 1000) return { error: 'Keep the update to 1,000 characters or fewer.' }
+
+  const request = await prisma.maintenanceRequest.findFirst({
+    where: { id: requestId, property: { ownerId: session.userId, propertyType: 'cooperative' } },
+    include: { property: true, unit: true },
+  })
+  if (!request?.boardApprovalRequired) return { error: 'This work order does not have a board approval request to resend.' }
+  if (!['returned', 'declined'].includes(request.boardApprovalState)) return { error: 'The board request can only be resent after it is returned or declined.' }
+
+  const approvers = await boardApproversForRequest(session.userId, request.propertyId, request.category)
+  if (!approvers.length) return { error: 'Add an active board approval rule and approver before resending this request.' }
+  let recipients: Awaited<ReturnType<typeof refreshBoardApprovalRecords>> = []
+  await prisma.$transaction(async (tx) => {
+    recipients = await refreshBoardApprovalRecords(tx, request.id, approvers)
+    await tx.maintenanceRequest.update({
+      where: { id: request.id },
+      data: { boardApprovalState: 'pending', reviewState: 'needs_follow_up', reviewNote: `Board approval resent: ${note}` },
+    })
+  })
+  await writeAuditLog({
+    orgId: session.userId,
+    actorUserId: session.userId,
+    entityType: 'request',
+    entityId: request.id,
+    action: 'boardApproval.resent',
+    summary: `Resent board approval request for ${request.title}.`,
+    metadata: { note },
+  })
+  await notifyBoardApprovers({
+    requestId: request.id,
+    title: request.title,
+    propertyName: request.property.name,
+    unitLabel: request.unit.label,
+    category: request.category,
+    recipients,
+    ownerUserId: session.userId,
+  })
+  revalidatePath(`/requests/${request.id}`)
+  revalidatePath('/co-op')
+  return { error: null, success: true, message: 'Board approval request resent.' }
+}
+
+export async function emergencyBoardOverrideAction(
+  _previous: RequestActionState,
+  formData: FormData,
+): Promise<RequestActionState> {
+  const session = await getLandlordSession()
+  if (!session) return { error: 'Sign in again to continue.' }
+  const requestId = String(formData.get('requestId') ?? '')
+  const note = String(formData.get('note') ?? '').trim()
+  if (!note) return { error: 'Explain the emergency decision before continuing.' }
+  if (note.length > 1000) return { error: 'Keep the emergency decision to 1,000 characters or fewer.' }
+  const result = await applyEmergencyBoardOverride({ orgId: session.userId, actorUserId: session.userId, requestId, note })
+  if (result.error) return { error: result.error }
+
+  if (result.movedToApproved && result.request.submittedByEmail && result.request.submittedByName && await areEmailNotificationsEnabled(session.userId)) {
+    await sendNotification(buildStatusChangedMessage({
+      requestId: result.request.id,
+      title: result.request.title,
+      propertyName: result.request.property.name,
+      unitLabel: result.request.unit.label,
+      tenantEmail: result.request.submittedByEmail,
+      tenantName: result.request.submittedByName,
+      fromStatus: 'requested',
+      toStatus: 'approved',
+      actionUrl: tenantRequestActionUrl(result.request.id),
+    }), { ownerUserId: session.userId, requestId: result.request.id })
+  }
+  revalidatePath(`/requests/${requestId}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/co-op')
+  return { error: null, success: true, message: 'Emergency override recorded. The board was notified and vendor assignment is ready.' }
+}
 
 export async function updateRequestDetailsAction(
   _prev: RequestActionState,

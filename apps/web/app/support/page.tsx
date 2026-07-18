@@ -6,9 +6,10 @@ export const metadata = {
 import { SupportForm } from './support-form'
 import { getRecentSupportRequests } from './actions'
 
-export default async function SupportPage({ searchParams }: { searchParams?: Promise<{ errorReference?: string }> }) {
+export default async function SupportPage({ searchParams }: { searchParams?: Promise<{ errorReference?: string; category?: string }> }) {
   const params = searchParams ? await searchParams : undefined
   const recent = await getRecentSupportRequests().catch(() => [])
+  const initialCategory = params?.category === 'feedback' ? 'feedback' : undefined
   return (
     <main className="stack" style={{ maxWidth: 760, margin: '0 auto' }}>
       <section className="card stack">
@@ -17,7 +18,7 @@ export default async function SupportPage({ searchParams }: { searchParams?: Pro
           <h1 className="pageTitle">Simeonware support</h1>
         </div>
         <p className="muted" style={{ margin: 0 }}>Send the details here. Simeonware saves the request, alerts support, and gives you a reference that can be followed through resolution.</p>
-        <SupportForm errorReference={params?.errorReference} />
+        <SupportForm errorReference={params?.errorReference} initialCategory={initialCategory} />
         <p className="muted" style={{ margin: 0 }}>
           You can also email <a href="mailto:support@simeonware.com?subject=Simeonware%20support%20request">support@simeonware.com</a>. Include your support reference when following up.
         </p>

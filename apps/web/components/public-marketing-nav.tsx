@@ -49,7 +49,7 @@ export function PublicMarketingNav() {
       <Link href="/#how-it-works">How it works</Link>
       <Link href="/#pricing">{androidAppView ? 'Subscription' : 'Pricing'}</Link>
       <Link href="/support">Support</Link>
-      <a href="mailto:feedback@simeonware.com?subject=Simeonware%20Maintenance%20Manager%20feedback">Feedback</a>
+      <Link href="/support?category=feedback">Feedback</Link>
       <ThemeToggle />
       <Link href="/login" className={`button ${androidAppView ? 'primary' : ''}`}>Sign in</Link>
       <Link href="/signup" className={`button ${androidAppView ? '' : 'primary'}`}>{androidAppView ? 'Start free month' : 'Start free trial'}</Link>
