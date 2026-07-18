@@ -35,9 +35,28 @@ export default async function SubmitPage({
     // DB unavailable — fall through to the unscoped form below.
   }
 
+  if (!isManagerMode) {
+    return (
+      <div className="stack" style={{ maxWidth: 640, margin: '0 auto' }}>
+        <section className="card stack">
+          <div>
+            <div className="kicker">Maintenance request</div>
+            <h1 className="pageTitle">Use your property's request link</h1>
+          </div>
+          <p className="muted">For privacy, each property manager has a separate maintenance form. Open the link your property manager shared, or sign in to your tenant portal.</p>
+          <div className="row" style={{ justifyContent: 'flex-start' }}>
+            <a className="button primary" href="/mobile/auth/login">Tenant sign in</a>
+            <a className="button" href="/support">Get help</a>
+          </div>
+        </section>
+      </div>
+    )
+  }
+  if (!session) redirect('/login?error=session-expired')
+
   const [properties, units] = await Promise.all([
-    getProperties(session?.userId),
-    getAllUnits(session?.userId),
+    getProperties(session.userId),
+    getAllUnits(session.userId),
   ])
   const accountDefaults = session
     ? await prisma.user.findUnique({ where: { id: session.userId }, select: { defaultCurrency: true, preferredLanguage: true, subscriptionPlan: true } })
@@ -52,7 +71,7 @@ export default async function SubmitPage({
   if (submitted) {
     return (
       <div className="stack" style={{ maxWidth: 840, margin: '0 auto' }}>
-        <IntakeDraftCleanup />
+        <IntakeDraftCleanup managerDraftScope={session?.userId} />
         <section className="card stack">
           <div>
             <div className="kicker">{isManagerMode ? 'Create work order' : 'Submit a request'}</div>
@@ -82,7 +101,7 @@ export default async function SubmitPage({
       </section>
 
       <section className="card stack">
-        <SubmitRequestForm properties={properties} units={units} managerMode={isManagerMode} defaultCurrency={defaultCurrency} defaultLanguage={defaultLanguage} />
+        <SubmitRequestForm properties={properties} units={units} managerMode={isManagerMode} managerDraftScope={session?.userId} defaultCurrency={defaultCurrency} defaultLanguage={defaultLanguage} />
       </section>
     </div>
   )

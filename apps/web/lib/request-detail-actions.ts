@@ -59,7 +59,7 @@ export async function resendBoardApprovalAction(
     include: { property: true, unit: true },
   })
   if (!request?.boardApprovalRequired) return { error: 'This work order does not have a board approval request to resend.' }
-  if (!['returned', 'declined'].includes(request.boardApprovalState)) return { error: 'The board request can only be resent after it is returned or declined.' }
+  if (!['pending', 'returned', 'declined'].includes(request.boardApprovalState)) return { error: 'This board request no longer needs a fresh approval link.' }
 
   const approvers = await boardApproversForRequest(session.userId, request.propertyId, request.category)
   if (!approvers.length) return { error: 'Add an active board approval rule and approver before resending this request.' }

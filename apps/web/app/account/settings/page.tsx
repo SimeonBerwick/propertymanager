@@ -47,7 +47,7 @@ export default async function AccountSettingsPage({
           </form>
         </div>
 
-        {account?.subscriptionPlan === 'pro' ? <div className="card stack">
+        {account?.subscriptionPlan && ['pro', 'portfolio'].includes(account.subscriptionPlan) ? <div className="card stack">
           <div><div className="kicker">Portfolio setup</div><h3 style={{ margin: '4px 0 0' }}>Co-op Mode</h3></div>
           <p className="muted" style={{ margin: 0 }}>Use co-op setup guidance and take advantage of board approvals, recurring building work, evidence reminders, and vendor certificate tracking.</p>
           {query.coOpMode === 'updated' ? <div className="notice success">Co-op Mode setup preference updated.</div> : null}

@@ -31,6 +31,7 @@ import { canScheduleRequest } from '@/lib/request-scheduling'
 import { TranslatedMessage } from '@/components/translated-message'
 import { prisma } from '@/lib/prisma'
 import { BoardDecisionPanel } from './board-decision-panel'
+import { BoardPendingPanel } from './board-pending-panel'
 import { EmergencyBoardOverride } from './emergency-board-override'
 
 const VISIBILITY_LABELS: Record<string, string> = {
@@ -92,7 +93,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     orderBy: { respondedAt: 'desc' },
   })
   const boardApprovalPending = boardApprovals.some((approval) => approval.status === 'pending')
-  const boardDecision = boardApprovalPending ? undefined : boardApprovals.find((approval) => ['approved', 'returned', 'declined'].includes(approval.status))
+  const boardDecision = boardApprovalPending ? undefined : boardApprovals.find((approval) => ['approved', 'returned', 'declined', 'overridden'].includes(approval.status))
   const actionableBoardApprovalPending = data.request.status === 'requested' && boardApprovalPending
   const actionableBoardDecision = data.request.status === 'requested' ? boardDecision : undefined
   const boardApprovalAwaitingManager = data.request.status === 'requested' && boardDecision?.status === 'approved'
@@ -297,7 +298,9 @@ export default async function RequestDetailPage({ params, searchParams }: { para
     : vendorNeedsAcceptance
       ? 'The vendor must accept the service call before an appointment is scheduled.'
     : needsAppointmentTime
-    ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
+    ? data.request.submittedByEmail
+      ? 'Enter the confirmed appointment time here. After saving, send the tenant update.'
+      : 'Enter the confirmed appointment time here. It will be recorded on this common-area work order.'
     : hasSubmittedBid
       ? 'Review returned pricing and choose the vendor.'
       : canChooseVendor
@@ -388,8 +391,8 @@ export default async function RequestDetailPage({ params, searchParams }: { para
         <WorkOrderContext request={data.request} />
         {!actionableBoardDecision && boardDecision ? (
           <div className="notice">
-            <strong>Board decision: {boardDecision.status}.</strong>
-            {boardDecision.responseNote ? <span style={{ display: 'block', marginTop: 4 }}>Manager-only note: {boardDecision.responseNote}</span> : null}
+            <strong>{boardDecision.status === 'overridden' ? 'Emergency board override recorded.' : `Board decision: ${boardDecision.status}.`}</strong>
+            {boardDecision.responseNote ? <span style={{ display: 'block', marginTop: 4 }}>{boardDecision.status === 'overridden' ? 'Manager-only reason' : 'Manager-only note'}: {boardDecision.responseNote.replace(/^Manager emergency override:\s*/i, '')}</span> : null}
           </div>
         ) : null}
         {actionableBoardDecision ? (
@@ -400,7 +403,7 @@ export default async function RequestDetailPage({ params, searchParams }: { para
             note={actionableBoardDecision.responseNote}
           />
         ) : actionableBoardApprovalPending ? (
-          <div className="notice"><strong>Waiting for board approval.</strong> The work order will stay paused until a board member responds.</div>
+          <BoardPendingPanel requestId={data.request.id} />
         ) : hasTenantMessageReview ? (
           <div id="tenant-message-review" className="timelineRow spotlightSuccess stack tenantReplyAction" style={{ gap: 12 }}>
             <div className="stack" style={{ gap: 8 }}>

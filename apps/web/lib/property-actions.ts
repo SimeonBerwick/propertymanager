@@ -78,7 +78,7 @@ export async function createPropertyAction(
   if (!['single_family', 'multifamily', 'cooperative'].includes(propertyType)) return { error: 'Choose a valid property type.' }
   if (propertyType === 'cooperative') {
     const user = await prisma.user.findUnique({ where: { id: ownerId }, select: { subscriptionPlan: true } })
-    if (user?.subscriptionPlan !== 'pro') return { error: 'Co-op Mode is included with the Pro plan. Choose Pro before adding a cooperative building.' }
+    if (!user?.subscriptionPlan || !['pro', 'portfolio'].includes(user.subscriptionPlan)) return { error: 'Co-op Mode is included with the Pro plan. Choose Pro before adding a cooperative building.' }
   }
 
   let unitLabels: string[] = []

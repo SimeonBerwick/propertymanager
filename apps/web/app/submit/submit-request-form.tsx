@@ -16,12 +16,13 @@ interface SubmitRequestFormProps {
   units: Unit[]
   orgSlug?: string
   managerMode?: boolean
+  managerDraftScope?: string
   defaultCurrency?: CurrencyOption
   defaultLanguage?: LanguageOption
   personalWorkPolicies?: PersonalWorkPolicy[]
 }
 
-export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, defaultCurrency = 'usd', defaultLanguage = 'english', personalWorkPolicies = [] }: SubmitRequestFormProps) {
+export function SubmitRequestForm({ properties, units, orgSlug, managerMode = false, managerDraftScope, defaultCurrency = 'usd', defaultLanguage = 'english', personalWorkPolicies = [] }: SubmitRequestFormProps) {
   const [state, formAction, isPending] = useActionState(submitMaintenanceRequest, INITIAL_STATE)
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id ?? '')
   const [selectedUnitId, setSelectedUnitId] = useState('')
@@ -34,7 +35,9 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
   const [personalWorkRequested, setPersonalWorkRequested] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const draftEventSent = useRef(false)
-  const draftKey = `pm-intake-draft:${orgSlug ?? 'default'}:${managerMode ? 'manager' : 'tenant'}`
+  const draftKey = managerMode
+    ? `pm-intake-draft:manager:${managerDraftScope ?? 'unscoped'}`
+    : `pm-intake-draft:${orgSlug ?? 'default'}:tenant`
 
   const filteredUnits = useMemo(
     () => units.filter((unit) => unit.propertyId === selectedPropertyId),
@@ -70,6 +73,9 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
 
   useEffect(() => {
     try {
+      if (managerMode) {
+        window.localStorage.removeItem('pm-intake-draft:default:manager')
+      }
       const draft = JSON.parse(window.localStorage.getItem(draftKey) ?? 'null')
       if (draft) {
         setSelectedPropertyId(draft.selectedPropertyId ?? selectedPropertyId)
@@ -88,7 +94,7 @@ export function SubmitRequestForm({ properties, units, orgSlug, managerMode = fa
     trackProductEvent('intake_started', { scoped: Boolean(orgSlug), orgSlug })
     // Restore once for this form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftKey])
+  }, [draftKey, managerMode])
 
   useEffect(() => {
     if (!hydrated) return

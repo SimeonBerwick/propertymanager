@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import type { Route } from 'next'
 import { RequestFlowBadge } from '@/components/request-flow-badge'
 import { RequestSignalStrip } from '@/components/request-signal-strip'
 import { SectionCard } from '@/components/section-card'
@@ -171,7 +172,7 @@ export default async function DashboardPage({
                   Email alerts {data.emailNotificationsEnabled ? 'enabled' : 'paused'}
                 </button>
               </form>
-              <Link href="/submit" className="button primary">Share request form</Link>
+              <Link href={data.requestFormPath as Route} className="button primary">Share request form</Link>
               <Link href="/exceptions" className="button">Review exceptions</Link>
               <Link href="/access" className="button">Tenant and vendor access</Link>
               <Link href="/reports" className="button">Reports</Link>
@@ -224,7 +225,7 @@ export default async function DashboardPage({
           {filteredRequests.length > focusNow.length ? ' Use filters to narrow the list.' : ''}
         </div>
 
-        <RequestQueueList requests={focusNow} selectedSort={selectedSort} />
+        <RequestQueueList requests={focusNow} selectedSort={selectedSort} requestFormPath={data.requestFormPath} />
 
         <details className="advancedDisclosure">
           <summary>Filter and sort</summary>

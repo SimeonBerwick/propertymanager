@@ -19,7 +19,11 @@ function addDays(date: Date, days: number) {
 
 function addMonths(date: Date, months: number) {
   const next = new Date(date)
+  const dayOfMonth = next.getDate()
+  next.setDate(1)
   next.setMonth(next.getMonth() + months)
+  const lastDayOfTargetMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
+  next.setDate(Math.min(dayOfMonth, lastDayOfTargetMonth))
   return next
 }
 

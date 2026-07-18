@@ -18,7 +18,7 @@ async function requirePro() {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
   const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { subscriptionPlan: true } })
-  if (user?.subscriptionPlan !== 'pro') redirect('/account/subscription?error=Co-op+Mode+is+included+with+Pro.')
+  if (!user?.subscriptionPlan || !['pro', 'portfolio'].includes(user.subscriptionPlan)) redirect('/account/subscription?error=Co-op+Mode+is+included+with+Pro.')
   return session
 }
 
@@ -61,7 +61,14 @@ export async function toggleBoardApproverAction(formData: FormData) {
   const session = await requirePro()
   const id = value(formData, 'id')
   const isActive = value(formData, 'isActive') === 'true'
-  await prisma.boardApprover.updateMany({ where: { id, orgId: session.userId }, data: { isActive } })
+  if (!isActive) {
+    const pendingCount = await prisma.boardApproval.count({
+      where: { approverId: id, status: 'pending', request: { property: { ownerId: session.userId } } },
+    })
+    if (pendingCount) fail('This board approver still has an unanswered request. Resend it to another approver or record the decision before disabling them.')
+  }
+  const updated = await prisma.boardApprover.updateMany({ where: { id, orgId: session.userId }, data: { isActive } })
+  if (!updated.count) fail('Board approver not found.')
   revalidatePath('/co-op')
 }
 
@@ -79,6 +86,11 @@ export async function createBoardApprovalPolicyAction(formData: FormData) {
     const approver = await prisma.boardApprover.findFirst({ where: { id: approverId, orgId: session.userId, isActive: true }, select: { id: true } })
     if (!approver) fail('Choose an active board approver.')
   }
+  const existing = await prisma.boardApprovalPolicy.findFirst({
+    where: { orgId: session.userId, propertyId, approverId, category },
+    select: { id: true },
+  })
+  if (existing) fail('This board approval rule already exists.')
   const policy = await prisma.boardApprovalPolicy.create({ data: { orgId: session.userId, propertyId, approverId, category } })
   await writeAuditLog({ orgId: session.userId, actorUserId: session.userId, entityType: 'boardApprovalPolicy', entityId: policy.id, action: 'boardApprovalPolicy.created', summary: `Added board approval for ${category} work.` })
   revalidatePath('/co-op')
