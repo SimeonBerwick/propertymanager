@@ -185,9 +185,16 @@ describe('landlord workflow e2e', () => {
     ).toEqual({ error: null, success: true })
 
     expect(
+      await prisma.maintenanceRequest.findUnique({
+        where: { id: request!.id },
+        select: { status: true },
+      }),
+    ).toEqual({ status: 'vendor_selected' })
+
+    expect(
       await updateStatusFormAction(
         PREV,
-        formData({ requestId: request!.id, fromStatus: 'approved', toStatus: 'scheduled' }),
+        formData({ requestId: request!.id, fromStatus: 'vendor_selected', toStatus: 'scheduled' }),
       ),
     ).toEqual({ error: null, success: true })
 

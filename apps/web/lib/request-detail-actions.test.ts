@@ -150,14 +150,16 @@ describe('updateStatusFormAction', () => {
   test('sets closedAt when transitioning to closed', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     vi.mocked(getLandlordSession).mockResolvedValue(fakeSession(user.id))
-    const request = await createMaintenanceRequest(property.id, unit.id)
+    const request = await createMaintenanceRequest(property.id, unit.id, { status: 'completed' })
 
-    await updateStatusFormAction(
+    const result = await updateStatusFormAction(
       PREV,
       formData({ requestId: request.id, fromStatus: 'completed', toStatus: 'closed' }),
     )
 
+    expect(result).toEqual({ error: null, success: true })
     const updated = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } })
+    expect(updated?.status).toBe('closed')
     expect(updated?.closedAt).not.toBeNull()
   })
 
