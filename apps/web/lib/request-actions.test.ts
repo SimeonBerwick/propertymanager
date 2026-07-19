@@ -9,7 +9,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { submitMaintenanceRequest } from '@/lib/request-actions'
-import { scaffoldLandlord } from '@/test/helpers'
+import { createActiveTenantIdentity, scaffoldLandlord } from '@/test/helpers'
 import { prisma } from '@/lib/prisma'
 import { getLandlordSession } from '@/lib/landlord-session'
 
@@ -174,5 +174,36 @@ describe('submitMaintenanceRequest — magic-byte validation', () => {
     const request = await prisma.maintenanceRequest.findFirst({ where: { unitId: area.id } })
     expect(request?.status).toBe('approved')
     expect(request?.submittedByEmail).toBeNull()
+  })
+
+  test('manager-created unit work attaches the active tenant portal identity', async () => {
+    const { user, property, unit } = await scaffoldLandlord()
+    const tenantEmail = 'active-resident@example.com'
+    await prisma.unit.update({
+      where: { id: unit.id },
+      data: { tenantName: 'Active Resident', tenantEmail },
+    })
+    const identity = await createActiveTenantIdentity(user.id, property.id, unit.id, {
+      tenantName: 'Active Resident',
+      email: tenantEmail.toUpperCase(),
+      verifiedAt: new Date(),
+    })
+    vi.mocked(getLandlordSession).mockResolvedValue({ userId: user.id, email: user.email } as never)
+
+    await expect(submitMaintenanceRequest(PREV, formData({
+      managerMode: 'true',
+      propertyId: property.id,
+      unitId: unit.id,
+      title: 'Manager-created resident request',
+      description: 'The resident should be able to coordinate scheduling directly.',
+      category: 'Electrical',
+      urgency: 'medium',
+    }))).rejects.toThrow(/NEXT_REDIRECT/)
+
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: { unitId: unit.id, title: 'Manager-created resident request' },
+    })
+    expect(request?.tenantIdentityId).toBe(identity.id)
+    expect(request?.submittedByEmail).toBe(tenantEmail)
   })
 })
