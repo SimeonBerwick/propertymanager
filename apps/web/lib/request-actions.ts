@@ -15,6 +15,7 @@ import { getLandlordSession } from '@/lib/landlord-session'
 import { isCurrencyOption, isLanguageOption, type CurrencyOption } from '@/lib/types'
 import { resolvePersonalWorkPolicy, validatePersonalWorkRequest, type PersonalWorkPolicy } from '@/lib/personal-work'
 import { boardApproversForRequest, createBoardApprovalRecords, notifyBoardApprovers } from '@/lib/coop-board'
+import { findActiveTenantIdentityForRequest } from '@/lib/tenant-request-identity'
 
 export type SubmitRequestState = { error: string | null }
 
@@ -119,6 +120,7 @@ export async function submitMaintenanceRequest(
   let unitLabel = 'Unknown unit'
   let isCommonArea = false
   let personalWorkPolicy: PersonalWorkPolicy | null = null
+  let tenantIdentityId: string | null = null
   let boardApprovers: Array<{ id: string; name: string; email: string }> = []
   try {
     const unit = await prisma.unit.findFirst({
@@ -148,6 +150,15 @@ export async function submitMaintenanceRequest(
       tenantEmail = isCommonArea ? '' : unit.tenantEmail?.trim().toLowerCase() ?? ''
       if (!isCommonArea && (!tenantName || !tenantEmail)) {
         return { error: 'This unit needs a resident name and email before you can create a manager work order.' }
+      }
+      if (!isCommonArea) {
+        const identity = await findActiveTenantIdentityForRequest({
+          orgId: unit.property.owner.id,
+          propertyId,
+          unitId,
+          submittedByEmail: tenantEmail,
+        })
+        tenantIdentityId = identity?.id ?? null
       }
     }
     unitLabel = unit.label
@@ -184,6 +195,7 @@ export async function submitMaintenanceRequest(
         data: {
           propertyId,
           unitId,
+          tenantIdentityId,
           submittedByName: tenantName,
           submittedByEmail: tenantEmail || null,
           preferredCurrency: preferredCurrency as CurrencyOption,

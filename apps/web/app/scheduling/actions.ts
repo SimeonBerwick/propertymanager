@@ -16,6 +16,7 @@ import { sendNotification } from '@/lib/notify'
 import { getAppBaseUrl } from '@/lib/runtime-env'
 import { syncOutlookCalendarForUser } from '@/lib/outlook-calendar-sync'
 import { writeAuditLog } from '@/lib/audit-log'
+import { ensureActiveTenantIdentityForRequest } from '@/lib/tenant-request-identity'
 
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim()
 const fail = (path: string, message: string): never => redirect(`${path}?schedulingError=${encodeURIComponent(message)}` as Route)
@@ -25,6 +26,18 @@ const CLOSED_REQUEST_STATUSES = ['completed', 'closed', 'declined', 'canceled'] 
 function slotsFromForm(formData: FormData, defaultDurationMinutes: number) {
   const starts = formData.getAll('slotStart').map((start) => parseDateTimeLocalInDisplayTimeZone(String(start)))
   return appointmentSlotsFromStarts(starts, defaultDurationMinutes)
+}
+
+async function requestWithTenantIdentity<T extends { id: string; tenantIdentityId: string | null; submittedByEmail: string | null; propertyId: string; unitId: string }>(request: T, orgId: string) {
+  const identity = await ensureActiveTenantIdentityForRequest({
+    requestId: request.id,
+    tenantIdentityId: request.tenantIdentityId,
+    submittedByEmail: request.submittedByEmail,
+    orgId,
+    propertyId: request.propertyId,
+    unitId: request.unitId,
+  })
+  return identity ? { ...request, ...identity } : request
 }
 
 async function createProposalBatch(input: { requestId: string; orgId: string; proposedByType: 'vendor' | 'staff'; proposedById: string; proposedByName: string; note: string; slots: Array<{ startAt: Date; endAt: Date }>; expiryHours: number }) {
@@ -62,7 +75,7 @@ export async function proposeVendorAppointmentSlotsAction(formData: FormData) {
   const session = await requireVendorSession(); const requestId = value(formData, 'requestId'); const path = `/vendor/requests/${requestId}`
   const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.orgId! }, assignedVendorId: session.vendorId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
   if (!request) { fail(path, 'Assigned request not found.') }
-  const verifiedRequest = request!
+  const verifiedRequest = await requestWithTenantIdentity(request!, session.orgId!)
   if (!['accepted', 'scheduled'].includes(verifiedRequest.dispatchStatus ?? '')) fail(path, 'Accept the service call before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
   const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
@@ -79,7 +92,7 @@ export async function proposeStaffAppointmentSlotsAction(formData: FormData) {
   const session = await requireStaffSession(); const requestId = value(formData, 'requestId'); const path = `/maintenance/requests/${requestId}`
   const request = await prisma.maintenanceRequest.findFirst({ where: { id: requestId, property: { ownerId: session.orgId }, assignedStaffId: session.staffMemberId, status: { notIn: [...CLOSED_REQUEST_STATUSES] } }, include: { property: { include: { owner: { select: { id: true, ...policySelect } } } } } })
   if (!request) { fail(path, 'Assigned request not found.') }
-  const verifiedRequest = request!
+  const verifiedRequest = await requestWithTenantIdentity(request!, session.orgId)
   if (!['accepted', 'in_progress'].includes(verifiedRequest.staffWorkStatus ?? '')) fail(path, 'Accept the work order before offering appointment times.')
   if (!verifiedRequest.tenantIdentityId || !verifiedRequest.submittedByEmail) fail(path, 'This request has no tenant portal account for direct scheduling.')
   const policy = resolveSchedulingPolicy(verifiedRequest.property.owner, verifiedRequest.schedulingCoordinationOverride); const slots = slotsFromForm(formData, policy.defaultDurationMinutes); const error = validateProposedSlots(slots, policy); if (error) fail(path, error); const note = value(formData, 'note'); if (note.length > 500) fail(path, 'Scheduling notes must be 500 characters or fewer.')
