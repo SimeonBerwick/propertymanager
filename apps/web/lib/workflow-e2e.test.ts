@@ -105,6 +105,7 @@ describe('landlord workflow e2e', () => {
     expect(loginResult.user?.userId).toBe(landlord.id)
 
     vi.mocked(getIronSession).mockResolvedValue(fakeCookieSession(landlord.id))
+    vi.mocked(getLandlordSession).mockResolvedValue(fakeLandlordSession(landlord.id))
 
     await expect(
       createPropertyAction(PREV, formData({ name: 'Saguaro Flats', address: '42 Desert Bloom Ave' })),
@@ -162,8 +163,6 @@ describe('landlord workflow e2e', () => {
     expect(request?.photos).toHaveLength(1)
     expect(request?.comments).toHaveLength(1)
     expect(request?.events).toHaveLength(1)
-
-    vi.mocked(getLandlordSession).mockResolvedValue(fakeLandlordSession(landlord.id))
 
     expect(
       await updateStatusFormAction(
