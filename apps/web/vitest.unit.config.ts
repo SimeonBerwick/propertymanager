@@ -67,6 +67,7 @@ export default defineConfig({
       'lib/august-consultation-source.test.ts',
       'lib/financial-idempotency-source.test.ts',
       'lib/account-deletion.test.ts',
+      'lib/workspace-reset.test.ts',
       'lib/appointment-date-time-fields-source.test.ts',
       'lib/production-fire-regressions-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',

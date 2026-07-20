@@ -289,6 +289,8 @@ model User {
   businessCountryCode String?
   businessStateCode String?
   subscriptionEndsAt DateTime?
+  workspaceResetPendingAt DateTime?
+  workspaceResetScheduledFor DateTime?
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
   additionalUnitAllowance Int @default(0)
@@ -340,6 +342,7 @@ model User {
   billingEvents           BillingEvent[]
   auditLogs               AuditLog[]
   accountDeletionRequests AccountDeletionRequest[]
+  workspaceResetRequests WorkspaceResetRequest[]
 }
 
 model LegalConsent {
@@ -1581,6 +1584,23 @@ model AccountDeletionRequest {
 
   @@index([userId, status])
   @@index([status, requestedAt])
+}
+
+model WorkspaceResetRequest {
+  id           String   @id @default(cuid())
+  userId       String?
+  email        String
+  reason       String?
+  status       String   @default("pending")
+  requestedAt  DateTime @default(now())
+  scheduledFor DateTime
+  canceledAt   DateTime?
+  completedAt  DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, scheduledFor])
 }
 
 model AuditLog {

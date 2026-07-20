@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Route } from 'next'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
@@ -11,7 +12,7 @@ import { updateCoOpModeAction, updateDailyBriefingAction, updateDefaultCurrencyA
 export default async function AccountSettingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ currency?: string; briefing?: string; vendorReminders?: string; coOpMode?: string }>
+    searchParams?: Promise<{ currency?: string; briefing?: string; vendorReminders?: string; coOpMode?: string; reset?: string }>
 }) {
   const session = await getLandlordSession()
   if (!session) redirect('/login?error=session-expired')
@@ -37,6 +38,7 @@ export default async function AccountSettingsPage({
       </section>
 
       <section className="grid cols-2">
+        {query.reset === 'canceled' ? <div className="notice success" style={{ gridColumn: '1 / -1' }}>Workspace reset canceled. No operational data was erased.</div> : null}
         <div className="card stack">
           <div><div className="kicker">Daily briefing</div><h3 style={{ margin: '4px 0 0' }}>Morning work summary</h3></div>
           <p className="muted" style={{ margin: 0 }}>Receive one concise email covering urgent work, unanswered messages, overdue appointments, and money actions.</p>
@@ -120,9 +122,10 @@ export default async function AccountSettingsPage({
             <div className="kicker">Privacy</div>
             <h3 style={{ margin: '4px 0 0' }}>Data and account</h3>
           </div>
-          <p className="muted" style={{ margin: 0 }}>Review privacy practices or submit an in-app request to delete your account and associated data.</p>
+          <p className="muted" style={{ margin: 0 }}>Keep your account while clearing an old portfolio, or permanently delete the account and its associated data.</p>
           <div className="row" style={{ justifyContent: 'flex-start' }}>
             <Link href="/privacy" className="button">Privacy policy</Link>
+            <Link href={'/account/settings/reset' as Route} className="button">Reset workspace data</Link>
             <Link href="/account/settings/deletion" className="button primary">Delete account and data</Link>
           </div>
         </div>

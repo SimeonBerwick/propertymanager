@@ -38,7 +38,7 @@ export function nextRecurringDueAt(currentDueAt: Date, frequency: string, custom
 export async function processRecurringWorkPlans(now = new Date()) {
   const dueWindow = addDays(now, 90)
   const candidates = await prisma.recurringWorkPlan.findMany({
-    where: { isActive: true, nextDueAt: { lte: dueWindow }, property: { propertyType: 'cooperative', isActive: true }, unit: { isActive: true } },
+    where: { isActive: true, nextDueAt: { lte: dueWindow }, property: { propertyType: 'cooperative', isActive: true, owner: { workspaceResetPendingAt: null } }, unit: { isActive: true } },
     include: { property: true, unit: true, preferredVendor: true },
     orderBy: { nextDueAt: 'asc' },
     take: 100,
@@ -114,6 +114,7 @@ export async function sendRecurringWorkReminders(now = new Date()) {
     where: {
       recurringDueAt: { lt: now },
       status: { notIn: ['closed', 'completed', 'declined', 'canceled'] },
+      property: { owner: { workspaceResetPendingAt: null } },
       OR: [{ lastAutoAlertAt: null }, { lastAutoAlertAt: { lt: addDays(now, -1) } }],
     },
     include: { property: { include: { owner: { select: { email: true, emailNotificationsEnabled: true } } } }, unit: true },
@@ -140,11 +141,12 @@ export async function sendVendorCertificateExpiryAlerts(now = new Date()) {
     where: { isActive: true, insuranceCertificateExpiresAt: { gte: now, lte: expiryWindow }, OR: [{ insuranceCertificateReminderSentAt: null }, { insuranceCertificateReminderSentAt: { lt: addDays(now, -1) } }] },
     take: 100,
   })
-  const owners = await prisma.user.findMany({ where: { id: { in: vendors.map((vendor) => vendor.orgId).filter((id): id is string => Boolean(id)) } }, select: { id: true, email: true, emailNotificationsEnabled: true } })
+  const owners = await prisma.user.findMany({ where: { id: { in: vendors.map((vendor) => vendor.orgId).filter((id): id is string => Boolean(id)) }, workspaceResetPendingAt: null }, select: { id: true, email: true, emailNotificationsEnabled: true } })
   const ownersById = new Map(owners.map((owner) => [owner.id, owner]))
   let sent = 0
   for (const vendor of vendors) {
     const owner = vendor.orgId ? ownersById.get(vendor.orgId) : null
+    if (!owner) continue
     if (owner?.email && owner.emailNotificationsEnabled) {
       await sendNotification({
         to: owner.email,

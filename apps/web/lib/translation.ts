@@ -32,6 +32,13 @@ export interface ProtectedTranslationText {
 
 const memoryCache = new Map<string, TranslationResult>()
 
+export function clearTranslationMemoryForTexts(texts: readonly string[]) {
+  const sourceTexts = new Set(texts)
+  for (const [key, result] of memoryCache) {
+    if (sourceTexts.has(result.sourceText)) memoryCache.delete(key)
+  }
+}
+
 function hashText(value: string) {
   return createHash('sha256').update(value).digest('hex')
 }

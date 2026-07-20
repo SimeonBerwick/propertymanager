@@ -28,6 +28,7 @@ type AuthenticatedLandlord = {
   billingCadence?: SessionData['billingCadence']
   trialEndsAt?: string | null
   subscriptionEndsAt?: string | null
+  workspaceResetPending?: boolean
 }
 
 const LANDLORD_LOGIN_RATE_LIMIT = {
@@ -60,6 +61,7 @@ async function authenticateAgainstDatabase(email: string, password: string) {
       billingCadence: true,
       trialEndsAt: true,
       subscriptionEndsAt: true,
+      workspaceResetPendingAt: true,
     },
   })
 
@@ -80,6 +82,7 @@ async function authenticateAgainstDatabase(email: string, password: string) {
     billingCadence: user.billingCadence,
     trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
     subscriptionEndsAt: user.subscriptionEndsAt?.toISOString() ?? null,
+    workspaceResetPending: Boolean(user.workspaceResetPendingAt),
   }
 }
 
@@ -196,6 +199,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     session.billingCadence = result.user.billingCadence
     session.trialEndsAt = result.user.trialEndsAt
     session.subscriptionEndsAt = result.user.subscriptionEndsAt
+    session.workspaceResetPending = result.user.workspaceResetPending
     await session.save()
     const savedLanguage = await savedLanguagePreference()
     if (savedLanguage && result.user.userId !== 'dev-landlord') {

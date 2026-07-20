@@ -635,7 +635,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
 export async function getLandlordBySlug(slug: string): Promise<{ id: string; defaultCurrency: MaintenanceRequest['preferredCurrency']; subscriptionPlan: 'starter' | 'growth' | 'pro' | 'portfolio' | null } | null> {
   try {
-    return await prisma.user.findUnique({ where: { slug }, select: { id: true, defaultCurrency: true, subscriptionPlan: true } })
+    const user = await prisma.user.findUnique({ where: { slug }, select: { id: true, defaultCurrency: true, subscriptionPlan: true, workspaceResetPendingAt: true } })
+    return user && !user.workspaceResetPendingAt ? { id: user.id, defaultCurrency: user.defaultCurrency, subscriptionPlan: user.subscriptionPlan } : null
   } catch (error) {
     await logDataError('data.landlord_by_slug.load_failed', error, { slug })
     return null

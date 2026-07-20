@@ -23,6 +23,7 @@ export async function loginRouteAction(formData: FormData) {
   session.billingCadence = result.user.billingCadence
   session.trialEndsAt = result.user.trialEndsAt
   session.subscriptionEndsAt = result.user.subscriptionEndsAt
+  session.workspaceResetPending = result.user.workspaceResetPending
   await session.save()
 
   redirect('/dashboard')

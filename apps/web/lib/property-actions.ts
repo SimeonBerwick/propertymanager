@@ -1,12 +1,10 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
 import { isDatabaseAvailable } from '@/lib/db-status'
-import { getSessionOptions, type SessionData } from '@/lib/session'
+import { getLandlordSession } from '@/lib/landlord-session'
 import { writeAuditLog } from '@/lib/audit-log'
 import { logServerActionError } from '@/lib/observability'
 import { buildBulkUnitLabels, DEFAULT_APARTMENT_AREAS, type PropertyType } from '@/lib/property-setup'
@@ -15,8 +13,8 @@ import { checkUnitCapacity } from '@/lib/account-limits'
 export type PropertyActionState = { error: string | null; success?: boolean; message?: string }
 
 async function getSessionUserId(): Promise<string | null> {
-  const session = await getIronSession<SessionData>(await cookies(), getSessionOptions())
-  return session.isLoggedIn && session.userId ? session.userId : null
+  const session = await getLandlordSession()
+  return session?.userId ?? null
 }
 
 function readTrimmedString(formData: FormData, key: string) {

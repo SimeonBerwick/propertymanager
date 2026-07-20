@@ -185,6 +185,10 @@ async function purgeLandlordAccount(input: { requestId: string; userId: string; 
       where: { OR: [{ orgId: input.userId }, { email: input.email }] },
       data: { orgId: null, principalId: null, name: null, organization: null, email: `${anonymousId}@deleted.invalid`, message: 'Deleted account record.' },
     })
+    await tx.workspaceResetRequest.updateMany({
+      where: { userId: input.userId },
+      data: { userId: null, email: `${anonymousId}@deleted.invalid`, reason: null },
+    })
     await tx.legalConsent.updateMany({
       where: { OR: [{ orgId: input.userId }, { principalId: input.userId }] },
       data: { orgId: null, principalId: anonymousId, ipAddress: null, userAgent: null },

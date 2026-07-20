@@ -139,7 +139,7 @@ export async function syncOutlookCalendarForUser(userId: string, now = new Date(
 }
 
 export async function syncAllOutlookCalendars() {
-  const connections = await prisma.mailboxConnection.findMany({ where: { provider: 'outlook', status: 'connected', outlookCalendarSyncEnabled: true }, select: { userId: true } })
+  const connections = await prisma.mailboxConnection.findMany({ where: { provider: 'outlook', status: 'connected', outlookCalendarSyncEnabled: true, user: { workspaceResetPendingAt: null } }, select: { userId: true } })
   let synced = 0; let failed = 0
   for (const connection of connections) {
     try { await syncOutlookCalendarForUser(connection.userId); synced += 1 } catch { failed += 1 }

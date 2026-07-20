@@ -48,7 +48,7 @@ export async function validateVendorDispatchToken(rawToken: string) {
       vendor: true,
       request: {
         include: {
-          property: true,
+          property: { include: { owner: { select: { workspaceResetPendingAt: true } } } },
           unit: true,
         },
       },
@@ -56,6 +56,7 @@ export async function validateVendorDispatchToken(rawToken: string) {
   })
 
   if (!link) return { ok: false as const, code: 'invalid' as const }
+  if (link.request.property.owner.workspaceResetPendingAt) return { ok: false as const, code: 'revoked' as const }
   if (link.revokedAt) return { ok: false as const, code: 'revoked' as const }
   if (link.expiresAt <= new Date()) return { ok: false as const, code: 'expired' as const }
 

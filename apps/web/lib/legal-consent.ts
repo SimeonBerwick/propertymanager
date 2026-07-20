@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import type { PlanKey } from '@/lib/billing-plans'
 
 export const TERMS_VERSION = '2026-07-14'
-export const PRIVACY_VERSION = '2026-07-14'
+export const PRIVACY_VERSION = '2026-07-20'
 export const ASSISTED_TRIAL_AGREEMENT_VERSION = '2026-07-14'
 
 export type LegalPrincipalType = 'manager' | 'tenant' | 'vendor' | 'staff'

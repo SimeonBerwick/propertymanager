@@ -109,6 +109,14 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  if (pathname.startsWith('/account/settings/reset')) {
+    return response
+  }
+
+  if (session.workspaceResetPending) {
+    return NextResponse.redirect(new URL('/account/settings/reset', request.url))
+  }
+
   const gate = evaluateSubscriptionGate({
     subscriptionStatus: session.subscriptionStatus,
     trialEndsAt: session.trialEndsAt,

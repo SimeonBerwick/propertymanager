@@ -21,6 +21,8 @@ export async function createStaffOtpChallenge(email: string) {
   const normalized = email.trim().toLowerCase()
   const staff = await prisma.staffMember.findFirst({ where: { email: normalized, isActive: true } })
   if (!staff) return null
+  const owner = await prisma.user.findUnique({ where: { id: staff.orgId }, select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, workspaceResetPendingAt: true } })
+  if (!evaluatePortalSubscriptionAccess(owner).allowed) return null
   const reviewerCode = getReviewerOtpCode('staff', normalized)
   if (!reviewerCode) {
     const limit = await takeRateLimitHit(`staff-otp:${staff.id}`, { limit: 3, windowMs: 15 * 60_000, blockMs: 15 * 60_000 })
@@ -51,6 +53,8 @@ export async function verifyStaffOtp(challengeId: string, code: string) {
 export async function createStaffSession(staffMemberId: string) {
   const staff = await prisma.staffMember.findFirst({ where: { id: staffMemberId, isActive: true } })
   if (!staff) throw new Error('Staff account is inactive.')
+  const owner = await prisma.user.findUnique({ where: { id: staff.orgId }, select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, workspaceResetPendingAt: true } })
+  if (!evaluatePortalSubscriptionAccess(owner).allowed) throw new Error('This workspace is temporarily unavailable.')
   const secret = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000)
   await prisma.staffSession.create({ data: { staffMemberId: staff.id, orgId: staff.orgId, sessionSecretHash: hash(secret), expiresAt, userAgent: (await headers()).get('user-agent')?.slice(0, 500) ?? null } })
@@ -74,7 +78,7 @@ export async function getStaffSession() {
   const session = await prisma.staffSession.findUnique({ where: { sessionSecretHash: hash(secret) }, include: { staffMember: true } })
   const now = new Date()
   if (!session || session.revokedAt || session.expiresAt <= now || !session.staffMember.isActive) { await clearStaffSession(); return null }
-  const owner = await prisma.user.findUnique({ where: { id: session.orgId }, select: { subscriptionStatus: true, subscriptionPlan: true, trialEndsAt: true, subscriptionEndsAt: true } })
+  const owner = await prisma.user.findUnique({ where: { id: session.orgId }, select: { subscriptionStatus: true, subscriptionPlan: true, trialEndsAt: true, subscriptionEndsAt: true, workspaceResetPendingAt: true } })
   if (!evaluatePortalSubscriptionAccess(owner).allowed) { await clearStaffSession(); return null }
   await prisma.staffSession.update({ where: { id: session.id }, data: { lastSeenAt: now } })
   return { sessionId: session.id, staffMemberId: session.staffMemberId, orgId: session.orgId, staffName: session.staffMember.name, email: session.staffMember.email, preferredLanguage: session.staffMember.preferredLanguage, localizationEnabled: planIncludesLocalization(owner?.subscriptionPlan) }

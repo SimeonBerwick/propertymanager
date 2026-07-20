@@ -46,7 +46,7 @@ export function PrivacyContent() {
       <h3>Retention and security</h3>
       <p>Records are retained while needed to operate accounts and for legitimate legal, accounting, security, dispute, and backup purposes. Reasonable technical and organizational safeguards are used, but no system can guarantee absolute security.</p>
       <h3>Your choices</h3>
-      <p>Authorized users may correct information through available account workflows. Property managers can disconnect optional integrations and may request account deletion. Some records may be retained where required or reasonably necessary for legal, accounting, fraud-prevention, or security purposes.</p>
+      <p>Authorized users may correct information through available account workflows. Property managers can disconnect optional integrations, request a 24-hour workspace reset that preserves the account and subscription while removing operational portfolio data, or request full account deletion. Some records may be retained where required or reasonably necessary for legal, accounting, fraud-prevention, security, or short-term disaster-recovery purposes.</p>
       <h3>Contact</h3>
       <p>Privacy questions and requests may be sent to <a href="mailto:support@simeonware.com">support@simeonware.com</a>. The complete policy remains available at <Link href="/privacy">simeonware.com/privacy</Link>.</p>
     </div>

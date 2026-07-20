@@ -14,6 +14,7 @@ import { emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/featu
 import { sendDueTrialEndingReminders } from '@/lib/trial-reminders'
 import { processRecurringWorkPlans, sendRecurringWorkReminders, sendVendorCertificateExpiryAlerts } from '@/lib/recurring-work'
 import { processDueAccountDeletionRequests } from '@/lib/account-deletion'
+import { processDueWorkspaceResetRequests } from '@/lib/workspace-reset'
 
 function isAuthorized(request: NextRequest) {
   const header = request.headers.get('authorization')
@@ -47,10 +48,14 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
   const recurringWorkReminders = await sendRecurringWorkReminders()
   const vendorCertificateAlerts = await sendVendorCertificateExpiryAlerts()
   const accountDeletions = await processDueAccountDeletionRequests()
+  const workspaceResets = await processDueWorkspaceResetRequests()
   if (accountDeletions.notificationWarnings.length) {
     await sendOperatorFailureAlert('Account deletion completion email', accountDeletions.notificationWarnings)
   }
-  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, recurringWork, recurringWorkReminders, vendorCertificateAlerts, accountDeletions }
+  if (workspaceResets.notificationWarnings.length) {
+    await sendOperatorFailureAlert('Workspace reset completion email', workspaceResets.notificationWarnings)
+  }
+  const operationalResults = { mailboxSync, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, vendorReminders, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, recurringWork, recurringWorkReminders, vendorCertificateAlerts, accountDeletions, workspaceResets }
   if (resultHasFailures(operationalResults)) await sendOperatorFailureAlert('Daily automation', operationalResults)
 
   const summaryResults: Array<{ userId: string; ok: boolean }> = []
@@ -66,7 +71,7 @@ async function runAutomation(request: NextRequest, body: { sendSummaries?: boole
     }
   }
 
-  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, recurringWork, recurringWorkReminders, vendorCertificateAlerts, accountDeletions, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, summaryResults })
+  return NextResponse.json({ ok: true, sweep, vendorReminders, mailboxSync, outlookCalendarSync, staffAssignmentFallbacks, schedulingCoordination, trialEndingReminders, recurringWork, recurringWorkReminders, vendorCertificateAlerts, accountDeletions, workspaceResets, dailyCsvExports, subscriptionReconciliation, subscriptionUnitPricing, summaryResults })
 }
 
 export async function GET(request: NextRequest) {

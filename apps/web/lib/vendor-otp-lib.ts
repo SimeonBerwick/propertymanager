@@ -57,6 +57,10 @@ export async function createVendorOtpChallenge(
   if (!vendor || !vendor.isActive || !destination) {
     throw new Error(`Vendor is not eligible for ${channel} login.`)
   }
+  if (vendor.orgId) {
+    const owner = await prisma.user.findUnique({ where: { id: vendor.orgId }, select: { workspaceResetPendingAt: true } })
+    if (owner?.workspaceResetPendingAt) throw new Error('This workspace is temporarily unavailable.')
+  }
 
   const reviewerCode = purpose === 'returning_login' && channel === 'email' ? getReviewerOtpCode('vendor', destination) : null
   if (!reviewerCode) {
