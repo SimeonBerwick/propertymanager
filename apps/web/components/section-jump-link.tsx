@@ -7,11 +7,13 @@ export function SectionJumpLink({
   children,
   className,
   style,
+  onActivate,
 }: {
   href: `#${string}`
   children: ReactNode
   className?: string
   style?: CSSProperties
+  onActivate?: () => void
 }) {
   return (
     <a
@@ -19,6 +21,7 @@ export function SectionJumpLink({
       className={className}
       style={style}
       onClick={(event) => {
+        onActivate?.()
         const target = document.getElementById(href.slice(1))
         if (!target) return
         event.preventDefault()

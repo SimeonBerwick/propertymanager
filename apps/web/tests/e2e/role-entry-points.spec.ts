@@ -8,7 +8,9 @@ test('August conversation request stays inside Simeonware', async ({ page }) => 
   await conversationLink.click()
 
   await expect(page).toHaveURL(/\/august\?utm_source=facebook#conversation$/)
-  await expect(page.getByRole('heading', { name: 'Tell us where maintenance gets stuck.' })).toBeVisible()
+  const conversationHeading = page.getByRole('heading', { name: 'Tell us where maintenance gets stuck.' })
+  await expect(conversationHeading).toBeVisible()
+  await expect(conversationHeading).toBeInViewport()
   await expect(page.getByLabel('Work email')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Request my conversation' })).toBeVisible()
 })
