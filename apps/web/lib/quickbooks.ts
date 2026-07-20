@@ -436,7 +436,7 @@ export async function reconcileQuickBooksConnection(userId: string, options: { f
 
 export async function runQuickBooksAutomation(now = new Date()) {
   if (isEmergencyFeatureDisabled('quickbooks')) return { ok: false, paused: true, connections: 0, attempted: 0, synchronized: 0 }
-  const connections = await prisma.quickBooksConnection.findMany({ where: { status: 'connected' }, select: { id: true, userId: true, autoSyncEnabled: true } })
+  const connections = await prisma.quickBooksConnection.findMany({ where: { status: 'connected', user: { workspaceResetPendingAt: null } }, select: { id: true, userId: true, autoSyncEnabled: true } })
   let attempted = 0
   let synchronized = 0
   const errors: string[] = []

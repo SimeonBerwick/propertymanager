@@ -31,4 +31,15 @@ describe('evaluatePortalSubscriptionAccess', () => {
 
     expect(result.allowed).toBe(false)
   })
+
+  test('blocks portals while a workspace reset is pending', () => {
+    const result = evaluatePortalSubscriptionAccess({
+      subscriptionStatus: 'active',
+      trialEndsAt: null,
+      subscriptionEndsAt: FUTURE_SUBSCRIPTION_END,
+      workspaceResetPendingAt: new Date(),
+    })
+
+    expect(result.allowed).toBe(false)
+  })
 })

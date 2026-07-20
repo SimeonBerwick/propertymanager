@@ -31,7 +31,7 @@ export async function getStaffAssignmentRecommendation(requestId: string, orgId:
 }
 
 export async function runStaffAssignmentFallbacks(now = new Date()) {
-  const requests = await prisma.maintenanceRequest.findMany({ where: { assignedStaffId: { not: null }, staffWorkStatus: 'assigned', staffResponseDueAt: { lte: now } }, select: { id: true, orgId: true, assignedStaffId: true, assignedStaffName: true } })
+  const requests = await prisma.maintenanceRequest.findMany({ where: { assignedStaffId: { not: null }, staffWorkStatus: 'assigned', staffResponseDueAt: { lte: now }, property: { owner: { workspaceResetPendingAt: null } } }, select: { id: true, orgId: true, assignedStaffId: true, assignedStaffName: true } })
   for (const request of requests) {
     await prisma.$transaction([
       prisma.staffWorkLog.create({ data: { requestId: request.id, staffMemberId: request.assignedStaffId!, status: 'response_overdue', note: 'No response before the saved fallback deadline.' } }),

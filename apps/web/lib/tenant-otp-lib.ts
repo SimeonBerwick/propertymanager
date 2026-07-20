@@ -57,11 +57,18 @@ export async function createOtpChallenge(
       unit: {
         select: { tenantEmail: true },
       },
+      property: {
+        select: { owner: { select: { workspaceResetPendingAt: true } } },
+      },
     },
   })
 
   if (!tenantIdentity) {
     throw new Error('Tenant identity not found.')
+  }
+
+  if (tenantIdentity.property.owner.workspaceResetPendingAt) {
+    throw new Error('This workspace is temporarily unavailable.')
   }
 
   if (!isTenantIdentityActiveOn(tenantIdentity)) {

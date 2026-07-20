@@ -10,6 +10,7 @@ export interface SessionData {
   billingCadence?: 'monthly' | 'annual' | null
   trialEndsAt?: string | null
   subscriptionEndsAt?: string | null
+  workspaceResetPending?: boolean
 }
 
 // Dev default is intentionally weak and obvious; production requires SESSION_SECRET env var.

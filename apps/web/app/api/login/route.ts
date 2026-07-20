@@ -25,6 +25,7 @@ export async function POST(request: Request) {
   session.billingCadence = result.user.billingCadence
   session.trialEndsAt = result.user.trialEndsAt
   session.subscriptionEndsAt = result.user.subscriptionEndsAt
+  session.workspaceResetPending = result.user.workspaceResetPending
   await session.save()
 
   return response

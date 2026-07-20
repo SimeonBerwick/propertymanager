@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Route } from 'next'
 import { getLandlordSession } from '@/lib/landlord-session'
 
 export const metadata = {
@@ -25,10 +26,14 @@ export default async function AccountDeletionPage() {
         <p className="muted" style={{ margin: 0 }}>
           Property managers should sign in to use the in-account request form when possible. Trial accounts are deleted the next day. Paid accounts are deleted within 30 days, or on the active subscription renewal date when that is sooner. If there is an active paid subscription, account deletion also requests cancellation of future access and renewal. Annual subscription payments are not prorated or refunded for unused time. Tenants, maintenance staff, and vendors should email support from the address linked to their portal account. Support will confirm the records that can be deleted and when deletion is complete.
         </p>
+        <p className="muted" style={{ margin: 0 }}>
+          A property manager who wants to keep the same paid account may instead request a workspace reset. This permanently removes the current portfolio and operational data after a 24-hour cancellation period while preserving the login, plan, subscription, billing relationship, and purchased unit allowance.
+        </p>
         {session ? (
-          <Link className="button primary" style={{ alignSelf: 'flex-start' }} href="/account/settings/deletion">
-            Open in-account deletion request
-          </Link>
+          <div className="row" style={{ justifyContent: 'flex-start' }}>
+            <Link className="button" href={'/account/settings/reset' as Route}>Reset workspace data</Link>
+            <Link className="button primary" href="/account/settings/deletion">Delete account and data</Link>
+          </div>
         ) : (
           <a className="button primary" style={{ alignSelf: 'flex-start' }} href="mailto:support@simeonware.com?subject=Simeonware%20account%20deletion%20request">
             Request account deletion by email

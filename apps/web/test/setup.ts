@@ -20,6 +20,7 @@ afterEach(async () => {
   await prisma.quickBooksSyncRecord.deleteMany()
   await prisma.billingDocument.deleteMany()
   await prisma.auditLog.deleteMany()
+  await prisma.workspaceResetRequest.deleteMany()
   await prisma.inspectionItem.deleteMany()
   await prisma.inspection.deleteMany()
   await prisma.inspectionTemplate.deleteMany()

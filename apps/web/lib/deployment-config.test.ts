@@ -11,4 +11,9 @@ describe('hosted deployment configuration', () => {
   it('processes due account deletions every hour rather than waiting for the daily sweep', () => {
     expect(vercelConfig.crons).toContainEqual({ path: '/api/internal/account-deletions', schedule: '0 * * * *' })
   })
+
+  it('uses the same hourly privacy job for workspace resets', async () => {
+    const route = await import('node:fs/promises').then((fs) => fs.readFile(new URL('../app/api/internal/account-deletions/route.ts', import.meta.url), 'utf8'))
+    expect(route).toContain('processDueWorkspaceResetRequests')
+  })
 })

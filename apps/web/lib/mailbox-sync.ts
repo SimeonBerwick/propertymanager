@@ -185,7 +185,7 @@ export async function syncMailboxReplies(connectionId: string) {
 }
 
 export async function syncAllMailboxReplies() {
-  const connections = await prisma.mailboxConnection.findMany({ where: { status: 'connected' } })
+  const connections = await prisma.mailboxConnection.findMany({ where: { status: 'connected', user: { workspaceResetPendingAt: null } } })
   const results = []
   for (const connection of connections) {
     results.push({ connectionId: connection.id, provider: connection.provider, ...(await syncMailboxReplies(connection.id)) })

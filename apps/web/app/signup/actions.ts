@@ -214,6 +214,7 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
     session.billingCadence = user.billingCadence
     session.trialEndsAt = user.trialEndsAt?.toISOString() ?? null
     session.subscriptionEndsAt = user.subscriptionEndsAt?.toISOString() ?? null
+    session.workspaceResetPending = false
     await session.save()
   } catch (error) {
     console.error('[signup] Could not create trial account:', error)

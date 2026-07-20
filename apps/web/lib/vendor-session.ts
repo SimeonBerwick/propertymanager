@@ -52,6 +52,11 @@ export async function createVendorSession(vendorId: string, requestId?: string |
   if (!vendor || !vendor.isActive) {
     throw new Error('Vendor is not active.')
   }
+  const owner = vendor.orgId ? await prisma.user.findUnique({
+    where: { id: vendor.orgId },
+    select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, workspaceResetPendingAt: true },
+  }) : null
+  if (!evaluatePortalSubscriptionAccess(owner).allowed) throw new Error('This workspace is temporarily unavailable.')
 
   const rawSecret = randomBytes(32).toString('hex')
   const secretHash = sha256(rawSecret)
@@ -168,6 +173,7 @@ export async function getVendorSession(): Promise<VendorPortalScope | null> {
           subscriptionPlan: true,
           trialEndsAt: true,
           subscriptionEndsAt: true,
+          workspaceResetPendingAt: true,
         },
       })
     : null

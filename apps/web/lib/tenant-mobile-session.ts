@@ -43,10 +43,17 @@ export interface TenantMobileScope {
 export async function createTenantMobileSession(tenantIdentityId: string, maximumExpiresAt?: Date) {
   const tenantIdentity = await prisma.tenantIdentity.findUnique({
     where: { id: tenantIdentityId },
-    include: { property: true, unit: true },
+    include: {
+      property: {
+        include: {
+          owner: { select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, workspaceResetPendingAt: true } },
+        },
+      },
+      unit: true,
+    },
   })
 
-  if (!tenantIdentity || !canTenantIdentityAccessPortal(tenantIdentity)) {
+  if (!tenantIdentity || !canTenantIdentityAccessPortal(tenantIdentity) || !evaluatePortalSubscriptionAccess(tenantIdentity.property.owner).allowed) {
     throw new Error('Tenant identity is not active.')
   }
 
@@ -143,6 +150,7 @@ export async function getTenantMobileSession(): Promise<TenantMobileScope | null
                   subscriptionPlan: true,
                   trialEndsAt: true,
                   subscriptionEndsAt: true,
+                  workspaceResetPendingAt: true,
                 },
               },
             },

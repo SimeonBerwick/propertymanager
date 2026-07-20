@@ -73,7 +73,7 @@ export async function sendDailyCsvExportToLandlord(userId: string, now = new Dat
 
 export async function sendDueDailyCsvExports(now = new Date()) {
   const users = await prisma.user.findMany({
-    where: { role: 'landlord', dailyCsvExportEnabled: true },
+    where: { role: 'landlord', dailyCsvExportEnabled: true, workspaceResetPendingAt: null },
     select: { id: true },
   })
   const results = []

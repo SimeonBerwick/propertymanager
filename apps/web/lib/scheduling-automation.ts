@@ -4,7 +4,7 @@ import { getAppBaseUrl } from '@/lib/runtime-env'
 import { appointmentProposalHasExpired, schedulingReminderIsDue } from '@/lib/scheduling-coordination'
 
 export async function runSchedulingCoordinationSweep(now = new Date()) {
-  const proposals = await prisma.appointmentProposal.findMany({ where: { status: 'pending', request: { status: { notIn: ['completed', 'closed', 'declined', 'canceled'] } } }, include: { request: { include: { property: { include: { owner: { select: { id: true, emailNotificationsEnabled: true } } } } } } }, orderBy: { createdAt: 'asc' } }).catch(() => [])
+  const proposals = await prisma.appointmentProposal.findMany({ where: { status: 'pending', request: { status: { notIn: ['completed', 'closed', 'declined', 'canceled'] }, property: { owner: { workspaceResetPendingAt: null } } } }, include: { request: { include: { property: { include: { owner: { select: { id: true, emailNotificationsEnabled: true } } } } } } }, orderBy: { createdAt: 'asc' } }).catch(() => [])
   const batches = new Map<string, typeof proposals>()
   for (const proposal of proposals) batches.set(proposal.batchId, [...(batches.get(proposal.batchId) ?? []), proposal])
   let reminded = 0; let expired = 0; let failed = 0

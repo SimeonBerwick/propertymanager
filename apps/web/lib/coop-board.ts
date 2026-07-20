@@ -178,9 +178,10 @@ export async function respondToBoardApproval(input: { token: string; response: '
   const tokenHash = hashBoardApprovalToken(input.token)
   const approval = await prisma.boardApproval.findUnique({
     where: { tokenHash },
-    include: { approver: true, request: { include: { property: true } } },
+    include: { approver: true, request: { include: { property: { include: { owner: { select: { workspaceResetPendingAt: true } } } } } } },
   })
   if (!approval) return { error: 'This board approval link is invalid.' }
+  if (approval.request.property.owner.workspaceResetPendingAt) return { error: 'This workspace is temporarily unavailable while its data is being reset.' }
   if (approval.status !== 'pending') return { error: 'This board approval has already been answered.' }
   if (approval.expiresAt <= new Date()) return { error: 'This board approval link has expired. Ask the property manager to resend it.' }
 

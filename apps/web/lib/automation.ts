@@ -36,7 +36,7 @@ export async function applyRequestAutomation(requestId: string) {
       property: {
         include: {
           owner: {
-            select: { id: true, email: true, emailNotificationsEnabled: true },
+            select: { id: true, email: true, emailNotificationsEnabled: true, workspaceResetPendingAt: true },
           },
         },
       },
@@ -44,7 +44,7 @@ export async function applyRequestAutomation(requestId: string) {
     },
   }).catch(() => null)
 
-  if (!request) return
+  if (!request || request.property.owner.workspaceResetPendingAt) return
 
   const now = new Date()
   let autoFlag: string | null = null
@@ -119,6 +119,7 @@ export async function applyRequestAutomation(requestId: string) {
 
 export async function runAutomationSweep() {
   const requests = await prisma.maintenanceRequest.findMany({
+    where: { property: { owner: { workspaceResetPendingAt: null } } },
     select: { id: true },
   }).catch(() => [])
 
@@ -133,6 +134,7 @@ export async function sendDailyVendorReminders(now = new Date()) {
   const requests = await prisma.maintenanceRequest.findMany({
     where: {
       status: { notIn: ['closed', 'declined', 'canceled'] },
+      property: { owner: { workspaceResetPendingAt: null } },
       OR: [
         { assignedVendorId: { not: null } },
         { tenderInvites: { some: { status: { in: ['invited', 'viewed'] } } } },
@@ -236,9 +238,9 @@ export async function sendDailyVendorReminders(now = new Date()) {
 export async function sendDailyExceptionSummaryToLandlord(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, emailNotificationsEnabled: true, dailyBriefingEnabled: true },
+    select: { email: true, emailNotificationsEnabled: true, dailyBriefingEnabled: true, workspaceResetPendingAt: true },
   }).catch(() => null)
-  if (!user?.email || user.emailNotificationsEnabled === false || user.dailyBriefingEnabled === false) return { ok: false, skipped: true }
+  if (!user?.email || user.workspaceResetPendingAt || user.emailNotificationsEnabled === false || user.dailyBriefingEnabled === false) return { ok: false, skipped: true }
 
   const requests = await prisma.maintenanceRequest.findMany({
     where: {

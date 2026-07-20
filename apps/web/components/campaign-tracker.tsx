@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { trackProductEvent } from '@/components/analytics-tracker'
+import { SectionJumpLink } from '@/components/section-jump-link'
 import type { AugustCampaignSource } from '@/lib/campaign-attribution'
 
 export function CampaignTracker({ source }: { source: AugustCampaignSource }) {
@@ -25,11 +26,25 @@ export function CampaignLink({
   href: string
   children: React.ReactNode
 }) {
+  const trackClick = () => trackProductEvent(eventName, { campaign: 'august_founders', source })
+
+  if (href.startsWith('#')) {
+    return (
+      <SectionJumpLink
+        className={className}
+        href={href as `#${string}`}
+        onActivate={trackClick}
+      >
+        {children}
+      </SectionJumpLink>
+    )
+  }
+
   return (
     <a
       className={className}
       href={href}
-      onClick={() => trackProductEvent(eventName, { campaign: 'august_founders', source })}
+      onClick={trackClick}
     >
       {children}
     </a>

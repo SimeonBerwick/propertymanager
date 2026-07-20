@@ -136,13 +136,16 @@ export async function submitMaintenanceRequest(
       include: {
         property: {
           include: {
-            owner: { select: { id: true, email: true, emailNotificationsEnabled: true, personalWorkEnabled: true, personalWorkHourlyRateCents: true, personalWorkMinimumMinutes: true, personalWorkAllowedCategoriesCsv: true } },
+            owner: { select: { id: true, email: true, emailNotificationsEnabled: true, personalWorkEnabled: true, personalWorkHourlyRateCents: true, personalWorkMinimumMinutes: true, personalWorkAllowedCategoriesCsv: true, workspaceResetPendingAt: true } },
           },
         },
       },
     })
     if (!unit) {
       return { error: 'The selected property or unit is no longer available for new requests.' }
+    }
+    if (unit.property.owner.workspaceResetPendingAt) {
+      return { error: 'This workspace is temporarily unavailable while its data is being reset.' }
     }
     if (managerMode) {
       isCommonArea = unit.locationType === 'common_area'

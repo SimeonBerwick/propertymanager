@@ -5,6 +5,7 @@ type PortalOwnerSubscription = {
   subscriptionStatus: AccountSubscriptionStatus
   trialEndsAt: Date | null
   subscriptionEndsAt: Date | null
+  workspaceResetPendingAt?: Date | null
 }
 
 type PortalSubscriptionAccess =
@@ -12,7 +13,7 @@ type PortalSubscriptionAccess =
   | { allowed: false; gate: SubscriptionGateResult }
 
 export function evaluatePortalSubscriptionAccess(owner: PortalOwnerSubscription | null | undefined): PortalSubscriptionAccess {
-  if (!owner) {
+  if (!owner || owner.workspaceResetPendingAt) {
     return {
       allowed: false,
       gate: { allowed: false, reason: 'expired' },
