@@ -12,7 +12,7 @@ export default function TermsPage() {
         <div>
           <div className="kicker">Legal</div>
           <h2 className="sectionTitle">Terms of Service</h2>
-          <div className="muted sectionSubtitle">Effective July 14, 2026</div>
+          <div className="muted sectionSubtitle">Effective July 20, 2026</div>
         </div>
         <TermsContent />
       </section>
