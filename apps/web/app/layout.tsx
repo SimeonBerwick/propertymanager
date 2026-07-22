@@ -115,7 +115,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     }
   }
   const locale = localeForLanguage(preferredLanguage)
-  const logoHref: Route = isTenantPortalRoute
+  const isRoleAuthRoute = pathname === '/login'
+    || pathname.startsWith('/mobile/auth')
+    || pathname.startsWith('/vendor/auth')
+    || pathname.startsWith('/maintenance/auth')
+  const logoHref: Route = isRoleAuthRoute
+    ? '/'
+    : isTenantPortalRoute
     ? '/mobile'
     : isVendorPortalRoute
       ? '/vendor'
