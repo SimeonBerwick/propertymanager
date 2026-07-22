@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { AuthNavigationLinks } from '@/components/auth-navigation-links'
 import { StaffLoginForm } from './form'
 
 export default function StaffLoginPage() {
@@ -8,9 +8,9 @@ export default function StaffLoginPage() {
         <div className="kicker">Maintenance staff</div>
         <h1>Sign in</h1>
       </div>
+      <AuthNavigationLinks />
       <p className="muted">Use the work email registered by your property manager.</p>
       <StaffLoginForm />
-      <Link href="/login?role=choose" className="button" style={{ alignSelf: 'flex-start' }}>Choose a different sign-in</Link>
     </div>
   )
 }

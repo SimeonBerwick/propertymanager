@@ -126,6 +126,7 @@ a { color: inherit; text-decoration: none; }
 body { min-height: 100vh; }
 .page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px; }
 .authEntryLayout { max-width: 980px; margin: 48px auto 0; display: grid; gap: 18px; }
+.authNavigationLinks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .authRoleTabs { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .authRoleTab {
   appearance: none;
@@ -1406,4 +1407,7 @@ body { min-height: 100vh; }
   .simeonware-android-app .authEntryLayout { margin-top: 10px; }
   .simeonware-android-app .authRoleTabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .simeonware-android-app .authRoleTab { min-height: 52px; padding: 11px 6px; font-size: 13px; border-color: var(--accent); background: var(--accent-soft); }
+  .simeonware-android-app .authNavigationLinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .simeonware-android-app .authNavigationLinks .button { justify-content: center; width: 100%; }
+  .simeonware-android-app .authNavigationLinks .button:only-child { grid-column: 1 / -1; }
 }

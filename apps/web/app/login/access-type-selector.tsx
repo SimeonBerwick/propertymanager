@@ -1,13 +1,14 @@
 'use client'
 
 import { LoginForm } from './login-form'
+import { AuthNavigationLinks } from '@/components/auth-navigation-links'
 
 export function AccessTypeSelector({ error, mode = 'choose' }: { error?: string; mode?: 'choose' | 'manager' }) {
   if (mode === 'manager') {
     return (
       <div className="stack" style={{ gap: 14 }}>
+        <AuthNavigationLinks />
         <LoginForm error={error} />
-        <a href="/login?role=choose" className="button" style={{ alignSelf: 'flex-start' }}>Choose a different sign-in</a>
       </div>
     )
   }
@@ -22,6 +23,7 @@ export function AccessTypeSelector({ error, mode = 'choose' }: { error?: string;
         <a href="/maintenance/auth/login" className="authRoleTab authRoleLink">Maintenance staff</a>
         <a href="/vendor/auth/login" className="authRoleTab authRoleLink">Vendor</a>
       </div>
+      <AuthNavigationLinks showRoleChoice={false} />
     </div>
   )
 }
