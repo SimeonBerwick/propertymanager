@@ -73,12 +73,12 @@ async function signInStaffWithMagicLink(page: Page) {
 test('every sign-in page can return home or switch roles in Android WebView', async ({ page }) => {
   for (const path of ['/login?role=manager', '/mobile/auth/login', '/vendor/auth/login', '/maintenance/auth/login']) {
     await page.goto(path)
-    await expect(page.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/')
+    await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute('href', '/')
     await expect(page.getByRole('link', { name: 'Choose another role' })).toHaveAttribute('href', '/login?role=choose')
   }
 
   await page.goto('/mobile/auth/login')
-  await page.getByRole('link', { name: 'Home' }).click()
+  await page.getByRole('link', { name: 'Home', exact: true }).click()
   await expect(page).toHaveURL('/')
   await expect(page.getByRole('heading', { name: 'Open your maintenance dashboard.' })).toBeVisible()
 })
