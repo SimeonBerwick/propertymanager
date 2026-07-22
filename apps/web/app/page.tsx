@@ -4,11 +4,9 @@ import { headers } from 'next/headers'
 import { ANDROID_SUBSCRIPTION_MESSAGE, isAndroidWebView } from '@/lib/android-webview'
 import { BILLING_PLANS, OFFERED_PLANS, planPriceLabel } from '@/lib/billing-plans'
 import { AndroidRuntimeMarker } from './android-runtime-marker'
-import { redirect } from 'next/navigation'
 
 export default async function HomePage() {
   const androidApp = isAndroidWebView((await headers()).get('user-agent'))
-  if (androidApp) redirect('/login')
   const plans = OFFERED_PLANS
 
   return (
