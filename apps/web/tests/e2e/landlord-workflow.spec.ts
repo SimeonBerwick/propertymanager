@@ -29,10 +29,16 @@ async function expectRequestState(requestId: string, expected: { status?: string
 }
 
 async function acceptTermsIfRequired(page: Page) {
-  const accept = page.getByRole('button', { name: 'Accept and continue' })
-  if (!await accept.isVisible().catch(() => false)) return
-  await page.getByLabel(/I agree to the Terms of Service/).check()
-  await accept.click()
+  const dialog = page.getByRole('dialog', { name: 'Terms and privacy' })
+  try {
+    await dialog.waitFor({ state: 'visible', timeout: 5_000 })
+  } catch {
+    return
+  }
+
+  await dialog.getByLabel(/I agree to the Terms of Service/).check()
+  await dialog.getByRole('button', { name: 'Accept and continue' }).click()
+  await dialog.waitFor({ state: 'hidden', timeout: 15_000 })
 }
 
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
