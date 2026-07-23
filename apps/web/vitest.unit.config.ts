@@ -73,6 +73,7 @@ export default defineConfig({
       'lib/workspace-reset.test.ts',
       'lib/appointment-date-time-fields-source.test.ts',
       'lib/production-fire-regressions-source.test.ts',
+      'app/legal/actions.unit.test.ts',
       'app/maintenance/auth/login/actions.test.ts',
       'app/api/monitoring/client-error/route.test.ts',
       'app/api/ops/smoke-session/route.test.ts',
