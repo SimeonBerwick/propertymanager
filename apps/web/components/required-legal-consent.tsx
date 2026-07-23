@@ -1,5 +1,5 @@
 import { PrivacyContent, TermsContent } from '@/components/legal-documents'
-import { acceptCurrentTermsAction } from '@/app/legal/actions'
+import { RequiredLegalConsentForm } from '@/components/required-legal-consent-form'
 import type { LegalPrincipalType } from '@/lib/legal-consent'
 
 const ROLE_LABELS: Record<LegalPrincipalType, string> = {
@@ -23,15 +23,7 @@ export function RequiredLegalConsent({ principalType, returnPath }: { principalT
           <details open><summary>Terms of Service</summary><TermsContent /></details>
           <details><summary>Privacy Policy</summary><PrivacyContent /></details>
         </div>
-        <form action={acceptCurrentTermsAction} className="legalModalFooter stack" style={{ alignItems: 'stretch' }}>
-          <input type="hidden" name="principalType" value={principalType} />
-          <input type="hidden" name="returnPath" value={returnPath} />
-          <label className="row" style={{ alignItems: 'flex-start' }}>
-            <input type="checkbox" name="acceptLegal" value="yes" required />
-            <span>I agree to the Terms of Service and acknowledge the Privacy Policy as a {roleLabel}.</span>
-          </label>
-          <button type="submit" className="button primary">Accept and continue</button>
-        </form>
+        <RequiredLegalConsentForm principalType={principalType} returnPath={returnPath} roleLabel={roleLabel} />
       </section>
     </div>
   )

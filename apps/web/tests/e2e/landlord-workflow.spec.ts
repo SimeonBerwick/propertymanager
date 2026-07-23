@@ -36,9 +36,13 @@ async function acceptTermsIfRequired(page: Page) {
     return
   }
 
-  await dialog.getByLabel(/I agree to the Terms of Service/).check()
-  await dialog.getByRole('button', { name: 'Accept and continue' }).click()
-  await dialog.waitFor({ state: 'hidden', timeout: 15_000 })
+  const consentCheckbox = dialog.getByLabel(/I agree to the Terms of Service/)
+  const acceptButton = dialog.getByRole('button', { name: 'Accept and continue' })
+  await expect(acceptButton).toBeEnabled({ timeout: 15_000 })
+  await consentCheckbox.check()
+  await expect(consentCheckbox).toBeChecked()
+  await acceptButton.click()
+  await expect(dialog).toBeHidden({ timeout: 15_000 })
 }
 
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
