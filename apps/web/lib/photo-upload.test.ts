@@ -7,6 +7,7 @@ const writeFileMock = vi.fn()
 vi.mock('@/lib/media-storage', () => ({
   saveStoredMedia: saveStoredMediaMock,
   deleteStoredMedia: vi.fn(),
+  resolveStoredMediaPath: vi.fn(),
 }))
 
 vi.mock('node:fs/promises', () => ({

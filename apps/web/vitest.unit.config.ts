@@ -13,6 +13,8 @@ export default defineConfig({
       'lib/deployment-config.test.ts',
       'lib/daily-csv-export.test.ts',
       'lib/android-webview.test.ts',
+      'lib/media-storage.test.ts',
+      'lib/photo-upload.test.ts',
       'lib/reviewer-access.test.ts',
       'lib/billing-pdf.test.ts',
       'lib/billing-plans.test.ts',
