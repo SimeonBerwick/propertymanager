@@ -70,7 +70,7 @@ describe('startVendorLoginAction', () => {
     )
   })
 
-  test('signs in directly by email for a matching vendor', async () => {
+  test('requires OTP verification before signing in by email', async () => {
     const { user } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({
       data: { orgId: user.id, name: 'Email Vendor', email: 'email-vendor@example.com' },
@@ -78,24 +78,53 @@ describe('startVendorLoginAction', () => {
 
     await expect(
       startVendorLoginAction(PREV, formData({ identifier: vendor.email! })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/vendor/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/vendor\/auth\/login\/verify/)
 
     const session = await prisma.vendorSession.findFirst({ where: { vendorId: vendor.id } })
-    expect(session).not.toBeNull()
+    const challenge = await prisma.vendorOtpChallenge.findFirst({
+      where: { vendorId: vendor.id, purpose: 'returning_login', channel: 'email' },
+    })
+    expect(session).toBeNull()
+    expect(challenge).not.toBeNull()
   })
 
-  test('signs in directly by phone for a matching vendor', async () => {
+  test('requires OTP verification before signing in by phone', async () => {
     const { user } = await scaffoldLandlord()
     const vendor = await prisma.vendor.create({
-      data: { orgId: user.id, name: 'Phone Vendor', phone: '+16025550199' },
+      data: { orgId: user.id, name: 'Phone Vendor', email: 'phone-vendor@example.com', phone: '+16025550199' },
     })
 
     await expect(
       startVendorLoginAction(PREV, formData({ identifier: '(602) 555-0199' })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/vendor/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/vendor\/auth\/login\/verify/)
 
     const session = await prisma.vendorSession.findFirst({ where: { vendorId: vendor.id } })
-    expect(session).not.toBeNull()
+    const challenge = await prisma.vendorOtpChallenge.findFirst({
+      where: { vendorId: vendor.id, purpose: 'returning_login', channel: 'email' },
+    })
+    expect(session).toBeNull()
+    expect(challenge).not.toBeNull()
+  })
+
+  test('requires OTP after choosing among vendor accounts with a shared email', async () => {
+    const first = await scaffoldLandlord()
+    const second = await scaffoldLandlord()
+    const sharedEmail = 'shared-vendor@example.com'
+    const vendorA = await prisma.vendor.create({
+      data: { orgId: first.user.id, name: 'Shared Vendor A', email: sharedEmail },
+    })
+    await prisma.vendor.create({
+      data: { orgId: second.user.id, name: 'Shared Vendor B', email: sharedEmail },
+    })
+
+    await expect(
+      chooseVendorAccountAction(PREV, formData({ identifier: sharedEmail, vendorId: vendorA.id })),
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/vendor\/auth\/login\/verify/)
+
+    expect(await prisma.vendorSession.count({ where: { vendorId: vendorA.id } })).toBe(0)
+    expect(await prisma.vendorOtpChallenge.count({
+      where: { vendorId: vendorA.id, purpose: 'returning_login' },
+    })).toBe(1)
   })
 })
 

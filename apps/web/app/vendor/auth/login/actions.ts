@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createVendorSession } from '@/lib/vendor-session'
 import { writeAuditLog } from '@/lib/audit-log'
-import { findReturningVendorByIdentifier } from '@/lib/vendor-otp-lib'
+import { createVendorOtpChallenge, findReturningVendorByIdentifier, VendorOtpRateLimitError } from '@/lib/vendor-otp-lib'
 import { verifyManagerAccessCode } from '@/lib/manager-access-code'
 
 export type VendorReturningLoginState = { error: string | null }
@@ -38,17 +38,30 @@ export async function startVendorLoginAction(
     return { error: 'We could not find an active vendor account with that email or phone number.' }
   }
 
+  let otp: Awaited<ReturnType<typeof createVendorOtpChallenge>>
   try {
-    await createVendorSession(match.vendor.id)
+    const channel = match.vendor.email ? 'email' : 'sms'
+    otp = await createVendorOtpChallenge(match.vendor.id, 'returning_login', channel, {
+      next: next.startsWith('/vendor') ? next : undefined,
+    })
   } catch (error) {
+    if (error instanceof VendorOtpRateLimitError) {
+      return { error: 'Too many sign-in messages were requested. Wait a few minutes and try again.' }
+    }
     return {
-      error: error instanceof Error && /not active/i.test(error.message)
-        ? 'This vendor account is no longer active.'
-        : 'Could not finish vendor sign-in.',
+      error: error instanceof Error && /SMS sign-in is not configured/i.test(error.message)
+        ? 'This account does not have an email address for secure sign-in. Ask the property manager to update it.'
+        : 'Could not send a secure sign-in code. Try again shortly.',
     }
   }
 
-  redirect((next.startsWith('/vendor') ? next : '/vendor') as never)
+  const params = new URLSearchParams({
+    challengeId: otp.challengeId,
+    masked: otp.destinationMasked,
+  })
+  if (next.startsWith('/vendor')) params.set('next', next)
+  if (process.env.NODE_ENV !== 'production') params.set('devCode', otp.code)
+  redirect(`/vendor/auth/login/verify?${params.toString()}` as never)
 }
 
 function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {

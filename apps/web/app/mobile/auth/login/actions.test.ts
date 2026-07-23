@@ -42,14 +42,18 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/required/i)
   })
 
-  test('signs in directly by phone for a matching tenant', async () => {
+  test('requires OTP verification before signing in by phone', async () => {
     const { identity } = await scaffoldTenant()
     await expect(
       startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
 
     const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
-    expect(session).not.toBeNull()
+    const challenge = await prisma.tenantOtpChallenge.findFirst({
+      where: { tenantIdentityId: identity.id, purpose: 'returning_login' },
+    })
+    expect(session).toBeNull()
+    expect(challenge).not.toBeNull()
   })
 
   test('returns error when identifier matches no tenant', async () => {
@@ -69,17 +73,21 @@ describe('startReturningLoginAction', () => {
     expect(result.error).toMatch(/more than one/i)
   })
 
-  test('signs in directly by email for a matching tenant', async () => {
+  test('requires OTP verification before signing in by email', async () => {
     const { user, property, unit } = await scaffoldLandlord()
     const email = 'tenant@example.com'
     const identity = await createActiveTenantIdentity(user.id, property.id, unit.id, { email })
 
     await expect(
       startReturningLoginAction(PREV, formData({ identifier: email })),
-    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile/)
+    ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
 
     const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
-    expect(session).not.toBeNull()
+    const challenge = await prisma.tenantOtpChallenge.findFirst({
+      where: { tenantIdentityId: identity.id, purpose: 'returning_login', channel: 'email' },
+    })
+    expect(session).toBeNull()
+    expect(challenge).not.toBeNull()
   })
 
   test('activates a pending tenant and signs them in with a manager sign-in code', async () => {

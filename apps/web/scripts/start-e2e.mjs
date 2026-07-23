@@ -22,11 +22,11 @@ const env = {
   NOTIFY_TRANSPORT: process.env.NOTIFY_TRANSPORT ?? 'log',
   SMS_TRANSPORT: process.env.SMS_TRANSPORT ?? 'log',
   ANDROID_REVIEWER_ACCESS_ENABLED: process.env.ANDROID_REVIEWER_ACCESS_ENABLED ?? 'true',
-  ANDROID_REVIEWER_LANDLORD_PASSWORD: process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'play-review-password-2026',
+  ANDROID_REVIEWER_LANDLORD_PASSWORD: process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'local-reviewer-password-not-for-production',
   ANDROID_REVIEWER_TENANT_EMAIL: process.env.ANDROID_REVIEWER_TENANT_EMAIL ?? 'play-review-tenant@simeonware.com',
   ANDROID_REVIEWER_VENDOR_EMAIL: process.env.ANDROID_REVIEWER_VENDOR_EMAIL ?? 'play-review-vendor@simeonware.com',
   ANDROID_REVIEWER_STAFF_EMAIL: process.env.ANDROID_REVIEWER_STAFF_EMAIL ?? 'play-review-staff@simeonware.com',
-  ANDROID_REVIEWER_OTP_CODE: process.env.ANDROID_REVIEWER_OTP_CODE ?? '424242',
+  ANDROID_REVIEWER_OTP_CODE: process.env.ANDROID_REVIEWER_OTP_CODE ?? '731946',
   NODE_ENV: 'development',
 }
 

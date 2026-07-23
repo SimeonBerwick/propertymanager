@@ -30,7 +30,7 @@ export default async function VendorAuthLandingPage({
         </div>
       ) : null}
       <p className="muted" style={{ margin: 0 }}>
-        Use your sign-in code once. After that, sign in with your email and this device stays signed in for up to one year or until you sign out.
+        Use your sign-in code once. Returning sign-ins send a fresh secure code to your registered contact method.
       </p>
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <Link href={'/vendor/auth/login' as Route} className="button primary">Vendor sign in</Link>

@@ -2,8 +2,6 @@ import { prisma } from '../lib/prisma'
 import { verifyPassword } from '../lib/password'
 import { REVIEWER_EMAILS, getReviewerOtpCode } from '../lib/reviewer-access'
 
-const DEFAULT_REVIEWER_PASSWORD = 'play-review-password-2026'
-
 function assertPostgresUrl() {
   const url = process.env.DATABASE_URL?.trim()
   if (!url || (!url.startsWith('postgresql://') && !url.startsWith('postgres://'))) {
@@ -22,7 +20,11 @@ function assertPostgresUrl() {
 
 async function main() {
   assertPostgresUrl()
-  const password = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim() || DEFAULT_REVIEWER_PASSWORD
+  if (process.env.ANDROID_REVIEWER_ACCESS_ENABLED !== 'true') {
+    throw new Error('Set ANDROID_REVIEWER_ACCESS_ENABLED=true while verifying the isolated reviewer accounts.')
+  }
+  const password = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim()
+  if (!password) throw new Error('Set ANDROID_REVIEWER_LANDLORD_PASSWORD before verifying reviewer access.')
 
   const [landlord, tenant, vendor, staff, requestCount] = await Promise.all([
     prisma.user.findUnique({ where: { email: REVIEWER_EMAILS.landlord } }),

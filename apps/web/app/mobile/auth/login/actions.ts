@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { findReturningTenantIdentityByIdentifier } from '@/lib/tenant-portal-data'
 import { verifyManagerAccessCode } from '@/lib/manager-access-code'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
+import { createOtpChallenge, OtpRateLimitError } from '@/lib/tenant-otp-lib'
 
 export type ReturningLoginState = { error: string | null }
 
@@ -48,17 +49,30 @@ export async function startReturningLoginAction(
     }
   }
 
+  let otp: Awaited<ReturnType<typeof createOtpChallenge>>
   try {
-    await createTenantMobileSession(match.tenantIdentity.id)
+    const channel = match.tenantIdentity.email ? 'email' : 'sms'
+    otp = await createOtpChallenge(match.tenantIdentity.id, 'returning_login', channel, {
+      next: next.startsWith('/mobile') ? next : undefined,
+    })
   } catch (error) {
+    if (error instanceof OtpRateLimitError) {
+      return { error: 'Too many sign-in messages were requested. Wait a few minutes and try again.' }
+    }
     return {
-      error: error instanceof Error && /not active/i.test(error.message)
-        ? 'This tenant account is no longer active.'
-        : 'Could not finish tenant sign-in.',
+      error: error instanceof Error && /SMS sign-in is not configured/i.test(error.message)
+        ? 'This account does not have an email address for secure sign-in. Ask your property manager to update it.'
+        : 'Could not send a secure sign-in code. Try again shortly.',
     }
   }
 
-  redirect((next.startsWith('/mobile') ? next : '/mobile') as never)
+  const params = new URLSearchParams({
+    challengeId: otp.challengeId,
+    masked: otp.destinationMasked,
+  })
+  if (next.startsWith('/mobile')) params.set('next', next)
+  if (process.env.NODE_ENV !== 'production') params.set('devCode', otp.code)
+  redirect(`/mobile/auth/login/verify?${params.toString()}` as never)
 }
 
 function accessCodeMessage(code: 'invalid' | 'not_started' | 'expired' | 'locked') {

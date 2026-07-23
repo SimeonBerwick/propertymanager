@@ -1,8 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createVendorSession } from '@/lib/vendor-session'
-import { findReturningVendorsByIdentifier } from '@/lib/vendor-otp-lib'
+import { createVendorOtpChallenge, findReturningVendorsByIdentifier, VendorOtpRateLimitError } from '@/lib/vendor-otp-lib'
 
 export type VendorAccountChoiceState = { error: string | null }
 
@@ -21,11 +20,25 @@ export async function chooseVendorAccountAction(
     return { error: 'That vendor account is no longer available for this sign-in.' }
   }
 
+  const vendor = matches.vendors.find((candidate) => candidate.id === vendorId)!
+  let otp: Awaited<ReturnType<typeof createVendorOtpChallenge>>
   try {
-    await createVendorSession(vendorId)
-  } catch {
-    return { error: 'Could not open that vendor account.' }
+    const channel = vendor.email ? 'email' : 'sms'
+    otp = await createVendorOtpChallenge(vendorId, 'returning_login', channel, {
+      next: next.startsWith('/vendor') ? next : undefined,
+    })
+  } catch (error) {
+    if (error instanceof VendorOtpRateLimitError) {
+      return { error: 'Too many sign-in messages were requested. Wait a few minutes and try again.' }
+    }
+    return { error: 'Could not send a secure sign-in code for that account.' }
   }
 
-  redirect((next.startsWith('/vendor') ? next : '/vendor') as never)
+  const params = new URLSearchParams({
+    challengeId: otp.challengeId,
+    masked: otp.destinationMasked,
+  })
+  if (next.startsWith('/vendor')) params.set('next', next)
+  if (process.env.NODE_ENV !== 'production') params.set('devCode', otp.code)
+  redirect(`/vendor/auth/login/verify?${params.toString()}` as never)
 }

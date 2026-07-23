@@ -14,6 +14,7 @@ export default defineConfig({
       'lib/daily-csv-export.test.ts',
       'lib/android-webview.test.ts',
       'lib/reviewer-access.test.ts',
+      'lib/billing-pdf.test.ts',
       'lib/billing-plans.test.ts',
       'lib/subscription-checkout.test.ts',
       'lib/subscription-reconciliation.test.ts',
@@ -72,6 +73,7 @@ export default defineConfig({
       'lib/production-fire-regressions-source.test.ts',
       'app/maintenance/auth/login/actions.test.ts',
       'app/api/monitoring/client-error/route.test.ts',
+      'app/api/ops/smoke-session/route.test.ts',
     ],
   },
 })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { timingSafeEqual } from 'node:crypto'
 import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
 import { createTenantMobileSession } from '@/lib/tenant-mobile-session'
@@ -23,14 +24,22 @@ function getAllowedEmails() {
   )
 }
 
+function tokenMatches(actual: string | null | undefined, expected: string) {
+  if (!actual) return false
+  const actualBytes = Buffer.from(actual)
+  const expectedBytes = Buffer.from(expected)
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
+}
+
 export async function POST(request: NextRequest) {
   const configuredToken = getConfiguredToken()
-  if (!configuredToken) {
+  const allowedEmails = getAllowedEmails()
+  if (!configuredToken || allowedEmails.size === 0) {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 })
   }
 
   const token = request.headers.get('x-smoke-token')?.trim()
-  if (!token || token !== configuredToken) {
+  if (!tokenMatches(token, configuredToken)) {
     await logAppEvent('warn', 'ops.smoke_session.denied', { reason: 'bad_token' })
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
@@ -44,8 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Role and email are required.' }, { status: 400 })
     }
 
-    const allowedEmails = getAllowedEmails()
-    if (allowedEmails.size > 0 && !allowedEmails.has(email)) {
+    if (!allowedEmails.has(email)) {
       await logAppEvent('warn', 'ops.smoke_session.denied', {
         reason: 'email_not_allowed',
         role,

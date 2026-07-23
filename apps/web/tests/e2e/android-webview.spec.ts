@@ -32,7 +32,7 @@ test.afterAll(async () => {
 async function signInManager(page: Page) {
   await page.goto('/login?role=manager')
   await page.getByLabel('Email').fill(REVIEWER_EMAILS.landlord)
-  await page.getByLabel('Password').fill(process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'play-review-password-2026')
+  await page.getByLabel('Password').fill(process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD ?? 'local-reviewer-password-not-for-production')
   await page.getByRole('button', { name: /^Sign in$/ }).click()
   await expect(page).toHaveURL(/\/dashboard/)
   await expect(page.getByRole('heading', { name: /Next step|No manager decision needed/ })).toBeVisible()
