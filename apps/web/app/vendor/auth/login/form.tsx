@@ -32,7 +32,7 @@ export function VendorLoginForm({ defaultEmail, next }: { defaultEmail?: string;
           <button type="submit" className="button primary" aria-disabled={isPending}>
             {isPending ? 'Signing in...' : isAccessCode ? 'Use sign-in code' : 'Sign in'}
           </button>
-          <div className="muted">Use the one-time code from the property manager the first time. After that, your email or phone number signs you in on this device.</div>
+          <div className="muted">Use the one-time code from the property manager the first time. Returning sign-ins send a fresh secure code to your registered contact method.</div>
         </div>
       </form>
       {process.env.NODE_ENV !== 'production' ? (

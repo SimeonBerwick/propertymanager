@@ -29,10 +29,20 @@ async function expectRequestState(requestId: string, expected: { status?: string
 }
 
 async function acceptTermsIfRequired(page: Page) {
-  const accept = page.getByRole('button', { name: 'Accept and continue' })
-  if (!await accept.isVisible().catch(() => false)) return
-  await page.getByLabel(/I agree to the Terms of Service/).check()
-  await accept.click()
+  const dialog = page.getByRole('dialog', { name: 'Terms and privacy' })
+  try {
+    await dialog.waitFor({ state: 'visible', timeout: 5_000 })
+  } catch {
+    return
+  }
+
+  const consentCheckbox = dialog.getByLabel(/I agree to the Terms of Service/)
+  const acceptButton = dialog.getByRole('button', { name: 'Accept and continue' })
+  await expect(acceptButton).toBeEnabled({ timeout: 15_000 })
+  await consentCheckbox.check()
+  await expect(consentCheckbox).toBeChecked()
+  await acceptButton.click()
+  await expect(dialog).toBeHidden({ timeout: 15_000 })
 }
 
 test('landlord can complete the core maintenance workflow in the browser', async ({ page }) => {
@@ -91,7 +101,11 @@ test('landlord can complete the core maintenance workflow in the browser', async
   await page.goto('/dashboard?queue=open')
   const requestRow = page.locator('.inboxRow').filter({ hasText: requestTitle })
   await expect(requestRow).toBeVisible()
-  await clickAndWaitForURL(page, requestRow.getByRole('link', { name: 'Open' }), /\/requests\/[^/]+$/)
+  const requestOpenLink = requestRow.getByRole('link', { name: 'Open' })
+  await expect(requestOpenLink).toHaveAttribute('href', /^\/requests\/[^/?#]+$/)
+  const requestHref = await requestOpenLink.getAttribute('href')
+  if (!requestHref) throw new Error('The request queue did not provide a request detail URL.')
+  await page.goto(requestHref)
   await expect(page).toHaveURL(/\/requests\/[^/]+$/)
   await expect(page.getByRole('heading', { name: requestTitle })).toBeVisible()
   const requestUrl = page.url()

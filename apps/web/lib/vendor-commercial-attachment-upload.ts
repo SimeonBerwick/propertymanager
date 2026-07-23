@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
-import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
+import { deleteStoredMedia, resolveStoredMediaPath, saveStoredMedia } from '@/lib/media-storage'
 import { hasR2StorageConfig } from '@/lib/runtime-env'
 import { assertEmergencyFeatureEnabled, emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
@@ -53,7 +53,7 @@ export async function saveVendorAttachment(file: File | null): Promise<SavedVend
   assertEmergencyFeatureEnabled('uploads')
 
   const shouldWriteLocalDisk = !hasR2StorageConfig()
-  const diskDirectory = path.join(process.cwd(), VENDOR_ATTACHMENT_SUBDIRECTORY)
+  const diskDirectory = path.join(process.cwd(), 'uploads', 'requests', 'vendor-invoices')
   if (shouldWriteLocalDisk) {
     await mkdir(diskDirectory, { recursive: true })
   }
@@ -81,8 +81,10 @@ export async function saveVendorAttachment(file: File | null): Promise<SavedVend
 export async function cleanupVendorAttachment(attachment: SavedVendorAttachment | null) {
   if (!attachment) return
   await deleteStoredMedia(attachment.url)
+  const diskPath = resolveStoredMediaPath(attachment.url)
+  if (!diskPath) return
   try {
-    await unlink(path.join(process.cwd(), attachment.url))
+    await unlink(diskPath)
   } catch {
     // Best effort cleanup only.
   }

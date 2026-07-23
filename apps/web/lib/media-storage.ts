@@ -93,11 +93,22 @@ function resolveLocalMediaPath(imagePath: string) {
   }
 
   if (normalized.startsWith(PRIMARY_PREFIX)) {
-    return path.join(process.cwd(), normalized)
+    return path.join(
+      process.cwd(),
+      'uploads',
+      'requests',
+      normalized.slice(PRIMARY_PREFIX.length),
+    )
   }
 
   if (normalized.startsWith(LEGACY_PREFIX)) {
-    return path.join(process.cwd(), 'public', normalized.slice(1))
+    return path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'requests',
+      normalized.slice(LEGACY_PREFIX.length),
+    )
   }
 
   return null

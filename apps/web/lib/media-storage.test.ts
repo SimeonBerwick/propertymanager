@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import path from 'node:path'
 
 const sendMock = vi.fn()
 
@@ -26,6 +27,18 @@ describe('media-storage', () => {
   test('normalizes legacy public paths', async () => {
     const { normalizeStoredMediaPath } = await import('@/lib/media-storage')
     expect(normalizeStoredMediaPath('/uploads/requests/photo.jpg')).toBe('uploads/requests/photo.jpg')
+  })
+
+  test('scopes local files to the request upload directories', async () => {
+    const { resolveStoredMediaPath } = await import('@/lib/media-storage')
+
+    expect(resolveStoredMediaPath('uploads/requests/photo.jpg')).toBe(
+      path.join(process.cwd(), 'uploads', 'requests', 'photo.jpg'),
+    )
+    expect(resolveStoredMediaPath('/uploads/requests/photo.jpg')).toBe(
+      path.join(process.cwd(), 'public', 'uploads', 'requests', 'photo.jpg'),
+    )
+    expect(resolveStoredMediaPath('../../package.json')).toBeNull()
   })
 
   test('writes to R2 when configured', async () => {

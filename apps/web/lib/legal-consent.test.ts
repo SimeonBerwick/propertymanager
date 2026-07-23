@@ -29,4 +29,14 @@ describe('legal consent wording', () => {
     expect(terms).toContain('Liability that cannot be excluded')
     expect(terms).toContain('Australian Consumer Law')
   })
+
+  test('reloads the portal only after current terms acceptance is persisted', () => {
+    const action = readFileSync(resolve(process.cwd(), 'app', 'legal', 'actions.ts'), 'utf8')
+    const form = readFileSync(resolve(process.cwd(), 'components', 'required-legal-consent-form.tsx'), 'utf8')
+
+    expect(action).toContain('return { error: null, success: true }')
+    expect(action).not.toContain('redirect(returnPath')
+    expect(form).toContain('useActionState(acceptCurrentTermsAction, INITIAL_STATE)')
+    expect(form).toContain('if (state.success) window.location.replace(returnPath)')
+  })
 })

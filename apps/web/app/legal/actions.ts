@@ -1,9 +1,9 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getIronSession } from 'iron-session'
-import type { Route } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getSessionOptions, type SessionData } from '@/lib/session'
 import { getTenantMobileSession } from '@/lib/tenant-mobile-session'
@@ -11,6 +11,11 @@ import { getVendorSession } from '@/lib/vendor-session'
 import { getStaffSession } from '@/lib/staff-auth'
 import { currentTermsAcceptanceKey, PRIVACY_VERSION, requestLegalMetadata, standardUseConsentText, TERMS_VERSION, type LegalPrincipalType } from '@/lib/legal-consent'
 import { writeAuditLog } from '@/lib/audit-log'
+
+export type CurrentTermsActionState = {
+  error: string | null
+  success?: boolean
+}
 
 function safeReturnPath(value: FormDataEntryValue | null) {
   const path = String(value ?? '')
@@ -36,13 +41,15 @@ async function authenticatedPrincipal(requestedType: LegalPrincipalType) {
   return session ? { principalType: requestedType, principalId: session.staffMemberId, orgId: session.orgId, roleLabel: 'maintenance staff member' } : null
 }
 
-export async function acceptCurrentTermsAction(formData: FormData) {
+export async function acceptCurrentTermsAction(_previousState: CurrentTermsActionState, formData: FormData): Promise<CurrentTermsActionState> {
   const returnPath = safeReturnPath(formData.get('returnPath'))
   const requestedType = String(formData.get('principalType') ?? '') as LegalPrincipalType
   if (!['manager', 'tenant', 'vendor', 'staff'].includes(requestedType)) redirect('/login?error=session-expired')
   const principal = await authenticatedPrincipal(requestedType)
   if (!principal) redirect('/login?error=session-expired')
-  if (String(formData.get('acceptLegal') ?? '') !== 'yes') redirect(returnPath as Route)
+  if (String(formData.get('acceptLegal') ?? '') !== 'yes') {
+    return { error: 'You must agree to the Terms of Service before continuing.' }
+  }
 
   const consentText = standardUseConsentText(principal.roleLabel)
   const metadata = await requestLegalMetadata()
@@ -70,5 +77,6 @@ export async function acceptCurrentTermsAction(formData: FormData) {
     summary: `Accepted Terms ${TERMS_VERSION} and acknowledged Privacy Policy ${PRIVACY_VERSION}.`,
     metadata: { context: 'first_login', consentText },
   })
-  redirect(returnPath as Route)
+  revalidatePath(returnPath, 'layout')
+  return { error: null, success: true }
 }

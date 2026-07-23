@@ -4,7 +4,6 @@ import { REVIEWER_EMAILS } from '../lib/reviewer-access'
 import { currentTermsAcceptanceKey, PRIVACY_VERSION, standardUseConsentText, TERMS_VERSION, type LegalPrincipalType } from '../lib/legal-consent'
 
 const prisma = new PrismaClient()
-const DEFAULT_REVIEWER_PASSWORD = 'play-review-password-2026'
 
 function assertPostgresUrl() {
   const url = process.env.DATABASE_URL?.trim()
@@ -36,7 +35,7 @@ const IDS = {
 
 async function main() {
   assertPostgresUrl()
-  const password = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim() || DEFAULT_REVIEWER_PASSWORD
+  const password = process.env.ANDROID_REVIEWER_LANDLORD_PASSWORD?.trim()
   if (!password || password.length < 12) {
     throw new Error('Set ANDROID_REVIEWER_LANDLORD_PASSWORD to a stable password with at least 12 characters.')
   }

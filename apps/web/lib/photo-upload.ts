@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { readImageHeader, validateImageMagicBytes } from '@/lib/image-validation'
-import { deleteStoredMedia, saveStoredMedia } from '@/lib/media-storage'
+import { deleteStoredMedia, resolveStoredMediaPath, saveStoredMedia } from '@/lib/media-storage'
 import { hasR2StorageConfig } from '@/lib/runtime-env'
 import { assertEmergencyFeatureEnabled, emergencyFeatureMessage, isEmergencyFeatureDisabled } from '@/lib/feature-switches'
 
@@ -45,7 +45,7 @@ export async function savePhotos(files: File[]) {
   assertEmergencyFeatureEnabled('uploads')
 
   const shouldWriteLocalDisk = !hasR2StorageConfig()
-  const diskDirectory = path.join(process.cwd(), UPLOAD_SUBDIRECTORY)
+  const diskDirectory = path.join(process.cwd(), 'uploads', 'requests')
   if (shouldWriteLocalDisk) {
     await mkdir(diskDirectory, { recursive: true })
   }
@@ -76,7 +76,8 @@ export async function cleanupPhotos(photoPaths: string[]) {
     photoPaths.map(async (photoPath) => {
       await deleteStoredMedia(photoPath)
 
-      const diskPath = path.join(process.cwd(), photoPath)
+      const diskPath = resolveStoredMediaPath(photoPath)
+      if (!diskPath) return
       try {
         await unlink(diskPath)
       } catch {
