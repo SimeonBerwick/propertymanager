@@ -43,14 +43,14 @@ describe('startReturningLoginAction', () => {
   })
 
   test('requires OTP verification before signing in by phone', async () => {
-    const { identity } = await scaffoldTenant()
+    const { identity } = await scaffoldTenant({ email: 'phone-login@example.com' })
     await expect(
       startReturningLoginAction(PREV, formData({ identifier: identity.phoneE164 })),
     ).rejects.toThrow(/NEXT_REDIRECT:.*\/mobile\/auth\/login\/verify/)
 
     const session = await prisma.tenantSession.findFirst({ where: { tenantIdentityId: identity.id } })
     const challenge = await prisma.tenantOtpChallenge.findFirst({
-      where: { tenantIdentityId: identity.id, purpose: 'returning_login' },
+      where: { tenantIdentityId: identity.id, purpose: 'returning_login', channel: 'email' },
     })
     expect(session).toBeNull()
     expect(challenge).not.toBeNull()
