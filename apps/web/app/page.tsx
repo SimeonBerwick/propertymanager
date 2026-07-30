@@ -15,7 +15,7 @@ export default async function HomePage() {
       <section className="marketingHero">
         <div className="marketingHeroCopy">
           <div className="eyebrow">{androidApp ? 'Simeonware Android app' : 'Maintenance manager for working property teams'}</div>
-          <h1>{androidApp ? 'Open your maintenance dashboard.' : 'Run maintenance without chasing every update.'}</h1>
+          <h1>{androidApp ? 'Open your maintenance dashboard.' : 'Property maintenance, beautifully managed.'}</h1>
           <p>
             {androidApp
               ? 'Sign in as a property manager, tenant, maintenance staff member, or vendor. New property managers can start a free month in the app.'
@@ -28,7 +28,10 @@ export default async function HomePage() {
                 <Link href="/signup" className="button buttonLarge">Start free month</Link>
               </>
             ) : (
-              <Link href="/signup" className="button primary buttonLarge">Start your 30-day free trial</Link>
+              <>
+                <Link href="/signup" className="button primary buttonLarge">Start a 30-day trial</Link>
+                <a href="https://youtu.be/lNdIDpyV-dg" className="button buttonLarge">Watch the two-minute demonstration</a>
+              </>
             )}
           </div>
           {androidApp ? (
@@ -43,7 +46,7 @@ export default async function HomePage() {
           )}
         </div>
 
-        <div className="productWindow" id="product-preview" aria-label="Simeonware product preview">
+        {androidApp ? <div className="productWindow" id="product-preview" aria-label="Simeonware product preview">
           <div className="productWindowBar">
             <span className="windowDot" />
             <span className="windowDot" />
@@ -81,7 +84,11 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
-        </div>
+        </div> : (
+          <figure className="campaignHeroVisual">
+            <Image src="/campaign/property-maintenance-beautifully-managed.png" alt="Property Maintenance, Beautifully Managed campaign poster" width={1122} height={1402} priority sizes="(max-width: 980px) 100vw, 48vw" />
+          </figure>
+        )}
       </section>
 
       <section className="proofStrip" aria-label="Product benefits">
@@ -90,6 +97,24 @@ export default async function HomePage() {
         <div><strong>Keep records together</strong><span>Photos, notes, approvals, costs, and closeout stay with the job</span></div>
         <div><strong>Move data by CSV</strong><span>Import and export units, vendors, and tickets for your own systems</span></div>
       </section>
+
+      {!androidApp ? (
+        <section className="marketingSection campaignOutcomeSection" aria-labelledby="maintenance-outcome-heading">
+          <div className="sectionIntro">
+            <div className="eyebrow">Maintenance people can trust</div>
+            <h2 id="maintenance-outcome-heading">Great properties start with great maintenance.</h2>
+            <p>Give managers, residents, staff, and vendors a clear way to coordinate work while keeping every decision and update with the request.</p>
+          </div>
+          <div className="campaignVisualGrid">
+            <figure>
+              <Image src="/campaign/everyone-knows-what-happens-next.png" alt="A property manager and maintenance professional coordinating the next step" width={1122} height={1402} sizes="(max-width: 760px) 100vw, 50vw" />
+            </figure>
+            <figure>
+              <Image src="/campaign/great-properties-great-maintenance.png" alt="A well-maintained residential community supported by clear maintenance coordination" width={1122} height={1402} sizes="(max-width: 760px) 100vw, 50vw" />
+            </figure>
+          </div>
+        </section>
+      ) : null}
 
       <section className="marketingSection productScreenshots" aria-labelledby="real-product-heading">
         <div className="sectionIntro">

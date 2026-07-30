@@ -1,18 +1,25 @@
 import { expect, test } from '@playwright/test'
 
-test('August conversation request stays inside Simeonware', async ({ page }) => {
+test('August campaign leads with the demonstration and keeps founder support optional', async ({ page }) => {
   await page.goto('/august?utm_source=facebook')
 
-  const conversationLink = page.getByRole('link', { name: 'Request a 20-minute conversation' })
+  await expect(page.getByRole('heading', { name: 'Property maintenance, beautifully managed.' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Watch the two-minute demonstration', exact: true })).toHaveAttribute('href', 'https://youtu.be/lNdIDpyV-dg')
+  await expect(page.getByRole('link', { name: 'Start a 30-day trial', exact: true }).first()).toHaveAttribute(
+    'href',
+    '/signup?utm_source=facebook&utm_medium=social&utm_campaign=august_founders',
+  )
+
+  const conversationLink = page.getByRole('link', { name: 'Talk with the founder' })
   await expect(conversationLink).toHaveAttribute('href', '#conversation')
   await conversationLink.click()
 
   await expect(page).toHaveURL(/\/august\?utm_source=facebook#conversation$/)
-  const conversationHeading = page.getByRole('heading', { name: 'Tell us where maintenance gets stuck.' })
+  const conversationHeading = page.getByRole('heading', { name: 'Want help fitting Simeonware to your workflow?' })
   await expect(conversationHeading).toBeVisible()
   await expect(conversationHeading).toBeInViewport()
   await expect(page.getByLabel('Work email')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Request my conversation' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Request founder support' })).toBeVisible()
 })
 
 test('role entry points remain clear and can return home', async ({ page }) => {

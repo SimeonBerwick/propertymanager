@@ -21,8 +21,8 @@ export function ConsultationForm({ source }: { source: AugustCampaignSource }) {
   if (state.referenceId) {
     return (
       <div className="notice success" role="status">
-        <strong>Your conversation request is in.</strong>
-        <p>We will email you to arrange a 20-minute time. Keep this reference: <strong>{state.referenceId}</strong>.</p>
+        <strong>Your founder-support request is in.</strong>
+        <p>We will email you to arrange a time. Keep this reference: <strong>{state.referenceId}</strong>.</p>
       </div>
     )
   }
@@ -70,7 +70,7 @@ export function ConsultationForm({ source }: { source: AugustCampaignSource }) {
       </div>
       <input type="hidden" name="source" value={source} />
       <button className="button primary buttonLarge" type="submit" disabled={pending}>
-        {pending ? 'Sending request...' : 'Request my conversation'}
+        {pending ? 'Sending request...' : 'Request founder support'}
       </button>
       <p className="muted" style={{ margin: 0 }}>No sales call without your request. We use these details only to respond about Simeonware.</p>
     </form>
