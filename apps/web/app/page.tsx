@@ -42,6 +42,7 @@ export default async function HomePage() {
               <span>30-day trial for U.S. property businesses</span>
               <span>Tenant, staff, and vendor portals included</span>
               <span>CSV import and export ready</span>
+              <span><a href="https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager">Android app on Google Play</a></span>
             </div>
           )}
         </div>

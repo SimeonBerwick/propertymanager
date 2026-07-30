@@ -37,6 +37,7 @@ export default async function AugustCampaignPage({
             <span>No credit card required</span>
             <span>U.S. property businesses only</span>
             <span>No automatic paid conversion</span>
+            <span><a href="https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager">Android app on Google Play</a></span>
           </div>
           <p className="muted">Founder support is available for managers who want personal onboarding or need to discuss an integration. You can also start independently.</p>
         </div>

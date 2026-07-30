@@ -5,6 +5,10 @@ test('August campaign leads with the demonstration and keeps founder support opt
 
   await expect(page.getByRole('heading', { level: 1, name: 'Property maintenance, beautifully managed.' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Watch the two-minute demonstration', exact: true })).toHaveAttribute('href', 'https://youtu.be/lNdIDpyV-dg')
+  await expect(page.getByRole('link', { name: 'Android app on Google Play' })).toHaveAttribute(
+    'href',
+    'https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager',
+  )
   await expect(page.getByRole('link', { name: 'Start a 30-day trial', exact: true }).first()).toHaveAttribute(
     'href',
     '/signup?utm_source=facebook&utm_medium=social&utm_campaign=august_founders',
