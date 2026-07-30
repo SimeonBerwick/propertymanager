@@ -18,6 +18,12 @@ Keep the image linked to:
 
 `https://www.simeonware.com/august?utm_source=direct-outreach&utm_medium=email&utm_campaign=august_founders`
 
+Every message must also show these destinations as plain, clickable text:
+
+- Website: `https://www.simeonware.com`
+- Founding Manager Access: `https://www.simeonware.com/august`
+- Android app: `https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager`
+
 ## Initial email
 
 **Subject:** A clearer way to manage property maintenance
@@ -33,6 +39,12 @@ https://www.youtube.com/watch?v=lNdIDpyV-dg
 During August, property managers can run real maintenance through Simeonware for 30 days with assisted setup, direct founder support, and founding pricing protected for 12 months:
 
 https://www.simeonware.com/august?utm_source=direct-outreach&utm_medium=email&utm_campaign=august_founders&utm_content=initial
+
+Simeonware works on the web and through the Android app:
+
+Website: https://www.simeonware.com
+
+Google Play: https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager
 
 Best,
 
@@ -59,6 +71,12 @@ https://www.youtube.com/watch?v=lNdIDpyV-dg
 If the workflow looks useful, you can run your own maintenance through Simeonware for 30 days. No card is required, and a conversation with me is optional:
 
 https://www.simeonware.com/august?utm_source=direct-outreach&utm_medium=email&utm_campaign=august_founders&utm_content=follow_up
+
+Use Simeonware on the web or through the Android app:
+
+Website: https://www.simeonware.com
+
+Google Play: https://play.google.com/store/apps/details?id=com.simeonberwick.propertymanager
 
 Best,
 
