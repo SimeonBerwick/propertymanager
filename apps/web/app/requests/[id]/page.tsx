@@ -736,7 +736,11 @@ export default async function RequestDetailPage({ params, searchParams }: { para
               </div>
             )) : <div className="muted">No messages yet.</div>}
             <div style={{ borderTop: data.comments.length ? undefined : '1px solid var(--border)', paddingTop: 12 }}>
-              <AddCommentForm requestId={data.request.id} defaultVisibility={hasTenantMessageReview ? 'internal' : defaultCommentVisibility} />
+              <AddCommentForm
+                requestId={data.request.id}
+                defaultVisibility={hasTenantMessageReview ? 'internal' : defaultCommentVisibility}
+                allowVisibilityChange
+              />
             </div>
           </SectionCard>
           </details>

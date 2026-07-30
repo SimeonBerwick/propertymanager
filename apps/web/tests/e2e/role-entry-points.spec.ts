@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('August campaign leads with the demonstration and keeps founder support optional', async ({ page }) => {
   await page.goto('/august?utm_source=facebook')
 
-  await expect(page.getByRole('heading', { name: 'Property maintenance, beautifully managed.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Property maintenance, beautifully managed.' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Watch the two-minute demonstration', exact: true })).toHaveAttribute('href', 'https://youtu.be/lNdIDpyV-dg')
   await expect(page.getByRole('link', { name: 'Start a 30-day trial', exact: true }).first()).toHaveAttribute(
     'href',
