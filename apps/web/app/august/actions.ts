@@ -110,7 +110,7 @@ export async function submitConsultationRequest(
     replyTo: email,
     subject: `[Founding manager ${referenceId}] ${organization}`,
     text: [
-      'A visitor requested a 20-minute founding-manager conversation.',
+      'A visitor requested a founding-manager support conversation.',
       '',
       `Reference: ${referenceId}`,
       `Name: ${name}`,

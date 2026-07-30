@@ -20,7 +20,7 @@ export function CampaignLink({
   href,
   children,
 }: {
-  eventName: 'campaign_consultation_click' | 'campaign_trial_click'
+  eventName: 'campaign_consultation_click' | 'campaign_demo_click' | 'campaign_trial_click'
   source: AugustCampaignSource
   className?: string
   href: string
