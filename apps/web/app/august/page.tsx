@@ -53,6 +53,15 @@ export default async function AugustCampaignPage({
         <div><strong>12-month price protection</strong><span>Founding-manager pricing is locked for 12 months if you subscribe.</span></div>
       </section>
 
+      <section className="marketingSection" aria-labelledby="founder-story-heading">
+        <div className="sectionIntro">
+          <div className="eyebrow">Why Simeonware exists</div>
+          <h2 id="founder-story-heading">Keep maintenance moving and costs under control.</h2>
+          <p>When I managed 250 rental homes, collecting maintenance requests wasn&apos;t the hard part. The hard part was keeping every job moving, tracking approved costs, and catching delays before they became expensive emergencies.</p>
+          <p>I built Simeonware to give property managers that control in one place.</p>
+        </div>
+      </section>
+
       <section className="marketingSection augustOffer" aria-labelledby="august-offer-heading">
         <div className="sectionIntro">
           <div className="eyebrow">Founding Manager Access</div>
