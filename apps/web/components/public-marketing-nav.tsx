@@ -45,7 +45,7 @@ export function PublicMarketingNav() {
 
   return (
     <>
-      <Link href="/#features">Features</Link>
+      <Link href="/#real-product-heading">Product</Link>
       <Link href="/#how-it-works">How it works</Link>
       <Link href="/#pricing">{androidAppView ? 'Subscription' : 'Pricing'}</Link>
       <Link href="/support">Support</Link>
