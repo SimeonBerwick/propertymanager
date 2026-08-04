@@ -13,6 +13,8 @@ test('August campaign leads with the demonstration and keeps founder support opt
     'href',
     '/signup?utm_source=facebook&utm_medium=social&utm_campaign=august_founders',
   )
+  await expect(page.getByRole('heading', { name: 'Keep maintenance moving and costs under control.' })).toBeVisible()
+  await expect(page.getByText(/When I managed 250 rental homes, collecting maintenance requests wasn't the hard part\./)).toBeVisible()
 
   const conversationLink = page.getByRole('link', { name: 'Talk with the founder' })
   await expect(conversationLink).toHaveAttribute('href', '#conversation')

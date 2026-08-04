@@ -100,6 +100,17 @@ export default async function HomePage() {
       </section>
 
       {!androidApp ? (
+        <section className="marketingSection" aria-labelledby="founder-story-heading">
+          <div className="sectionIntro">
+            <div className="eyebrow">Why Simeonware exists</div>
+            <h2 id="founder-story-heading">Keep maintenance moving and costs under control.</h2>
+            <p>When I managed 250 rental homes, collecting maintenance requests wasn&apos;t the hard part. The hard part was keeping every job moving, tracking approved costs, and catching delays before they became expensive emergencies.</p>
+            <p>I built Simeonware to give property managers that control in one place.</p>
+          </div>
+        </section>
+      ) : null}
+
+      {!androidApp ? (
         <section className="marketingSection campaignOutcomeSection" aria-labelledby="maintenance-outcome-heading">
           <div className="sectionIntro">
             <div className="eyebrow">Maintenance people can trust</div>
