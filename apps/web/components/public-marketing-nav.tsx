@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type { Route } from 'next'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -43,11 +44,27 @@ export function PublicMarketingNav() {
     return null
   }
 
+  // The company home page and the service assistant page show the two products. The Android app opens on the
+  // home page, which shows it the property maintenance screen, so it keeps the property maintenance links.
+  if (!androidAppView && (pathname === '/' || pathname.startsWith('/service-assistant'))) {
+    return (
+      <>
+        <Link href={'/property-maintenance' as Route}>Property maintenance</Link>
+        <Link href={'/service-assistant' as Route}>Service assistant</Link>
+        <Link href="/support">Support</Link>
+        <ThemeToggle />
+        <Link href="/login" className="button">Sign in</Link>
+      </>
+    )
+  }
+
+  const productPage = androidAppView ? '/' : '/property-maintenance'
+
   return (
     <>
-      <Link href="/#real-product-heading">Product</Link>
-      <Link href="/#how-it-works">How it works</Link>
-      <Link href="/#pricing">{androidAppView ? 'Subscription' : 'Pricing'}</Link>
+      <Link href={`${productPage}#real-product-heading` as Route}>Product</Link>
+      <Link href={`${productPage}#how-it-works` as Route}>How it works</Link>
+      <Link href={`${productPage}#pricing` as Route}>{androidAppView ? 'Subscription' : 'Pricing'}</Link>
       <Link href="/support">Support</Link>
       <Link href="/support?category=feedback">Feedback</Link>
       <ThemeToggle />
